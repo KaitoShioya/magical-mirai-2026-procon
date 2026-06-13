@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>楽曲データ解析ツール — マジカルミライ2026プロコン</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --border: #30363d;
+        --text: #c9d1d9;
+        --accent: #58a6ff;
+        --green: #3fb950;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: 13px;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        flex-shrink: 0;
+      }
+      header h1 { font-size: 15px; color: var(--accent); }
+      select {
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      #status {
+        flex: 1;
+        font-size: 12px;
+        color: var(--green);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      button {
+        background: var(--accent);
+        color: var(--bg);
+        border: none;
+        border-radius: 6px;
+        padding: 5px 14px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button:disabled {
+        background: var(--border);
+        cursor: not-allowed;
+        color: var(--text);
+      }
+      #output {
+        flex: 1;
+        overflow: auto;
+        padding: 12px 16px;
+        white-space: pre;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--text);
+      }
+      audio { display: none; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>楽曲データ解析ツール</h1>
+      <select id="song-select" title="曲を選択"></select>
+      <span id="status">初期化中...</span>
+      <button id="dl-btn" disabled>JSON ダウンロード</button>
+    </header>
+
+    <pre id="output">// 曲のロードが完了すると songMap JSON が表示されます</pre>
+
+    <!-- TextAlive が操作する audio 要素 -->
+    <audio id="audio-media"></audio>
+
+    <script type="module" src="/src/analyze.js"></script>
+  </body>
+</html>

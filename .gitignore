@@ -1,1 +1,29 @@
+# === 秘匿情報（絶対にコミットしない） ===
 .env
+.env.*
+
+# === 依存・ビルド成果物（再生成可能） ===
+node_modules/
+dist/
+*.log
+
+# === 著作権メディア：解析専用。アプリは使わない・提出物に含めない ===
+# 課題曲mp3はlibrosa解析用ローカル素材。アプリはTextAlive API(piapro URL)でロードするため不要。
+docs/song/
+# 参考演出の動画(かいりきベア等の第三者著作物)。設計分析にのみ使用。
+docs/idea/video/
+*.mp4
+*.mp3
+*.wav
+
+# === 解析中間ファイル（巨大・再生成可能） ===
+*_y.csv
+
+# === ツール・OS ===
+.serena/cache/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === セッション生ログのダンプ（機密混入リスク・巨大・提出物に不要）===
+docs/session_dump/

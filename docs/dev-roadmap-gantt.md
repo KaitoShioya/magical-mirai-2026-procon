@@ -1,0 +1,237 @@
+# 開発ロードマップ（マイルストーン／Issue 時系列ガント）
+
+本書は、GitHubのマイルストーンと全104 Issueの「時系列の完了ごとの遷移」をガント図で表す。図は mermaid で作成し、`docs/img/` にSVGとして保存して参照する。各図のmermaidソースは保守のため折りたたみに併記する（ソースを更新したら、mermaid で再レンダリングしてSVGを再生成する）。
+
+## 前提
+
+- マイルストーンの期限（`due_on`）は未確定である。よって図の日付は**提案スケジュールの目安**であり、確定した期限ではない。
+- 締切は **2026年6月29日（月）正午（日本標準時）**。日単位のガントでは正午を正確に表せないため、締切時刻はこの本文で確定とする。
+- 完了順と並走は、マイルストーンのフェーズ順・クリティカルパス・先行ゲートに基づく。マイルストーンの番号は工程順に振り直してある（新M1=譜面・曲プロファイルパイプライン、新M2=レンダリング、新M3=キネティックタイポグラフィ、M4以降は不変）。
+
+## 凡例
+
+- 赤い強調（`crit`）＝優先度 P0-critical（最小実用版のクリティカルパス）。
+- 菱形（`milestone`）＝統合点。#59 通しプレイ成立、#71 成果物統合、#87 提出コミット凍結・タグ付け。
+- 図中ラベルの先頭の数値はIssue番号（例「34 プロファイルJSONスキーマ」は #34）。
+- 統合点は、そのマイルストーンの全タスクの完了後に置く（提出に必要なM0からM7およびM9を締切前に完了させる時系列ロードマップとして一貫させるため）。M8横展開はオプション（stretch）であり、この完了保証の対象外である（提出物はM8なしで成立する）。
+
+## クリティカルパスと先行ゲート
+
+- クリティカルパス: #47（3空間分離入力アーキテクチャ）→ #59（通しプレイ成立）→ #71（成果物統合）→ #87（提出タグ）。
+- 解析先行ゲート #96 は新M1（譜面・曲プロファイルパイプライン）にあり、曲プロファイルが形式検査を通るまで、新M3タイポグラフィ譜割り（#33）とM4ゲームプレイの実装に進まない先行条件である。
+- 操作判定ゲート #103 はM4にあり、#48 タップ判定と #49 軌跡上距離と時間の換算の単体検査である。
+- 新M2レンダリングは曲プロファイルに依存しない描画基盤のため、#96 の後に置かない。プロファイルを消費する配置（#40 ノーツ軌跡上配置）は新M1、ゲームプレイでの消費はM4にある。
+- 横断の品質保証ゲート（#97描画性能・#98文字可読性・#99表示同期・#100空間品質・#101灯し分布・#102両立）は、各ドメインの実装と並走して継続的に回す。#104 ゲート表確定は各ゲートの後、#87 の前に完了する。
+
+---
+
+## 図1: マイルストーン全体
+
+![マイルストーン全体ロードマップ](img/roadmap-overview.svg)
+
+<details><summary>mermaidソース（図1）</summary>
+
+```mermaid
+gantt
+  title マイルストーン全体ロードマップ（日付は目安・due_on未確定／締切2026-06-29正午JST）
+  dateFormat YYYY-MM-DD
+  axisFormat %m-%d
+  section 基盤
+    M0 基盤・足場 :m0, 2026-06-18, 1d
+  section 生成と描画
+    M1 譜面・曲プロファイル(解析先行) :crit, m1, after m0, 3d
+    M2 レンダリング :m2, after m0, 3d
+    M3 キネティックタイポグラフィ :m3, after m2, 2d
+  section ゲームプレイ
+    M4 ゲームプレイ・判定・スコア・音 :crit, m4, after m1 m3, 3d
+  section 成果物と提出
+    M5 灯し・生態系・成果物 :m5, after m4, 2d
+    M6 UX・画面遷移 :m6, after m5, 1d
+    M7 規約・最適化・提出 :crit, m7, after m6, 2d
+    M8 横展開(stretch・任意) :m8, after m5, 2d
+  section 品質保証(横断)
+    M9 品質保証(ローカル継続検査) :m9, after m0, 9d
+```
+
+</details>
+
+---
+
+## 図2: フェーズ1（基盤 → 譜面・曲プロファイル[解析先行] ・ レンダリング）
+
+新M1の解析が最上流であること、新M2レンダリングが新M1と並走すること、#95 品質検査ハーネスを早期に置くことを示す。
+
+![フェーズ1ガント](img/roadmap-phase1.svg)
+
+<details><summary>mermaidソース（図2）</summary>
+
+```mermaid
+gantt
+  title フェーズ1: 基盤(M0) → 譜面・曲プロファイル(新M1/解析先行) ・ レンダリング(新M2)
+  dateFormat YYYY-MM-DD
+  axisFormat %m-%d
+  section M0 基盤
+    1 TS+Vite移行          :crit, i1, 2026-06-18, 1d
+    2 状態遷移マシン        :crit, i2, after i1, 1d
+    3 ゲームループ          :crit, i3, after i2, 1d
+    4 TextAlive統合         :crit, i4, after i3, 1d
+    5 6曲ロード設定         :crit, i5, after i4, 1d
+    6 config一元管理        :i6, after i1, 1d
+    7 GitHub Pages配信CI    :crit, i7, after i1, 1d
+  section M1 譜面・プロファイル(解析先行)
+    34 プロファイルJSONスキーマ :crit, i34, after i5, 1d
+    35 和音名パーサー         :crit, i35, after i34, 1d
+    36 JUST7スロット          :crit, i36, after i35, 1d
+    37 NC区間処理            :i37, after i35, 1d
+    38 オンセット選択         :crit, i38, after i36, 1d
+    39 譜面パターン適用        :i39, after i38, 1d
+    40 ノーツ軌跡上配置        :crit, i40, after i38, 1d
+    41 見せ場マップ           :i41, after i36, 1d
+    42 多様性逓減抽出         :i42, after i36, 1d
+    43 譜面密度設計           :i43, after i41, 1d
+    44 タップ総数上限         :i44, after i43, 1d
+    45 プロファイル生成スクリプト :crit, i45, after i40 i41 i43 i44, 1d
+    46 TAKEOVERプロファイル検証 :crit, i46, after i45, 1d
+    96 解析先行スキーマ検証ゲート :crit, i96, after i46, 1d
+  section M2 レンダリング
+    8 threejs描画基盤        :crit, i8, after i5, 1d
+    9 平面反射               :crit, i9, after i8, 1d
+    10 発光点InstancedMesh   :crit, i10, after i8, 1d
+    11 ブルーム後処理         :crit, i11, after i8, 1d
+    12 雨パーティクル         :i12, after i8, 1d
+    13 カメラ軌跡            :crit, i13, after i8, 1d
+    14 3D文字高品質化         :i14, after i9, 1d
+    15 描画層合成3D2D         :crit, i15, after i9 i10 i11, 1d
+    16 拍同期スケジューラ      :crit, i16, after i15, 1d
+    17 拍同期ポストFX         :i17, after i15, 1d
+    18 60fps劣化制御         :crit, i18, after i16, 1d
+    19 実機性能検証スイート    :i19, after i18, 1d
+    64 ミクVRMローダー        :crit, i64, after i9 i11, 1d
+    92 ミク常在配置          :crit, i92, after i64, 1d
+    93 ミクモーション抽象層    :i93, after i92, 1d
+  section M9 早期(横断)
+    95 品質検査ハーネス基盤    :crit, i95, after i5, 1d
+```
+
+</details>
+
+---
+
+## 図3: フェーズ2（キネティックタイポグラフィ → コアゲームプレイ）
+
+新M3タイポグラフィは新M2の描画層（#15/#16）と新M1の解析先行ゲート（#96）の後に始まる。M4は #47 を起点に進み、#59 で全タスクが統合点に集約する。
+
+![フェーズ2ガント](img/roadmap-phase2.svg)
+
+<details><summary>mermaidソース（図3）</summary>
+
+```mermaid
+gantt
+  title フェーズ2: キネティックタイポグラフィ(新M3) → コアゲームプレイ(M4)
+  dateFormat YYYY-MM-DD
+  axisFormat %m-%d
+  section M3 タイポグラフィ(#15/#16/#96後)
+    20 SDF動的文字エンジン     :crit, i20, 2026-06-22, 1d
+    21 インスタンス分割文字制御 :i21, after i20, 1d
+    22 シェーダ注入一括変形    :i22, after i20, 1d
+    23 文法1 1文字1拍スマッシュ :crit, i23, after i20, 1d
+    24 文法2 字間拡大         :i24, after i23, 1d
+    25 文法3 円状回転         :i25, after i23, 1d
+    26 文法4 縦伸ばし渦       :i26, after i23, 1d
+    27 文法5 残像            :i27, after i23, 1d
+    28 文法6 減衰暗転         :i28, after i23, 1d
+    29 表示粒度切替           :crit, i29, after i20, 1d
+    30 感情声量マッピング      :i30, after i29, 1d
+    31 DOM主役歌詞オーバーレイ :crit, i31, after i20, 1d
+    32 3Dカメラワーク文字演出  :i32, after i29, 1d
+    33 TAKEOVERタイポ譜割り    :crit, i33, after i23 i29 i31, 1d
+  section M4 ゲームプレイ(#96/#15/#33後)
+    47 3空間分離入力アーキ     :crit, i47, after i33, 1d
+    48 タップ判定エンジン      :crit, i48, after i47, 1d
+    49 軌跡上距離と時間翻訳    :crit, i49, after i47, 1d
+    50 レイテンシ較正UI        :i50, after i48, 1d
+    51 反応強度計算           :crit, i51, after i48 i49, 1d
+    52 WebAudio操作音         :crit, i52, after i47, 1d
+    53 投下時音色変化         :i53, after i52 i54, 1d
+    54 ゲージ投下システム      :crit, i54, after i51, 1d
+    55 スコアリング最小ランク   :crit, i55, after i54, 1d
+    56 目的関数統合           :crit, i56, after i55, 1d
+    57 判定UI落下式レーン      :crit, i57, after i48, 1d
+    58 本編左端Y軸音程表示     :crit, i58, after i57, 1d
+    103 操作判定ゲート         :crit, i103, after i48 i49, 1d
+    59 TAKEOVER通しプレイ成立  :milestone, crit, i59, after i47 i48 i49 i50 i51 i52 i53 i54 i55 i56 i57 i58 i103, 0d
+  section M9 並走ゲート(横断)
+    100 空間品質ゲート         :crit, i100, 2026-06-22, 1d
+    98 文字可読性ゲート        :crit, i98, after i31, 1d
+    99 表示同期ゲート          :crit, i99, after i33, 1d
+    97 描画性能ゲート          :crit, i97, after i59, 1d
+```
+
+</details>
+
+---
+
+## 図4: フェーズ3（成果物 → UX → 規約・最適化・提出 ＋ 横展開）
+
+M5成果物は #59 後に始まり #71 で統合する。M7の #87 提出タグは、成果物統合・結果画面・規約監査・クレジット・README・応募準備・ゲート表確定を待つ最終の統合点である。M8横展開は任意で、実施する場合は #87 の前に完了させる。
+
+![フェーズ3ガント](img/roadmap-phase3.svg)
+
+<details><summary>mermaidソース（図4）</summary>
+
+```mermaid
+gantt
+  title フェーズ3: 成果物(M5) → UX(M6) → 規約・最適化・提出(M7) ＋ 横展開(M8)
+  dateFormat YYYY-MM-DD
+  axisFormat %m-%d
+  section M5 成果物(#59後)
+    60 ひまわりジェネレータ    :crit, i60, 2026-06-26, 1d
+    61 蝶ジェネレータ         :crit, i61, 2026-06-26, 1d
+    62 ボロノイ緩和配置        :crit, i62, after i60 i61, 1d
+    63 灯し立ち上げ演出        :crit, i63, after i62, 1d
+    65 ランク専用ゲージOKLCH   :i65, after i60, 1d
+    66 内蔵水準カーブCDF       :i66, after i60, 1d
+    67 自己ベスト履歴          :i67, after i60, 1d
+    68 撮影モードカメラ操作     :i68, after i63, 1d
+    69 成果物PNG書き出し       :crit, i69, after i63, 1d
+    70 共有機構               :i70, after i69, 1d
+    71 成果物統合             :milestone, crit, i71, after i60 i61 i62 i63 i65 i66 i67 i68 i69 i70, 0d
+  section M6 UX(#71後)
+    72 ウォームアップ画面      :i72, after i71, 1d
+    73 タイトル画面磨き        :i73, after i71, 1d
+    74 結果画面               :crit, i74, after i71, 1d
+    75 画面遷移アニメ          :i75, after i74, 1d
+    76 画面拡大減衰揺れ        :i76, after i74, 1d
+    77 設定クレジット画面       :i77, after i71, 1d
+    78 SE設計調達             :i78, after i71, 1d
+  section M7 規約・最適化・提出
+    82 クレジット表記(早期空)   :crit, i82, 2026-06-26, 1d
+    83 README(早期骨子)       :crit, i83, 2026-06-26, 1d
+    79 AI生成物排除監査        :crit, i79, after i74, 1d
+    80 静的アプリ規約確認       :i80, after i79, 1d
+    81 フォントサブセット化     :i81, after i74, 1d
+    84 性能最終確認軽量化       :i84, after i74, 1d
+    85 実機テストマトリクス     :i85, after i84, 1d
+    94 ミクモーション規約調査(保留) :i94, after i71, 1d
+    86 応募フォーム提出物準備   :crit, i86, after i71, 1d
+    87 提出コミット凍結タグ     :milestone, crit, i87, after i71 i74 i79 i82 i83 i86 i104, 0d
+  section M8 横展開(stretch・任意・#87前)
+    88 シャッターチャンスprofile :i88, 2026-06-26, 1d
+    89 世界最後の音楽隊profile  :i89, 2026-06-26, 1d
+    90 こたえてコーラス補正     :i90, 2026-06-26, 1d
+    91 残り曲profile(任意)     :i91, 2026-06-26, 1d
+  section M9 後半ゲート(横断)
+    101 灯し分布ゲート         :crit, i101, after i62 i63, 1d
+    102 両立ゲート            :crit, i102, after i101, 1d
+    104 ゲート表確定          :crit, i104, after i101 i102, 1d
+```
+
+</details>
+
+---
+
+## 注記
+
+- Issueの総数は104件である。内訳は M0=7、新M1=14、新M2=15、新M3=14、M4=14、M5=11、M6=7、M7=10、M8=4、M9=8。
+- 図はmermaidのガントである。ガントは依存の矢印を描かないため、依存と統合点は本書の注記で補っている。
+- 図を更新するときは、上の各折りたたみ内のmermaidソースを直し、mermaidで再レンダリングして `docs/img/roadmap-overview.svg`・`roadmap-phase1.svg`・`roadmap-phase2.svg`・`roadmap-phase3.svg` を再生成する。

@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
         input: {
           main: "index.html",
           analysis: "analysis.html",
+          prototype: "prototype.html",
         },
       },
     },

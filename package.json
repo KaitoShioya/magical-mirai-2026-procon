@@ -9,7 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "textalive-app-api": "^0.4.0"
+    "textalive-app-api": "^0.4.0",
+    "three": "^0.184.0",
+    "troika-three-text": "^0.52.4"
   },
   "devDependencies": {
     "playwright": "^1.60.0",

@@ -80,6 +80,7 @@ chroma = librosa.feature.chroma_cqt(y=y, sr=sr, hop_length=512)                #
 | 症状 | 原因 | 対処 |
 |---|---|---|
 | `load` が返らない/15分スタック | AAC/mp4直渡し → audioread fallback | 先に `ffmpeg -ac 1 -ar 22050` でWAV化 |
+| WAV化済みでも MCP `load` がハング（13分+） | MCPの隔離環境（uvx）のプロビジョニング/ネイティブ依存でスタック。**パスは原因ではない**（クリーンなPCM WAVをローカルの soundfile は ASCIIパスでも日本語/OneDriveパスでも0.003秒で読めた。MCPだけが13分ハング） | runbook §3推奨の**ローカル librosa** で解析する。`python -c "import librosa,numpy as np; y,sr=librosa.load('out.wav',sr=22050); t,b=librosa.beat.beat_track(y=y,sr=sr,units='time'); print(t,len(b))"`（実績: librosa 0.11.0 で即時完了） |
 | 解析が全部同じ区間になる | スライスloadが `<stem>_y.csv` を上書き | 解析ごとにload→即解析。ファイル名を分けるならWAV側を分ける |
 | BPMが倍/半でおかしい | `tempo` の start_bpm 依存 | `beat_track` のビート間隔中央値で裏取り、`start_bpm` を実測付近に |
 | 処理が遅い | CSVが巨大（110MB+） | offset/duration でスライス、必要区間のみ |

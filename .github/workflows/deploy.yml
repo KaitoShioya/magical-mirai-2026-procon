@@ -1,0 +1,80 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 配信先は単一の Cloudflare Pages プロジェクトのため、ref によらず一直線に直列化する
+# （別 ref からの手動実行と本番 push が同じプロジェクトへ同時にデプロイするのを防ぐ）。
+concurrency:
+  group: deploy-cloudflare-pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    # 配信先の準備が整い（DEPLOY_ENABLED が 'true'）、かつ main ブランチのときだけ実行する。
+    # main 限定にするのは、手動実行（workflow_dispatch）で main 以外を選んだ内容を
+    # --branch=main（本番）として誤配信しないため。未設定・'true' 以外・main 以外はスキップする（赤いエラーにしない）。
+    if: ${{ vars.DEPLOY_ENABLED == 'true' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    name: Build and deploy (index.html only)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify deploy configuration (no values printed)
+        shell: bash
+        run: |
+          test -n "${PROJECT_NAME:-}" || { echo "CLOUDFLARE_PAGES_PROJECT_NAME (variable) is not set." >&2; exit 1; }
+          test "${PROJECT_NAME}" != "PROJECT_NAME_PLACEHOLDER" || { echo "CLOUDFLARE_PAGES_PROJECT_NAME is still the placeholder value." >&2; exit 1; }
+          test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo "CLOUDFLARE_API_TOKEN (secret) is not set." >&2; exit 1; }
+          test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo "CLOUDFLARE_ACCOUNT_ID (secret) is not set." >&2; exit 1; }
+        env:
+          PROJECT_NAME: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+      - name: Show toolchain versions
+        run: node -v && npm -v
+      - name: Verify token is set (no value printed)
+        shell: bash
+        run: test -n "${TEXT_ALIVE_API_TOKEN:-}"
+        env:
+          TEXT_ALIVE_API_TOKEN: ${{ secrets.TEXT_ALIVE_API_TOKEN }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Build production bundle (index.html only, token injected)
+        run: npm run build:app
+        env:
+          TEXT_ALIVE_API_TOKEN: ${{ secrets.TEXT_ALIVE_API_TOKEN }}
+      - name: Verify production output (index.html only)
+        shell: bash
+        run: |
+          ls -la dist
+          ls -la dist/assets
+          test -f dist/index.html
+          test ! -f dist/analysis.html
+          test ! -f dist/prototype.html
+          # 開発ツール由来のファイル（HTML・チャンク）が混入していないこと。
+          # 見つかった場合は該当パスを出力してから失敗させ、調査を容易にする。
+          forbidden="$(find dist -type f \( -iname '*analysis*' -o -iname '*prototype*' \) -print -quit)"
+          if [ -n "$forbidden" ]; then
+            echo "Forbidden dev-tool file found in dist: $forbidden" >&2
+            exit 1
+          fi
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # --branch=main で本番デプロイとして扱わせる（Pages プロジェクトの production branch を main にしておくこと）。
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }} --branch=main
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

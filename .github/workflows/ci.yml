@@ -34,6 +34,10 @@ jobs:
         run: npm ci
       - name: Type check
         run: npm run typecheck
+      - name: Unit tests (engine pure logic)
+        # 固定時間刻みのフレーム数非依存・時計の単調化と再同期・タブ復帰の時刻一致など、
+        # Issue #3 の受け入れ基準を決定的に保証する単体テスト。
+        run: npm run test
       - name: Build production bundle (index.html only)
         # 本番配信と同じ index.html のみのビルドが通ることを確認する。トークンは無くてもビルドは成立する。
         run: npm run build:app
@@ -48,6 +52,9 @@ jobs:
           echo "started preview server (pid $!)"
       - name: Run screen-transition smoke test
         run: BASE=http://127.0.0.1:4173 npm run smoke
+      - name: Run engine-loop smoke test
+        # 配信ビルドで診断アクセサが公開され、ゲーム時刻が後退せず超過が生じないことの実ブラウザ補助確認。
+        run: BASE=http://127.0.0.1:4173 node scripts/engine-loop-smoke.mjs
       - name: Show preview log on failure
         if: failure()
         run: cat preview.log || true

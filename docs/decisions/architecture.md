@@ -28,7 +28,7 @@
 | 操作音 | Web Audio | 音の高さを自由に変え、音源ファイルなしで遅れを小さくする |
 | 楽曲と歌詞 | TextAlive App API | コンテストの必須要件。楽曲・歌詞・音楽地図を提供する |
 | ビルド | Vite | 開発の即時反映と本番ビルド |
-| 配信 | GitHub PagesとGitHub Actions | 提出がGitHubのため同基盤で完結する（Issue #7で導入） |
+| 配信 | Cloudflare Pages（Cloudflare Accessで限定公開）とGitHub Actions | GitHub Pagesは有料プランでもサイトが一般公開され、規約の募集期間中の一般公開禁止に反するため採らない。Cloudflare Pagesは無料でアクセス制限でき、デプロイはGitHub Actionsで行う（Issue #7で導入） |
 
 @pixiv/three-vrm・GSAP は本Issueでは依存に加えず、各担当Issue（ミクはIssue #64、歌詞はマイルストーンM3）で導入する。先取りして依存を増やさないためである。
 
@@ -131,7 +131,7 @@
 
 本Issueで実体を置くのは `main.ts`（最小起動）、`src/style.css`（本体の最小スタイル）、`config/songs.ts`、`types/` の型宣言、`tools/analysis/`・`tools/perf/`（移行）のみである。ドメインの型（ノーツ・曲プロファイル等）は各担当Issueが定義するため、本Issueでは先取りしない。
 
-開発ツールとビルド成果物の関係を明確にする。マルチページのビルドは、開発の利便とビルド時の検証のため、本体（`index.html`）に加えて開発ツールの2ページ（`analysis.html`・`prototype.html`）も `dist/` へ出力する。ここでの「開発ツールは提出本体に含めない」とは、開発ツールが**アプリの利用者体験の一部ではなく、本体から参照されない**という意味である。提出時に公開するページの構成（開発ツールのページを公開対象から外すかどうか）は、Issue #7（規約適合・最適化・提出）で確定する。
+開発ツールとビルド成果物の関係を明確にする。マルチページのビルドは、開発の利便とビルド時の検証のため、本体（`index.html`）に加えて開発ツールの2ページ（`analysis.html`・`prototype.html`）も `dist/` へ出力する。ここでの「開発ツールは提出本体に含めない」とは、開発ツールが**アプリの利用者体験の一部ではなく、本体から参照されない**という意味である。提出時に公開するのは本体 `index.html` のみとし、開発ツールの2ページは配信に含めない（Issue #7 で確定）。本番ビルドは `npm run build:app`（`vite build --mode app`）で本体のみを出力する。
 
 ---
 

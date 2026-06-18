@@ -1,0 +1,17 @@
+{
+  // ビルド設定（vite.config.ts）向けの型設定。Node環境の型のみを使う。
+  // lib に DOM を含めない（Node用設定にブラウザの型が混ざるのを防ぐ）。
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["vite.config.ts"]
+}

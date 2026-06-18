@@ -18,8 +18,11 @@
 - `docs/textalive-api-refs/*.md` — API約90本（1クラス1ファイル）。`textalive-app-api.md` が目次。**全読み禁止 → `Grep`でクラス名検索 → 該当ファイルRead**。
 - `docs/analysis/*.songmap.json` — TextAlive音楽地図ダンプ（beats/chords/segments/phrases/amplitudeCurve/vaCurve）。曲プロファイル生成の入力。`song-insights.md`=曲構造比較。
 - `docs/research/` — フェーズ②技術調査（`research-roadmap.md` が進行表）。
+- **`docs/decisions/architecture.md`** — **実装アーキテクチャとディレクトリ構成の確定版**（Issue #1）。`src/` の各ディレクトリの責務・依存規則・担当Issueはこれを正とする。
 - `docs/runbooks/*.md` — ツール再利用リファレンス（利用方法/機能/詳細/トラブルシュート）: `textalive.md` / `mcp-music-analysis.md` / `claude-video-vision.md`。
-- `src/`, `index.html`, `analysis.html`, `vite.config.js`, `scripts/dump-songmap.mjs` — 実装と解析ツール。
+- `docs/poc/` — 旧試作の凍結アーカイブ（参照専用。Viteの入力ではない）。
+- `src/` — TypeScript実装。最上位サブシステム（`app`/`engine`/`rendering`/`screens`/`profiles` 等）＋ `src/tools/`（開発ツール）＋ `src/config`・`src/types`。各ディレクトリのREADMEが責務・禁止依存・担当Issueを記す。
+- `index.html`・`analysis.html`・`prototype.html`・`vite.config.ts`・`tsconfig.json`・`tsconfig.node.json` — マルチページ入口とビルド/型設定。`scripts/dump-songmap.mjs`（解析ツール駆動）・`scripts/prototype-fps.mjs`（性能検証駆動）。
 - `.env` — アプリトークン。**コミット禁止**。
 
 ## Rules & Commands
@@ -58,9 +61,11 @@
 
 ### Commands
 ```sh
-npm install                          # textalive-app-api, vite
-npm run dev                          # ローカル開発サーバ(Vite)
-npm run build                        # 静的ビルド(提出物)
-node scripts/dump-songmap.mjs <key>  # 曲データ解析ダンプ(要 dev サーバ起動)。key省略で3曲
+npm install                              # textalive-app-api, three, troika, vite, typescript 等
+npm run dev                              # ローカル開発サーバ(Vite)
+npm run typecheck                        # 型検査(strict)。tsconfig.json と tsconfig.node.json を個別に検査
+npm run build                            # 型検査を経た静的ビルド(提出物)
+node scripts/dump-songmap.mjs <key>      # 曲データ解析ダンプ(要 dev サーバ起動 localhost:5173)。key省略で3曲
+BASE=http://localhost:5173 node scripts/prototype-fps.mjs  # 描画性能検証(要 dev サーバ起動)
 ```
 > 提出: private GitHub repo → `magicalmirai-procon` 共有 ＋ 応募フォーム。

@@ -19,6 +19,9 @@ docs/idea/video/
 # === 解析中間ファイル（巨大・再生成可能） ===
 *_y.csv
 
+# === 描画性能検証スクリプトのスクリーンショット（実行ごとに再生成される一時生成物） ===
+scripts/proto-*.png
+
 # === ツール・OS ===
 .serena/cache/
 .DS_Store

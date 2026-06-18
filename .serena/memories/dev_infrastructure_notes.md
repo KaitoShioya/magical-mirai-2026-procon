@@ -1,12 +1,18 @@
-# 開発基盤・解析ツールの状態と注意点（2026-06-13）
+# 開発基盤・解析ツールの状態と注意点（2026-06-13 / 2026-06-18 Issue #1 で構成更新）
 
-## TextAlive開発基盤（構築済み・ビルド成功）
+## TextAlive開発基盤（Issue #1 で TypeScript へ移行・ビルド/型検査成功）
 
-- Vite + textalive-app-api@0.4.0（**0.5系は存在しない**）。`npm run dev` / `npm run build`
-- `vite.config.js`: ルート `.env` の `TEXT_ALIVE_API_TOKEN` を `import.meta.env.VITE_TEXTALIVE_TOKEN` に注入（.envはgit-ignored、コミット厳禁）
-- `src/songs.js`: 6曲のバージョン固定URL+音楽地図ID（support-page.mdから一字一句転記済み）
-- `index.html`(再生UI) + `analysis.html`(songmapダンプツール、`?song=key`)
-- `scripts/dump-songmap.mjs`: Playwright(導入済み)でsongmap JSONを自動取得。devサーバ起動後 `node scripts/dump-songmap.mjs`
+**※2026-06-18 Issue #1 で構成を更新。アーキテクチャとディレクトリ構成の正典は `docs/decisions/architecture.md`、実装の復帰点は [[implementation_checkpoint_2026-06-18]]。旧JS試作は `docs/poc/` に凍結アーカイブ（参照専用・Vite入力ではない）。**
+
+- TypeScript + Vite + textalive-app-api@0.4.0（**0.5系は存在しない**）。three@0.184 + troika-three-text@0.52（型非同梱のため `@types/three` と `src/types/troika-three-text.d.ts` で補う）。
+- コマンド: `npm run dev` / `npm run typecheck`（厳格・`tsc -p tsconfig.json && tsc -p tsconfig.node.json`）/ `npm run build`（型検査を経てビルド）。
+- `vite.config.ts`: ルート `.env` の `TEXT_ALIVE_API_TOKEN` を `import.meta.env.VITE_TEXTALIVE_TOKEN` に注入（.envはgit-ignored、コミット厳禁）。マルチページ入力は本体・解析・性能検証の3つ。
+- `src/config/songs.ts`: 6曲のバージョン固定URL+音楽地図ID（support-page.md と照合済み）。既定曲は TAKEOVER。
+- 本体入口 `index.html` + `src/main.ts`（Issue #1 ではプレースホルダ表示のみ）。
+- 楽曲データ解析ツール `analysis.html` + `src/tools/analysis/main.ts`（`?song=key`）。描画性能検証ツール `prototype.html` + `src/tools/perf/main.ts`。
+- `scripts/dump-songmap.mjs`: Playwright(導入済み)でsongmap JSONを自動取得。devサーバを5173で起動後 `node scripts/dump-songmap.mjs`（接続先は5173固定）。
+- `scripts/prototype-fps.mjs`: 描画性能を計測。既定接続先が5174のため `BASE=http://localhost:5173` を明示して実行する。
+- 既存スクリプトの契約（解析ツールの `window.__songMap`・`DUMP_READY`・`#status`、性能検証ツールの `window.__fps` 系とクエリ値）は移行後も維持。
 
 ## 既知のバグと修正済み事項（重要）
 

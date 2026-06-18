@@ -95,7 +95,8 @@ gantt
     96 解析先行スキーマ検証ゲート :crit, i96, after i46, 1d
   section M2 レンダリング
     8 threejs描画基盤        :crit, i8, after i5, 1d
-    9 平面反射               :crit, i9, after i8, 1d
+    105 舞台土台モデル読込配置 :crit, i105, after i8, 1d
+    9 平面反射(水面領域)      :crit, i9, after i105, 1d
     10 発光点InstancedMesh   :crit, i10, after i8, 1d
     11 ブルーム後処理         :crit, i11, after i8, 1d
     12 雨パーティクル         :i12, after i8, 1d
@@ -213,6 +214,7 @@ gantt
     84 性能最終確認軽量化       :i84, after i74, 1d
     85 実機テストマトリクス     :i85, after i84, 1d
     94 ミクモーション規約調査(保留) :i94, after i71, 1d
+    106 舞台土台モデル規約確認(保留) :i106, after i71, 1d
     86 応募フォーム提出物準備   :crit, i86, after i71, 1d
     87 提出コミット凍結タグ     :milestone, crit, i87, after i71 i74 i79 i82 i83 i86 i104, 0d
   section M8 横展開(stretch・任意・#87前)
@@ -232,6 +234,6 @@ gantt
 
 ## 注記
 
-- Issueの総数は104件である。内訳は M0=7、新M1=14、新M2=15、新M3=14、M4=14、M5=11、M6=7、M7=10、M8=4、M9=8。
+- Issueの総数は106件である。内訳は M0=7、新M1=14、新M2=16、新M3=14、M4=14、M5=11、M6=7、M7=11、M8=4、M9=8。新M2の #105 は舞台土台3Dモデルの読込・配置、M7の #106 は舞台土台モデルの素材源・出典・規約確認（保留）である。
 - 図はmermaidのガントである。ガントは依存の矢印を描かないため、依存と統合点は本書の注記で補っている。
-- 図を更新するときは、上の各折りたたみ内のmermaidソースを直し、mermaidで再レンダリングして `docs/img/roadmap-overview.svg`・`roadmap-phase1.svg`・`roadmap-phase2.svg`・`roadmap-phase3.svg` を再生成する。
+- 図を更新するときは、上の各折りたたみ内のmermaidソースを直し、mermaidで再レンダリングして対応するSVGを再生成する。対象は `docs/img/roadmap-overview.svg`・`roadmap-phase1.svg`・`roadmap-phase2.svg`・`roadmap-phase3.svg` のうち、内容が変わった図に限る。舞台土台モデル化（#105・#106）の反映では、内容が変わった phase1 と phase3 のみを再生成し、overview と phase2 は変えていない。

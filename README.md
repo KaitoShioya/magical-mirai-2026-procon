@@ -83,7 +83,7 @@ BASE=http://localhost:5173 node scripts/prototype-fps.mjs
 
 ## 配信（Cloudflare Pages + Cloudflare Access）
 
-募集期間中の一般公開は規約で禁止されているため（応募のきまり）、本番は Cloudflare Pages に配信し、Cloudflare Access のメール宛て一度きり暗証番号認証で閲覧者を限定する。GitHub Pages は有料プランでもサイトが一般公開され、サイト自体の閲覧制限には上位プランが必要なため採用しない。本番に公開するのは本体 `index.html` のみで、開発ツール（analysis.html / prototype.html）は配信に含めない。
+募集期間中の一般公開は規約で禁止されているため（応募のきまり）、本番は Cloudflare Pages に配信し、Cloudflare Access で閲覧者を限定する（自分の Cloudflare アカウント、または許可したメールアドレスのみが閲覧可能）。GitHub Pages は有料プランでもサイトが一般公開され、サイト自体の閲覧制限には上位プランが必要なため採用しない。本番に公開するのは本体 `index.html` のみで、開発ツール（analysis.html / prototype.html）は配信に含めない。
 
 ### デプロイの仕組み
 
@@ -112,18 +112,27 @@ Variables（非秘匿の設定値）:
 
 ### Cloudflare 側の事前準備
 
-1. Cloudflare アカウントを作成し、Account ID を控える。
-2. Pages プロジェクトを **Direct Upload 種別**で作成する。決めたプロジェクト名を Variables `CLOUDFLARE_PAGES_PROJECT_NAME` に登録する。本番URLは `https://<プロジェクト名>.pages.dev` になる。「New project from Git」を選ぶと内蔵の自動ビルドが有効化され wrangler の直接アップロードと二重化するため選ばない。ワークフローは `--branch=main` でデプロイするため、プロジェクトの production branch（本番ブランチ）を `main` に設定しておく。
-3. API トークンを発行し（権限: Account スコープの Cloudflare Pages（Edit））、上記 Secrets に登録する。
-4. Cloudflare Access を後述の手順で設定する。
-5. 準備が整い、かつ **未認証のブラウザで本番URLと preview URL の双方が Access 認証を要求すること**（誰でも閲覧できる状態でないこと）を確認したうえで、Variables `DEPLOY_ENABLED` を `true` にする（これでデプロイが有効になる）。
+1. Cloudflare アカウントを作成する。
+2. Account ID を控える（ダッシュボードの「Workers & Pages」を開くと右側に表示される）。Secrets `CLOUDFLARE_ACCOUNT_ID` に登録する。
+3. API トークンを発行する（権限: Account スコープの「Cloudflare Pages」「Edit」）。Secrets `CLOUDFLARE_API_TOKEN` に登録する。
+4. Pages プロジェクトを **wrangler で作成**する。ダッシュボードの Direct Upload では本番ブランチ（production branch）を設定できず、その場合ワークフローの `--branch=main` が preview 扱いになって本番URLが更新されないため、本番ブランチを `main` に指定して作成する。`CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を環境変数に設定した状態で次を実行する（`<プロジェクト名>` は任意）:
 
-### Cloudflare Access による限定公開（公式手順）
+   ```bash
+   npx wrangler pages project create <プロジェクト名> --production-branch=main
+   ```
 
-1. Workers & Pages → 対象プロジェクト → Settings → General で「Enable access policy」を有効化する。これは preview デプロイのハッシュ付きURL（例 `<ハッシュ>.<プロジェクト名>.pages.dev`）だけを認証必須にし、この操作で Zero Trust に Access アプリケーションが作られる。この設定だけでは本番 `<プロジェクト名>.pages.dev` は保護されない。
-2. 本番 `<プロジェクト名>.pages.dev` を保護するため、Zero Trust → Access のアプリケーションで、サブドメイン欄の `*` ワイルドカードを外して `<プロジェクト名>` を指定したポリシーを用意する。
-3. 両ポリシーに、許可するメールアドレスの一覧と一度きり暗証番号（メール）認証を設定する。
-4. 本番用（`<プロジェクト名>.pages.dev`）と preview 用（`*.<プロジェクト名>.pages.dev`）の2つの Access ポリシーが作成されていることを確認し、未認証のブラウザで本番URLと preview URL の双方が認証要求されることを確認する。
+   作成したプロジェクト名を Variables `CLOUDFLARE_PAGES_PROJECT_NAME` に登録する。本番URLは `https://<プロジェクト名>.pages.dev` になる。
+5. Cloudflare Access を後述の手順で設定する。
+6. 準備が整い、かつ **未認証のブラウザで本番URLと preview URL の双方が Access 認証を要求すること**（誰でも閲覧できる状態でないこと）を確認したうえで、Variables `DEPLOY_ENABLED` を `true` にする（これでデプロイが有効になる）。
+
+### Cloudflare Access による限定公開
+
+前提: 初回は Cloudflare の Zero Trust（無料プラン）を有効化しておく必要がある（左メニューの「Zero Trust」からチーム名を決め、Free プランを選択する。無料だが支払い方法の登録が求められ、請求は発生しない）。これを有効化しないと次の「Enable access policy」が表示されない。
+
+1. Workers & Pages → 対象プロジェクト → Settings → General で「Enable access policy」を有効化する。これは preview デプロイのURL（`*.<プロジェクト名>.pages.dev`）を認証必須にし、この操作で Zero Trust に Access アプリケーションが作られる。この設定だけでは本番 `<プロジェクト名>.pages.dev`（サブドメインなし）は保護されない（ワイルドカード `*.` は apex を含まないため）。
+2. 本番URLも保護するため、作られた Access アプリケーションの「Destinations（Public hostnames）」に宛先を1つ追加する。Subdomain を空欄、Domain を `<プロジェクト名>.pages.dev` にして保存する。既存の `*`（preview 用）の行はそのまま残す。これで preview 用（`*.<プロジェクト名>.pages.dev`）と本番用（`<プロジェクト名>.pages.dev`）の両方が同じアプリケーションのポリシーで保護される。
+3. ポリシーで許可する対象を設定する（自分の Cloudflare アカウントのみを許可する既定のポリシー、または許可するメールアドレス一覧と一度きり暗証番号（メール）認証）。
+4. 未認証のブラウザで本番URLと preview URL の双方が認証を要求すること（誰でも閲覧できる状態でないこと）を確認する。なお最初のデプロイ前は、認証を通しても配信物が無いため接続が一時的にタイムアウトすることがあるが、これは正常で、デプロイ後に解消する。
 
 参考: https://developers.cloudflare.com/pages/configuration/preview-deployments/ と https://developers.cloudflare.com/pages/platform/known-issues/
 

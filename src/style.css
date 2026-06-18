@@ -30,29 +30,58 @@ body {
   height: 100%;
 }
 
-.placeholder {
+/* 画面表示領域。状態機械はこの直下に常に1つの画面だけを置く。 */
+.screen-root {
+  width: 100%;
+  height: 100%;
+}
+
+/* 5画面共通の最小レイアウト。本格的な演出は後続Issue（描画はマイルストーンM2）で追加する。 */
+.screen {
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 16px;
   padding: 24px;
   text-align: center;
 }
 
-.placeholder h1 {
+.screen__title {
   font-size: clamp(20px, 4vw, 40px);
   font-weight: 700;
   color: #fff;
   text-shadow: 0 0 20px var(--accent), 0 0 60px var(--accent2);
 }
 
-.placeholder p {
+.screen__text {
   font-size: clamp(13px, 2vw, 16px);
   color: var(--text-dim);
 }
 
-.placeholder .count {
+.screen__countdown {
+  font-size: clamp(40px, 12vw, 96px);
+  font-weight: 700;
   color: var(--accent);
+  min-height: 1.2em;
+}
+
+/* タップ対象は片手の親指でも押しやすい最小の大きさを満たす（最小48画素）。 */
+.screen__button {
+  min-width: 160px;
+  min-height: 48px;
+  padding: 12px 28px;
+  font-size: clamp(14px, 2.4vw, 18px);
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.screen__button:hover {
+  color: #fff;
+  box-shadow: 0 0 16px var(--accent);
 }

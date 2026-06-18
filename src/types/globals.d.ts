@@ -13,5 +13,11 @@ declare global {
     __avgFps?: () => number;
     /** 毎秒フレーム数の標本をリセットする */
     __resetFps?: () => void;
+    /**
+     * 検証用の状態履歴アクセサ。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
+     * 進入した画面状態のキーを進入順に返す。scripts/screens-smoke.mjs が取得する。
+     * 共有型ディレクトリが screens に依存しないよう、ScreenKey 型ではなく文字列配列に留める。
+     */
+    __screenHistory?: () => readonly string[];
   }
 }

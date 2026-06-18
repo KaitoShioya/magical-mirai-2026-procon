@@ -1,0 +1,53 @@
+# 検証専用のCI。型検査・ビルド・画面遷移のスモークテストを実行する。
+# 配信は行わない（配信は .github/workflows/deploy.yml が担う）。役割の衝突を避けるため
+# 名前と同時実行制御群を配信CI（deploy-cloudflare-pages）と分ける。
+name: Verify
+
+on:
+  push:
+  pull_request:
+
+# 同一参照の古い検証実行は新しい実行で打ち切る。配信の制御群とは別にする。
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    name: Typecheck, build, smoke
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        # Node 24 系でビルドが異常終了する既知の問題があるため、配信CIと同じく .nvmrc に固定する。
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+      - name: Show toolchain versions
+        run: node -v && npm -v
+      - name: Install dependencies
+        run: npm ci
+      - name: Type check
+        run: npm run typecheck
+      - name: Build production bundle (index.html only)
+        # 本番配信と同じ index.html のみのビルドが通ることを確認する。トークンは無くてもビルドは成立する。
+        run: npm run build:app
+      - name: Build verification bundle (three pages)
+        # 既定ビルド。最終的な dist はこの3ページ構成になり、後続の preview の配信対象となる。
+        run: npm run build
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start preview server
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 --strictPort > preview.log 2>&1 &
+          echo "started preview server (pid $!)"
+      - name: Run screen-transition smoke test
+        run: BASE=http://127.0.0.1:4173 npm run smoke
+      - name: Show preview log on failure
+        if: failure()
+        run: cat preview.log || true

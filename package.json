@@ -8,7 +8,8 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
     "build": "npm run typecheck && vite build",
     "build:app": "npm run typecheck && vite build --mode app",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "smoke": "node scripts/screens-smoke.mjs"
   },
   "dependencies": {
     "textalive-app-api": "^0.4.0",

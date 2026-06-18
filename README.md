@@ -22,7 +22,7 @@ TextAlive App API を使った、歌詞がリアルタイムに同期して動�
 ## セットアップ
 
 ### 必要なもの
-- Node.js 18 以上
+- Node.js 20系 または 22系 の長期サポート版（22系を推奨）。**Node.js 24系は使わないこと。** 理由を先に述べる。本作のビルド工具（Vite 5.4系とそれが用いる Rollup）は Node.js 24系での本番ビルド中に異常終了し、Node.js 22系の長期サポート版では正常に完了することを確認済みのためである。推奨版はプロジェクト直下の `.nvmrc`（22）に記載している。
 - TextAlive アプリトークン（[developer.textalive.jp/profile](https://developer.textalive.jp/profile) で取得）
 
 ### 手順

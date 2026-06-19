@@ -59,6 +59,7 @@ const PIXEL_CAP = numberKnob("dpr", MAX_PIXEL_RATIO);
 const BLOOM_ON = numberKnob("bloom", 1) === 1;
 const REPLAY_SPEED = numberKnob("speed", 1);
 const PROFILE = stringKnob("profile", "real"); // "real"（実測再現・合否）| "maxload"（最大負荷・余力）。
+const START_MS = numberKnob("start", 0); // 実測再現の再生開始時刻（ミリ秒）。最悪集中区間を計測に含めるため指定する。
 const FONT_NAME = "main";
 const FONT_URL = "/fonts/zen-kaku-gothic-new-subset.woff";
 const SONGMAP_URL = "/docs/analysis/takeover.songmap.json";
@@ -215,9 +216,32 @@ async function start(): Promise<void> {
   // 暖め（サブセット全グリフの距離場を読み込み時に生成）。
   const warmStart = performance.now();
   await activeEngine.warmUp(uniqueChars);
+
+  // 描画パイプラインの暖め。隠し文字を数フレーム描き、初回の配置確定（sync）とシェーダの
+  // 一度きりのコンパイル費用を計測前に支払う。これをしないと、最初に出す文字の表示が
+  // 初回syncとシェーダコンパイルを含んで遅くなる（初回表示遅延が大きく出る）。
+  const warmFrame = (): Promise<void> =>
+    new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  const warmHandle = activeEngine.spawnGlyph({
+    char: uniqueChars[0] ?? "あ",
+    fontName: FONT_NAME,
+    position: { x: 0, y: 4, z: 0 },
+    fontSize: 3,
+    color: 0xffffff,
+    opacity: 1,
+    lifetimeMs: 4000,
+  });
+  for (let warmCount = 0; warmCount < 12; warmCount += 1) {
+    await warmFrame();
+    activeEngine.update({ gameTimeMs: 0, frameDeltaMs: 16 });
+    composer.render();
+  }
+  warmHandle.release();
+  activeEngine.update({ gameTimeMs: 0, frameDeltaMs: 16 });
   const warmMs = Math.round(performance.now() - warmStart);
 
-  // 初回表示遅延の計測。暖め後に最初の文字を出し、可視化された直後の描画完了までを測る。
+  // 初回表示遅延の計測。パイプライン暖め後に最初の文字を出し、可視化された直後の描画完了までを測る。
+  // 計測は次の描画ループ（出現が続きワーカーが稼働する実プレイに近い状態）で確定する。
   initProbeStartedAt = performance.now();
   activeEngine.spawnGlyph({
     char: uniqueChars[0] ?? "あ",
@@ -240,7 +264,12 @@ async function start(): Promise<void> {
 
   const songEndMs = onsets.length > 0 ? onsets[onsets.length - 1].startTimeMs + RESIDENCE_MS : 1000;
   const schedule: ScheduledSpawn[] = replay ? [...replay.events] : [];
-  let scheduleIndex = 0;
+  // 再生開始時刻 START_MS 以降の最初の出現から始める（最悪集中区間を計測に含めるため）。
+  const startIndex = Math.max(
+    0,
+    schedule.findIndex((event) => event.atMs >= START_MS)
+  );
+  let scheduleIndex = startIndex;
   let phraseSpawned = false;
 
   // 最大負荷は一度だけ単一層を飽和させ、フレーズを1つ出す。
@@ -272,10 +301,10 @@ async function start(): Promise<void> {
     cameraCurve.getPointAt((now * 0.00002) % 1, camera.position);
     camera.lookAt(cameraTarget);
 
-    let playbackMs = (now - playbackStart) * REPLAY_SPEED;
+    let playbackMs = START_MS + (now - playbackStart) * REPLAY_SPEED;
 
     if (replay) {
-      // 実測再現: 開始時刻が来た文字を出す。曲末で先頭へ戻して連続計測できるようにする。
+      // 実測再現: 開始時刻が来た文字を出す。曲末で開始時刻へ戻して連続計測できるようにする。
       if (playbackMs > songEndMs) {
         // 折り返し前に前周の残存文字を全解放する。
         for (const handle of activeHandles) {
@@ -283,8 +312,8 @@ async function start(): Promise<void> {
         }
         activeHandles.clear();
         playbackStart = now;
-        scheduleIndex = 0;
-        playbackMs = 0;
+        scheduleIndex = startIndex;
+        playbackMs = START_MS;
       }
       while (scheduleIndex < schedule.length && schedule[scheduleIndex].atMs <= playbackMs) {
         const event = schedule[scheduleIndex];

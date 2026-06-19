@@ -84,13 +84,15 @@ BASE=http://localhost:5173 node scripts/prototype-fps.mjs
 # フォントのサブセット生成（assets/fonts-source/ の元フォントから public/fonts/ の .woff を作る。欠字があれば失敗する）
 npm run build:font-subset
 
-# キネティック文字エンジンの補助スモーク（要 dev サーバ起動。起動とエラー有無の確認。正式な性能合否はGPU実機で typography.html を開いて記録する）
-npm run typography:fps
+# キネティック文字エンジンの性能検証（要 dev サーバ起動。ANGLE経由でGPU描画して受け入れ基準を判定する）
+BASE=http://localhost:5173 npm run typography:fps
 ```
 
 ### 文字エンジンの性能検証（正式判定）
 
-描画性能の正式な合否はGPUのある手元の環境で行う（ヘッドレスのブラウザはGPUを使わず計測値が実機性能を表さない。`docs/research/08-quality-assurance.md` §1）。`npm run dev` を起動し、GPUを使う通常起動のブラウザまたは実機で `http://localhost:5173/typography.html` を開く。画面左上に1フレームごとの計測値（平均・下位5パーセンタイルの毎秒フレーム数、33ミリ秒超のフレーム落ち回数、初回表示遅延）が出る。標準計測条件は画面寸法 1280×720 と 390×844・画素密度上限2・表示残存4拍である。クエリで条件を変えられる（`profile=real|maxload`、`residence=<ミリ秒>`、`dpr=<上限>`、`bloom=0|1`、`single=<数>`、`batched=<数>`、`speed=<倍率>`）。
+描画性能の正式な合否はGPUのある手元の環境で行う（ヘッドレスのブラウザは既定でGPUを使わず計測値が実機性能を表さない。`docs/research/08-quality-assurance.md` §1）。`npm run typography:fps` は Issue #95 の品質検査ハーネスと同じ方式で、Chromium を新しいヘッドレスモードと ANGLE（DirectX 11）で起動して実GPU描画し、`typography.html` を駆動して受け入れ基準を判定する。ソフトウェア描画にフォールバックしていないことを描画系統名で確認し、フォールバック時は失敗にする。判定は、平均と単発フレーム落ちを実測再現（最悪集中区間）で、初回表示遅延を出現が連続する条件（実プレイの密な歌詞区間に相当）で行う。初回表示遅延を連続条件で測る理由は、時間的に孤立した単発の出現は troika が後続作業まで配置確定を遅らせるバッチ挙動の影響を受け、実プレイを代表しないためである。
+
+目視や手動計測を行う場合は、`npm run dev` を起動しGPUを使う通常起動のブラウザで `http://localhost:5173/typography.html` を開く。画面左上に1フレームごとの計測値（平均・下位5パーセンタイルの毎秒フレーム数、33ミリ秒超のフレーム落ち回数、初回表示遅延）が出る。標準計測条件は画面寸法 1280×720 と 390×844・画素密度上限2・表示残存4拍である。クエリで条件を変えられる（`profile=real|maxload`、`start=<ミリ秒>`、`residence=<ミリ秒>`、`dpr=<上限>`、`bloom=0|1`、`single=<数>`、`batched=<数>`、`speed=<倍率>`）。
 
 ## 配信（Cloudflare Pages + Cloudflare Access）
 

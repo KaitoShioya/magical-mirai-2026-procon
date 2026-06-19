@@ -85,3 +85,72 @@ body {
   color: #fff;
   box-shadow: 0 0 16px var(--accent);
 }
+
+/* TextAlive の音声配置先。画面に出さないが、再生のため文書には残す（display:none にしない）。 */
+#audio-media {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 起動時のローディング・楽曲ロード失敗・「触れて再生」の重ね表示（Issue #4）。
+   画面表示領域より上に重ね、document.body 直下に置く。 */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(10, 10, 20, 0.92);
+}
+
+/* hidden 属性で出し入れする。display 指定があると hidden が効かないため、明示的に分岐する。 */
+.overlay:not([hidden]) {
+  display: flex;
+}
+
+.overlay--tap-to-play {
+  cursor: pointer;
+  background: rgba(10, 10, 20, 0.7);
+}
+
+.overlay__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  max-width: 480px;
+}
+
+.overlay__text {
+  font-size: clamp(16px, 3vw, 22px);
+  color: var(--text);
+}
+
+.overlay__button {
+  min-width: 160px;
+  min-height: 48px;
+  padding: 12px 28px;
+  font-size: clamp(14px, 2.4vw, 18px);
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.overlay__button[hidden] {
+  display: none;
+}
+
+.overlay__link {
+  font-size: clamp(13px, 2vw, 16px);
+  color: var(--accent);
+}

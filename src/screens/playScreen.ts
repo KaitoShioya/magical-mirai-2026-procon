@@ -1,9 +1,9 @@
 // プレイ画面。本Issueでは最小プレースホルダに留める（本編の判定・描画は後続Issue）。
-// 暫定の「結果へ」ボタンで結果へ進む。このボタンは Issue #4 で TextAlive の楽曲終了検知に置き換える。
+// プレイ→結果は統括（src/app）が楽曲終了を検知して起こす。本画面は遷移を要求しない。
 
-import type { Screen, ScreenContext, ScreenFactory } from "./types";
+import type { Screen, ScreenFactory } from "./types";
 
-export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen => {
+export const createPlayScreen: ScreenFactory = (): Screen => {
   const element = document.createElement("section");
   element.className = "screen screen--play";
   element.dataset.screen = "play";
@@ -16,29 +16,18 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
   note.className = "screen__text";
   note.textContent = "本編の演出・操作・採点は後続の実装で追加します。";
 
-  // 暫定ボタン。Issue #4 で楽曲終了の自動検知に置き換える。
-  const toResultButton = document.createElement("button");
-  toResultButton.className = "screen__button";
-  toResultButton.type = "button";
-  toResultButton.dataset.action = "show-result";
-  toResultButton.textContent = "結果へ（暫定）";
-
-  element.append(heading, note, toResultButton);
-
-  const onShowResult = (): void => {
-    context.requestTransition("result");
-  };
+  element.append(heading, note);
 
   return {
     element,
     onEnter(): void {
-      toResultButton.addEventListener("click", onShowResult);
+      // 本Issueのプレイ画面は固有の操作を持たない（楽曲再生と終了検知は統括が担う）。
     },
     onUpdate(): void {
-      // 本Issueのプレイ画面は時間進行を持たない（楽曲再生は Issue #4）。
+      // 本Issueのプレイ画面は時間進行を持たない。
     },
     onExit(): void {
-      toResultButton.removeEventListener("click", onShowResult);
+      // 固有の後始末はない。
     },
   };
 };

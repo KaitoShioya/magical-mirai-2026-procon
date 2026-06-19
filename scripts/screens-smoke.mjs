@@ -97,8 +97,8 @@ try {
   await waitForScreen(page, "play");
   await assertScreen(page, "play");
 
-  // 4. 暫定「結果へ」で結果へ。
-  await page.click('[data-action="show-result"]');
+  // 4. 楽曲終了の自動検知で結果へ遷移する。
+  //    診断モードの擬似再生は短い楽曲長で速やかに終了するため、待つだけで結果へ進む（Issue #4）。
   await waitForScreen(page, "result");
   await assertScreen(page, "result");
 

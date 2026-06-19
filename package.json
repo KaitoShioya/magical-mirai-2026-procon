@@ -10,6 +10,8 @@
     "build:app": "npm run typecheck && vite build --mode app",
     "preview": "vite preview",
     "test": "vitest run",
+    "build:font-subset": "node scripts/build-font-subset.mjs",
+    "typography:fps": "node scripts/typography-fps.mjs",
     "smoke": "node scripts/screens-smoke.mjs",
     "quality": "node scripts/quality-harness.mjs --mode=local",
     "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud"
@@ -26,7 +28,9 @@
     "@types/node": "^20.11.0",
     "@types/three": "^0.184.0",
     "ajv": "^8.17.1",
+    "fontkit": "^2.0.4",
     "playwright": "^1.60.0",
+    "subset-font": "^2.5.0",
     "typescript": "^5.6.0",
     "vite": "^5.4.0",
     "vitest": "^2.1.9"

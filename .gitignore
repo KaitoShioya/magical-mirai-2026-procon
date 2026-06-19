@@ -22,6 +22,11 @@ docs/idea/video/
 
 # === 描画性能検証スクリプトのスクリーンショット（実行ごとに再生成される一時生成物） ===
 scripts/proto-*.png
+scripts/typography-*.png
+
+# === フォントのサブセット化の元フォント（配布はしない。public/fonts/ のサブセットのみ同梱する） ===
+# 再生成するときは scripts/build-font-subset.mjs の冒頭に記した配布元から取得して assets/fonts-source/ に置く。
+assets/fonts-source/
 
 # === 品質検査ハーネスのローカル出力（レポートJSON・撮影。実行ごとに再生成される一時生成物） ===
 scripts/.quality-out/

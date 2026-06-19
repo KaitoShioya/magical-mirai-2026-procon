@@ -52,13 +52,14 @@ npm run preview
 
 ## ページ構成
 
-下表はローカル開発時（`npm run dev` / `npm run build`）のページである。**本番配信（Cloudflare Pages）に含めるのは本体 index.html のみ**で、開発ツールの2ページは配信に含めない。
+下表はローカル開発時（`npm run dev` / `npm run build`）のページである。**本番配信（Cloudflare Pages）に含めるのは本体 index.html のみ**で、開発ツールの3ページは配信に含めない。
 
 | URL | 説明 |
 |-----|------|
 | `/` または `/index.html` | アプリ本体（リリックアプリ）。本番配信対象 |
 | `/analysis.html?song=<key>` | 開発用: 楽曲データ解析ツール。本番配信に含めない |
-| `/prototype.html` | 開発用: 描画性能検証ツール。本番配信に含めない |
+| `/prototype.html` | 開発用: 描画負荷の基準検証ツール。本番配信に含めない |
+| `/typography.html` | 開発用: キネティック文字エンジンの受け入れ診断（性能計測）。本番配信に含めない |
 
 ## ディレクトリ構成（概要）
 
@@ -79,7 +80,17 @@ node scripts/dump-songmap.mjs takeover
 
 # 描画性能（毎秒フレーム数）を計測（要 dev サーバ起動。BASE で接続先を明示）
 BASE=http://localhost:5173 node scripts/prototype-fps.mjs
+
+# フォントのサブセット生成（assets/fonts-source/ の元フォントから public/fonts/ の .woff を作る。欠字があれば失敗する）
+npm run build:font-subset
+
+# キネティック文字エンジンの補助スモーク（要 dev サーバ起動。起動とエラー有無の確認。正式な性能合否はGPU実機で typography.html を開いて記録する）
+npm run typography:fps
 ```
+
+### 文字エンジンの性能検証（正式判定）
+
+描画性能の正式な合否はGPUのある手元の環境で行う（ヘッドレスのブラウザはGPUを使わず計測値が実機性能を表さない。`docs/research/08-quality-assurance.md` §1）。`npm run dev` を起動し、GPUを使う通常起動のブラウザまたは実機で `http://localhost:5173/typography.html` を開く。画面左上に1フレームごとの計測値（平均・下位5パーセンタイルの毎秒フレーム数、33ミリ秒超のフレーム落ち回数、初回表示遅延）が出る。標準計測条件は画面寸法 1280×720 と 390×844・画素密度上限2・表示残存4拍である。クエリで条件を変えられる（`profile=real|maxload`、`residence=<ミリ秒>`、`dpr=<上限>`、`bloom=0|1`、`single=<数>`、`batched=<数>`、`speed=<倍率>`）。
 
 ## 配信（Cloudflare Pages + Cloudflare Access）
 
@@ -148,4 +159,5 @@ Variables（非秘匿の設定値）:
 ## ライセンス・出典
 
 - 楽曲・歌詞: 各作者様（piapro.jp）— マジカルミライ2026楽曲コンテスト受賞作品
+- フォント: Zen Kaku Gothic New（作者 Yoshimichi Ohira / Zenfonts、配布元 Google Fonts、SIL Open Font License 1.1）。課題曲の歌詞の文字へサブセット化して同梱している（ライセンス本文 `public/fonts/zen-kaku-gothic-new-OFL.txt`）。アプリ内の常設クレジット区画への表示は後続Issueで結線する。
 - 本アプリに AI 生成の絵・音楽・文章は使用していません

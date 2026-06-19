@@ -17,13 +17,15 @@ export default defineConfig(({ mode }) => {
 
   const deployAppOnly = mode === "app";
 
-  // 本番（--mode app）は本体のみ。開発検証用は本体＋開発ツール2ページ。
+  // 本番（--mode app）は本体のみ。開発検証用は本体＋開発ツール3ページ。
+  // typography.html は kineticText エンジンの受け入れ診断（性能計測）の入口で、本番では配信しない。
   const input: Record<string, string> = deployAppOnly
     ? { main: "index.html" }
     : {
         main: "index.html",
         analysis: "analysis.html",
         prototype: "prototype.html",
+        typography: "typography.html",
       };
 
   return {

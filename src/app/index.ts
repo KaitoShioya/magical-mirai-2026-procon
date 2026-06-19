@@ -37,13 +37,16 @@ const PLAYBACK_START_TIMEOUT_MS = 400;
  */
 export function createApp(
   root: HTMLElement,
-  options: { diagnostics: boolean; stageRoot: HTMLElement }
+  options: { diagnostics: boolean; stageRoot: HTMLElement; reflectionResolution: number }
 ): App {
   const song = findSong(DEFAULT_SONG_KEY);
 
   // 描画基盤を常在領域へ載せ、起動直後にクリアカラーを適用する（Issue #8）。
   // 画面UIの背面に深夜の湖を描く。毎フレームの描画は下のループ onFrame で駆動する。
-  const renderRoot = createRenderRoot(options.stageRoot);
+  // 反射解像度は入口（src/main.ts）が起動時パラメータ refl から解釈した値を素通しする（Issue #9）。
+  const renderRoot = createRenderRoot(options.stageRoot, {
+    reflectionResolution: options.reflectionResolution,
+  });
 
   // 診断モード（?smoke=1）はトークン非依存の擬似再生、通常はトークンで実プレイヤーを使う。
   const playback: Playback = options.diagnostics

@@ -5,6 +5,7 @@
 //   ゲームループと固定時間刻み → src/engine（Issue #3）
 import "./style.css";
 import { createApp } from "./app";
+import { resolveReflectionResolution } from "./rendering";
 
 const app = document.getElementById("app");
 if (!app) {
@@ -22,8 +23,15 @@ const screenRoot = document.createElement("div");
 screenRoot.className = "screen-root";
 app.replaceChildren(screenRoot);
 
+// 起動時パラメータを読む。get は同名パラメータが重複したとき最初の値を返すため、refl を重複指定した
+// 場合は最初の値が使われる。
 // 診断モードの判定のみを行い、その真偽を統括へ渡す。
 // 状態履歴アクセサ window.__screenHistory の取り付けと削除は統括（src/app）が担う。
-const diagnostics = new URLSearchParams(window.location.search).get("smoke") === "1";
+const query = new URLSearchParams(window.location.search);
+const diagnostics = query.get("smoke") === "1";
 
-createApp(screenRoot, { diagnostics, stageRoot });
+// 反射解像度（refl）を解釈する。本番ビルドでも有効にする。採用理由を先に述べる。refl は実機での反射の
+// 手動調整手段であり、自動縮退（Issue #97）導入前に反射を切る退避手段として本番でも有用なためである。
+const reflectionResolution = resolveReflectionResolution(query.get("refl"));
+
+createApp(screenRoot, { diagnostics, stageRoot, reflectionResolution });

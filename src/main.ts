@@ -11,6 +11,12 @@ if (!app) {
   throw new Error("#app 要素が見つかりません");
 }
 
+// 描画基盤の常在領域。状態機械が置換する #app とは別に、遷移をまたいで存続させる（Issue #8）。
+const stageRoot = document.getElementById("stage");
+if (!stageRoot) {
+  throw new Error("#stage 要素が見つかりません");
+}
+
 // 画面表示領域。状態機械はこの要素の直下に常に1つの画面だけを表示する。
 const screenRoot = document.createElement("div");
 screenRoot.className = "screen-root";
@@ -20,4 +26,4 @@ app.replaceChildren(screenRoot);
 // 状態履歴アクセサ window.__screenHistory の取り付けと削除は統括（src/app）が担う。
 const diagnostics = new URLSearchParams(window.location.search).get("smoke") === "1";
 
-createApp(screenRoot, { diagnostics });
+createApp(screenRoot, { diagnostics, stageRoot });

@@ -25,7 +25,26 @@ body {
   overflow: hidden;
 }
 
+/* 描画基盤の常在領域（Issue #8）。全画面の背面に固定し、深夜の湖を描く canvas を載せる。
+   #app（画面UI）はこの上の層に重ねる。pointer-events: none を明示する理由を先に述べる。背面に全画面で
+   敷くため、将来の重なり順の変更でも操作が canvas に吸われず、前面の画面UIとオーバーレイが必ず入力を受ける。 */
+#stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* three.js が生成する canvas。行内要素の余白を消し、背面領域いっぱいに表示する。入力は受けない。 */
+#stage canvas {
+  display: block;
+  pointer-events: none;
+}
+
 #app {
+  /* 描画領域より上の層に画面UIを重ねる。背景は透過させ、背面の深夜の湖を見せる。 */
+  position: relative;
+  z-index: 1;
   width: 100%;
   /* 可視領域に追従する高さ。モバイルのブラウザバーの開閉で内容が押し出されるのを防ぐ。
      動的ビューポート高に未対応のブラウザ向けに 100vh を先に書き、対応ブラウザは 100dvh を採る。 */

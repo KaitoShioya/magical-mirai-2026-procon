@@ -61,6 +61,10 @@ jobs:
       - name: Run engine-loop smoke test
         # 配信ビルドで診断アクセサが公開され、ゲーム時刻が後退せず超過が生じないことの実ブラウザ補助確認。
         run: BASE=http://127.0.0.1:4173 node scripts/engine-loop-smoke.mjs
+      - name: Run rendering smoke test
+        # 配信ビルドで描画基盤が成立し、クリアカラー適用・画素密度上限・リサイズでの縦横比追従が
+        # 満たされることの実ブラウザ補助確認（Issue #8）。
+        run: BASE=http://127.0.0.1:4173 node scripts/rendering-smoke.mjs
       - name: Show preview log on failure
         if: failure()
         run: cat preview.log || true

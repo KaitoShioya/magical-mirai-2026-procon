@@ -182,6 +182,9 @@ const samples: number[] = [];
 window.__fps = () => fps;
 window.__avgFps = () =>
   samples.length ? samples.reduce((acc, val) => acc + val, 0) / samples.length : 0;
+// 区間ごとの毎秒フレーム数の生標本を複製して返す。品質検査ハーネス（scripts/harness）が
+// 下位パーセンタイル算出のために読む。複製を返すのは、外部から内部配列を書き換えられないようにするため。
+window.__fpsSamples = () => samples.slice();
 window.__resetFps = () => {
   // 計測開始直後に直前区間の値が混じらないよう、標本と区間カウンタを揃えて初期化する。
   samples.length = 0;

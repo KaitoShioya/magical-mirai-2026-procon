@@ -11,6 +11,8 @@ declare global {
     __fps?: () => number;
     /** 平均の毎秒フレーム数を返す */
     __avgFps?: () => number;
+    /** 区間ごとの毎秒フレーム数の生標本を複製して返す（scripts/harness が下位パーセンタイル算出に取得する） */
+    __fpsSamples?: () => readonly number[];
     /** 毎秒フレーム数の標本をリセットする */
     __resetFps?: () => void;
     /**

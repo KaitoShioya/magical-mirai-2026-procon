@@ -23,6 +23,9 @@ docs/idea/video/
 # === 描画性能検証スクリプトのスクリーンショット（実行ごとに再生成される一時生成物） ===
 scripts/proto-*.png
 
+# === 品質検査ハーネスのローカル出力（レポートJSON・撮影。実行ごとに再生成される一時生成物） ===
+scripts/.quality-out/
+
 # === ツール・OS ===
 .serena/cache/
 .DS_Store

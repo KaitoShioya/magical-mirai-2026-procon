@@ -19,20 +19,24 @@ const MEDIA_ELEMENT_ID = "audio-media";
 
 export interface TextAlivePlaybackOptions {
   song: Song;
-  /** TextAlive アプリトークン。空文字なら設定エラーにする。 */
-  token: string;
+  /**
+   * TextAlive アプリトークン。未設定または空文字なら設定エラーにする。
+   * 型を string | undefined にする理由を述べる。トークンはビルド時に vite.config.ts の define で注入され、
+   * 環境変数が無いときは undefined が注入されるため、実行時に undefined となり得る。
+   */
+  token: string | undefined;
 }
 
 /**
  * 実プレイヤーによる再生を作る。
- * トークンが空のときはプレイヤーを生成せず設定エラーにする。理由は、トークンはビルド時に注入されるため
+ * トークンが未設定または空のときはプレイヤーを生成せず設定エラーにする。理由は、トークンはビルド時に注入されるため
  * 実行時の再試行では復旧せず、また API を呼ばないことでライフサイクル由来のエラーを出さないため。
  */
 export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Playback {
   const { song, token } = options;
 
   // ---- トークン未設定: プレイヤーを生成せず設定エラー ----
-  if (token.trim() === "") {
+  if (token === undefined || token.trim() === "") {
     const machine = createLoadStateMachine({
       status: "error",
       kind: "config",

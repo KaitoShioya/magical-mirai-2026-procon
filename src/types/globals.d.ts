@@ -15,6 +15,12 @@ declare global {
     __fpsSamples?: () => readonly number[];
     /** 毎秒フレーム数の標本をリセットする */
     __resetFps?: () => void;
+    /** 下位5パーセンタイルの毎秒フレーム数を返す（kineticText 診断 typography.html が公開する） */
+    __p5Fps?: () => number;
+    /** 定常区間で1フレームの所要時間が33ミリ秒を超えた回数を返す（kineticText 診断が公開する） */
+    __frameDrops?: () => number;
+    /** 初回表示遅延（暖め後の最初の出現要求から最初の描画完了まで、ミリ秒）を返す（kineticText 診断が公開する） */
+    __initLatencyMs?: () => number;
     /**
      * 検証用の状態履歴アクセサ。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
      * 進入した画面状態のキーを進入順に返す。scripts/screens-smoke.mjs が取得する。

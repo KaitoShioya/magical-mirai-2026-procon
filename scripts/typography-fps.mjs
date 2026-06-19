@@ -47,8 +47,13 @@ async function run(browser, options) {
     init: typeof window.__initLatencyMs === "function" ? window.__initLatencyMs() : -1,
   }));
   await captureScreenshot(page, { outDir: OUT_DIR, name: "typography-" + label });
+  const scope = bindFrameRate
+    ? "[判定: 平均と単発落ち。初回遅延は参考]"
+    : bindInitLatency
+      ? "[判定: 初回遅延。平均と単発落ちは参考]"
+      : "[参考]";
   console.log(
-    `[${label}] 描画=${software ? "ソフトウェア" : "GPU"}(${rendererInfo.renderer}) ` +
+    `[${label}] ${scope} 描画=${software ? "ソフトウェア" : "GPU"}(${rendererInfo.renderer}) ` +
       `平均=${metrics.avg} 下位5%=${metrics.p5} 単発落ち=${metrics.drops} 初回遅延=${metrics.init}ms ` +
       `ページ例外=${pageErrors.length}`
   );
@@ -112,4 +117,8 @@ if (failures.length > 0) {
   console.log("不合格:\n" + failures.join("\n"));
   process.exit(1);
 }
-console.log("合格: 実GPUで desktop_real が☆目標（平均55以上・単発落ち5回未満・初回遅延100ミリ秒未満）を満たす");
+console.log(
+  "合格: 実GPU描画で、平均フレーム毎秒と単発フレーム落ちを desktop_real（実測再現・最悪集中区間）で、" +
+    "初回表示遅延を desktop_maxload（連続出現）で判定し、いずれも☆目標" +
+    "（平均55以上・単発落ち5回未満・初回遅延100ミリ秒未満）を満たす"
+);

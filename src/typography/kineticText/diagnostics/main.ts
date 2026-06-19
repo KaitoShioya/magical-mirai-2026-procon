@@ -265,10 +265,10 @@ async function start(): Promise<void> {
   const songEndMs = onsets.length > 0 ? onsets[onsets.length - 1].startTimeMs + RESIDENCE_MS : 1000;
   const schedule: ScheduledSpawn[] = replay ? [...replay.events] : [];
   // 再生開始時刻 START_MS 以降の最初の出現から始める（最悪集中区間を計測に含めるため）。
-  const startIndex = Math.max(
-    0,
-    schedule.findIndex((event) => event.atMs >= START_MS)
-  );
+  // START_MS が全出現より後（範囲外）のときは findIndex が -1 を返すため、先頭（0）から再生する
+  // 明示的な扱いにする（範囲外指定でも未定義の挙動にしない）。
+  const foundIndex = schedule.findIndex((event) => event.atMs >= START_MS);
+  const startIndex = foundIndex >= 0 ? foundIndex : 0;
   let scheduleIndex = startIndex;
   let phraseSpawned = false;
 

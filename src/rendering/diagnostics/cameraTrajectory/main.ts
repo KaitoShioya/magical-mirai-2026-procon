@@ -40,6 +40,10 @@ const trajectory = createCameraTrajectory(PROVISIONAL_TAKEOVER_CAMERA);
 // 表示で起こりうる最小間隔に合わせて連続性を見るため16ミリ秒で掃引する。
 const SWEEP_STEP_MS = 16;
 
+// 掃引の各時刻で評価器の位置・速度を測り、カメラ姿勢を設定する。描画はループ内では呼ばない。
+// 採用理由を先に述べる。状態（カメラ位置・前方向き）は setCameraPose が camera へ反映するため
+// state() から描画なしで読める。連続性の指標は poseAt のみで足りる。全曲長を毎フレーム描画すると
+// 同期処理がメインスレッドを長くブロックし診断ページの読み込みが完了しないため、描画は掃引後に1回だけ行う。
 let maxStepDistance = 0;
 let totalStepDistance = 0;
 let stepCount = 0;
@@ -49,7 +53,6 @@ let previous = trajectory.poseAt(0).position;
 for (let t = 0; t <= TAKEOVER_DURATION_MS; t += SWEEP_STEP_MS) {
   const pose = trajectory.poseAt(t);
   renderRoot.setCameraPose(pose.position, pose.target);
-  renderRoot.render();
   const speed = trajectory.speedAt(t);
   if (speed < minSpeed) {
     minSpeed = speed;

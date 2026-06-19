@@ -44,8 +44,8 @@ jobs:
         run: npm run build:app
         env:
           TEXT_ALIVE_API_TOKEN: ${{ secrets.TEXT_ALIVE_API_TOKEN }}
-      - name: Build verification bundle (three pages)
-        # 既定ビルド。最終的な dist はこの3ページ構成になり、後続の preview の配信対象となる。
+      - name: Build verification bundle (five pages)
+        # 既定ビルド。最終的な dist はこの5ページ構成になり、後続の preview の配信対象となる。
         # この成果物を後続のスモークが配信するため、本番と同じトークンを注入する。
         run: npm run build
         env:
@@ -65,6 +65,10 @@ jobs:
         # 配信ビルドで描画基盤が成立し、クリアカラー適用・画素密度上限・リサイズでの縦横比追従が
         # 満たされることの実ブラウザ補助確認（Issue #8）。
         run: BASE=http://127.0.0.1:4173 node scripts/rendering-smoke.mjs
+      - name: Run camera-trajectory smoke test
+        # 検証ビルドで評価器と描画基盤が結線され、全曲長で滑らかに追従し、setCameraPose の適用拒否がなく、
+        # 終点でカメラ位置と前方向きが評価器と一致することの実ブラウザ補助確認（Issue #13）。
+        run: BASE=http://127.0.0.1:4173 node scripts/camera-trajectory-smoke.mjs
       - name: Quality harness (cloud schema checks only)
         # GPUの無いCIでは描画・撮影・フレーム計測を行わず、登録済みのファイル存在とJSONスキーマ
         # だけを検査する（docs/research/08 の1節）。Issue #95時点は検査の登録が無いため登録0件で合格し、

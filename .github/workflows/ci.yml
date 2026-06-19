@@ -39,11 +39,17 @@ jobs:
         # Issue #3 の受け入れ基準を決定的に保証する単体テスト。
         run: npm run test
       - name: Build production bundle (index.html only)
-        # 本番配信と同じ index.html のみのビルドが通ることを確認する。トークンは無くてもビルドは成立する。
+        # 本番配信と同じ index.html のみのビルドが通ることを確認する。
+        # 本番と同じくトークンを注入し、検証が本番のトークン注入経路と一致するようにする。
         run: npm run build:app
+        env:
+          TEXT_ALIVE_API_TOKEN: ${{ secrets.TEXT_ALIVE_API_TOKEN }}
       - name: Build verification bundle (three pages)
         # 既定ビルド。最終的な dist はこの3ページ構成になり、後続の preview の配信対象となる。
+        # この成果物を後続のスモークが配信するため、本番と同じトークンを注入する。
         run: npm run build
+        env:
+          TEXT_ALIVE_API_TOKEN: ${{ secrets.TEXT_ALIVE_API_TOKEN }}
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Start preview server

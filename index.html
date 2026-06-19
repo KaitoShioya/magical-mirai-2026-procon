@@ -10,6 +10,9 @@
   </head>
   <body>
     <div id="app"></div>
+    <!-- TextAlive の音声配置先。#app の外（兄弟）に置く。理由: 状態機械は #app 配下を遷移ごとに
+         置換するため、#app の内側に置くと起動時に消えて mediaElement 結線が壊れる（Issue #4）。 -->
+    <div id="audio-media" aria-hidden="true"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

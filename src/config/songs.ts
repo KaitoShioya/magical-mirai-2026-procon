@@ -22,6 +22,12 @@ export interface Song {
   /** バージョン番号まで含む完全形の piapro URL */
   songUrl: string;
   video: SongVideo;
+  /**
+   * 遊べる状態まで実装が済んでいれば true。題名画面はこの値で開始可否を分け、
+   * false の曲を「準備中」として無効化する（Issue #5）。6曲すべてが自分の状態を明示するため必須にする。
+   * 現状は縦切りで最初に完成させる TAKEOVER のみ true。
+   */
+  implemented: boolean;
   /** コーラス補正のコメント付きJSONがある場合に true（「こたえて」のみ） */
   hasChorusCorrectionJsonc?: boolean;
 }
@@ -43,6 +49,7 @@ export const SONGS: readonly Song[] = [
       lyricId: 126519,
       lyricDiffId: 28645,
     },
+    implemented: false,
     // コーラス補正: https://developer.textalive.jp/events/magicalmirai2026/6W2N_chorus_timings.jsonc
     hasChorusCorrectionJsonc: true,
   },
@@ -58,6 +65,7 @@ export const SONGS: readonly Song[] = [
       lyricId: 126591,
       lyricDiffId: 28627,
     },
+    implemented: false,
   },
   {
     key: "shutter-chance",
@@ -71,6 +79,7 @@ export const SONGS: readonly Song[] = [
       lyricId: 126542,
       lyricDiffId: 28628,
     },
+    implemented: false,
   },
   {
     key: "sekai-saigo",
@@ -84,6 +93,7 @@ export const SONGS: readonly Song[] = [
       lyricId: 126594,
       lyricDiffId: 28629,
     },
+    implemented: false,
   },
   {
     key: "toritsuku-logy",
@@ -97,6 +107,7 @@ export const SONGS: readonly Song[] = [
       lyricId: 126593,
       lyricDiffId: 28630,
     },
+    implemented: false,
   },
   {
     key: "takeover",
@@ -110,6 +121,7 @@ export const SONGS: readonly Song[] = [
       lyricId: 126533,
       lyricDiffId: 28631,
     },
+    implemented: true,
   },
 ];
 

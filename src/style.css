@@ -27,7 +27,10 @@ body {
 
 #app {
   width: 100%;
-  height: 100%;
+  /* 可視領域に追従する高さ。モバイルのブラウザバーの開閉で内容が押し出されるのを防ぐ。
+     動的ビューポート高に未対応のブラウザ向けに 100vh を先に書き、対応ブラウザは 100dvh を採る。 */
+  height: 100vh;
+  height: 100dvh;
 }
 
 /* 画面表示領域。状態機械はこの直下に常に1つの画面だけを置く。 */
@@ -43,8 +46,13 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 24px;
+  gap: clamp(10px, 2vh, 16px);
+  /* 余白は画面高に応じて詰めつつ、切り欠き・下端の操作領域（safe-area）に内容が隠れないよう避ける。 */
+  padding:
+    max(env(safe-area-inset-top), clamp(12px, 3vh, 24px))
+    max(env(safe-area-inset-right), clamp(12px, 3vw, 24px))
+    max(env(safe-area-inset-bottom), clamp(12px, 3vh, 24px))
+    max(env(safe-area-inset-left), clamp(12px, 3vw, 24px));
   text-align: center;
 }
 
@@ -84,6 +92,88 @@ body {
 .screen__button:hover {
   color: #fff;
   box-shadow: 0 0 16px var(--accent);
+}
+
+/* 題名画面の課題曲一覧（Issue #5）。題名画面だけが使うクラスのため、ここの変更は他画面に波及しない。
+   幅に応じて列数が変わる適応グリッド。縦長の携帯では1列、幅が広いほど2〜3列になり、6曲が少ない行数で
+   可視領域に収まる。min(100%, 14rem) により、極端に狭い幅でも列が100%に縮んで横はみ出しを防ぐ。 */
+.song-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: clamp(8px, 1.6vh, 12px);
+  width: 100%;
+  max-width: 720px;
+}
+
+/* 課題曲1曲ぶんのボタン。曲名と作者名を縦に並べ、片手の親指でも押しやすい高さを保つ。 */
+.song-choice {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 20px;
+}
+
+/* 曲名・作者名は1行に固定し、長い場合は省略表示にする。折り返しでボタン高さが想定外に伸びるのを防ぐ。 */
+.song-choice__title,
+.song-choice__artist {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song-choice__title {
+  font-size: clamp(15px, 2.6vw, 19px);
+  font-weight: 700;
+}
+
+.song-choice__artist {
+  font-size: clamp(11px, 1.8vw, 14px);
+  color: var(--text-dim);
+}
+
+/* 未実装曲の無効ボタン。押せないことが分かるよう淡色にし、カーソルを操作不可にする。 */
+.song-choice[disabled] {
+  color: var(--text-dim);
+  border-color: var(--text-dim);
+  cursor: not-allowed;
+}
+
+.song-choice[disabled]:hover {
+  color: var(--text-dim);
+  box-shadow: none;
+}
+
+/* 「準備中」の補助表示。未実装であることを明示する小さな見出し。 */
+.song-choice__badge {
+  margin-top: 2px;
+  font-size: clamp(10px, 1.6vw, 12px);
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+/* 画面高さが小さい端末（横向きの携帯や低いウィンドウ）では、題名画面の見出し・案内文と間隔を詰めて
+   6曲を可視領域へ収める。閾値を600画素にする理由を先に述べる。横向きの携帯は高さおよそ320〜430画素、
+   小型の縦向き端末は高さおよそ568〜640画素であり、既定の大きさでは収まりにくい高さの上限としてこの値を採る。
+   タイトル画面のセレクタに閉じ、他画面へ波及させない。曲ボタンの最小高さ48画素は維持し、余白だけを縮める。 */
+@media (max-height: 600px) {
+  .screen--title .screen__title {
+    font-size: clamp(16px, 3.4vh, 24px);
+  }
+  .screen--title .screen__text {
+    font-size: clamp(11px, 2vh, 13px);
+  }
+  .screen--title .song-list {
+    gap: 6px;
+  }
+  .screen--title .song-choice {
+    padding: 8px 16px;
+    gap: 2px;
+  }
 }
 
 /* TextAlive の音声配置先。画面に出さないが、再生のため文書には残す（display:none にしない）。 */

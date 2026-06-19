@@ -120,6 +120,18 @@ export function isSongEnded(check: SongEndCheck): boolean {
   return false;
 }
 
+/**
+ * 再生開始の掛け金。一度でも再生中を観測したら真にし、以後は再生中でなくなっても戻さない。
+ * 採用理由を先に述べる。TextAlive の onPlay は「再生中でない状態から再生中へ移る」遷移でのみ発火し、
+ * 既に再生中のときの requestPlay では発火しない。題名操作中の許可確立の再生がプレイ進入まで続くと、
+ * onPlay だけでは再生開始を捉えられないため、実再生状態（isPlaying）からも開始を成立させる。
+ * 加えて、楽曲終了で再生中でなくなっても、楽曲終了の判定が使う「再生が始まったか」は真のまま残す
+ * 必要があるため、一度真にしたら戻さない掛け金とする。
+ */
+export function latchStarted(previous: boolean, isPlaying: boolean): boolean {
+  return previous || isPlaying;
+}
+
 /** 読み込み状態の遷移を司る小さな状態機械の外部契約。 */
 export interface LoadStateMachine {
   /** 現在の状態を返す。 */

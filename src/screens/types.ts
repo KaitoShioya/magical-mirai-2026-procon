@@ -21,12 +21,25 @@ export interface Screen {
 }
 
 /**
+ * 題名画面が一覧表示する課題曲1曲ぶんの表示用情報。
+ * 楽曲ロードの詳細（URL・音楽地図ID）は含めない。統括（src/app）が表示に必要な部分だけを写して渡す。
+ */
+export interface SongChoice {
+  /** アプリ内部で曲を引くためのキー。 */
+  readonly key: string;
+  readonly title: string;
+  readonly artist: string;
+  /** 遊べる状態まで実装が済んでいれば true。題名画面はこの値で開始可否を分ける。 */
+  readonly implemented: boolean;
+}
+
+/**
  * 各画面へ渡す文脈。
  * 画面は遷移先のキーを要求するだけで、他の画面や機械の内部実装を知らない。
  */
 export interface ScreenContext {
-  /** 題名画面が表示する既定曲名。統括（src/app）が解決して渡す。 */
-  songTitle: string;
+  /** 題名画面が一覧表示する課題曲カタログ。統括（src/app）が解決して渡す。 */
+  readonly songs: readonly SongChoice[];
   /** 遷移を要求する。許可遷移表に無い遷移は機械が例外で拒否する。 */
   requestTransition(to: ScreenKey): void;
 }

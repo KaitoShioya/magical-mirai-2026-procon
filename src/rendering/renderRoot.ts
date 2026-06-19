@@ -87,16 +87,27 @@ export function createRenderRoot(container: HTMLElement): RenderRoot {
 
   let renderer: WebGLRenderer | null = null;
   if (isWebGL2Available()) {
+    // 生成と初期化を一時変数で受け、すべて成功してから renderer へ確定する。採用理由を先に述べる。
+    // 初期化の途中（setClearColor・setPixelRatio・setSize・appendChild）で例外が出た場合に、
+    // 生成済みの GPU 資源を明示的に破棄するため、確定前の参照を catch から辿れるようにする
+    // （docs/decisions/architecture.md §3.5 の明示破棄方針）。
+    let created: WebGLRenderer | null = null;
     try {
-      renderer = new WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
-      renderer.setClearColor(NIGHT_COLOR, 1);
-      renderer.setPixelRatio(currentPixelRatio);
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      container.appendChild(renderer.domElement);
+      created = new WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+      created.setClearColor(NIGHT_COLOR, 1);
+      created.setPixelRatio(currentPixelRatio);
+      created.setSize(window.innerWidth, window.innerHeight);
+      container.appendChild(created.domElement);
+      renderer = created;
     } catch (error) {
       // WebGL2 は使えても生成中に別の問題が起きた場合の防御。描画だけ無効化し、アプリ全体は動かす。
-      // console.warn を使う理由は isWebGL2Available の説明と同じ（既存スモークはエラー出力のみ失敗収集する）。
+      // 生成済みなら GPU 資源を破棄し、追加済みの canvas を取り外す（未追加なら remove は無害）。
+      if (created) {
+        created.dispose();
+        created.domElement.remove();
+      }
       renderer = null;
+      // console.warn を使う理由は isWebGL2Available の説明と同じ（既存スモークはエラー出力のみ失敗収集する）。
       console.warn("WebGL の描画文脈の生成中に問題が発生しました。描画を無効化します。", error);
     }
   } else {

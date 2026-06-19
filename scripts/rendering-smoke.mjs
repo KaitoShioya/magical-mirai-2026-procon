@@ -149,11 +149,19 @@ try {
     } else {
       console.log("確認: リサイズで縦横比が追従");
     }
-    const expectedW2 = Math.floor(vp2.w * Math.min(vp2.dpr, MAX_PIXEL_RATIO));
-    if (afterResize.drawingBufferWidth !== expectedW2) {
-      fail(`リサイズ後の描画バッファ幅が ${afterResize.drawingBufferWidth} です（期待: ${expectedW2}）`);
+    const ratio2 = Math.min(vp2.dpr, MAX_PIXEL_RATIO);
+    const expectedW2 = Math.floor(vp2.w * ratio2);
+    const expectedH2 = Math.floor(vp2.h * ratio2);
+    if (
+      afterResize.drawingBufferWidth !== expectedW2 ||
+      afterResize.drawingBufferHeight !== expectedH2
+    ) {
+      fail(
+        `リサイズ後の描画バッファ寸法が ${afterResize.drawingBufferWidth}x${afterResize.drawingBufferHeight} です` +
+          `（期待: ${expectedW2}x${expectedH2}）`
+      );
     } else {
-      console.log("確認: リサイズで描画バッファ幅が追従");
+      console.log("確認: リサイズで描画バッファ寸法が追従");
     }
   }
 

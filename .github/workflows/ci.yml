@@ -65,6 +65,12 @@ jobs:
         # 配信ビルドで描画基盤が成立し、クリアカラー適用・画素密度上限・リサイズでの縦横比追従が
         # 満たされることの実ブラウザ補助確認（Issue #8）。
         run: BASE=http://127.0.0.1:4173 node scripts/rendering-smoke.mjs
+      - name: Quality harness (cloud schema checks only)
+        # GPUの無いCIでは描画・撮影・フレーム計測を行わず、登録済みのファイル存在とJSONスキーマ
+        # だけを検査する（docs/research/08 の1節）。Issue #95時点は検査の登録が無いため登録0件で合格し、
+        # Issue #96 が曲プロファイルの検査を登録した時点で実検査が効く。--mode=cloud で入口はクラウド実行
+        # だけを動的に読み込むため、ブラウザ起動部品（Playwright）の読み込みに到達しない。
+        run: npm run quality:cloud
       - name: Show preview log on failure
         if: failure()
         run: cat preview.log || true

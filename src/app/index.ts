@@ -15,6 +15,7 @@ import {
 import type { ScreenContext, ScreenFactory, ScreenKey } from "../screens";
 import { createFakePlayback, createTextAlivePlayback, type Playback } from "../textalive";
 import { createOverlays } from "./overlay";
+import { createRenderRoot } from "../rendering";
 
 /** 統括の外部契約。後始末のみを公開する。 */
 export interface App {
@@ -34,8 +35,15 @@ const PLAYBACK_START_TIMEOUT_MS = 400;
  * 呼び出し側は別途 start を呼ばない。返り値は後始末用の dispose のみを持つ。
  * options.diagnostics が真のとき、検証用の状態アクセサを取り付け、トークン非依存の擬似再生を用いる。
  */
-export function createApp(root: HTMLElement, options: { diagnostics: boolean }): App {
+export function createApp(
+  root: HTMLElement,
+  options: { diagnostics: boolean; stageRoot: HTMLElement }
+): App {
   const song = findSong(DEFAULT_SONG_KEY);
+
+  // 描画基盤を常在領域へ載せ、起動直後にクリアカラーを適用する（Issue #8）。
+  // 画面UIの背面に深夜の湖を描く。毎フレームの描画は下のループ onFrame で駆動する。
+  const renderRoot = createRenderRoot(options.stageRoot);
 
   // 診断モード（?smoke=1）はトークン非依存の擬似再生、通常はトークンで実プレイヤーを使う。
   const playback: Playback = options.diagnostics
@@ -158,6 +166,8 @@ export function createApp(root: HTMLElement, options: { diagnostics: boolean }):
     onFrame: (realDeltaMs: number): void => {
       machine.update(realDeltaMs);
       tickPlay(realDeltaMs);
+      // 状態の更新後に1フレーム描く。タブ非表示中は loop が onFrame を呼ばないため描画も止まる。
+      renderRoot.render();
     },
     // タブ非表示・ページ退避で楽曲を止め、復帰で再開する（プレイ進行中のみ）。
     // 再開時の3-2-1カウントインは設けない暫定挙動であり、Issue #112 がカウントインへ差し替える。
@@ -178,6 +188,7 @@ export function createApp(root: HTMLElement, options: { diagnostics: boolean }):
   if (options.diagnostics) {
     window.__screenHistory = (): readonly string[] => machine.history();
     window.__engineState = () => loop.state();
+    window.__renderState = () => renderRoot.state();
   }
 
   return {
@@ -187,11 +198,13 @@ export function createApp(root: HTMLElement, options: { diagnostics: boolean }):
       unsubscribe();
       overlays.dispose();
       playback.dispose();
+      renderRoot.dispose();
       // 確定前に破棄された場合に備え、renderOverlays が付けた inert 属性を外す。
       root.removeAttribute("inert");
       if (options.diagnostics) {
         delete window.__screenHistory;
         delete window.__engineState;
+        delete window.__renderState;
       }
     },
   };

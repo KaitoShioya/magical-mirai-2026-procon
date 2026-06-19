@@ -32,5 +32,18 @@ declare global {
       ready: boolean;
       hasClockSample: boolean;
     };
+    /**
+     * 検証用の描画状態アクセサ。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
+     * WebGL生成可否・画素密度倍率・描画バッファ寸法・クリアカラー16進・カメラ縦横比を返す。
+     * scripts/rendering-smoke.mjs が取得する。共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __renderState?: () => {
+      webglAvailable: boolean;
+      pixelRatio: number;
+      drawingBufferWidth: number;
+      drawingBufferHeight: number;
+      clearColorHex: string;
+      cameraAspect: number;
+    };
   }
 }

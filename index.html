@@ -9,6 +9,9 @@
     <title>マジカルミライ2026 プロコン リリックアプリ</title>
   </head>
   <body>
+    <!-- 描画基盤の canvas を常在させる領域（Issue #8）。#app の背面に固定配置し、全画面の背景として
+         深夜の湖の世界を描く。後続の反射・発光点・カメラ軌跡・層合成はこの領域に積み上げる。 -->
+    <div id="stage" aria-hidden="true"></div>
     <div id="app"></div>
     <!-- TextAlive の音声配置先。#app の外（兄弟）に置く。理由: 状態機械は #app 配下を遷移ごとに
          置換するため、#app の内側に置くと起動時に消えて mediaElement 結線が壊れる（Issue #4）。 -->

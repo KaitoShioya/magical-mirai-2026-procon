@@ -2,7 +2,8 @@
 // 状態を読んで描く「ビュー」であり、判定・得点・時刻の論理を持たない（依存規則 docs/decisions/architecture.md §5）。
 // profiles・tools は import しない。後続の反射(#9)・発光点(#10)・層合成(#15)はこの土台へ積み上げる。
 
-import { Color, FogExp2, PerspectiveCamera, Scene, Vector2, WebGLRenderer } from "three";
+import { Color, FogExp2, PerspectiveCamera, Scene, Vector2, Vector3, WebGLRenderer } from "three";
+import type { Vec3Like } from "../utils/cameraTrajectory";
 import {
   CAMERA_FAR,
   CAMERA_FOV,
@@ -27,6 +28,12 @@ export interface RenderState {
   clearColorHex: string;
   /** 透視投影カメラの縦横比。 */
   cameraAspect: number;
+  /** 現在のカメラ位置（setCameraPose 適用後）。診断・検証で読む。 */
+  cameraPosition: { x: number; y: number; z: number };
+  /** 現在のカメラの前方向き（単位ベクトル）。lookAt の適用を診断・検証で確かめる。 */
+  cameraDirection: { x: number; y: number; z: number };
+  /** setCameraPose が適用を拒否した累積回数（位置と注視点が同一・非有限値）。無音の不具合を診断・検証で検出する。 */
+  cameraPoseRejectedCount: number;
 }
 
 /** 描画基盤の外部契約。 */
@@ -35,6 +42,10 @@ export interface RenderRoot {
   render(): void;
   /** 表示寸法の変更を反映する（カメラ縦横比とレンダラ寸法・画素密度）。 */
   resize(width: number, height: number): void;
+  /** カメラの位置と注視点（ワールド座標）を設定する。適用できたら true、位置と注視点が同一または
+   *  非有限値で適用しなかったら false を返す。演出カメラ軌跡（#13）が毎フレーム駆動する。戻り値で
+   *  下流（#59）が適用失敗を検知でき、無音の不具合を避ける。WebGL無効時もカメラ物体は存在するため反映する。 */
+  setCameraPose(position: Vec3Like, target: Vec3Like): boolean;
   /** 診断・検証用の現在状態を返す。 */
   state(): RenderState;
   /** 後始末。リサイズ待ち受けの解除・GPU資源の解放・canvas の取り外しを行う。冪等。 */
@@ -138,6 +149,29 @@ export function createRenderRoot(container: HTMLElement): RenderRoot {
   }
   window.addEventListener("resize", handleResize);
 
+  // setCameraPose が適用を拒否した累積回数。診断・検証で無音の不具合を検出するために数える。
+  let cameraPoseRejectedCount = 0;
+
+  // 防御的処理の理由を先に述べる。位置と注視点が同一、または非有限値だと lookAt の向きが定まらず
+  // カメラ姿勢が壊れる。いずれの場合も姿勢を変更せず（前フレームの姿勢を保ち）、拒否を数えて false を返す。
+  function isFiniteVec(v: Vec3Like): boolean {
+    return Number.isFinite(v.x) && Number.isFinite(v.y) && Number.isFinite(v.z);
+  }
+
+  function setCameraPose(position: Vec3Like, target: Vec3Like): boolean {
+    if (
+      !isFiniteVec(position) ||
+      !isFiniteVec(target) ||
+      (position.x === target.x && position.y === target.y && position.z === target.z)
+    ) {
+      cameraPoseRejectedCount += 1;
+      return false;
+    }
+    camera.position.set(position.x, position.y, position.z);
+    camera.lookAt(target.x, target.y, target.z);
+    return true;
+  }
+
   function render(): void {
     if (!renderer || disposed) {
       return;
@@ -150,6 +184,7 @@ export function createRenderRoot(container: HTMLElement): RenderRoot {
 
   return {
     render,
+    setCameraPose,
     resize,
     state(): RenderState {
       // 採用理由を先に述べる。three.js の色管理は16進数をsRGBとして取り込み、getHexString(sRGB既定)で
@@ -162,6 +197,7 @@ export function createRenderRoot(container: HTMLElement): RenderRoot {
       // setSize は表示寸法×画素密度倍率を Math.floor して描画バッファへ設定するため、その確定値を
       // 公式関数から読むのが内部実装の変更に最も強い。
       const bufferSize = renderer ? renderer.getDrawingBufferSize(new Vector2()) : null;
+      const direction = camera.getWorldDirection(new Vector3());
       return {
         webglAvailable: renderer !== null,
         pixelRatio: renderer ? renderer.getPixelRatio() : 0,
@@ -169,6 +205,9 @@ export function createRenderRoot(container: HTMLElement): RenderRoot {
         drawingBufferHeight: bufferSize ? bufferSize.y : 0,
         clearColorHex,
         cameraAspect: camera.aspect,
+        cameraPosition: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+        cameraDirection: { x: direction.x, y: direction.y, z: direction.z },
+        cameraPoseRejectedCount,
       };
     },
     dispose(): void {

@@ -3,10 +3,26 @@ import {
   createReadyGatedTimeSource,
   isSongEnded,
   createLoadStateMachine,
+  latchStarted,
   SONG_END_MARGIN_MS,
   SONG_END_STOP_TOLERANCE_MS,
   type PlaybackState,
 } from "./playback";
+
+describe("latchStarted", () => {
+  it("一度再生中を観測したら真になり、以後再生中でなくなっても真のまま", () => {
+    let started = false;
+    // まだ再生中を観測していないので偽のまま。
+    started = latchStarted(started, false);
+    expect(started).toBe(false);
+    // 再生中を観測したら真になる（onPlay が発火しない「既に再生中」でも掛け金が立つ）。
+    started = latchStarted(started, true);
+    expect(started).toBe(true);
+    // 楽曲終了で再生中でなくなっても、再生が始まったかの判定のため真のまま残す。
+    started = latchStarted(started, false);
+    expect(started).toBe(true);
+  });
+});
 
 describe("createReadyGatedTimeSource", () => {
   it("確定判定を差し込み、再生位置と再生中を読み取り口へ委譲する", () => {

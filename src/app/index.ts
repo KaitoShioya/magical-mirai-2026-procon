@@ -2,7 +2,7 @@
 // TextAlive の再生（src/textalive）を時間源として engine へ供給し、楽曲ロード失敗の導線（src/app/overlay）と
 // 楽曲終了によるプレイ→結果遷移、タブ離脱時の楽曲停止・再開を結ぶ（Issue #4）。
 
-import { DEFAULT_SONG_KEY, findSong } from "../config/songs";
+import { DEFAULT_SONG_KEY, findSong, SONGS } from "../config/songs";
 import { createClock, createLoop, createScheduler, createWorld } from "../engine";
 import {
   createPlayScreen,
@@ -72,17 +72,26 @@ export function createApp(root: HTMLElement, options: { diagnostics: boolean }):
   // 再生開始の成立を待つ累積時間と、「触れて再生」表示中かどうか。
   let playStartElapsedMs = 0;
   let tapToPlayShown = false;
+  // このプレイ進行中に「触れて再生」を一度でも触れたか。一度触れたら、このプレイ中は二度と出さない。
+  let tapToPlayAcknowledged = false;
 
   function enterPlay(): void {
     inPlayPhase = true;
     playStartElapsedMs = 0;
     tapToPlayShown = false;
+    tapToPlayAcknowledged = false;
     overlays.hideTapToPlay();
     playback.beginFromStart();
   }
 
   const context: ScreenContext = {
-    songTitle: song.title,
+    // 題名画面の一覧表示に必要な部分だけを写す。楽曲ロードの詳細（URL・音楽地図ID）は画面層へ渡さない。
+    songs: SONGS.map((entry) => ({
+      key: entry.key,
+      title: entry.title,
+      artist: entry.artist,
+      implemented: entry.implemented,
+    })),
     requestTransition: (to: ScreenKey): void => {
       // 「はじめる」の操作の最中（題名→ウォームアップ）に音声再生の許可を最善努力で確立する。
       if (to === "warmup") {
@@ -103,12 +112,24 @@ export function createApp(root: HTMLElement, options: { diagnostics: boolean }):
     if (!inPlayPhase) {
       return;
     }
-    // 再生開始の成立確認。一定時間内に始まらなければ「触れて再生」表示を出す。
+    // 再生開始の成立確認。一定時間内に始まらなければ「触れて再生」表示を一度だけ出す。
     if (!playback.hasStarted()) {
       playStartElapsedMs += realDeltaMs;
-      if (playStartElapsedMs >= PLAYBACK_START_TIMEOUT_MS && !tapToPlayShown) {
+      if (
+        playStartElapsedMs >= PLAYBACK_START_TIMEOUT_MS &&
+        !tapToPlayShown &&
+        !tapToPlayAcknowledged
+      ) {
         tapToPlayShown = true;
-        overlays.showTapToPlay(() => playback.play());
+        overlays.showTapToPlay(() => {
+          // 触れた時点で表示を即座に消し、このプレイ中は二度と出さない（一度触れたら再表示しない）。
+          // 表示中の状態も偽へ戻して、表示が消えているのに表示中が真のまま残る食い違いを避ける。
+          // 再生開始の成否に依らず再表示しないため、押下後のちらつきと繰り返し表示が起きない。
+          overlays.hideTapToPlay();
+          tapToPlayShown = false;
+          tapToPlayAcknowledged = true;
+          playback.play();
+        });
       }
     } else if (tapToPlayShown) {
       tapToPlayShown = false;

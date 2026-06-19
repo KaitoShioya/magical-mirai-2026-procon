@@ -88,6 +88,35 @@ try {
   await waitForScreen(page, "title");
   await assertScreen(page, "title");
 
+  // 1.5 曲選択UIの確認（Issue #5）。実装済み曲だけが開始でき、未実装曲は無効化されている。
+  //     実装済みは TAKEOVER の1曲のみのため、開始ボタンはちょうど1個（data-song-key="takeover"）、
+  //     準備中の無効ボタンが5個あることを機械的に確認する。
+  const songSelection = await page.evaluate(() => {
+    const root = document.querySelector('[data-screen="title"]');
+    const startButtons = Array.from(root.querySelectorAll('[data-action="start"]'));
+    const comingSoon = Array.from(root.querySelectorAll('[data-coming-soon="true"]'));
+    return {
+      startCount: startButtons.length,
+      startSongKey: startButtons.length === 1 ? startButtons[0].getAttribute("data-song-key") : null,
+      comingSoonCount: comingSoon.length,
+      comingSoonAllDisabled: comingSoon.every((element) => element.disabled === true),
+    };
+  });
+  if (songSelection.startCount !== 1) {
+    fail(`開始できる曲が ${songSelection.startCount} 個です（期待: 1個）`);
+  } else if (songSelection.startSongKey !== "takeover") {
+    fail(`開始できる曲が "${songSelection.startSongKey}" です（期待: "takeover"）`);
+  } else {
+    console.log("確認: 開始できる曲は TAKEOVER の1曲だけ");
+  }
+  if (songSelection.comingSoonCount !== 5) {
+    fail(`準備中の曲が ${songSelection.comingSoonCount} 個です（期待: 5個）`);
+  } else if (!songSelection.comingSoonAllDisabled) {
+    fail("準備中の曲に無効化されていないものがあります");
+  } else {
+    console.log("確認: 準備中の曲は5個ですべて無効");
+  }
+
   // 2. 「はじめる」でウォームアップへ。
   await page.click('[data-action="start"]');
   await waitForScreen(page, "warmup");

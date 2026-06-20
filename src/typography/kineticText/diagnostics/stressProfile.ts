@@ -114,7 +114,8 @@ export function buildRealReplayProfile(
 
 /**
  * 最大負荷プロファイル。単一文字層を同時上限まで同時刻で出し、一括文字層は上限文字数のフレーズにする。
- * 合否には使わず、余力確認のみに使う。
+ * 初回表示遅延の余力確認に使うほか、一括層・群正対の同期費用（毎フレームのメンバ位置再計算）の
+ * 合否判定にも使う（フレーズを群正対で出す。平均フレーム率と単発フレーム落ちは参考扱い）。
  */
 export function buildMaxLoadProfile(options: {
   singleLimit: number;

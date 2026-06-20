@@ -30,6 +30,18 @@ declare global {
      * 0でない場合、計測した負荷が意図した同時数を代表しない（scripts/typography-instances-fps.mjs が取得する）。
      */
     __animNoopCount?: () => number;
+    /** 文字エンジンの同期的主スレッド費用（出現時の sync 発火＋向き更新）の1フレーム最大値（ミリ秒）。kineticText 診断が公開する。 */
+    __textSyncCostMaxMs?: () => number;
+    /** 同上の上位5パーセンタイル（ミリ秒）。 */
+    __textSyncCostP95Ms?: () => number;
+    /** 同上の上位1パーセンタイル（ミリ秒）。 */
+    __textSyncCostP99Ms?: () => number;
+    /** 同上が1ミリ秒を超えたフレーム数。 */
+    __textSyncCostOverCount?: () => number;
+    /** 同期費用を計測した総フレーム数。 */
+    __textSyncCostFrames?: () => number;
+    /** 参考値: 描画（composer.render）の1フレーム最大所要時間（ミリ秒）。後処理を含むためゲート対象外。 */
+    __renderCostMaxMs?: () => number;
     /**
      * 検証用の状態履歴アクセサ。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
      * 進入した画面状態のキーを進入順に返す。scripts/screens-smoke.mjs が取得する。

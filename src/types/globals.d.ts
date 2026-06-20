@@ -53,5 +53,15 @@ declare global {
       clearColorHex: string;
       cameraAspect: number;
     };
+    /**
+     * 検証用の発光点診断アクセサ。発光点診断ページ（rendering.html）だけが取り付ける。
+     * 発光点のみのシーンを1フレーム描いた直後の描画命令の回数（drawCalls）と三角形の数（triangles）を
+     * 同一スナップショットで返す。scripts/rendering-glow-smoke.mjs が取得する。
+     * 共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __glowState?: () => {
+      drawCalls: number;
+      triangles: number;
+    };
   }
 }

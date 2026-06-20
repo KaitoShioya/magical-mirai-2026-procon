@@ -44,9 +44,9 @@ jobs:
         run: npm run build:app
         env:
           TEXT_ALIVE_API_TOKEN: ${{ secrets.TEXT_ALIVE_API_TOKEN }}
-      - name: Build verification bundle (three pages)
-        # 既定ビルド。最終的な dist はこの3ページ構成になり、後続の preview の配信対象となる。
-        # この成果物を後続のスモークが配信するため、本番と同じトークンを注入する。
+      - name: Build verification bundle (all pages)
+        # 既定ビルド。最終的な dist は本体に加え解析・性能・文字診断・発光点診断の各ページを含み、
+        # 後続の preview の配信対象となる。この成果物を後続のスモークが配信するため、本番と同じトークンを注入する。
         run: npm run build
         env:
           TEXT_ALIVE_API_TOKEN: ${{ secrets.TEXT_ALIVE_API_TOKEN }}
@@ -65,6 +65,10 @@ jobs:
         # 配信ビルドで描画基盤が成立し、クリアカラー適用・画素密度上限・リサイズでの縦横比追従が
         # 満たされることの実ブラウザ補助確認（Issue #8）。
         run: BASE=http://127.0.0.1:4173 node scripts/rendering-smoke.mjs
+      - name: Run glow-points smoke test
+        # 発光点（Issue #10）の受け入れ基準「300個で描画命令が5未満」の実機検証。描画命令の回数は
+        # three.js が JavaScript 側で計数するため、GPUの無いソフトウェア描画でも正確に得られる。
+        run: BASE=http://127.0.0.1:4173 npm run smoke:glow
       - name: Quality harness (cloud schema checks only)
         # GPUの無いCIでは描画・撮影・フレーム計測を行わず、登録済みのファイル存在とJSONスキーマ
         # だけを検査する（docs/research/08 の1節）。Issue #95時点は検査の登録が無いため登録0件で合格し、

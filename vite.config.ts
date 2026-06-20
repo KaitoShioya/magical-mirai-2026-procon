@@ -17,8 +17,9 @@ export default defineConfig(({ mode }) => {
 
   const deployAppOnly = mode === "app";
 
-  // 本番（--mode app）は本体のみ。開発検証用は本体＋開発ツール3ページ。
-  // typography.html は kineticText エンジンの受け入れ診断（性能計測）の入口で、本番では配信しない。
+  // 本番（--mode app）は本体のみ。開発検証用は本体＋開発ツール4ページ。
+  // typography.html は kineticText エンジンの受け入れ診断（性能計測）、rain.html は雨パーティクルの
+  // 単独診断の入口で、いずれも本番では配信しない。
   const input: Record<string, string> = deployAppOnly
     ? { main: "index.html" }
     : {
@@ -26,6 +27,7 @@ export default defineConfig(({ mode }) => {
         analysis: "analysis.html",
         prototype: "prototype.html",
         typography: "typography.html",
+        rain: "rain.html",
       };
 
   return {

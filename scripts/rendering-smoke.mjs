@@ -13,6 +13,11 @@ const MAX_PIXEL_RATIO = 2;
 // 縦横比は浮動小数の比のため、わずかな丸めを許す閾値を設ける。表示寸法は整数画素で比は有理数だが、
 // スクロールバー等で内寸が1画素ずれても比の差は0.01未満に収まるため、この値を一致判定の閾値とする。
 const ASPECT_TOLERANCE = 0.01;
+// 2次元層（Issue #15）の視錐台の一致判定の閾値。視錐台は浮動小数で計算されるため厳密一致でなく、差の絶対値が
+// この値以下を一致とみなす。視錐台の左右は診断状態のカメラ縦横比と同一の計算（computeAspect）から導くため、
+// 端末ごとの誤差ではなく演算誤差だけを吸収すればよい。1e-6 は単精度・倍精度の演算誤差を吸収しつつ規約からの
+// 逸脱を検出できる十分小さな値として採る。
+const FRUSTUM_TOLERANCE = 1e-6;
 // ブルーム後処理（Issue #11）の期待値。src/rendering/constants.ts の定数と一致させる。
 // ブルーム入力解像度の倍率0.5は、表示寸法（CSS画素）×倍率を切り捨て下限1にした値が診断状態へ出る。
 // 算出式の正本は src/rendering/viewport.ts の computeBloomResolution であり、ここはそれを写した照合を行う
@@ -159,6 +164,35 @@ try {
         );
       } else {
         console.log("確認: ブルーム入力解像度が表示寸法の半分");
+      }
+    }
+
+    // 2次元層（Issue #15）。本番の描画基盤が2次元層を組み込み、正射影カメラの視錐台が座標規約どおりで
+    // あることを確認する。視錐台の上下は +1 と -1、左右は符号反転で絶対値がカメラ縦横比に一致する。
+    if (!state.overlay) {
+      fail("診断状態に overlay がありません（2次元層が組み込まれていません）");
+    } else {
+      if (
+        Math.abs(state.overlay.frustumTop - 1) > FRUSTUM_TOLERANCE ||
+        Math.abs(state.overlay.frustumBottom - -1) > FRUSTUM_TOLERANCE
+      ) {
+        fail(
+          `2次元層の視錐台の上下が ${state.overlay.frustumTop}/${state.overlay.frustumBottom} です` +
+            "（期待: 1/-1）"
+        );
+      } else {
+        console.log("確認: 2次元層の視錐台の上下が +1 と -1");
+      }
+      if (
+        Math.abs(state.overlay.frustumRight - state.cameraAspect) > FRUSTUM_TOLERANCE ||
+        Math.abs(state.overlay.frustumLeft - -state.cameraAspect) > FRUSTUM_TOLERANCE
+      ) {
+        fail(
+          `2次元層の視錐台の左右が ${state.overlay.frustumLeft}/${state.overlay.frustumRight} です` +
+            `（期待: ${-state.cameraAspect}/${state.cameraAspect}）`
+        );
+      } else {
+        console.log("確認: 2次元層の視錐台の左右が±縦横比");
       }
     }
   }

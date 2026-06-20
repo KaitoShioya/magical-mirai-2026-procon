@@ -41,6 +41,7 @@ function createRecordingHandle(): { handle: GlyphHandle; record: HandleRecord } 
     setOpacity: (opacity): void => {
       record.opacities.push(opacity);
     },
+    setOrientation: (): void => {},
     release: (): void => {
       record.releaseCount += 1;
     },

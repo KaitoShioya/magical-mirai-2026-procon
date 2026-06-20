@@ -21,8 +21,8 @@ export default defineConfig(({ mode }) => {
   // 本番（--mode app）は本体のみ。開発検証用は本体＋開発ツール・診断ページ。
   // typography.html は kineticText エンジンの受け入れ診断（性能計測）、rain.html は雨パーティクルの
   // 単独診断、camera-trajectory.html はカメラ軌跡システムの受け入れ診断、rendering.html は発光点（#10）の
-  // 描画命令数の受け入れ診断、input.html は入力アーキテクチャ（#47）の受け入れ診断の入口で、
-  // いずれも本番では配信しない。
+  // 描画命令数の受け入れ診断、input.html は入力アーキテクチャ（#47）の受け入れ診断、layer-composite.html は
+  // 描画層合成（#15）の受け入れ診断の入口で、いずれも本番では配信しない。
   const input: Record<string, string> = deployAppOnly
     ? { main: "index.html" }
     : {
@@ -34,6 +34,7 @@ export default defineConfig(({ mode }) => {
         cameraTrajectory: "camera-trajectory.html",
         rendering: "rendering.html",
         input: "input.html",
+        layerComposite: "layer-composite.html",
       };
 
   return {

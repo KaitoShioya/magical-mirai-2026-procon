@@ -23,11 +23,22 @@ const PEAK_START_MS = 58000;
 const AVG_FPS_MIN = 55;
 const SINGLE_FRAME_DROP_MAX_EXCLUSIVE = 5;
 const INIT_LATENCY_MAX_MS = 100;
+// 同期発火・向き更新の主スレッド費用の上限（ミリ秒）。1フレーム予算 1000÷60=16.67ミリ秒の約6%。
+// Issue本文の「配置確定(sync)<1ms/frame」の同期的部分をこの上限で判定する。
+// 判定は上位1パーセンタイル（p99）で行う。理由: 単発のごみ集め停止は1%未満の頻度で生じる一時的外れ値で、
+// フレーム落ち（33ミリ秒超）を起こさず16.67ミリ秒の予算を脅かさないため、定常の毎フレーム費用が
+// 予算内かはp99が頑健に表す。最大値と1ミリ秒超過数は透明性のため併記し、外れ値を隠さない。
+const SYNC_COST_MS_EXCLUSIVE = 1;
+// 同期費用の判定に必要な最低フレーム数。理由: 計測窓は約12秒で、毎秒10フレームの低速環境でも
+// 120フレームは記録される。これを下回るのは計測が定常区間を取れなかった退化状態であり、
+// p99 が0で素通りする事故を防ぐため、100フレーム未満は不合格とする。
+const MIN_SYNC_FRAMES = 100;
 
 const failures = [];
 
 async function run(browser, options) {
-  const { label, query, viewport, deviceScaleFactor, bindFrameRate, bindInitLatency } = options;
+  const { label, query, viewport, deviceScaleFactor, bindFrameRate, bindInitLatency, bindSyncCost } =
+    options;
   const { page, pageErrors } = await openPage(browser, {
     url: `${BASE}/typography.html?${query}`,
     viewport,
@@ -45,16 +56,26 @@ async function run(browser, options) {
     p5: typeof window.__p5Fps === "function" ? window.__p5Fps() : -1,
     drops: typeof window.__frameDrops === "function" ? window.__frameDrops() : -1,
     init: typeof window.__initLatencyMs === "function" ? window.__initLatencyMs() : -1,
+    syncMax: typeof window.__textSyncCostMaxMs === "function" ? window.__textSyncCostMaxMs() : -1,
+    syncP95: typeof window.__textSyncCostP95Ms === "function" ? window.__textSyncCostP95Ms() : -1,
+    syncP99: typeof window.__textSyncCostP99Ms === "function" ? window.__textSyncCostP99Ms() : -1,
+    syncOver:
+      typeof window.__textSyncCostOverCount === "function" ? window.__textSyncCostOverCount() : -1,
+    syncFrames:
+      typeof window.__textSyncCostFrames === "function" ? window.__textSyncCostFrames() : -1,
+    renderMax: typeof window.__renderCostMaxMs === "function" ? window.__renderCostMaxMs() : -1,
   }));
   await captureScreenshot(page, { outDir: OUT_DIR, name: "typography-" + label });
-  const scope = bindFrameRate
-    ? "[判定: 平均と単発落ち。初回遅延は参考]"
-    : bindInitLatency
-      ? "[判定: 初回遅延。平均と単発落ちは参考]"
-      : "[参考]";
+  const judged = [];
+  if (bindFrameRate) judged.push("平均", "単発落ち");
+  if (bindInitLatency) judged.push("初回遅延");
+  if (bindSyncCost) judged.push("同期費用");
+  const scope = judged.length > 0 ? `[判定: ${judged.join("・")}。他は参考]` : "[参考]";
   console.log(
     `[${label}] ${scope} 描画=${software ? "ソフトウェア" : "GPU"}(${rendererInfo.renderer}) ` +
       `平均=${metrics.avg} 下位5%=${metrics.p5} 単発落ち=${metrics.drops} 初回遅延=${metrics.init}ms ` +
+      `同期費用 max=${metrics.syncMax}ms p95=${metrics.syncP95}ms p99=${metrics.syncP99}ms ` +
+      `超過=${metrics.syncOver}/${metrics.syncFrames} 描画max(参考)=${metrics.renderMax}ms ` +
       `ページ例外=${pageErrors.length}`
   );
   if ((bindFrameRate || bindInitLatency) && software) {
@@ -73,23 +94,38 @@ async function run(browser, options) {
       failures.push(`${label}: 初回遅延${metrics.init}msが${INIT_LATENCY_MAX_MS}ms未満でない`);
     }
   }
+  if (bindSyncCost) {
+    if (metrics.syncFrames < MIN_SYNC_FRAMES) {
+      failures.push(
+        `${label}: 同期費用の標本が${metrics.syncFrames}フレームで${MIN_SYNC_FRAMES}未満（計測が定常区間を取れていない）`
+      );
+    } else if (metrics.syncP99 < 0 || metrics.syncP99 >= SYNC_COST_MS_EXCLUSIVE) {
+      failures.push(
+        `${label}: 同期費用 p99=${metrics.syncP99}msが${SYNC_COST_MS_EXCLUSIVE}ms未満でない` +
+          `（max=${metrics.syncMax}ms p95=${metrics.syncP95}ms 超過=${metrics.syncOver}/${metrics.syncFrames}）`
+      );
+    }
+  }
   if (pageErrors.length > 0) {
     failures.push(`${label}: ページ例外 ${pageErrors.join(" / ")}`);
   }
   await page.context().close();
+  return metrics;
 }
 
 const { browser, meta } = await launchGpuBrowser({});
 console.log(`起動: channel=${meta.channel} angle=${meta.angle} browser=${meta.browserVersion}`);
 
 // 平均フレーム毎秒と単発フレーム落ちの合否対象（実測再現・デスクトップ・最悪集中区間）。
-await run(browser, {
+// 変形なしの平均は、変形ありとの差分（頂点変形の追加負荷）を見る参考の基準にも使う。
+const realMetrics = await run(browser, {
   label: "desktop_real",
   query: `profile=real&start=${PEAK_START_MS}`,
   viewport: { width: 1280, height: 720 },
   deviceScaleFactor: 1,
   bindFrameRate: true,
   bindInitLatency: false,
+  bindSyncCost: true,
 });
 // 参考（モバイル相当の解像度と画素密度上限2）。
 await run(browser, {
@@ -102,6 +138,8 @@ await run(browser, {
 });
 // 初回表示遅延の合否対象（最大負荷＝出現が連続しワーカーが稼働する、実プレイの密な歌詞区間に相当する条件）。
 // 余力確認も兼ねる。理由は前述（孤立した単発出現は troika のバッチ挙動で代表性を欠くため）。
+// 最大負荷では一括層のフレーズを群正対で出すため、同期費用もここで合否対象に含める
+// （単一層は desktop_real、一括層・群正対は desktop_maxload で守る）。
 await run(browser, {
   label: "desktop_maxload",
   query: "profile=maxload",
@@ -109,7 +147,44 @@ await run(browser, {
   deviceScaleFactor: 1,
   bindFrameRate: false,
   bindInitLatency: true,
+  bindSyncCost: true,
 });
+
+// 全文一括変形（渦・波打ち）の平均フレーム毎秒と単発フレーム落ちの合否対象（最悪集中区間）。
+const deformMetrics = await run(browser, {
+  label: "desktop_deform",
+  query: `profile=deform&start=${PEAK_START_MS}`,
+  viewport: { width: 1280, height: 720 },
+  deviceScaleFactor: 1,
+  bindFrameRate: true,
+  bindInitLatency: false,
+});
+// 全文一括変形の参考（モバイル相当の解像度と画素密度）。スマートフォン主軸の想定に対する参考値。
+await run(browser, {
+  label: "mobile_deform",
+  query: `profile=deform&start=${PEAK_START_MS}`,
+  viewport: { width: 390, height: 844 },
+  deviceScaleFactor: 3,
+  bindFrameRate: false,
+  bindInitLatency: false,
+});
+// 全文一括変形の初回表示遅延の合否対象（先行暖機の後に最初の変形単位を出した表示完了までを測る）。
+await run(browser, {
+  label: "desktop_deform_initlatency",
+  query: "profile=deform",
+  viewport: { width: 1280, height: 720 },
+  deviceScaleFactor: 1,
+  bindFrameRate: false,
+  bindInitLatency: true,
+});
+
+// 頂点変形の追加負荷の参考表示（変形あり desktop_deform と 変形なし desktop_real の平均の差）。
+// 差分の硬い閾値は測定の揺らぎと区別できる根拠が無いため設けない（参考表示のみ）。
+const avgDiff = realMetrics.avg - deformMetrics.avg;
+console.log(
+  `[参考] 頂点変形の追加負荷: 変形なし平均=${realMetrics.avg} 変形あり平均=${deformMetrics.avg} ` +
+    `差=${avgDiff}（正なら変形ありが低い）`
+);
 
 await closeBrowser(browser);
 
@@ -118,7 +193,8 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  "合格: 実GPU描画で、平均フレーム毎秒と単発フレーム落ちを desktop_real（実測再現・最悪集中区間）で、" +
-    "初回表示遅延を desktop_maxload（連続出現）で判定し、いずれも☆目標" +
-    "（平均55以上・単発落ち5回未満・初回遅延100ミリ秒未満）を満たす"
+  "合格: 実GPU描画で、平均フレーム毎秒と単発フレーム落ちを desktop_real（実測再現）と desktop_deform" +
+    "（全文一括変形）の最悪集中区間で、初回表示遅延を desktop_maxload と desktop_deform_initlatency（連続出現）で、" +
+    "同期費用(p99)を desktop_real（単一層）と desktop_maxload（一括層と群正対）で判定し、いずれも☆目標" +
+    "（平均55以上・単発落ち5回未満・初回遅延100ミリ秒未満・同期費用p99 1ミリ秒未満）を満たす"
 );

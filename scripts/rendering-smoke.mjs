@@ -13,6 +13,14 @@ const MAX_PIXEL_RATIO = 2;
 // 縦横比は浮動小数の比のため、わずかな丸めを許す閾値を設ける。表示寸法は整数画素で比は有理数だが、
 // スクロールバー等で内寸が1画素ずれても比の差は0.01未満に収まるため、この値を一致判定の閾値とする。
 const ASPECT_TOLERANCE = 0.01;
+// ブルーム後処理（Issue #11）の期待値。src/rendering/constants.ts の定数と一致させる。
+// ブルーム入力解像度の倍率0.5は、表示寸法（CSS画素）×倍率を切り捨て下限1にした値が診断状態へ出る。
+// 算出式の正本は src/rendering/viewport.ts の computeBloomResolution であり、ここはそれを写した照合を行う
+// （本スクリプトは既に描画バッファ寸法を表示寸法×画素密度倍率の切り捨てで照合しており、同じ方式に合わせる）。
+const BLOOM_RESOLUTION_SCALE = 0.5;
+const EXPECTED_BLOOM_STRENGTH = 1.2;
+const EXPECTED_BLOOM_RADIUS = 0.6;
+const EXPECTED_BLOOM_THRESHOLD = 0.5;
 
 const errors = [];
 let failed = false;
@@ -103,6 +111,55 @@ try {
       fail(`カメラ縦横比が ${state.cameraAspect} です（期待: ${expectedAspect}）`);
     } else {
       console.log("確認: カメラ縦横比が表示寸法に一致");
+    }
+
+    // ブルーム後処理（Issue #11）。既定で有効・3パラメータが既定値・最終出力パスが有効・入力解像度が
+    // 表示寸法の半分であることを確認する。
+    // 入力解像度の期待値計算に使う vp.w・vp.h は readViewport が返す window.innerWidth・window.innerHeight
+    // （CSS画素）であり、本体がブルーム入力解像度の基準に用いる表示寸法と同じ単位のため、単位の食い違いなく
+    // 照合が成立する。
+    if (!state.bloom) {
+      fail("診断状態に bloom がありません");
+    } else {
+      if (state.bloom.enabled !== true) {
+        fail(`既定でブルームが有効ではありません（enabled=${state.bloom.enabled}）`);
+      } else {
+        console.log("確認: 既定でブルームが有効");
+      }
+
+      if (
+        state.bloom.strength !== EXPECTED_BLOOM_STRENGTH ||
+        state.bloom.radius !== EXPECTED_BLOOM_RADIUS ||
+        state.bloom.threshold !== EXPECTED_BLOOM_THRESHOLD
+      ) {
+        fail(
+          `ブルームのパラメータが strength=${state.bloom.strength} radius=${state.bloom.radius} ` +
+            `threshold=${state.bloom.threshold} です（期待: ${EXPECTED_BLOOM_STRENGTH}/` +
+            `${EXPECTED_BLOOM_RADIUS}/${EXPECTED_BLOOM_THRESHOLD}）`
+        );
+      } else {
+        console.log("確認: ブルームのパラメータが既定値");
+      }
+
+      if (state.bloom.outputPassEnabled !== true) {
+        fail("最終出力パス（OutputPass）が有効ではありません");
+      } else {
+        console.log("確認: 最終出力パスが有効");
+      }
+
+      const expectedBloomW = Math.max(1, Math.floor(vp.w * BLOOM_RESOLUTION_SCALE));
+      const expectedBloomH = Math.max(1, Math.floor(vp.h * BLOOM_RESOLUTION_SCALE));
+      if (
+        state.bloom.bloomInputWidth !== expectedBloomW ||
+        state.bloom.bloomInputHeight !== expectedBloomH
+      ) {
+        fail(
+          `ブルーム入力解像度が ${state.bloom.bloomInputWidth}x${state.bloom.bloomInputHeight} です` +
+            `（期待: ${expectedBloomW}x${expectedBloomH}）`
+        );
+      } else {
+        console.log("確認: ブルーム入力解像度が表示寸法の半分");
+      }
     }
   }
 
@@ -197,6 +254,22 @@ try {
   await checkReflection("/?smoke=1&refl=256", true, 256);
   await checkReflection("/?smoke=1&refl=0", false, 0);
   await checkReflection("/?smoke=1&refl=9999", true, 512);
+
+  // ?bloom=0 でブルームが無効になることを確認する（達成基準3の配線確認）。
+  // 診断状態を読むため smoke=1 も付ける。これは入口（src/main.ts）から統括・描画基盤・合成までの
+  // 受け渡し経路が実際に働くことの確認でもある。
+  await page.goto(BASE + "/?smoke=1&bloom=0", { waitUntil: "load" });
+  await page.waitForFunction(() => typeof window.__renderState === "function", undefined, {
+    timeout: 15000,
+  });
+  const disabledState = await readRenderState();
+  if (!disabledState || !disabledState.bloom) {
+    fail("?bloom=0 で診断状態の bloom を取得できませんでした");
+  } else if (disabledState.bloom.enabled !== false) {
+    fail(`?bloom=0 でブルームが無効になりません（enabled=${disabledState.bloom.enabled}）`);
+  } else {
+    console.log("確認: ?bloom=0 でブルームが無効");
+  }
 
   // 通常構成（?smoke=1 なし）では診断アクセサが公開されていない。
   await page.goto(BASE + "/", { waitUntil: "load" });

@@ -26,3 +26,32 @@ export function computeAspect(width: number, height: number): number {
   }
   return width / height;
 }
+
+/**
+ * ブルームのぼかしに使う描画対象の入力解像度（幅・高さ）を求める。
+ * 採用理由を先に述べる。ブルームのぼかしは重い後処理で、コストは描画対象の面積に比例する。表示寸法
+ * （CSS画素）に倍率を掛けた値で寸法を抑えると、画素密度の高い端末ほどブルームが相対的に安くなり毎秒60
+ * フレームの目標に資する。画素密度倍率を掛けないのは、計測済みの試作（src/tools/perf/main.ts）が表示寸法×
+ * 倍率で解像度を決めており、本編も同じ基準にして計測値を引き継ぐためである。
+ * floor を使う理由は描画対象の寸法が整数画素数だから。max(1, …) を使う理由は寸法0で描画対象の生成が
+ * 壊れるのを避けるため。非有限・0以下の入力も同じ理由で1へ丸める。
+ * 戻り値は UnrealBloomPass.setSize へ渡す入力解像度であり、内部の描画対象は three.js がこの値の round(÷2)
+ * からさらに半減させて作る。よってこの戻り値は内部描画対象の寸法ではなく setSize への入力値を指す。
+ */
+export function computeBloomResolution(
+  displayWidth: number,
+  displayHeight: number,
+  scale: number
+): { x: number; y: number } {
+  return {
+    x: clampBloomDimension(displayWidth * scale),
+    y: clampBloomDimension(displayHeight * scale),
+  };
+}
+
+function clampBloomDimension(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 1;
+  }
+  return Math.max(1, Math.floor(value));
+}

@@ -11,6 +11,15 @@ export { createDeformingTextUnit } from "./deformMaterial";
 export type { DeformingTextUnit } from "./deformMaterial";
 export { createFontRegistry } from "./fontRegistry";
 export { warmUpFont } from "./warmup";
+export { createGlyphAnimation } from "./glyphAnimation";
+export type {
+  AnimationKeyframe,
+  GlyphAnimationSpec,
+  GlyphAnimationPhase,
+  GlyphAnimation,
+  AnimationTimeline,
+  GlyphAnimationInternals,
+} from "./glyphAnimation";
 export {
   computeMaxConcurrent,
   computeSingleLayerLimit,

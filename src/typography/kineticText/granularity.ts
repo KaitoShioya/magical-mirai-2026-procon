@@ -258,6 +258,19 @@ function beatPositionAt(beatStartTimesMs: readonly number[], timeMs: number): nu
   return interval > 0 ? low + (timeMs - beatStartTimesMs[low]) / interval : low;
 }
 
+/**
+ * 時間範囲 [startMs, endMs] の経過拍数を返す。拍位置の差分で求め、ビート開始時刻の本数を数えるときの
+ * 取りこぼし（範囲がビート直後に始まり次のビート直前に終わる場合に過小に出る）を避ける。
+ * ビートが2つ未満で拍位置を取れないときに限り、範囲内のビート開始の本数で代用する。
+ * 文字密度の分母と、無音を画面全体にするかの拍数判定の両方で用いる。
+ */
+function elapsedBeatsBetween(beatStartTimesMs: readonly number[], startMs: number, endMs: number): number {
+  if (beatStartTimesMs.length < 2) {
+    return countBeatsInRange(beatStartTimesMs, startMs, endMs);
+  }
+  return beatPositionAt(beatStartTimesMs, endMs) - beatPositionAt(beatStartTimesMs, startMs);
+}
+
 // ---- フレーズの特徴量と粒度判定 ----
 
 interface PhraseFeatures {
@@ -277,12 +290,9 @@ function computeFeatures(
 ): PhraseFeatures {
   const chars = collectChars(phrase);
   const charCount = chars.length;
-  // 文字密度の分母は経過した拍数とする。拍位置の差分で求め、ビート開始時刻の本数を数えるときの
-  // 取りこぼしを避ける。拍位置を取れない（ビートが2つ未満、または経過が0以下になる）ときに限り、
-  // 零除算を避けるため範囲内のビート本数（最低1）を分母に用いる。
-  const beatSpan =
-    beatPositionAt(input.beatStartTimesMs, phrase.endTimeMs) -
-    beatPositionAt(input.beatStartTimesMs, phrase.startTimeMs);
+  // 文字密度の分母は経過した拍数とする。経過が0以下になる退化した場合に限り、零除算を避けるため
+  // 範囲内のビート本数（最低1）を分母に用いる。
+  const beatSpan = elapsedBeatsBetween(input.beatStartTimesMs, phrase.startTimeMs, phrase.endTimeMs);
   const denominatorBeats =
     beatSpan > 0
       ? beatSpan
@@ -595,7 +605,9 @@ function maybeInsertGap(
   if (endMs <= startMs) {
     return;
   }
-  const gapBeats = countBeatsInRange(input.beatStartTimesMs, startMs, endMs);
+  // 無音の長さは経過拍数で測る。ビート開始の本数で数えると、無音がビート直後に始まり次のビート直前に
+  // 終わる場合に実際の経過拍数より多く数え、短い無音を画面全体にしてしまう。
+  const gapBeats = elapsedBeatsBetween(input.beatStartTimesMs, startMs, endMs);
   const significant =
     gapBeats >= GRANULARITY_FULLSCREEN_MIN_GAP_BEATS ||
     containsSectionBoundary(input.sectionBoundariesMs, startMs, endMs);
@@ -785,6 +797,26 @@ export function findGranularityPlanIssues(
         if (ref.wordIndex === undefined || ref.charIndex !== undefined) {
           issues.push({ path, message: "単語粒度の歌詞単位参照は単語番号を持ち文字番号を持たない" });
           break;
+        }
+      }
+    }
+
+    if (s.granularity === "phrase") {
+      if (s.reason === "longSparse") {
+        // チャンク分割は、まとまりに含まれる単語の参照（単語番号あり・文字番号なし）を持つ。
+        for (const ref of s.unitRefs) {
+          if (ref.wordIndex === undefined || ref.charIndex !== undefined) {
+            issues.push({ path, message: "長尺低密度のフレーズ粒度の歌詞単位参照は単語番号を持ち文字番号を持たない" });
+            break;
+          }
+        }
+      } else {
+        // 長尺低密度以外のフレーズ粒度は、フレーズそのものの参照（単語番号も文字番号も持たない）。
+        for (const ref of s.unitRefs) {
+          if (ref.wordIndex !== undefined || ref.charIndex !== undefined) {
+            issues.push({ path, message: "長尺低密度以外のフレーズ粒度の歌詞単位参照はフレーズ番号のみを持つ" });
+            break;
+          }
         }
       }
     }

@@ -635,6 +635,79 @@ describe("整合検査が壊れたプランを検出する", () => {
     } as unknown as GranularityPlan;
     expect(findGranularityPlanIssues(plan, input).length).toBeGreaterThan(0);
   });
+
+  it("フレーズ粒度（長尺低密度以外）の参照に単語番号があるプランを不整合とする", () => {
+    const plan = {
+      segments: [
+        {
+          startTimeMs: 0,
+          endTimeMs: input.songEndMs,
+          granularity: "phrase",
+          reason: "longDense",
+          phraseIndex: 0,
+          unitRefs: [{ phraseIndex: 0, wordIndex: 0 }],
+          phraseChunk: null,
+          charCadenceBeats: null,
+        },
+      ],
+    } as unknown as GranularityPlan;
+    expect(findGranularityPlanIssues(plan, input).length).toBeGreaterThan(0);
+  });
+});
+
+describe("無音を画面全体にする判定を経過拍数で行う", () => {
+  // [文字, 開始, 終了] の単語1つから成るフレーズ。文字は250ミリ秒で短音でも長音でもない。
+  function midPhrase(text: string, start: number, end: number) {
+    return {
+      text,
+      startTime: start,
+      endTime: end,
+      children: [
+        {
+          text,
+          startTime: start,
+          endTime: end,
+          children: [
+            { text: text[0], startTime: start, endTime: (start + end) / 2 },
+            { text: text[1], startTime: (start + end) / 2, endTime: end },
+          ],
+        },
+      ],
+    };
+  }
+
+  it("経過が約1.5拍の無音は、範囲内のビート開始が2本でも画面全体にしない", () => {
+    // ビート間隔1000。無音[600,2100]は経過1.5拍だが、範囲内にビート開始1000と2000の2本を含む。
+    // 経過拍数で測るため画面全体にしない。本数で数える旧方式では2本で画面全体になっていた。
+    const input: GranularityInput = {
+      lyricsTimeline: buildLyricsTimeline({
+        phrases: [midPhrase("あい", 0, 600), midPhrase("うえ", 2100, 2700)],
+      }),
+      beatStartTimesMs: [0, 1000, 2000, 3000, 4000],
+      loudnessCurve: { stepMs: 200, values: new Array(24).fill(10), maxAmplitude: 100 },
+      sectionBoundariesMs: [],
+      songEndMs: 3000,
+    };
+    const plan = buildGranularityPlan(input);
+    expect(plan.segments.some((s) => s.granularity === "fullscreen")).toBe(false);
+    expect(findGranularityPlanIssues(plan, input)).toEqual([]);
+  });
+
+  it("経過が約3拍の無音は画面全体にする", () => {
+    // ビート間隔1000。無音[600,3600]は経過3拍で、最小拍数2拍以上のため画面全体にする。
+    const input: GranularityInput = {
+      lyricsTimeline: buildLyricsTimeline({
+        phrases: [midPhrase("あい", 0, 600), midPhrase("うえ", 3600, 4200)],
+      }),
+      beatStartTimesMs: [0, 1000, 2000, 3000, 4000, 5000],
+      loudnessCurve: { stepMs: 200, values: new Array(30).fill(10), maxAmplitude: 100 },
+      sectionBoundariesMs: [],
+      songEndMs: 5000,
+    };
+    const plan = buildGranularityPlan(input);
+    expect(plan.segments.some((s) => s.granularity === "fullscreen")).toBe(true);
+    expect(findGranularityPlanIssues(plan, input)).toEqual([]);
+  });
 });
 
 describe("依存規則の回帰", () => {

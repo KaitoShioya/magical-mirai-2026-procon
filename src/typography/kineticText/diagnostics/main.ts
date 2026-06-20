@@ -537,7 +537,10 @@ async function start(): Promise<void> {
         text: phraseText,
         fontName: FONT_NAME,
         position: { x: -10, y: 8, z: 0 },
-        letterSpacing: 1.2,
+        // 字間（隣り合う文字の中心の間隔、ワールド単位）は字幅以上にして重なりを防ぐ。
+        // 採用理由: Zen Kaku Gothic New の全角字形は1文字の送り幅がほぼ em（＝fontSize）に等しいため、
+        // 文字中心の間隔を fontSize より広く（ここでは fontSize 2.5 に対し 3.0）取ると読める間隔になる。
+        letterSpacing: 3.0,
         fontSize: 2.5,
         color: 0x9ffbd0,
         opacity: 1,

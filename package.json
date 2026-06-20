@@ -14,6 +14,7 @@
     "typography:fps": "node scripts/typography-fps.mjs",
     "reflection:fps": "node scripts/reflection-fps.mjs",
     "smoke": "node scripts/screens-smoke.mjs",
+    "smoke:glow": "node scripts/rendering-glow-smoke.mjs",
     "quality": "node scripts/quality-harness.mjs --mode=local",
     "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud"
   },

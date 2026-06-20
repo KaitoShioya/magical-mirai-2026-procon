@@ -5,3 +5,5 @@ export type { RenderRoot, RenderState } from "./renderRoot";
 export type { BloomState } from "./bloom";
 export { createRenderRoot } from "./renderRoot";
 export { resolveReflectionResolution } from "./reflection";
+export type { GlowPoints, GlowInstance, GlowPointsOptions } from "./entities/glowPoints";
+export { createGlowPoints } from "./entities/glowPoints";

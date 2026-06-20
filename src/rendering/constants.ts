@@ -28,6 +28,18 @@ export const CAMERA_FOV = 60;
 export const CAMERA_NEAR = 0.1;
 export const CAMERA_FAR = 500;
 
+// 発光点（灯し）の既定色。採用理由を先に述べる。色は線形sRGBの数値タプルで置き、Color への変換は
+// 発光点ファクトリ（entities/glowPoints.ts）側で行う。constants は three.js を import しない方針のため
+// （純粋関数 viewport.ts から安全に参照させるため）、ここに Color を置かない。値はひまわり=オレンジ・
+// 蝶=ネオンブルーで、出典は試作（src/tools/perf/main.ts）と docs/research/02-non-text-expression.md §5。
+export const GLOW_ORANGE_RGB: readonly [number, number, number] = [1.0, 0.5, 0.12];
+export const GLOW_NEON_RGB: readonly [number, number, number] = [0.12, 0.7, 1.0];
+
+// 発光点の既定形状（球）の半径と分割数。採用理由を先に述べる。最終形状はひまわり（#60）・蝶（#61）が
+// 決めるため、基盤の既定は試作と同じ簡素な球の仮置きとし、半径0.18・経度緯度の分割8を採る（出典は試作）。
+export const GLOW_SPHERE_RADIUS = 0.18;
+export const GLOW_SPHERE_SEGMENTS = 8;
+
 // 水面の平面の一辺（ワールド単位）。採用理由を先に述べる。試作の平面400四方が、灯し半径およそ28・
 // 遠方面500・霧の濃さ0.012と破綻なく組めることを確認済みであり、反射面の寸法をこれに合わせる
 // （src/tools/perf/main.ts、docs/research/03-rendering-ui.md §1）。

@@ -22,6 +22,11 @@ declare global {
     /** 初回表示遅延（暖め後の最初の出現要求から最初の描画完了まで、ミリ秒）を返す（kineticText 診断が公開する） */
     __initLatencyMs?: () => number;
     /**
+     * アニメーション付き診断（typography.html の anim=1）で、文字プール上限超過により出現が無操作になった回数を返す。
+     * 0でない場合、計測した負荷が意図した同時数を代表しない（scripts/typography-instances-fps.mjs が取得する）。
+     */
+    __animNoopCount?: () => number;
+    /**
      * 検証用の状態履歴アクセサ。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
      * 進入した画面状態のキーを進入順に返す。scripts/screens-smoke.mjs が取得する。
      * 共有型ディレクトリが screens に依存しないよう、ScreenKey 型ではなく文字列配列に留める。

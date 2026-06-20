@@ -5,3 +5,23 @@ export type { Playback, PlaybackState } from "./playback";
 export { createTextAlivePlayback } from "./textAlivePlayback";
 export type { TextAlivePlaybackOptions } from "./textAlivePlayback";
 export { createFakePlayback } from "./fakePlayback";
+
+// 歌詞タイムライン橋渡し（Issue #133）。本編結線（#59）がサブシステム境界越しに利用する。
+export {
+  buildLyricsTimeline,
+  phraseAt,
+  wordAt,
+  charAt,
+  findLyricsTimelineIssues,
+} from "./lyricsTimeline";
+export type {
+  LyricSourceChar,
+  LyricSourceWord,
+  LyricSourcePhrase,
+  LyricSourceVideo,
+  LyricCharUnit,
+  LyricWordUnit,
+  LyricPhraseUnit,
+  LyricsTimeline,
+  LyricsTimelineIssue,
+} from "./lyricsTimeline";

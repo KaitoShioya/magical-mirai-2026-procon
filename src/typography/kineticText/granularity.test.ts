@@ -9,7 +9,7 @@ import {
   granularityAt,
   findGranularityPlanIssues,
 } from "./granularity";
-import type { Granularity, GranularityInput, GranularitySegment } from "./granularity";
+import type { Granularity, GranularityInput, GranularitySegment, GranularityPlan } from "./granularity";
 import {
   longToneInput,
   middleInput,
@@ -506,6 +506,134 @@ describe("ビート吸着フォールバックの境界", () => {
     const phraseIndexes = new Set(plan.segments.map((s) => s.phraseIndex));
     expect(phraseIndexes.has(2)).toBe(false);
     expect(findGranularityPlanIssues(plan, input)).toEqual([]);
+  });
+});
+
+describe("文字密度を経過拍数で算出する", () => {
+  it("ビート直後開始・直前終了で経過が約1.8拍のフレーズは、範囲内ビート本数1でも低密度として扱う", () => {
+    // ビート間隔1000。フレーズ[1100,2900]は経過約1.8拍だが、範囲[1100,2900)に入るビート開始は2000の
+    // 1本だけ。経過拍数で密度を出すため、短音1文字の密度は約0.56で低密度になり shortSparse(発火1拍)になる。
+    // ビート本数で数える旧方式では密度1.0で高密度となり shortDense(発火2拍)になっていた。
+    const input: GranularityInput = {
+      lyricsTimeline: buildLyricsTimeline({
+        phrases: [
+          {
+            text: "あ",
+            startTime: 1100,
+            endTime: 2900,
+            children: [
+              { text: "あ", startTime: 1100, endTime: 2900, children: [{ text: "あ", startTime: 1100, endTime: 1250 }] },
+            ],
+          },
+        ],
+      }),
+      beatStartTimesMs: [0, 1000, 2000, 3000, 4000],
+      loudnessCurve: { stepMs: 200, values: new Array(24).fill(10), maxAmplitude: 100 },
+      sectionBoundariesMs: [],
+      songEndMs: 4000,
+    };
+    const plan = buildGranularityPlan(input);
+    const seg = plan.segments.find((s) => s.phraseIndex === 0)!;
+    expect(seg.granularity).toBe("char");
+    expect(seg.reason).toBe("shortSparse");
+    expect(seg.charCadenceBeats).toBe(1);
+    expect(findGranularityPlanIssues(plan, input)).toEqual([]);
+  });
+});
+
+describe("区間境界が無音の終端にあるときの画面全体", () => {
+  it("短い無音でも、その終端（次フレーズ開始）に区間境界があれば画面全体セグメントを作る", () => {
+    // ビート間隔500。フレーズ0(0〜400)とフレーズ1(600〜1100)の間の無音(400〜600)は1拍ぶんで、
+    // 長さだけでは画面全体にしない。区間が600（無音の終端）から始まるため画面全体セグメントを作る。
+    const input: GranularityInput = {
+      lyricsTimeline: buildLyricsTimeline({
+        phrases: [
+          {
+            text: "あい",
+            startTime: 0,
+            endTime: 400,
+            children: [
+              {
+                text: "あい",
+                startTime: 0,
+                endTime: 400,
+                children: [
+                  { text: "あ", startTime: 0, endTime: 200 },
+                  { text: "い", startTime: 200, endTime: 400 },
+                ],
+              },
+            ],
+          },
+          {
+            text: "うえ",
+            startTime: 600,
+            endTime: 1100,
+            children: [
+              {
+                text: "うえ",
+                startTime: 600,
+                endTime: 1100,
+                children: [
+                  { text: "う", startTime: 600, endTime: 850 },
+                  { text: "え", startTime: 850, endTime: 1100 },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+      beatStartTimesMs: [0, 500, 1000, 1500, 2000],
+      loudnessCurve: { stepMs: 200, values: new Array(16).fill(10), maxAmplitude: 100 },
+      sectionBoundariesMs: [{ startTimeMs: 600, endTimeMs: 2000 }],
+      songEndMs: 1500,
+    };
+    const plan = buildGranularityPlan(input);
+    expect(plan.segments.some((s) => s.granularity === "fullscreen")).toBe(true);
+    expect(findGranularityPlanIssues(plan, input)).toEqual([]);
+  });
+});
+
+describe("整合検査が壊れたプランを検出する", () => {
+  const input = twoPhraseWithGapInput();
+
+  it("セグメントが1つも無いプランを不整合とする", () => {
+    expect(findGranularityPlanIssues({ segments: [] }, input).length).toBeGreaterThan(0);
+  });
+
+  it("歌詞単位参照のフレーズ番号がセグメントのフレーズ番号と一致しないプランを不整合とする", () => {
+    const plan = {
+      segments: [
+        {
+          startTimeMs: 0,
+          endTimeMs: input.songEndMs,
+          granularity: "word",
+          reason: "middle",
+          phraseIndex: 0,
+          unitRefs: [{ phraseIndex: 1, wordIndex: 0 }],
+          phraseChunk: null,
+          charCadenceBeats: null,
+        },
+      ],
+    } as unknown as GranularityPlan;
+    expect(findGranularityPlanIssues(plan, input).length).toBeGreaterThan(0);
+  });
+
+  it("歌詞タイムラインに存在しない歌詞単位を指すプランを不整合とする", () => {
+    const plan = {
+      segments: [
+        {
+          startTimeMs: 0,
+          endTimeMs: input.songEndMs,
+          granularity: "word",
+          reason: "middle",
+          phraseIndex: 99,
+          unitRefs: [{ phraseIndex: 99, wordIndex: 0 }],
+          phraseChunk: null,
+          charCadenceBeats: null,
+        },
+      ],
+    } as unknown as GranularityPlan;
+    expect(findGranularityPlanIssues(plan, input).length).toBeGreaterThan(0);
   });
 });
 

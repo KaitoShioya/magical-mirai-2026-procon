@@ -221,12 +221,48 @@ function firstBeatGreaterThan(beatStartTimesMs: readonly number[], timeMs: numbe
   return low < beatStartTimesMs.length ? beatStartTimesMs[low] : null;
 }
 
+/**
+ * 時刻をビート格子上の小数の拍位置へ写す。位置の整数部はその時刻以前の最後のビートの番号、小数部は
+ * 次のビートまでの間で時刻が占める割合である。最初のビートより前と最後のビートより後は、両端の
+ * ビート間隔を用いて外側へ延長する。ビートが2つ未満で間隔を取れないときは0を返す。
+ *
+ * 拍位置を使う理由を先に述べる。文字密度の分母は「経過した拍数」であり、フレーズの範囲に入る
+ * ビート開始時刻の本数を数えると、フレーズがビートの直後に始まり次のビートの直前に終わる場合に
+ * 実際の経過拍数より小さくなり、密度を過大評価する。拍位置の差分はこの取りこぼしを避ける。
+ */
+function beatPositionAt(beatStartTimesMs: readonly number[], timeMs: number): number {
+  const n = beatStartTimesMs.length;
+  if (n < 2) {
+    return 0;
+  }
+  if (timeMs <= beatStartTimesMs[0]) {
+    const interval = beatStartTimesMs[1] - beatStartTimesMs[0];
+    return interval > 0 ? (timeMs - beatStartTimesMs[0]) / interval : 0;
+  }
+  if (timeMs >= beatStartTimesMs[n - 1]) {
+    const interval = beatStartTimesMs[n - 1] - beatStartTimesMs[n - 2];
+    return interval > 0 ? n - 1 + (timeMs - beatStartTimesMs[n - 1]) / interval : n - 1;
+  }
+  // timeMs を挟む2つのビートを二分探索で求める。
+  let low = 0;
+  let high = n - 1;
+  while (high - low > 1) {
+    const mid = (low + high) >> 1;
+    if (beatStartTimesMs[mid] <= timeMs) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  const interval = beatStartTimesMs[high] - beatStartTimesMs[low];
+  return interval > 0 ? low + (timeMs - beatStartTimesMs[low]) / interval : low;
+}
+
 // ---- フレーズの特徴量と粒度判定 ----
 
 interface PhraseFeatures {
   readonly phrase: LyricPhraseUnit;
   readonly charCount: number;
-  readonly beatCount: number;
   readonly density: number; // 1拍あたり文字数
   readonly shortRatio: number;
   readonly longRatio: number;
@@ -241,11 +277,16 @@ function computeFeatures(
 ): PhraseFeatures {
   const chars = collectChars(phrase);
   const charCount = chars.length;
-  // 1拍に満たないフレーズでも零除算を避けるため、最低1拍として数える。
-  const beatCount = Math.max(
-    1,
-    countBeatsInRange(input.beatStartTimesMs, phrase.startTimeMs, phrase.endTimeMs)
-  );
+  // 文字密度の分母は経過した拍数とする。拍位置の差分で求め、ビート開始時刻の本数を数えるときの
+  // 取りこぼしを避ける。拍位置を取れない（ビートが2つ未満、または経過が0以下になる）ときに限り、
+  // 零除算を避けるため範囲内のビート本数（最低1）を分母に用いる。
+  const beatSpan =
+    beatPositionAt(input.beatStartTimesMs, phrase.endTimeMs) -
+    beatPositionAt(input.beatStartTimesMs, phrase.startTimeMs);
+  const denominatorBeats =
+    beatSpan > 0
+      ? beatSpan
+      : Math.max(1, countBeatsInRange(input.beatStartTimesMs, phrase.startTimeMs, phrase.endTimeMs));
   let shortCount = 0;
   let longCount = 0;
   for (const char of chars) {
@@ -267,8 +308,7 @@ function computeFeatures(
   return {
     phrase,
     charCount,
-    beatCount,
-    density: charCount === 0 ? 0 : charCount / beatCount,
+    density: charCount === 0 ? 0 : charCount / denominatorBeats,
     shortRatio: charCount === 0 ? 0 : shortCount / charCount,
     longRatio: charCount === 0 ? 0 : longCount / charCount,
     loud,
@@ -473,13 +513,19 @@ function segmentsForPhrase(phrase: LyricPhraseUnit, decision: Decision): Mutable
   ];
 }
 
-/** 時間範囲が区間境界（区間の開始または終了）を含むか。 */
+/**
+ * 無音区間が区間境界（区間の開始または終了）を含むか。両端を含めて判定する。
+ * 端点を含める理由を先に述べる。区間境界が前のフレーズの終了時刻（無音の開始）や次のフレーズの
+ * 開始時刻（無音の終了）と一致する場合、その無音が区間の転換を担う。両端を除外すると、サビが無音の
+ * 直後に始まる転換で画面全体の暗転を作れない。本関数は無音区間ごとに一度だけ呼ばれるため、端点を
+ * 含めても画面全体セグメントが重複生成されることはない。
+ */
 function containsSectionBoundary(sections: readonly SectionRange[], startMs: number, endMs: number): boolean {
   for (const section of sections) {
-    if (section.startTimeMs >= startMs && section.startTimeMs < endMs) {
+    if (section.startTimeMs >= startMs && section.startTimeMs <= endMs) {
       return true;
     }
-    if (section.endTimeMs >= startMs && section.endTimeMs < endMs) {
+    if (section.endTimeMs >= startMs && section.endTimeMs <= endMs) {
       return true;
     }
   }
@@ -743,6 +789,35 @@ export function findGranularityPlanIssues(
       }
     }
 
+    // 歌詞単位参照が、セグメントのフレーズ番号と一致し、歌詞タイムラインに実在することの検査。
+    if (s.granularity !== "fullscreen") {
+      const phrases = input.lyricsTimeline.phrases;
+      for (const ref of s.unitRefs) {
+        if (ref.phraseIndex !== s.phraseIndex) {
+          issues.push({ path, message: "歌詞単位参照のフレーズ番号がセグメントのフレーズ番号と一致しない" });
+          break;
+        }
+      }
+      for (const ref of s.unitRefs) {
+        const phrase = phrases[ref.phraseIndex];
+        if (phrase === undefined) {
+          issues.push({ path, message: "歌詞単位参照のフレーズ番号が歌詞タイムラインに存在しない" });
+          break;
+        }
+        if (ref.wordIndex !== undefined) {
+          const word = phrase.words[ref.wordIndex];
+          if (word === undefined) {
+            issues.push({ path, message: "歌詞単位参照の単語番号が歌詞タイムラインに存在しない" });
+            break;
+          }
+          if (ref.charIndex !== undefined && word.chars[ref.charIndex] === undefined) {
+            issues.push({ path, message: "歌詞単位参照の文字番号が歌詞タイムラインに存在しない" });
+            break;
+          }
+        }
+      }
+    }
+
     // チャンク分割の整合。
     if (s.phraseChunk !== null) {
       if (s.granularity !== "phrase" || s.reason !== "longSparse") {
@@ -780,6 +855,9 @@ export function findGranularityPlanIssues(
         message: "最後のセグメントが曲の終了時刻で終わっていない",
       });
     }
+  } else if (input.songEndMs > 0) {
+    // 曲に長さがあるのにセグメントが1つも無いプランは、曲全体を被覆していない。
+    issues.push({ path: "segments", message: "プランが空でセグメントが1つも無い" });
   }
 
   return issues;

@@ -419,6 +419,96 @@ describe("文字を持たないフレーズの扱い", () => {
   });
 });
 
+describe("ビート吸着フォールバックの境界", () => {
+  // [文字, 開始, 終了] の単語1つから成るフレーズの動画を、フレーズの時間範囲付きで作る。
+  function video(
+    phrases: ReadonlyArray<{ start: number; end: number; chars: ReadonlyArray<readonly [string, number, number]> }>
+  ) {
+    return {
+      phrases: phrases.map((p) => {
+        const text = p.chars.map((c) => c[0]).join("");
+        return {
+          text,
+          startTime: p.start,
+          endTime: p.end,
+          children: [
+            {
+              text,
+              startTime: p.chars[0][1],
+              endTime: p.chars[p.chars.length - 1][2],
+              children: p.chars.map((c) => ({ text: c[0], startTime: c[1], endTime: c[2] })),
+            },
+          ],
+        };
+      }),
+    };
+  }
+  const flat = (count: number) => ({ stepMs: 200, values: new Array(count).fill(10), maxAmplitude: 100 });
+
+  it("置き直し先のビートがセグメント終了と同じ（より後でない）ときは除去し、ゼロ長を作らない", () => {
+    // ビートは0と1000。フレーズ1(300〜1000)は最近傍ビート0でフレーズ0と衝突する。0より後の最初のビートは
+    // 1000だが、これはフレーズ1の終了1000と同じで「より前」でないため置けず、フレーズ1は除去される。
+    const input: GranularityInput = {
+      lyricsTimeline: buildLyricsTimeline(
+        video([
+          { start: 100, end: 250, chars: [["あ", 100, 250]] },
+          { start: 300, end: 1000, chars: [["さ", 300, 650], ["く", 650, 1000]] },
+        ])
+      ),
+      beatStartTimesMs: [0, 1000],
+      loudnessCurve: flat(16),
+      sectionBoundariesMs: [],
+      songEndMs: 2000,
+    };
+    const plan = buildGranularityPlan(input);
+    const phraseIndexes = new Set(plan.segments.map((s) => s.phraseIndex));
+    expect(phraseIndexes.has(0)).toBe(true);
+    expect(phraseIndexes.has(1)).toBe(false);
+    expect(findGranularityPlanIssues(plan, input)).toEqual([]);
+  });
+
+  it("ビートが1つも無い入力でも、曲全体を被覆し整合する", () => {
+    const input: GranularityInput = {
+      lyricsTimeline: buildLyricsTimeline(
+        video([
+          { start: 0, end: 500, chars: [["あ", 0, 250], ["い", 250, 500]] },
+          { start: 1500, end: 2000, chars: [["う", 1500, 1750], ["え", 1750, 2000]] },
+        ])
+      ),
+      beatStartTimesMs: [],
+      loudnessCurve: flat(16),
+      sectionBoundariesMs: [],
+      songEndMs: 2500,
+    };
+    const plan = buildGranularityPlan(input);
+    expect(plan.segments[0].startTimeMs).toBe(0);
+    expect(plan.segments[plan.segments.length - 1].endTimeMs).toBe(2500);
+    expect(findGranularityPlanIssues(plan, input)).toEqual([]);
+  });
+
+  it("最後のビート以降で衝突したセグメントは、後ろに置けるビートが無いため除去し、整合を保つ", () => {
+    // ビートは0と1000。フレーズ1とフレーズ2はどちらも最後のビート1000へ吸着して衝突する。
+    // 1000より後のビートが無いためフレーズ2は除去され、プランは整合する。
+    const input: GranularityInput = {
+      lyricsTimeline: buildLyricsTimeline(
+        video([
+          { start: 100, end: 250, chars: [["あ", 100, 250]] },
+          { start: 1100, end: 1250, chars: [["い", 1100, 1250]] },
+          { start: 1300, end: 1500, chars: [["う", 1300, 1500]] },
+        ])
+      ),
+      beatStartTimesMs: [0, 1000],
+      loudnessCurve: flat(16),
+      sectionBoundariesMs: [],
+      songEndMs: 2000,
+    };
+    const plan = buildGranularityPlan(input);
+    const phraseIndexes = new Set(plan.segments.map((s) => s.phraseIndex));
+    expect(phraseIndexes.has(2)).toBe(false);
+    expect(findGranularityPlanIssues(plan, input)).toEqual([]);
+  });
+});
+
 describe("依存規則の回帰", () => {
   it("取り込み（import）の行に禁止された依存先が現れない", () => {
     const modulePath = fileURLToPath(new URL("./granularity.ts", import.meta.url));

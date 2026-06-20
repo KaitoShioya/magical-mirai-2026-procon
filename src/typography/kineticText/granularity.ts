@@ -695,7 +695,8 @@ export function findGranularityPlanIssues(
     }
 
     // 開始時刻はビートへ吸着しているか（先頭の曲頭0は例外として許す）。
-    if (i > 0 && !beatSet.has(s.startTimeMs)) {
+    // ビートが1つも無い入力では吸着の対象が無く吸着できないため、この検査は行わない。
+    if (i > 0 && input.beatStartTimesMs.length > 0 && !beatSet.has(s.startTimeMs)) {
       issues.push({ path, message: "開始時刻がビート開始時刻に吸着していない" });
     }
 

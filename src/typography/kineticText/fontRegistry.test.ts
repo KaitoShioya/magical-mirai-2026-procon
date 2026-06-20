@@ -41,4 +41,13 @@ describe("createFontRegistry（論理名から実フォントを引く登録の�
     expect(registry.resolve("main").url).toBe("/fonts/new.woff");
     expect(registry.list()).toHaveLength(1);
   });
+
+  it("代替フォントの論理名を持って登録・参照できる（未収録文字の回送に使う）", () => {
+    const registry = createFontRegistry();
+    registry.register({ name: "main", url: "/fonts/main.woff", weight: 700, credit, fallbackName: "wide" });
+    registry.register(entry("wide", "/fonts/wide.woff"));
+    const main = registry.resolve("main");
+    expect(main.fallbackName).toBe("wide");
+    expect(registry.resolve(main.fallbackName as string).url).toBe("/fonts/wide.woff");
+  });
 });

@@ -19,10 +19,11 @@ export default defineConfig(({ mode }) => {
   const deployAppOnly = mode === "app";
 
   // 本番（--mode app）は本体のみ。開発検証用は本体＋開発ツール・診断ページ。
-  // typography.html は kineticText エンジンの受け入れ診断（性能計測）、rain.html は雨パーティクルの
-  // 単独診断、camera-trajectory.html はカメラ軌跡システムの受け入れ診断、rendering.html は発光点（#10）の
-  // 描画命令数の受け入れ診断、input.html は入力アーキテクチャ（#47）の受け入れ診断、layer-composite.html は
-  // 描画層合成（#15）の受け入れ診断の入口で、いずれも本番では配信しない。
+  // typography.html は kineticText エンジンの受け入れ診断（性能計測）、readability.html は可読性処理（#31）の
+  // 受け入れ診断（コントラスト比計測）、rain.html は雨パーティクルの単独診断、camera-trajectory.html はカメラ
+  // 軌跡システムの受け入れ診断、rendering.html は発光点（#10）の描画命令数の受け入れ診断、input.html は入力
+  // アーキテクチャ（#47）の受け入れ診断、layer-composite.html は描画層合成（#15）の受け入れ診断の入口で、
+  // いずれも本番では配信しない。
   const input: Record<string, string> = deployAppOnly
     ? { main: "index.html" }
     : {
@@ -30,6 +31,7 @@ export default defineConfig(({ mode }) => {
         analysis: "analysis.html",
         prototype: "prototype.html",
         typography: "typography.html",
+        readability: "readability.html",
         rain: "rain.html",
         cameraTrajectory: "camera-trajectory.html",
         rendering: "rendering.html",

@@ -13,10 +13,19 @@ declare module "troika-three-text" {
     color: number | string | Color;
     /** 塗りの不透明度（0から1）。 */
     fillOpacity: number;
+    // 縁取り（stroke）。文字輪郭の中心線に沿う線。可読性の縁取りに使う（Issue #31）。
+    strokeWidth: number | string;
+    strokeColor: number | string | Color;
+    strokeOpacity: number;
     /** 文字間隔（em単位）。単一 Text 内の字間を広げる。 */
     letterSpacing: number;
+    // 影（outline）。文字の背面に重ねる複製。ずれとぼかしで影、ずれなしで縁取りの代替に使う（Issue #31）。
     outlineWidth: number | string;
     outlineColor: number | string | Color;
+    outlineOpacity: number;
+    outlineOffsetX: number | string;
+    outlineOffsetY: number | string;
+    outlineBlur: number | string;
     anchorX: number | string;
     anchorY: number | string;
     /** 距離場の解像度（2の冪）。既定は64。大きいほど角・細線が鮮鋭だがメモリと生成時間が増える。 */

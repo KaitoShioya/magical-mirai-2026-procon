@@ -104,5 +104,27 @@ declare global {
       keyboardColorX01: number;
       touchAction: string;
     };
+    /** 可読性診断（readability.html）の計測が終わったら真を返す。scripts/readability-contrast.mjs が待つ。 */
+    __readabilityReady?: () => boolean;
+    /**
+     * 可読性診断（readability.html）の計測結果。発光・ブルーム後処理を通した最終描画画素から、文字内部と
+     * 縁取りのコントラスト比を背景種別ごとに返す。scripts/readability-contrast.mjs が 4.5:1 以上を判定する。
+     * 共有型が typography に依存しないよう素の構造で宣言する。
+     */
+    __readability?: () => {
+      passRatio: number;
+      capability: { stroke: boolean; outlineOffset: boolean; outlineBlur: boolean };
+      mode: string;
+      backing: string;
+      fillPixelCount: number;
+      fillBorderContrastOverall: number;
+      backgrounds: {
+        kind: string;
+        fillBorderContrast: number;
+        conservativeFillBorder: number;
+        fillVsBackground: number;
+        borderVsBackground: number;
+      }[];
+    };
   }
 }

@@ -12,6 +12,22 @@ export {
   computeBatchedLayerLimit,
 } from "./layerLimits";
 export { ZEN_KAKU_GOTHIC_NEW_CREDIT } from "./fontCredits";
+// 可読性の計算（純粋関数）と既定値。#131 はこれらを取り込んで合成の各段で適用する。
+// troika への反映部分（readabilityRenderer）は本体側の利用に限るため公開しない。
+export {
+  srgbChannelToLinear,
+  linearChannelToSrgb,
+  srgbHexToChannels,
+  srgbChannelsToHex,
+  relativeLuminanceFromSrgbHex,
+  contrastRatio,
+  clampLuminanceSrgbHex,
+  minWorldFontSize,
+  projectedPixelHeight,
+  resolveReadabilityMode,
+  resolveReadabilityStyle,
+  DEFAULT_READABILITY_OPTIONS,
+} from "./readability";
 export type {
   FontCredit,
   FontEntry,
@@ -25,4 +41,9 @@ export type {
   EngineUpdateArgs,
   EngineStats,
   KineticTextEngine,
+  ReadabilityOptions,
+  ReadabilityCapability,
+  ReadabilityMode,
+  ReadabilityBacking,
+  ResolvedReadabilityStyle,
 } from "./types";

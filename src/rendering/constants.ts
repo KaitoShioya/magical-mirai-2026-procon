@@ -45,3 +45,16 @@ export const DEFAULT_REFLECTION_RESOLUTION = 512;
 // 反射解像度として受け付ける値の集合（0は無効化、256と512は可変解像度）。採用理由を先に述べる。
 // 技術要件が256・512の可変解像度と、0による無効化のみを規定するため、この3値だけを受け付ける。
 export const REFLECTION_RESOLUTIONS = [0, 256, 512] as const;
+
+// ブルーム後処理のパラメータ（Issue #11）。発光点をにじませる強さ・広がり・にじませる明るさの下限。
+// 採用理由を先に述べる。これらは Issue #11 の技術要件に明示された値であり、試作（src/tools/perf/main.ts）で
+// 狙いの見えを確認済みのため、その値（強さ1.2・広がり0.6・明るさの下限0.5）をそのまま採る。
+export const BLOOM_STRENGTH = 1.2;
+export const BLOOM_RADIUS = 0.6;
+export const BLOOM_THRESHOLD = 0.5;
+
+// ブルーム入力解像度の倍率。採用理由を先に述べる。ブルームのぼかしは重い後処理で、コストは描画対象の面積に
+// 比例する。表示寸法（CSS画素）の半分でぼかすと、画素密度の高い端末ほどブルームが相対的に安くなり毎秒60
+// フレームの目標に資する。試作（src/tools/perf/main.ts）も同じ倍率0.5で計測済みのため、本編もこの値を採り
+// 計測値を引き継ぐ（docs/research/03-rendering-ui.md §3）。
+export const BLOOM_RESOLUTION_SCALE = 0.5;

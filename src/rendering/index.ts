@@ -2,5 +2,6 @@
 // 統括（src/app）はここから生成関数と型を取り込む。profiles・tools は import しない
 // （依存規則 docs/decisions/architecture.md §5）。
 export type { RenderRoot, RenderState } from "./renderRoot";
+export type { BloomState } from "./bloom";
 export { createRenderRoot } from "./renderRoot";
 export { resolveReflectionResolution } from "./reflection";

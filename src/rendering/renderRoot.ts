@@ -16,6 +16,7 @@ import {
 import { createPlaceholderGlow, type PlaceholderGlow } from "./placeholderGlow";
 import { clampPixelRatio, computeAspect } from "./viewport";
 import { createWater, type Water } from "./water";
+import { createBloomComposer, type BloomComposer, type BloomState } from "./bloom";
 
 // 暫定カメラ視点（Issue #9）。カメラ軌跡本実装（Issue #13）で置換する暫定の固定視点である。
 // 採用理由を先に述べる。土台のカメラは原点・回転なしで湖面と発光点を画面に収めず、本編で映り込みを
@@ -42,6 +43,8 @@ export interface RenderState {
   reflectionEnabled: boolean;
   /** 反射が有効なときの一辺の画素数。無効・WebGL 不可のとき0。 */
   reflectionResolution: number;
+  /** ブルーム後処理の状態（Issue #11）。WebGL が無く合成を生成しない端末では null。 */
+  bloom: BloomState | null;
 }
 
 /** 描画基盤の外部契約。 */
@@ -84,12 +87,14 @@ function isWebGL2Available(): boolean {
  * WebGL の生成に失敗しても例外を投げず、描画を無効化して他層（エンジン・画面）の動作を妨げない。
  * options.reflectionResolution は反射解像度（0で無効、256または512で有効）。採用理由を先に述べる。
  * 省略可・既定512にすることで、引数1個の既存の呼び出しとの互換を保つ。
+ * options.bloomEnabled が偽のときはブルームを無効にして起動する（既定は有効。?bloom=0 から渡る）。
  */
 export function createRenderRoot(
   container: HTMLElement,
-  options: { reflectionResolution?: number } = {}
+  options: { reflectionResolution?: number; bloomEnabled?: boolean } = {}
 ): RenderRoot {
   const reflectionResolution = options.reflectionResolution ?? DEFAULT_REFLECTION_RESOLUTION;
+  const bloomEnabled = options.bloomEnabled ?? true;
 
   const scene = new Scene();
   scene.background = new Color(NIGHT_COLOR);
@@ -138,11 +143,12 @@ export function createRenderRoot(
     console.warn("この環境では WebGL2 を利用できません。描画を無効化します。");
   }
 
-  // 反射水面と暫定発光点は、描画器を生成できたときだけ作りシーンへ追加する。採用理由を先に述べる。
-  // 描画器が無い端末では描画しないため資源を作らず、縮退の状態（reflectionEnabled 偽・解像度0）を
-  // この分岐の構造で保証する（描画器が null のとき water は null のままになる）。
+  // 反射水面・暫定発光点・ブルーム合成は、描画器を生成できたときだけ作る。採用理由を先に述べる。
+  // いずれもレンダラ・シーン・カメラを用いるため、描画器が無い端末では資源を作らず、縮退の状態
+  // （反射無効・解像度0・ブルームは null）をこの分岐の構造で保証する。
   let water: Water | null = null;
   let placeholderGlow: PlaceholderGlow | null = null;
+  let bloomComposer: BloomComposer | null = null;
   if (renderer) {
     water = createWater({ reflectionResolution });
     scene.add(water.object3d);
@@ -160,6 +166,12 @@ export function createRenderRoot(
       PLACEHOLDER_CAMERA_TARGET.y,
       PLACEHOLDER_CAMERA_TARGET.z
     );
+    // ブルーム後処理（Issue #11）。シーンへ水面と発光点を載せカメラを据えた後に合成を作る。
+    bloomComposer = createBloomComposer(renderer, scene, camera, {
+      enabled: bloomEnabled,
+      displayWidth: window.innerWidth,
+      displayHeight: window.innerHeight,
+    });
   }
 
   let disposed = false;
@@ -176,6 +188,8 @@ export function createRenderRoot(
         renderer.setPixelRatio(nextPixelRatio);
       }
       renderer.setSize(width, height);
+      // 合成の往復バッファを描画バッファ全解像度へ合わせ、ブルーム入力解像度を半分へ再適用する。
+      bloomComposer?.setSize(width, height);
     }
   }
 
@@ -188,7 +202,14 @@ export function createRenderRoot(
     if (!renderer || disposed) {
       return;
     }
-    renderer.render(scene, camera);
+    // 常に合成パイプライン経由で描く。理由を先に述べる。ブルームの有効・無効で色管理の経路を分けないため、
+    // 最終出力パスを含む合成器に一本化する。レンダラがあるとき合成器も必ず存在するが、型の縮約のため
+    // 存在を確かめ、万一無ければ素のシーン描画へ倒す。
+    if (bloomComposer) {
+      bloomComposer.render();
+    } else {
+      renderer.render(scene, camera);
+    }
   }
 
   // 起動直後にクリアカラーを適用するため、ループの初回フレームを待たず1回描く。
@@ -218,6 +239,7 @@ export function createRenderRoot(
         // 反射水面を作っていればその有効・解像度を返す。作っていない（WebGL 不可）なら無効・0。
         reflectionEnabled: water ? water.reflective : false,
         reflectionResolution: water ? water.reflectionResolution : 0,
+        bloom: bloomComposer ? bloomComposer.state() : null,
       };
     },
     dispose(): void {
@@ -226,7 +248,9 @@ export function createRenderRoot(
       }
       disposed = true;
       window.removeEventListener("resize", handleResize);
-      // 反射水面と暫定発光点を、描画器の破棄より前に解放する。
+      // 反射水面・暫定発光点・ブルーム合成を、描画器の破棄より前に解放する。理由を先に述べる。
+      // renderer.dispose は WebGL の描画文脈と結び付く GPU資源を解放するため、文脈が失われた後に各資源を
+      // 解放しようとすると空振りし資源が残る恐れがある。
       if (water) {
         scene.remove(water.object3d);
         water.dispose();
@@ -236,6 +260,10 @@ export function createRenderRoot(
         scene.remove(placeholderGlow.object3d);
         placeholderGlow.dispose();
         placeholderGlow = null;
+      }
+      if (bloomComposer) {
+        bloomComposer.dispose();
+        bloomComposer = null;
       }
       if (renderer) {
         renderer.dispose();

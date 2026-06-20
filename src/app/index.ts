@@ -17,7 +17,7 @@ import { createFakePlayback, createTextAlivePlayback, type Playback } from "../t
 import { createOverlays } from "./overlay";
 import { createRenderRoot } from "../rendering";
 import { MIKU_CHARACTER } from "../config/character";
-import { createAttributionBadge } from "./attribution";
+import { createAttributionBadge, type AttributionBadge } from "./attribution";
 
 /** 統括の外部契約。後始末のみを公開する。 */
 export interface App {
@@ -59,9 +59,16 @@ export function createApp(
 
   // 中心キャラクター（初音ミク）のVRMを読み込み、成功したら中心の光柱からVRMへ差し替える（Issue #64）。
   // 非同期で読み込み、待たずに進める。失敗しても光柱の表示が続くため、結果を待つ必要はない。
-  void renderRoot.mountCenterCharacter(MIKU_CHARACTER);
-  // 出典（ピアプロ・キャラクター・ライセンス）を起動時から常時表示する。読み込みの成否に依らず常設する。
-  const attribution = createAttributionBadge(MIKU_CHARACTER.credit);
+  // 出典（ピアプロ・キャラクター・ライセンス）はミクを描画する間つねに表示する。
+  // 診断モードでは読み込みも出典表示も行わない理由を先に述べる。画面遷移スモークは状態遷移の論理を検証する
+  // もので、ウォームアップ完了はクランプ済みの経過時間の累積で判定する。容量の大きいVRM（スキンメッシュ）を
+  // ソフトウェア描画で水面反射の二重描画まで行うとフレーム率が落ち、累積が想定より遅れて遷移を取りこぼす。
+  // 診断モードは軽い光柱だけで中心を表し、遷移の検証を描画負荷から切り離す。通常モードは従来どおり読み込む。
+  let attribution: AttributionBadge | null = null;
+  if (!options.diagnostics) {
+    void renderRoot.mountCenterCharacter(MIKU_CHARACTER);
+    attribution = createAttributionBadge(MIKU_CHARACTER.credit);
+  }
 
   // 診断モード（?smoke=1）はトークン非依存の擬似再生、通常はトークンで実プレイヤーを使う。
   const playback: Playback = options.diagnostics
@@ -218,7 +225,7 @@ export function createApp(
       machine.dispose();
       unsubscribe();
       overlays.dispose();
-      attribution.dispose();
+      attribution?.dispose();
       playback.dispose();
       renderRoot.dispose();
       // 確定前に破棄された場合に備え、renderOverlays が付けた inert 属性を外す。

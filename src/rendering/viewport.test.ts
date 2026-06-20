@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { clampPixelRatio, computeAspect, computeBloomResolution } from "./viewport";
+import {
+  clampPixelRatio,
+  computeAspect,
+  computeBloomResolution,
+  computeOverlayFrustum,
+  overlayPointFromNormalized,
+} from "./viewport";
 
 describe("clampPixelRatio", () => {
   it("上限以下はそのまま返す", () => {
@@ -49,5 +55,49 @@ describe("computeBloomResolution", () => {
   it("非有限の入力は下限1へ丸める", () => {
     expect(computeBloomResolution(Number.NaN, 400, 0.5)).toEqual({ x: 1, y: 200 });
     expect(computeBloomResolution(800, Number.POSITIVE_INFINITY, 0.5)).toEqual({ x: 400, y: 1 });
+  });
+});
+
+describe("computeOverlayFrustum", () => {
+  it("正方形(縦横比1)では左右が-1と1・上下が1と-1", () => {
+    expect(computeOverlayFrustum(500, 500)).toEqual({ left: -1, right: 1, top: 1, bottom: -1 });
+  });
+  it("横長(2対1)では左右が縦横比2へ広がり上下は不変", () => {
+    expect(computeOverlayFrustum(800, 400)).toEqual({ left: -2, right: 2, top: 1, bottom: -1 });
+  });
+  it("縦長では左右の絶対値が1未満になり上下は不変", () => {
+    const frustum = computeOverlayFrustum(390, 844);
+    expect(frustum.top).toBe(1);
+    expect(frustum.bottom).toBe(-1);
+    expect(frustum.right).toBeCloseTo(390 / 844, 10);
+    expect(frustum.left).toBeCloseTo(-(390 / 844), 10);
+    expect(Math.abs(frustum.left)).toBeLessThan(1);
+  });
+  it("幅または高さが0以下・非有限なら縦横比1へ丸める", () => {
+    expect(computeOverlayFrustum(800, 0)).toEqual({ left: -1, right: 1, top: 1, bottom: -1 });
+    expect(computeOverlayFrustum(0, 400)).toEqual({ left: -1, right: 1, top: 1, bottom: -1 });
+    expect(computeOverlayFrustum(Number.NaN, 400)).toEqual({
+      left: -1,
+      right: 1,
+      top: 1,
+      bottom: -1,
+    });
+  });
+});
+
+describe("overlayPointFromNormalized", () => {
+  it("中央(0.5,0.5)は原点(0,0)へ写す", () => {
+    expect(overlayPointFromNormalized(0.5, 0.5, 2)).toEqual({ x: 0, y: 0 });
+  });
+  it("左上(0,0)は(-縦横比, +1)へ写す", () => {
+    expect(overlayPointFromNormalized(0, 0, 2)).toEqual({ x: -2, y: 1 });
+  });
+  it("右下(1,1)は(+縦横比, -1)へ写す", () => {
+    expect(overlayPointFromNormalized(1, 1, 2)).toEqual({ x: 2, y: -1 });
+  });
+  it("非有限の入力は原点(0,0)へ丸める", () => {
+    expect(overlayPointFromNormalized(Number.NaN, 0.5, 2)).toEqual({ x: 0, y: 0 });
+    expect(overlayPointFromNormalized(0.5, Number.POSITIVE_INFINITY, 2)).toEqual({ x: 0, y: 0 });
+    expect(overlayPointFromNormalized(0.5, 0.5, Number.NaN)).toEqual({ x: 0, y: 0 });
   });
 });

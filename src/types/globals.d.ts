@@ -42,8 +42,8 @@ declare global {
     };
     /**
      * 検証用の描画状態アクセサ。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
-     * WebGL生成可否・画素密度倍率・描画バッファ寸法・クリアカラー16進・カメラ縦横比を返す。
-     * scripts/rendering-smoke.mjs が取得する。共有型が rendering に依存しないよう素の構造で宣言する。
+     * RenderRoot.state() の戻り値（素の構造）と一致させる。scripts/rendering-smoke.mjs が取得する。
+     * 共有型が rendering に依存しないよう素の構造で宣言する。
      */
     __renderState?: () => {
       webglAvailable: boolean;
@@ -55,6 +55,26 @@ declare global {
       cameraPosition: { x: number; y: number; z: number };
       cameraDirection: { x: number; y: number; z: number };
       cameraPoseRejectedCount: number;
+      reflectionEnabled: boolean;
+      reflectionResolution: number;
+      bloom: {
+        enabled: boolean;
+        strength: number;
+        radius: number;
+        threshold: number;
+        bloomInputWidth: number;
+        bloomInputHeight: number;
+        outputPassEnabled: boolean;
+      } | null;
+      centerFigureStatus: "fallback" | "loaded" | "error";
+      centerFigureError: string | null;
+      overlay: {
+        objectCount: number;
+        frustumLeft: number;
+        frustumRight: number;
+        frustumTop: number;
+        frustumBottom: number;
+      } | null;
     };
     /** カメラ軌跡の受け入れ診断 camera-trajectory.html が公開する掃引結果。scripts/camera-trajectory-smoke.mjs が取得する。 */
     __cameraTrajectory?: () => {
@@ -78,6 +98,19 @@ declare global {
     __glowState?: () => {
       drawCalls: number;
       triangles: number;
+    };
+    /**
+     * 検証用の層合成診断アクセサ。層合成の受け入れ診断ページ（layer-composite.html）だけが取り付ける。
+     * 本番と同じ合成手順（3次元の合成→深度のみ消去→正射影で2次元層を最前面）で数フレーム描いた直後に、
+     * 画面の画素を読み戻したスナップショットを返す。scripts/rendering-layer-smoke.mjs が取得する。
+     * 各標本は赤・緑・青・不透明度の4成分（0以上255以下）の配列。共有型が rendering に依存しないよう
+     * 素の構造で宣言する。
+     */
+    __layerCompositeState?: () => {
+      webglAvailable: boolean;
+      insideSamples: ReadonlyArray<readonly [number, number, number, number]>;
+      outsideSample: readonly [number, number, number, number];
+      sampleCount: number;
     };
     /**
      * 検証用の入力イベント履歴アクセサ。入力診断ページ（input.html）だけが取り付ける。

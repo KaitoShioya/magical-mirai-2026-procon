@@ -3,12 +3,11 @@
 // 描画器・シーン・カメラは Issue #8 の定数（rendering/constants）と純粋関数（rendering/viewport）を
 // 再利用して本編の見えに揃える。three.js は名前付きでのみ取り込む。本ページは本番ビルド（--mode app）では配信しない。
 
-import { Color, FogExp2, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from "three";
+import { Color, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from "three";
 import {
   CAMERA_FAR,
   CAMERA_FOV,
   CAMERA_NEAR,
-  FOG_DENSITY,
   MAX_PIXEL_RATIO,
   NIGHT_COLOR,
 } from "../../constants";
@@ -52,7 +51,9 @@ container.appendChild(renderer.domElement);
 
 const scene = new Scene();
 scene.background = new Color(NIGHT_COLOR);
-scene.fog = new FogExp2(NIGHT_COLOR, FOG_DENSITY);
+// 霧は設定しない。理由を先に述べる。霧は本編シーンの奥行き演出であり、本診断ページの目的は雨単体を明瞭に
+// 見せることである。雨は大きさ0.07の小さな半透明の点で、霧を掛けると遠方の大多数の点が背景色へ沈み視認
+// できなくなるため、診断では霧を外す（本編シーンでの霧は結線時 #15・#59 が適用する）。
 
 const camera = new PerspectiveCamera(
   CAMERA_FOV,
@@ -60,9 +61,13 @@ const camera = new PerspectiveCamera(
   CAMERA_NEAR,
   CAMERA_FAR
 );
-// 雨は中心から±45・高さ0〜40に広がる。その柱を正面から収める位置にカメラを置く。
-camera.position.set(0, 16, 62);
-camera.lookAt(new Vector3(0, 14, 0));
+// カメラを雨柱の手前の面のすぐ外側に置き、奥行き方向（Z軸）に沿って見通す。理由を先に述べる。点の画面上の
+// 大きさは距離に反比例する（既定の距離減衰で、画素数はおよそ43.6÷距離）ため遠い点は1画素になる。雨は
+// 90×90×40の広い空間に散らばり疎であるが、奥行き方向に長く見通すと1本の視線が多くの粒を貫くため、画面に
+// 投影される点の数が増えて密に見える。視線をほぼ水平にして落下が画面上で下向きに見えるようにする。手前の面
+// （Z=45）のすぐ外側（Z=50）に置くことで、最も近い粒でも数画素に収まり巨大な四角にならないようにする。
+camera.position.set(0, 20, 50);
+camera.lookAt(new Vector3(0, 18, -45));
 
 const rain = createRainSystem({ count: RAIN_COUNT });
 scene.add(rain.object);

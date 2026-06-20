@@ -8,12 +8,23 @@ import {
   CAMERA_FAR,
   CAMERA_FOV,
   CAMERA_NEAR,
+  DEFAULT_REFLECTION_RESOLUTION,
   FOG_DENSITY,
   MAX_PIXEL_RATIO,
   NIGHT_COLOR,
   NIGHT_COLOR_HEX,
 } from "./constants";
+import { createPlaceholderGlow, type PlaceholderGlow } from "./placeholderGlow";
 import { clampPixelRatio, computeAspect } from "./viewport";
+import { createWater, type Water } from "./water";
+
+// 暫定カメラ視点（Issue #9）。カメラ軌跡本実装（Issue #13）で置換する暫定の固定視点である。
+// 採用理由を先に述べる。土台のカメラは原点・回転なしで湖面と発光点を画面に収めず、本編で映り込みを
+// 目視できない。カメラ軌跡の本実装までの暫定として、湖面を見下ろす固定の一点を置く。
+// 視点は水面より上に置く。理由を先に述べる。Reflector はカメラが反射面の裏側（水面下）にあると反射を
+// 描かないため、暫定視点を水面（高さ0）より上に固定する。
+const PLACEHOLDER_CAMERA_POSITION = { x: 0, y: 14, z: 34 } as const;
+const PLACEHOLDER_CAMERA_TARGET = { x: 0, y: 1, z: 0 } as const;
 
 /** 診断・検証用の描画状態（window.__renderState が返す素の構造）。 */
 export interface RenderState {
@@ -34,6 +45,10 @@ export interface RenderState {
   cameraDirection: { x: number; y: number; z: number };
   /** setCameraPose が適用を拒否した累積回数（位置と注視点が同一・非有限値）。無音の不具合を診断・検証で検出する。 */
   cameraPoseRejectedCount: number;
+  /** 平面反射が有効か。反射水面を Reflector で作ったとき真、refl=0 の不透明な面と WebGL 不可のとき偽。 */
+  reflectionEnabled: boolean;
+  /** 反射が有効なときの一辺の画素数。無効・WebGL 不可のとき0。 */
+  reflectionResolution: number;
 }
 
 /** 描画基盤の外部契約。 */
@@ -78,8 +93,15 @@ function isWebGL2Available(): boolean {
  * 描画基盤を生成し、container に canvas を載せて初期寸法で1回描く。
  * 表示寸法は window の内寸（innerWidth・innerHeight）に追従する。
  * WebGL の生成に失敗しても例外を投げず、描画を無効化して他層（エンジン・画面）の動作を妨げない。
+ * options.reflectionResolution は反射解像度（0で無効、256または512で有効）。採用理由を先に述べる。
+ * 省略可・既定512にすることで、引数1個の既存の呼び出しとの互換を保つ。
  */
-export function createRenderRoot(container: HTMLElement): RenderRoot {
+export function createRenderRoot(
+  container: HTMLElement,
+  options: { reflectionResolution?: number } = {}
+): RenderRoot {
+  const reflectionResolution = options.reflectionResolution ?? DEFAULT_REFLECTION_RESOLUTION;
+
   const scene = new Scene();
   scene.background = new Color(NIGHT_COLOR);
   scene.fog = new FogExp2(NIGHT_COLOR, FOG_DENSITY);
@@ -125,6 +147,30 @@ export function createRenderRoot(container: HTMLElement): RenderRoot {
     // WebGL2 を生成できない端末。three.js の WebGLRenderer を呼ぶ前に縮退させ、内部のエラー出力を避ける。
     // 縮退の事実は診断状態 webglAvailable=false で表面化し、スモークはそこから明示的に判定する。
     console.warn("この環境では WebGL2 を利用できません。描画を無効化します。");
+  }
+
+  // 反射水面と暫定発光点は、描画器を生成できたときだけ作りシーンへ追加する。採用理由を先に述べる。
+  // 描画器が無い端末では描画しないため資源を作らず、縮退の状態（reflectionEnabled 偽・解像度0）を
+  // この分岐の構造で保証する（描画器が null のとき water は null のままになる）。
+  let water: Water | null = null;
+  let placeholderGlow: PlaceholderGlow | null = null;
+  if (renderer) {
+    water = createWater({ reflectionResolution });
+    scene.add(water.object3d);
+    // 暫定発光点（Issue #10 で発光点本実装へ置換）。反射に映る対象として置く。
+    placeholderGlow = createPlaceholderGlow();
+    scene.add(placeholderGlow.object3d);
+    // 暫定カメラ視点（Issue #13 で置換）。湖面と発光点を画面に収め、映り込みを目視できるようにする。
+    camera.position.set(
+      PLACEHOLDER_CAMERA_POSITION.x,
+      PLACEHOLDER_CAMERA_POSITION.y,
+      PLACEHOLDER_CAMERA_POSITION.z
+    );
+    camera.lookAt(
+      PLACEHOLDER_CAMERA_TARGET.x,
+      PLACEHOLDER_CAMERA_TARGET.y,
+      PLACEHOLDER_CAMERA_TARGET.z
+    );
   }
 
   let disposed = false;
@@ -208,6 +254,9 @@ export function createRenderRoot(container: HTMLElement): RenderRoot {
         cameraPosition: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
         cameraDirection: { x: direction.x, y: direction.y, z: direction.z },
         cameraPoseRejectedCount,
+        // 反射水面を作っていればその有効・解像度を返す。作っていない（WebGL 不可）なら無効・0。
+        reflectionEnabled: water ? water.reflective : false,
+        reflectionResolution: water ? water.reflectionResolution : 0,
       };
     },
     dispose(): void {
@@ -216,6 +265,17 @@ export function createRenderRoot(container: HTMLElement): RenderRoot {
       }
       disposed = true;
       window.removeEventListener("resize", handleResize);
+      // 反射水面と暫定発光点を、描画器の破棄より前に解放する。
+      if (water) {
+        scene.remove(water.object3d);
+        water.dispose();
+        water = null;
+      }
+      if (placeholderGlow) {
+        scene.remove(placeholderGlow.object3d);
+        placeholderGlow.dispose();
+        placeholderGlow = null;
+      }
       if (renderer) {
         renderer.dispose();
         renderer.domElement.remove();

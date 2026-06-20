@@ -44,8 +44,8 @@ jobs:
         run: npm run build:app
         env:
           TEXT_ALIVE_API_TOKEN: ${{ secrets.TEXT_ALIVE_API_TOKEN }}
-      - name: Build verification bundle (five pages)
-        # 既定ビルド。最終的な dist はこの5ページ構成になり、後続の preview の配信対象となる。
+      - name: Build verification bundle (six pages)
+        # 既定ビルド。最終的な dist はこの6ページ構成になり、後続の preview の配信対象となる。
         # この成果物を後続のスモークが配信するため、本番と同じトークンを注入する。
         run: npm run build
         env:

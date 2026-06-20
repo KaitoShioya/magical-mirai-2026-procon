@@ -4,6 +4,11 @@
 
 export { createKineticTextEngine } from "./engine";
 export type { KineticTextEngineInternals } from "./engine";
+// 変形テキストの公開窓口は createDeformingTextUnit のみとする。低レベルの createDeformMaterial と
+// buildBaseDeformTransform は取り込み層が前提のため単独利用で劣化する。よって窓口には出さず、内部とテストから
+// 直接の取り込み（"./deformMaterial"）に留める。
+export { createDeformingTextUnit } from "./deformMaterial";
+export type { DeformingTextUnit } from "./deformMaterial";
 export { createFontRegistry } from "./fontRegistry";
 export { warmUpFont } from "./warmup";
 export {
@@ -22,6 +27,10 @@ export type {
   GlyphSpawnRequest,
   PhraseSpawnRequest,
   GlyphHandle,
+  DeformKind,
+  DeformParams,
+  DeformingTextSpawnRequest,
+  DeformingTextHandle,
   EngineUpdateArgs,
   EngineStats,
   KineticTextEngine,

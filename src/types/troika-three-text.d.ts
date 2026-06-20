@@ -13,12 +13,16 @@ declare module "troika-three-text" {
     color: number | string | Color;
     /** 塗りの不透明度（0から1）。 */
     fillOpacity: number;
+    /** 文字間隔（em単位）。単一 Text 内の字間を広げる。 */
+    letterSpacing: number;
     outlineWidth: number | string;
     outlineColor: number | string | Color;
     anchorX: number | string;
     anchorY: number | string;
     /** 文字に割り当てられたマテリアル。 */
     material: Material;
+    /** 基材から文字描画用の派生マテリアルを作る。サブクラスで上書きして変形層を重ねられる。 */
+    createDerivedMaterial(baseMaterial: Material): Material;
     /** 文字の配置を確定する。troika は非同期に文字を組むため呼び出しが必要。 */
     sync(callback?: () => void): void;
     /** ジオメトリ・マテリアル等のGPU資源を解放する。 */

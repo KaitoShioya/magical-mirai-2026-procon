@@ -6,7 +6,10 @@ import { Text, BatchedText } from "troika-three-text";
 import { warmUpFont } from "./warmup";
 import { createGlyphPool, type GlyphLease } from "./glyphPool";
 import { createBatchedTextLayer, type BatchedGroupHandle } from "./batchedTextLayer";
+import { createDeformingTextUnit, type DeformingTextUnit } from "./deformMaterial";
 import type {
+  DeformingTextHandle,
+  DeformingTextSpawnRequest,
   EngineInitDeps,
   EngineStats,
   EngineUpdateArgs,
@@ -22,8 +25,13 @@ export interface KineticTextEngineInternals {
   createBatchedText?: () => BatchedText;
   /** 距離場の事前生成（暖め）。既定は troika の preloadFont を包む warmUpFont。 */
   warmUp?: (fontUrl: string | null, characters: string) => Promise<void>;
-  /** 単一文字の配置確定（sync）が現役で完了し可視化された瞬間に呼ぶ（初回表示遅延の計測に使う）。 */
+  /** 単一文字または変形テキストの配置確定（sync）が現役で完了し可視化された瞬間に呼ぶ（初回表示遅延の計測に使う）。 */
   onGlyphShown?: () => void;
+  /** 変形テキスト部品の生成（単体テストで擬似に差し替える）。既定は createDeformingTextUnit。 */
+  createDeformingTextUnit?: (
+    kind: DeformingTextSpawnRequest["kind"],
+    params: DeformingTextSpawnRequest["params"]
+  ) => DeformingTextUnit;
 }
 
 const NOOP_HANDLE: GlyphHandle = {
@@ -47,6 +55,12 @@ interface BatchedEntry {
   expireAtMs: number | undefined;
 }
 
+interface DeformingEntry {
+  text: Text;
+  unit: DeformingTextUnit;
+  expireAtMs: number | undefined;
+}
+
 export function createKineticTextEngine(
   deps: EngineInitDeps,
   internals: KineticTextEngineInternals = {}
@@ -55,6 +69,7 @@ export function createKineticTextEngine(
   const createText = internals.createText ?? ((): Text => new Text());
   const createBatchedText = internals.createBatchedText ?? ((): BatchedText => new BatchedText());
   const warmUp = internals.warmUp ?? warmUpFont;
+  const makeDeformingTextUnit = internals.createDeformingTextUnit ?? createDeformingTextUnit;
 
   const pool = createGlyphPool<Text>({ maxConcurrent: limits.single, textFactory: createText });
   const batchedText = createBatchedText();
@@ -63,6 +78,7 @@ export function createKineticTextEngine(
 
   const singleEntries = new Set<SingleEntry>();
   const batchedEntries = new Set<BatchedEntry>();
+  const deformingEntries = new Set<DeformingEntry>();
 
   let lastGameTimeMs = 0;
 
@@ -236,6 +252,77 @@ export function createKineticTextEngine(
     };
   }
 
+  function releaseDeforming(entry: DeformingEntry): void {
+    if (!deformingEntries.has(entry)) {
+      // 二度目以降の解放では何もしない（冪等）。
+      return;
+    }
+    deformingEntries.delete(entry);
+    entry.text.visible = false;
+    scene.remove(entry.text);
+    // 解放は部品の dispose に集約する。部品はジオメトリと基材の両方を破棄し（基材は troika が被せた文字マテリアルと
+    // 取り込み層の破棄へ連鎖）、冪等である。
+    entry.unit.dispose();
+  }
+
+  function spawnDeformingText(request: DeformingTextSpawnRequest): DeformingTextHandle {
+    const font = fonts.resolve(request.fontName);
+    // 変形を仕込んだ Text の部品を作る（マテリアルは部品が基材＋取り込み層で構成済み）。
+    const unit = makeDeformingTextUnit(request.kind, request.params);
+    const text = unit.text;
+    // フレーズ全体を1つの Text にし、変形単位を文字ローカル原点に中央寄せする（uDeformOrigin 既定 (0,0) と整合）。
+    text.text = request.text;
+    text.font = font.url;
+    text.fontSize = request.fontSize;
+    text.color = request.color;
+    text.fillOpacity = request.opacity;
+    text.anchorX = "center";
+    text.anchorY = "middle";
+    if (request.letterSpacing !== undefined) {
+      text.letterSpacing = request.letterSpacing;
+    }
+    text.position.set(request.position.x, request.position.y, request.position.z);
+    text.visible = false;
+    // 頂点変形はGPU側で行われCPUの境界に反映されないため、視錐台カリングを無効にして誤った描画除外を防ぐ。
+    text.frustumCulled = false;
+    scene.add(text);
+    const entry: DeformingEntry = {
+      text,
+      unit,
+      expireAtMs:
+        request.lifetimeMs !== undefined ? lastGameTimeMs + request.lifetimeMs : undefined,
+    };
+    deformingEntries.add(entry);
+    text.sync(() => {
+      // 解放済み（古い完了通知）でなければ可視化し、初回表示遅延の計測へ通知する。
+      if (deformingEntries.has(entry)) {
+        text.visible = true;
+        internals.onGlyphShown?.();
+      }
+    });
+    return {
+      setPosition: (x, y, z): void => {
+        text.position.set(x, y, z);
+      },
+      setRotation: (x, y, z): void => {
+        text.rotation.set(x, y, z);
+      },
+      setScale: (scale): void => {
+        text.scale.setScalar(scale);
+      },
+      setColor: (color): void => {
+        text.color = color;
+      },
+      setOpacity: (opacity): void => {
+        text.fillOpacity = opacity;
+      },
+      setDeformParams: (params): void => {
+        unit.setParams(params);
+      },
+      release: (): void => releaseDeforming(entry),
+    };
+  }
+
   function update(args: EngineUpdateArgs): void {
     lastGameTimeMs = args.gameTimeMs;
 
@@ -265,6 +352,20 @@ export function createKineticTextEngine(
     for (const entry of expiredBatched) {
       releaseBatched(entry);
     }
+
+    const expiredDeforming: DeformingEntry[] = [];
+    for (const entry of deformingEntries) {
+      if (entry.expireAtMs !== undefined && args.gameTimeMs >= entry.expireAtMs) {
+        expiredDeforming.push(entry);
+        continue;
+      }
+      // カメラ正対と、変形の時間進行（楽曲同期のためゲーム時刻を秒に直して渡す）。
+      entry.text.quaternion.copy(camera.quaternion);
+      entry.unit.setTimeSec(args.gameTimeMs / 1000);
+    }
+    for (const entry of expiredDeforming) {
+      releaseDeforming(entry);
+    }
   }
 
   async function warmUpAll(characters: string): Promise<void> {
@@ -279,6 +380,9 @@ export function createKineticTextEngine(
     for (const entry of [...batchedEntries]) {
       releaseBatched(entry);
     }
+    for (const entry of [...deformingEntries]) {
+      releaseDeforming(entry);
+    }
     pool.disposeAll((text) => text.dispose());
     batchedLayer.dispose((member) => member.dispose());
     scene.remove(batchedText);
@@ -289,8 +393,9 @@ export function createKineticTextEngine(
       activeGlyphs: singleEntries.size,
       pooledGlyphs: pool.pooledCount(),
       activeBatchedMembers: batchedLayer.activeMemberCount(),
+      activeDeformingTexts: deformingEntries.size,
     };
   }
 
-  return { warmUp: warmUpAll, spawnGlyph, spawnPhrase, update, dispose, stats };
+  return { warmUp: warmUpAll, spawnGlyph, spawnPhrase, spawnDeformingText, update, dispose, stats };
 }

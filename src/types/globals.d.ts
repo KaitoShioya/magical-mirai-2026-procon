@@ -21,6 +21,10 @@ declare global {
     __frameDrops?: () => number;
     /** 初回表示遅延（暖め後の最初の出現要求から最初の描画完了まで、ミリ秒）を返す（kineticText 診断が公開する） */
     __initLatencyMs?: () => number;
+    /** 直近フレームの描画命令の回数を返す（kineticText 診断 typography.html の変形シナリオが公開する）。 */
+    __drawCalls?: () => number;
+    /** 現在表示中の変形単位（変形テキスト）の数を返す（kineticText 診断 typography.html の変形シナリオが公開する）。 */
+    __activeDeformUnits?: () => number;
     /**
      * 検証用の状態履歴アクセサ。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
      * 進入した画面状態のキーを進入順に返す。scripts/screens-smoke.mjs が取得する。

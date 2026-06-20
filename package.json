@@ -17,6 +17,7 @@
     "smoke:glow": "node scripts/rendering-glow-smoke.mjs",
     "smoke:input": "node scripts/input-smoke.mjs",
     "smoke:credits": "node scripts/credits-smoke.mjs",
+    "smoke:typography": "node scripts/typography-deform-smoke.mjs",
     "quality": "node scripts/quality-harness.mjs --mode=local",
     "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud"
   },
@@ -24,7 +25,8 @@
     "@pixiv/three-vrm": "3.5.4",
     "textalive-app-api": "^0.4.0",
     "three": "^0.184.0",
-    "troika-three-text": "^0.52.4"
+    "troika-three-text": "0.52.4",
+    "troika-three-utils": "0.52.4"
   },
   "engines": {
     "node": "^20.19.0 || ^22.12.0"

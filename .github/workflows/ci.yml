@@ -44,6 +44,10 @@ jobs:
         run: npm run build:app
         env:
           TEXT_ALIVE_API_TOKEN: ${{ secrets.TEXT_ALIVE_API_TOKEN }}
+      - name: Assert diagnostics pages are excluded from production bundle
+        # 診断ページは規約適合のため本番配信に含めてはならない（Issue #47、docs/decisions/architecture.md §7.2）。
+        # 本番ビルド成果物に入力診断ページ input.html が無いことを、後続の検証用ビルドが全ページを出す前に確認する。
+        run: test ! -f dist/input.html
       - name: Build verification bundle (all pages)
         # 既定ビルド。最終的な dist は本体に加え解析・性能・文字診断・雨診断・カメラ軌跡診断・発光点診断の
         # 各ページを含み、後続の preview の配信対象となる。この成果物を後続のスモークが配信するため、本番と同じトークンを注入する。
@@ -73,6 +77,10 @@ jobs:
         # 発光点（Issue #10）の受け入れ基準「300個で描画命令が5未満」の実機検証。描画命令の回数は
         # three.js が JavaScript 側で計数するため、GPUの無いソフトウェア描画でも正確に得られる。
         run: BASE=http://127.0.0.1:4173 npm run smoke:glow
+      - name: Run input smoke test
+        # 入力アーキテクチャ（Issue #47）の受け入れ基準の実ブラウザ検証。多指独立・スクロール無効化・
+        # タッチとマウスとキーボードの入力同等性を、検証用ビルドの入力診断ページに対して確認する。
+        run: BASE=http://127.0.0.1:4173 npm run smoke:input
       - name: Quality harness (cloud schema checks only)
         # GPUの無いCIでは描画・撮影・フレーム計測を行わず、登録済みのファイル存在とJSONスキーマ
         # だけを検査する（docs/research/08 の1節）。Issue #95時点は検査の登録が無いため登録0件で合格し、

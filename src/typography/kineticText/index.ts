@@ -21,6 +21,22 @@ export {
   computeBatchedLayerLimit,
 } from "./layerLimits";
 export { ZEN_KAKU_GOTHIC_NEW_CREDIT } from "./fontCredits";
+export {
+  buildGranularityPlan,
+  granularityAt,
+  findGranularityPlanIssues,
+} from "./granularity";
+export type {
+  Granularity,
+  GranularityReason,
+  GranularityUnitRef,
+  GranularitySegment,
+  GranularityPlan,
+  GranularityPlanIssue,
+  LoudnessCurveInput,
+  SectionRange,
+  GranularityInput,
+} from "./granularity";
 export type {
   FontCredit,
   FontEntry,

@@ -26,6 +26,16 @@ troika-three-text を最小初期化で内包し、TAKEOVERの最大文字密度
 
 両層とも、非同期の配置確定（`sync`）の取り違えを防ぐため世代番号を持ち、解放後・再利用後の古い完了通知を無視する。
 
+## 表示粒度切替コントローラ `granularity`（Issue #29、出典 `docs/idea/concept-final.md` §11・`docs/research/01-kinetic-typography.md` §9）
+歌詞の発声属性に応じて、文字・単語・フレーズ・画面全体の4段の表示粒度を時間軸で切り替える曲非依存の純粋ロジック。描画は行わず、`GlyphHandle` を操作しない。出力（表示粒度プラン）は演出割付規則（#132）と曲固有譜面（#33）が消費し、表示同期ゲート（#99）が検査の対象とする。
+
+- **責務の境界**: 「どの単位で出すか（粒度）」と「なぜそう判定したか（判定理由 `reason`）」までを決める。具体的な演出効果（縦伸ばし・円状回転・段階的構築・強調など）への写像は #132 が行う。本モジュールは演出効果の名前を出力に持たない。
+- **公開API**: `buildGranularityPlan(input)` が表示粒度プランを一度計算し、`granularityAt(plan, positionMs)` が再生位置のセグメントを二分探索で返し、`findGranularityPlanIssues(plan, input)` が構造の不整合一覧を例外を投げずに返す。
+- **入力 `GranularityInput`**: 歌詞タイムライン（#133）・ビート開始時刻の配列・声量曲線（刻み幅・値・最大声量）・区間境界の配列・曲の終了時刻。曲固有の絶対値は持たず、判定の閾値は `src/config/tuning.ts` の曲非依存の定数を使う。
+- **決定性**: 読み込み時に確定済みデータだけから計算し、再生中の瞬時値には依存しない。粒度切替はビート格子へ吸着し、曲全体を隙間も重複も無く被覆する。
+- **歌詞型の取り込み**: `LyricsTimeline` ほかの型は純粋モジュール `src/textalive/lyricsTimeline.ts` から型のみ直接取り込む。公開窓口 `src/textalive/index.ts` 経由にしない（公開窓口は textalive パッケージに依存する再生実装を再輸出するため）。
+- **本編結線（#59）の入口**: `onVideoReady` の後に `buildLyricsTimeline(player.video)` で歌詞タイムラインを作り、曲プロファイルのビート・声量曲線・区間・曲の終了時刻から `GranularityInput` を組み立て、`buildGranularityPlan` を一度呼んで粒度プランを得る。毎フレームは `granularityAt(plan, 再生位置)` で現在のセグメントを引く。配線そのものは #59 の責務であり、本モジュールは配線コードを持たない。
+
 ## 禁止依存
 判定・得点・時刻の論理を持たない。`profiles`・`tools` を import しない。three.js は名前付きでのみ取り込む。
 

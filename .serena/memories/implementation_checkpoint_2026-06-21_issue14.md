@@ -1,6 +1,6 @@
 # 実装チェックポイント 2026-06-21 Issue #14（3D文字 高品質化 troika）
 
-状態: ワークツリー（ブランチ `worktree-issue-14-3d-text-quality`）に実装完了。型検査・単体テスト520件・両モードビルド・実GPU性能正式判定が緑。Codexの未pushレビュー指摘を反映済み。コミット前。
+状態: ブランチ `worktree-issue-14-3d-text-quality` を `origin/main`（#22 シェーダ変形・#36 JUST音程スロットを取り込んだ最新）へリベースして PR #147 を作成済み。型検査・単体テスト620件・両モードビルド・実GPU性能正式判定が緑。Codexの未pushレビュー指摘を反映済み。マージ待ち。
 
 ## 背景（検証で確定した前提）
 #14の名指し3項目（カメラ正対・日本語フォント・配置確定の安定化）は先行 #20 が既に機能実装済みだった（`engine.ts` の毎フレーム `quaternion.copy`、Zen Kaku サブセット、生成時1回 `sync`＋世代番号）。ただし #14固有の「配置確定の主スレッド費用<1ms/frame」は未計測で、無条件正対は研究 §4 の「カメラが文字間を通過する疾走感」と衝突していた。ユーザー決定で残作業を3本柱に確定し実装した。
@@ -16,7 +16,7 @@
 - C 同期費用 p99<1ms（☆）: 実GPU（ANGLE Intel Iris Xe D3D11、非ソフトウェア）で desktop_real（単一層）・desktop_maxload（一括層・群正対）とも p99=0.4ms。合格。max は run間で0.5〜3.4msと揺れるが単発のごみ集め由来（単発フレーム落ち0・平均60fps維持）でp99が定常費用を表す。
 - D 輪郭鮮鋭度: `sdfGlyphSize`=64 を明示設定。現エンジンの最大表示寸法では #20 の視覚検証範囲内。#32 で寸法が増える場合に再評価。
 - E 非退行: 実GPU desktop_real 平均60fps・下位5%60・単発落ち0、desktop_maxload 初回遅延89ms<100ms。
-- F 型検査・単体519件・両モードビルド（`build` と `build:app`）緑。
+- F 型検査・単体620件（リベースで取り込んだ #22・#36 のテストを含む）・両モードビルド（`build` と `build:app`）緑。
 
 ## レビュー反映
 計画段階: Codex の独立レビュー（ゼロベース設計一致確認＋二重チェック、3巡）で計測区間・描画混入回避・統計値出力・日本語検証の堅牢化・固定向き判定・SDF表現・テスト設計を反映済み。
@@ -26,5 +26,12 @@
 ## 変更ファイル
 新規 `orientation.ts`・`orientation.test.ts`。改修 `types.ts`・`engine.ts`・`engine.test.ts`・`troikaExports.test.ts`・`warmup`（既存引数利用）・`src/types/troika-three-text.d.ts`・`src/types/globals.d.ts`・`diagnostics/main.ts`・`scripts/typography-fps.mjs`・`README.md`（kineticText）。
 
+## origin/main へのリベース統合（PR作成前）
+作業中に `origin/main` が PR #143（#22 シェーダ変形）・PR #144（#36 JUST音程スロット）をマージして前進し、同じファイル（`engine.ts`・`diagnostics/main.ts`・`types.ts`・`index.ts`・`globals.d.ts`・`troika-three-text.d.ts`・`stressProfile.ts`・`typography-fps.mjs`・`README.md`）を変更していた。#14コミットを最新 `origin/main` へリベースし、5ファイルの競合を両立統合した。
+- `engine.ts` の `update` は、単一字（向き方針）・一括字（向き方針＋群正対）・変形字（#22の変形時間進行）の3層が共存する。
+- `DeformingTextHandle extends GlyphHandle` のため `setOrientation` が必須化した。変形テキストにも向き方針を持たせ（既定はカメラ正対で従来挙動を維持、`fixed` で3次元固定可能、変形の時間進行は向きと独立に常時実行）、`DeformingEntry` に `orientation` を追加した。
+- `gsap` 依存は新 main が追加済み。リベース後に `npm install` で取得した。
+- リベース後の差分は #14 の変更のみで、#22・#36 の作業を巻き戻していないことを `git diff origin/main..HEAD` で確認した。実GPU診断は #14 の同期費用ゲートと #22 の全文一括変形ゲートが同時に合格する。
+
 ## 次の着手
-コードレビュー（requesting-code-review＋Codexレビュー）→ 指摘解消 → コミット・PR（マージはユーザー判断）。プランは `~/.claude/plans/claude-md-serena-github-issue-milestone-mutable-tome.md`。
+PR #147 のレビューとマージ。プランは `~/.claude/plans/claude-md-serena-github-issue-milestone-mutable-tome.md`。

@@ -28,7 +28,7 @@ interface ReadableFakeText {
   position: { x: number; y: number; z: number; set(x: number, y: number, z: number): void };
   rotation: { set(): void };
   scale: { x: number; setScalar(s: number): void };
-  quaternion: { copy(): void };
+  quaternion: { copy(): void; identity(): void };
   lastSyncCallback: (() => void) | null;
   syncCount: number;
   sync(cb?: () => void): void;
@@ -71,7 +71,7 @@ function makeReadableFakeText(): ReadableFakeText {
         this.x = s;
       },
     },
-    quaternion: { copy(): void {} },
+    quaternion: { copy(): void {}, identity(): void {} },
     lastSyncCallback: null,
     syncCount: 0,
     sync(cb?: () => void): void {

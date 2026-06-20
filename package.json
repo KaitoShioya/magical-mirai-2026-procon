@@ -12,19 +12,24 @@
     "test": "vitest run",
     "build:font-subset": "node scripts/build-font-subset.mjs",
     "typography:fps": "node scripts/typography-fps.mjs",
+    "typography:instances:fps": "node scripts/typography-instances-fps.mjs",
     "reflection:fps": "node scripts/reflection-fps.mjs",
     "smoke": "node scripts/screens-smoke.mjs",
     "smoke:glow": "node scripts/rendering-glow-smoke.mjs",
+    "smoke:layer": "node scripts/rendering-layer-smoke.mjs",
     "smoke:input": "node scripts/input-smoke.mjs",
     "smoke:credits": "node scripts/credits-smoke.mjs",
+    "smoke:typography": "node scripts/typography-deform-smoke.mjs",
     "quality": "node scripts/quality-harness.mjs --mode=local",
     "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud"
   },
   "dependencies": {
     "@pixiv/three-vrm": "3.5.4",
+    "gsap": "^3.13.0",
     "textalive-app-api": "^0.4.0",
     "three": "^0.184.0",
-    "troika-three-text": "^0.52.4"
+    "troika-three-text": "0.52.4",
+    "troika-three-utils": "0.52.4"
   },
   "engines": {
     "node": "^20.19.0 || ^22.12.0"

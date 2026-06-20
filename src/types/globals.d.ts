@@ -21,6 +21,27 @@ declare global {
     __frameDrops?: () => number;
     /** 初回表示遅延（暖め後の最初の出現要求から最初の描画完了まで、ミリ秒）を返す（kineticText 診断が公開する） */
     __initLatencyMs?: () => number;
+    /** 直近フレームの描画命令の回数を返す（kineticText 診断 typography.html の変形シナリオが公開する）。 */
+    __drawCalls?: () => number;
+    /** 現在表示中の変形単位（変形テキスト）の数を返す（kineticText 診断 typography.html の変形シナリオが公開する）。 */
+    __activeDeformUnits?: () => number;
+    /**
+     * アニメーション付き診断（typography.html の anim=1）で、文字プール上限超過により出現が無操作になった回数を返す。
+     * 0でない場合、計測した負荷が意図した同時数を代表しない（scripts/typography-instances-fps.mjs が取得する）。
+     */
+    __animNoopCount?: () => number;
+    /** 文字エンジンの同期的主スレッド費用（出現時の sync 発火＋向き更新）の1フレーム最大値（ミリ秒）。kineticText 診断が公開する。 */
+    __textSyncCostMaxMs?: () => number;
+    /** 同上の上位5パーセンタイル（ミリ秒）。 */
+    __textSyncCostP95Ms?: () => number;
+    /** 同上の上位1パーセンタイル（ミリ秒）。 */
+    __textSyncCostP99Ms?: () => number;
+    /** 同上が1ミリ秒を超えたフレーム数。 */
+    __textSyncCostOverCount?: () => number;
+    /** 同期費用を計測した総フレーム数。 */
+    __textSyncCostFrames?: () => number;
+    /** 参考値: 描画（composer.render）の1フレーム最大所要時間（ミリ秒）。後処理を含むためゲート対象外。 */
+    __renderCostMaxMs?: () => number;
     /**
      * 検証用の状態履歴アクセサ。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
      * 進入した画面状態のキーを進入順に返す。scripts/screens-smoke.mjs が取得する。
@@ -42,8 +63,8 @@ declare global {
     };
     /**
      * 検証用の描画状態アクセサ。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
-     * WebGL生成可否・画素密度倍率・描画バッファ寸法・クリアカラー16進・カメラ縦横比を返す。
-     * scripts/rendering-smoke.mjs が取得する。共有型が rendering に依存しないよう素の構造で宣言する。
+     * RenderRoot.state() の戻り値（素の構造）と一致させる。scripts/rendering-smoke.mjs が取得する。
+     * 共有型が rendering に依存しないよう素の構造で宣言する。
      */
     __renderState?: () => {
       webglAvailable: boolean;
@@ -55,6 +76,26 @@ declare global {
       cameraPosition: { x: number; y: number; z: number };
       cameraDirection: { x: number; y: number; z: number };
       cameraPoseRejectedCount: number;
+      reflectionEnabled: boolean;
+      reflectionResolution: number;
+      bloom: {
+        enabled: boolean;
+        strength: number;
+        radius: number;
+        threshold: number;
+        bloomInputWidth: number;
+        bloomInputHeight: number;
+        outputPassEnabled: boolean;
+      } | null;
+      centerFigureStatus: "fallback" | "loaded" | "error";
+      centerFigureError: string | null;
+      overlay: {
+        objectCount: number;
+        frustumLeft: number;
+        frustumRight: number;
+        frustumTop: number;
+        frustumBottom: number;
+      } | null;
     };
     /** カメラ軌跡の受け入れ診断 camera-trajectory.html が公開する掃引結果。scripts/camera-trajectory-smoke.mjs が取得する。 */
     __cameraTrajectory?: () => {
@@ -78,6 +119,19 @@ declare global {
     __glowState?: () => {
       drawCalls: number;
       triangles: number;
+    };
+    /**
+     * 検証用の層合成診断アクセサ。層合成の受け入れ診断ページ（layer-composite.html）だけが取り付ける。
+     * 本番と同じ合成手順（3次元の合成→深度のみ消去→正射影で2次元層を最前面）で数フレーム描いた直後に、
+     * 画面の画素を読み戻したスナップショットを返す。scripts/rendering-layer-smoke.mjs が取得する。
+     * 各標本は赤・緑・青・不透明度の4成分（0以上255以下）の配列。共有型が rendering に依存しないよう
+     * 素の構造で宣言する。
+     */
+    __layerCompositeState?: () => {
+      webglAvailable: boolean;
+      insideSamples: ReadonlyArray<readonly [number, number, number, number]>;
+      outsideSample: readonly [number, number, number, number];
+      sampleCount: number;
     };
     /**
      * 検証用の入力イベント履歴アクセサ。入力診断ページ（input.html）だけが取り付ける。

@@ -17,6 +17,8 @@ declare module "troika-three-text" {
     strokeWidth: number | string;
     strokeColor: number | string | Color;
     strokeOpacity: number;
+    /** 文字間隔（em単位）。単一 Text 内の字間を広げる。 */
+    letterSpacing: number;
     // 影（outline）。文字の背面に重ねる複製。ずれとぼかしで影、ずれなしで縁取りの代替に使う（Issue #31）。
     outlineWidth: number | string;
     outlineColor: number | string | Color;
@@ -26,8 +28,14 @@ declare module "troika-three-text" {
     outlineBlur: number | string;
     anchorX: number | string;
     anchorY: number | string;
+    /** 距離場の解像度（2の冪）。既定は64。大きいほど角・細線が鮮鋭だがメモリと生成時間が増える。 */
+    sdfGlyphSize: number | null;
+    /** 距離場の生成をGPUで加速するか。既定は true。 */
+    gpuAccelerateSDF: boolean;
     /** 文字に割り当てられたマテリアル。 */
     material: Material;
+    /** 基材から文字描画用の派生マテリアルを作る。サブクラスで上書きして変形層を重ねられる。 */
+    createDerivedMaterial(baseMaterial: Material): Material;
     /** 文字の配置を確定する。troika は非同期に文字を組むため呼び出しが必要。 */
     sync(callback?: () => void): void;
     /** ジオメトリ・マテリアル等のGPU資源を解放する。 */

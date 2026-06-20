@@ -28,6 +28,7 @@ import {
 } from "../../../rendering/constants";
 import { clampPixelRatio, computeAspect } from "../../../rendering/viewport";
 import { createKineticTextEngine } from "../engine";
+import { createGlyphAnimation } from "../glyphAnimation";
 import { createFontRegistry } from "../fontRegistry";
 import { computeMaxConcurrent, computeSingleLayerLimit, computeBatchedLayerLimit } from "../layerLimits";
 import { ZEN_KAKU_GOTHIC_NEW_CREDIT } from "../fontCredits";
@@ -38,6 +39,7 @@ import {
   buildMaxLoadProfile,
 } from "./stressProfile";
 import type { GlyphHandle, KineticTextEngine } from "../types";
+import type { GlyphAnimation, GlyphAnimationSpec } from "../glyphAnimation";
 
 // 依存規則により本体中核は tools を import しないため、要素取得は内製する。
 function requireElement<T extends HTMLElement>(id: string): T {
@@ -60,6 +62,7 @@ const BLOOM_ON = numberKnob("bloom", 1) === 1;
 const REPLAY_SPEED = numberKnob("speed", 1);
 const PROFILE = stringKnob("profile", "real"); // "real"（実測再現・合否）| "maxload"（最大負荷・余力）。
 const START_MS = numberKnob("start", 0); // 実測再現の再生開始時刻（ミリ秒）。最悪集中区間を計測に含めるため指定する。
+const ANIM_ON = numberKnob("anim", 0) === 1; // 1のとき各文字に4系統のアニメーション（Issue #21）を付ける。
 const FONT_NAME = "main";
 const FONT_URL = "/fonts/zen-kaku-gothic-new-subset.woff";
 const SONGMAP_URL = "/docs/analysis/takeover.songmap.json";
@@ -157,6 +160,10 @@ window.__p5Fps = (): number => {
 window.__frameDrops = (): number => frameDeltas.filter((delta) => delta > 33).length;
 window.__initLatencyMs = (): number => initLatencyMs;
 
+// 文字プール上限超過で出現が無操作になった回数。0でなければ計測した負荷が意図した同時数を代表しない。
+let animNoopCount = 0;
+window.__animNoopCount = (): number => animNoopCount;
+
 // ---- 出現の駆動 ----
 interface ScheduledSpawn {
   readonly char: string;
@@ -181,6 +188,47 @@ function randomGlyphPosition(seed: number): { x: number; y: number; z: number } 
     x: Math.cos(angle) * radius,
     y: height,
     z: Math.sin(angle) * radius,
+  };
+}
+
+// 文字1つ分のアニメーション仕様（4系統すべてを動かす）。位置の小さな揺れ・回転・大きさの脈動・
+// 不透明度の出入りを、文字ごとに擬似乱数で散らして作る。位置は出現位置を基準に揺らす。
+function buildGlyphAnimationSpec(
+  base: { x: number; y: number; z: number },
+  startTimeMs: number,
+  durationMs: number,
+  seed: number
+): GlyphAnimationSpec {
+  const wiggleX = (pseudoRandom(seed) - 0.5) * 2;
+  const wiggleY = (pseudoRandom(seed + 3) - 0.5) * 2;
+  const spin = (pseudoRandom(seed + 5) - 0.5) * Math.PI * 2;
+  return {
+    startTimeMs,
+    durationMs,
+    position: [
+      { atMs: 0, value: { x: base.x, y: base.y, z: base.z } },
+      {
+        atMs: durationMs * 0.5,
+        value: { x: base.x + wiggleX, y: base.y + wiggleY, z: base.z },
+        ease: "power1.inOut",
+      },
+      { atMs: durationMs, value: { x: base.x, y: base.y, z: base.z }, ease: "power1.inOut" },
+    ],
+    rotation: [
+      { atMs: 0, value: { x: 0, y: 0, z: 0 } },
+      { atMs: durationMs, value: { x: 0, y: 0, z: spin }, ease: "none" },
+    ],
+    scale: [
+      { atMs: 0, value: 0.6 },
+      { atMs: durationMs * 0.2, value: 1.2, ease: "back.out" },
+      { atMs: durationMs, value: 0.8, ease: "power1.in" },
+    ],
+    opacity: [
+      { atMs: 0, value: 0 },
+      { atMs: durationMs * 0.15, value: 1, ease: "power1.out" },
+      { atMs: durationMs * 0.85, value: 1 },
+      { atMs: durationMs, value: 0, ease: "power1.in" },
+    ],
   };
 }
 
@@ -272,8 +320,9 @@ async function start(): Promise<void> {
   let scheduleIndex = startIndex;
   let phraseSpawned = false;
 
-  // 最大負荷は一度だけ単一層を飽和させ、フレーズを1つ出す。
-  if (maxLoad) {
+  // 最大負荷（アニメーションなし）は一度だけ単一層を飽和させ、フレーズを1つ出す。
+  // アニメーション付きの最大負荷は、寿命を持たせず毎フレーム上限まで補充するため、ここでは出さない。
+  if (maxLoad && !ANIM_ON) {
     for (const event of maxLoad.singleEvents) {
       activeEngine.spawnGlyph({
         char: event.char,
@@ -294,6 +343,50 @@ async function start(): Promise<void> {
   // これをしないと、曲末付近で出した寿命付きの文字が次周まで残る（解放は冪等なので二重解放は無害）。
   const activeHandles = new Set<GlyphHandle>();
 
+  // アニメーション付き経路の管理集合（Issue #21）。エンジンの自動解放を使わず、ここで寿命を所有する。
+  const activeAnimations = new Set<GlyphAnimation>();
+
+  // アニメーション付きで1文字を出す。文字プール上限超過（無操作）かを stats の増分で判定する
+  // （実体取得時だけ activeGlyphs が増える）。実体なら true、無操作なら回数を数えて false を返す。
+  function spawnAnimatedGlyph(
+    char: string,
+    basePosition: { x: number; y: number; z: number },
+    startTimeMs: number
+  ): boolean {
+    const before = activeEngine.stats().activeGlyphs;
+    const handle = activeEngine.spawnGlyph({
+      char,
+      fontName: FONT_NAME,
+      position: basePosition,
+      fontSize: 3,
+      color: 0xffffff,
+      opacity: 1,
+    });
+    const after = activeEngine.stats().activeGlyphs;
+    if (after > before) {
+      activeAnimations.add(
+        createGlyphAnimation(
+          handle,
+          buildGlyphAnimationSpec(basePosition, startTimeMs, RESIDENCE_MS, seed)
+        )
+      );
+      seed += 1;
+      return true;
+    }
+    animNoopCount += 1;
+    return false;
+  }
+
+  // 終了後のアニメーションを終了処理して管理集合から外す。出現の前に呼び、文字プール枠を空ける。
+  function pruneFinishedAnimations(playbackMs: number): void {
+    for (const animation of activeAnimations) {
+      if (animation.phaseAt(playbackMs) === "finished") {
+        animation.finish();
+        activeAnimations.delete(animation);
+      }
+    }
+  }
+
   function frame(now: number): void {
     requestAnimationFrame(frame);
 
@@ -311,23 +404,52 @@ async function start(): Promise<void> {
           handle.release();
         }
         activeHandles.clear();
+        // アニメーション付き経路も前周の全アニメーションを終了処理して空にする。
+        for (const animation of activeAnimations) {
+          animation.finish();
+        }
+        activeAnimations.clear();
         playbackStart = now;
         scheduleIndex = startIndex;
         playbackMs = START_MS;
       }
+      // 出現の前に終了後のアニメーションを解放し、文字プール枠を空ける（同時数の代表性を保つ）。
+      if (ANIM_ON) {
+        pruneFinishedAnimations(playbackMs);
+      }
       while (scheduleIndex < schedule.length && schedule[scheduleIndex].atMs <= playbackMs) {
         const event = schedule[scheduleIndex];
-        const handle = activeEngine.spawnGlyph({
-          char: event.char,
-          fontName: FONT_NAME,
-          position: randomGlyphPosition(seed++),
-          fontSize: 3,
-          color: 0xffffff,
-          opacity: 1,
-          lifetimeMs: event.lifetimeMs,
-        });
-        activeHandles.add(handle);
+        if (ANIM_ON) {
+          // アニメーションの基準時刻は文字の出現時刻（event.atMs）にする。
+          // 出現フレームの再生位置ではなく出現時刻を基準にすると、再生位置で位置づける正典の同期方式
+          // （docs/research/01-kinetic-typography.md §8）に沿い、各文字の生存区間が
+          // [event.atMs, event.atMs + RESIDENCE_MS] となって同時数が上限算出の根拠と一致する。
+          spawnAnimatedGlyph(event.char, randomGlyphPosition(seed), event.atMs);
+        } else {
+          const handle = activeEngine.spawnGlyph({
+            char: event.char,
+            fontName: FONT_NAME,
+            position: randomGlyphPosition(seed++),
+            fontSize: 3,
+            color: 0xffffff,
+            opacity: 1,
+            lifetimeMs: event.lifetimeMs,
+          });
+          activeHandles.add(handle);
+        }
         scheduleIndex += 1;
+      }
+    }
+
+    // 最大負荷（アニメーション付き）は毎フレーム上限まで補充し、最大の同時数を維持する。
+    if (maxLoad && ANIM_ON) {
+      pruneFinishedAnimations(playbackMs);
+      const sample = uniqueChars.length > 0 ? uniqueChars : "あ";
+      while (activeAnimations.size < singleLimit) {
+        const char = sample[seed % sample.length];
+        if (!spawnAnimatedGlyph(char, randomGlyphPosition(seed), playbackMs)) {
+          break; // 無操作になったらこのフレームの補充を止める（無限ループを避ける）。
+        }
       }
     }
 
@@ -346,6 +468,13 @@ async function start(): Promise<void> {
     }
 
     activeEngine.update({ gameTimeMs: playbackMs, frameDeltaMs: now - lastFrameTime });
+
+    // アニメーションの反映はエンジン更新の後に行う（回転が正対を上書きするため。Issue #21 判断3）。
+    if (ANIM_ON) {
+      for (const animation of activeAnimations) {
+        animation.applyAt(playbackMs);
+      }
+    }
 
     composer.render();
 
@@ -367,10 +496,11 @@ async function start(): Promise<void> {
 
     const stats = activeEngine.stats();
     hud.textContent =
-      `profile=${PROFILE} fps=${lastInstantFps} avg=${window.__avgFps ? window.__avgFps() : 0} ` +
+      `profile=${PROFILE}${ANIM_ON ? " anim=1" : ""} fps=${lastInstantFps} avg=${window.__avgFps ? window.__avgFps() : 0} ` +
       `p5=${window.__p5Fps ? window.__p5Fps() : 0} drops>33ms=${window.__frameDrops ? window.__frameDrops() : 0}\n` +
       `init=${initLatencyMs}ms warm=${warmMs}ms 上限(単一${singleLimit}/一括${batchedLimit}) ` +
       `活動${stats.activeGlyphs} 一括${stats.activeBatchedMembers} 残存${Math.round(RESIDENCE_MS)}ms` +
+      (ANIM_ON ? ` アニメ${activeAnimations.size} 無操作${animNoopCount}` : "") +
       (phraseHandle ? " phrase出現" : "");
   }
 

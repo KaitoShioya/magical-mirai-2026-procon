@@ -6,6 +6,15 @@ export { createKineticTextEngine } from "./engine";
 export type { KineticTextEngineInternals } from "./engine";
 export { createFontRegistry } from "./fontRegistry";
 export { warmUpFont } from "./warmup";
+export { createGlyphAnimation } from "./glyphAnimation";
+export type {
+  AnimationKeyframe,
+  GlyphAnimationSpec,
+  GlyphAnimationPhase,
+  GlyphAnimation,
+  AnimationTimeline,
+  GlyphAnimationInternals,
+} from "./glyphAnimation";
 export {
   computeMaxConcurrent,
   computeSingleLayerLimit,

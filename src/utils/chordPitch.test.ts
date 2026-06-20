@@ -1,0 +1,159 @@
+import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import {
+  isNoChordSymbol,
+  parseChordSymbol,
+  expandChordToPitchSet,
+  chordSymbolToPitchSet,
+  CHORD_QUALITY_INTERVALS,
+  CHORD_PITCH_BASE_C_MIDI,
+} from "./chordPitch";
+
+// 1オクターブの半音数（音高クラスの算出に使う）。
+const SEMITONES_PER_OCTAVE = 12;
+
+// 集合が出力の不変条件（昇順・0〜127整数・重複なし・各音高クラスがちょうど2個）を満たすかを確かめる補助。
+function expectValidPitchSet(pitches: number[], expectedPitchClassCount: number): void {
+  expect(pitches.length).toBe(expectedPitchClassCount * 2);
+  // 昇順かつ重複なし。
+  for (let i = 1; i < pitches.length; i += 1) {
+    expect(pitches[i]).toBeGreaterThan(pitches[i - 1]);
+  }
+  // 0〜127の整数。
+  for (const pitch of pitches) {
+    expect(Number.isInteger(pitch)).toBe(true);
+    expect(pitch).toBeGreaterThanOrEqual(0);
+    expect(pitch).toBeLessThanOrEqual(127);
+  }
+  // 各音高クラスがちょうど2個（2オクターブ展開）。
+  const countByPitchClass = new Map<number, number>();
+  for (const pitch of pitches) {
+    const pitchClass = ((pitch % SEMITONES_PER_OCTAVE) + SEMITONES_PER_OCTAVE) % SEMITONES_PER_OCTAVE;
+    countByPitchClass.set(pitchClass, (countByPitchClass.get(pitchClass) ?? 0) + 1);
+  }
+  expect(countByPitchClass.size).toBe(expectedPitchClassCount);
+  for (const count of countByPitchClass.values()) {
+    expect(count).toBe(2);
+  }
+}
+
+// 実データ（TAKEOVERの音楽地図ダンプ）から和音名のみを読み出す。本モジュールは時刻を使わないため name だけを使う。
+const songmapPath = fileURLToPath(
+  new URL("../../docs/analysis/takeover.songmap.json", import.meta.url)
+);
+const songmap = JSON.parse(readFileSync(songmapPath, "utf8")) as {
+  chords: { name: string }[];
+};
+const uniqueRealChordNames = [
+  ...new Set(songmap.chords.map((chord) => chord.name)),
+].filter((name) => !isNoChordSymbol(name));
+
+describe("実データ網羅（達成基準の直接検証）", () => {
+  it("和音区間が210でうち無和音が6、実在和音が16種である", () => {
+    expect(songmap.chords.length).toBe(210);
+    const noChordCount = songmap.chords.filter((chord) => isNoChordSymbol(chord.name)).length;
+    expect(noChordCount).toBe(6);
+    expect(uniqueRealChordNames.length).toBe(16);
+  });
+
+  it("全ての実在和音が例外なく有効な音高集合へ変換される", () => {
+    for (const name of uniqueRealChordNames) {
+      const parsed = parseChordSymbol(name);
+      const pitches = chordSymbolToPitchSet(name);
+      const pitchClassCount = CHORD_QUALITY_INTERVALS[parsed.quality].length;
+      expectValidPitchSet(pitches, pitchClassCount);
+    }
+  });
+});
+
+describe("品質ごとの間隔（検証済みの期待値）", () => {
+  const cases: { name: string; expected: number[] }[] = [
+    { name: "Fm", expected: [77, 80, 84, 89, 92, 96] },
+    { name: "DbM7", expected: [73, 77, 80, 84, 85, 89, 92, 96] },
+    { name: "Caug", expected: [72, 76, 80, 84, 88, 92] },
+    { name: "Eb6", expected: [75, 79, 82, 84, 87, 91, 94, 96] },
+    { name: "Bbm7", expected: [82, 85, 89, 92, 94, 97, 101, 104] },
+    { name: "Ab/Eb", expected: [80, 84, 87, 92, 96, 99] },
+    { name: "F/A", expected: [77, 81, 84, 89, 93, 96] },
+  ];
+  for (const { name, expected } of cases) {
+    it(`${name} を既定の基準で正しく音高化する`, () => {
+      expect(chordSymbolToPitchSet(name)).toEqual(expected);
+    });
+  }
+});
+
+describe("分数和音（低音非注入の契約固定）", () => {
+  it("低音が構成音内の分数和音は集合が基底三和音と一致し、低音は記録される", () => {
+    // Ab/Eb・Ab/C はいずれもラ♭長三和音で、低音（ミ♭=3・ハ=0）は構成音内のため集合は同一になる。
+    const abMajor = chordSymbolToPitchSet("Ab");
+    expect(chordSymbolToPitchSet("Ab/Eb")).toEqual(abMajor);
+    expect(chordSymbolToPitchSet("Ab/C")).toEqual(abMajor);
+    expect(parseChordSymbol("Ab/Eb").bassPitchClass).toBe(3);
+    expect(parseChordSymbol("Ab/C").bassPitchClass).toBe(0);
+    expect(parseChordSymbol("F/A").bassPitchClass).toBe(9);
+  });
+
+  it("低音が構成音外でも集合へ注入されず、低音は記録のみとなる", () => {
+    // C/D のニ音（音高クラス2）はハ長三和音（ハ・ホ・ト）の構成音でない。
+    const cMajor = chordSymbolToPitchSet("C");
+    expect(chordSymbolToPitchSet("C/D")).toEqual(cMajor);
+    const parsed = parseChordSymbol("C/D");
+    expect(parsed.bassPitchClass).toBe(2);
+    expect(chordSymbolToPitchSet("C/D")).not.toContain(CHORD_PITCH_BASE_C_MIDI + 2);
+  });
+});
+
+describe("変化記号（根音の音高クラス）", () => {
+  it("フラット付きの根音を正しく解釈する", () => {
+    expect(parseChordSymbol("Bb").rootPitchClass).toBe(10);
+    expect(parseChordSymbol("Db").rootPitchClass).toBe(1);
+    expect(parseChordSymbol("Eb").rootPitchClass).toBe(3);
+    expect(parseChordSymbol("Ab").rootPitchClass).toBe(8);
+  });
+});
+
+describe("品質の大文字小文字区別", () => {
+  it("M7 は長七、m7 は短七、m は短三和音として区別される", () => {
+    expect(parseChordSymbol("DbM7").quality).toBe("majorSeventh");
+    expect(parseChordSymbol("Cm7").quality).toBe("minorSeventh");
+    expect(parseChordSymbol("Cm").quality).toBe("minor");
+    expect(parseChordSymbol("C").quality).toBe("major");
+  });
+});
+
+describe("無和音の扱い", () => {
+  it("isNoChordSymbol が N を真、和音を偽とする", () => {
+    expect(isNoChordSymbol("N")).toBe(true);
+    expect(isNoChordSymbol(" N ")).toBe(true);
+    expect(isNoChordSymbol("Fm")).toBe(false);
+  });
+
+  it("N の音高化要求は例外になる", () => {
+    expect(() => parseChordSymbol("N")).toThrow();
+    expect(() => chordSymbolToPitchSet("N")).toThrow();
+  });
+});
+
+describe("異常入力", () => {
+  it("空文字・未対応の品質・不正な根音は例外になる", () => {
+    expect(() => parseChordSymbol("")).toThrow();
+    expect(() => parseChordSymbol("Csus4")).toThrow();
+    expect(() => parseChordSymbol("Hm")).toThrow();
+  });
+});
+
+describe("基準オクターブの上書き", () => {
+  it("baseCMidi を1オクターブ上げると集合が一様に12移調される", () => {
+    const parsed = parseChordSymbol("Fm");
+    const base = expandChordToPitchSet(parsed);
+    const raised = expandChordToPitchSet(parsed, { baseCMidi: CHORD_PITCH_BASE_C_MIDI + 12 });
+    expect(raised).toEqual(base.map((pitch) => pitch + 12));
+  });
+
+  it("範囲外になる極端な上書きは例外になる", () => {
+    const parsed = parseChordSymbol("Fm");
+    expect(() => expandChordToPitchSet(parsed, { baseCMidi: 200 })).toThrow();
+  });
+});

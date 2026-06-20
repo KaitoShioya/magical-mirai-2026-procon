@@ -26,6 +26,8 @@ import {
 } from "./entities/centerFigure";
 import { loadVrm } from "./loaders/vrmLoader";
 import type { CharacterModelConfig } from "../types/character";
+import { createOverlayLayer, type OverlayLayer } from "./overlay";
+import type { Object3D } from "three";
 
 // 暫定カメラ視点（Issue #9）。カメラ軌跡本実装（Issue #13）で置換する暫定の固定視点である。
 // 採用理由を先に述べる。土台のカメラは原点・回転なしで湖面と発光点を画面に収めず、本編で映り込みを
@@ -65,6 +67,15 @@ export interface RenderState {
   centerFigureStatus: CenterFigureStatus;
   /** 中心オブジェクトのVRM読み込みが失敗したときの短い理由（無ければ null）。無音の不具合を診断・検証で検出する。 */
   centerFigureError: string | null;
+  /** 2次元層（Issue #15）の状態。載っている表示物の数と正射影カメラの視錐台（左・右・上・下）を返す。
+   *  WebGL が無く2次元層を作らない端末では null。 */
+  overlay: {
+    objectCount: number;
+    frustumLeft: number;
+    frustumRight: number;
+    frustumTop: number;
+    frustumBottom: number;
+  } | null;
 }
 
 /** 描画基盤の外部契約。 */
@@ -78,7 +89,12 @@ export interface RenderRoot {
    *  成功で true、失敗または WebGL が無いとき false を返す。失敗時は光柱を表示し続ける。
    *  複数回呼ばれたときは最後の呼び出しの結果だけを採り、古い読み込みの完了は破棄する（世代管理）。 */
   mountCenterCharacter(config: CharacterModelConfig): Promise<boolean>;
-  /** 表示寸法の変更を反映する（カメラ縦横比とレンダラ寸法・画素密度）。 */
+  /** 2次元層（Issue #15）へ表示物を足す。後続Issue（落下式レーン #57・音程帯 #58・反応位置の光点）が、
+   *  最前面に重ねる表示物をここへ載せる。WebGL が無く2次元層が無い端末では何もしない。 */
+  addOverlayObject(object: Object3D): void;
+  /** 2次元層（Issue #15）から表示物を外す。WebGL が無く2次元層が無い端末では何もしない。 */
+  removeOverlayObject(object: Object3D): void;
+  /** 表示寸法の変更を反映する（カメラ縦横比とレンダラ寸法・画素密度、2次元層の視錐台）。 */
   resize(width: number, height: number): void;
   /** カメラの位置と注視点（ワールド座標）を設定する。適用できたら true、位置と注視点が同一または
    *  非有限値で適用しなかったら false を返す。演出カメラ軌跡（#13）が毎フレーム駆動する。戻り値で
@@ -153,6 +169,11 @@ export function createRenderRoot(
     try {
       created = new WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
       created.setClearColor(NIGHT_COLOR, 1);
+      // 自動消去を無効にする（Issue #15 層合成）。採用理由を先に述べる。3次元の合成の後に深度のみ消して
+      // 2次元層を最前面へ重ねるため、描画のたびに色を自動で消されては困る。合成器の内部パス（RenderPass）は
+      // autoClear に依らず自前で色と深度を消すため通常経路は影響を受けず、防御経路（合成器が無い縮退）では
+      // render() の先頭で自前に renderer.clear() を呼ぶ。
+      created.autoClear = false;
       created.setPixelRatio(currentPixelRatio);
       created.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(created.domElement);
@@ -183,6 +204,8 @@ export function createRenderRoot(
   // 夜の照明と中心オブジェクト（Issue #64）。標準マテリアルのモデルを照らす光源と、中心に常在する造形。
   let lighting: NightLighting | null = null;
   let centerFigure: CenterFigure | null = null;
+  // 2次元層（Issue #15）。3次元の合成の後に最前面へ重ねる正射影カメラと専用シーン。
+  let overlay: OverlayLayer | null = null;
   if (renderer) {
     water = createWater({ reflectionResolution });
     scene.add(water.object3d);
@@ -212,6 +235,11 @@ export function createRenderRoot(
       displayWidth: window.innerWidth,
       displayHeight: window.innerHeight,
     });
+    // 2次元層（Issue #15）。3次元の合成の後に最前面へ重ねる。初回の構築時描画より前に生成する。
+    overlay = createOverlayLayer({
+      displayWidth: window.innerWidth,
+      displayHeight: window.innerHeight,
+    });
   }
 
   let disposed = false;
@@ -235,6 +263,8 @@ export function createRenderRoot(
       renderer.setSize(width, height);
       // 合成の往復バッファを描画バッファ全解像度へ合わせ、ブルーム入力解像度を半分へ再適用する。
       bloomComposer?.setSize(width, height);
+      // 2次元層の正射影カメラの視錐台を新しい縦横比で組み直す（Issue #15）。
+      overlay?.resize(width, height);
     }
   }
 
@@ -303,14 +333,19 @@ export function createRenderRoot(
     if (!renderer || disposed) {
       return;
     }
-    // 常に合成パイプライン経由で描く。理由を先に述べる。ブルームの有効・無効で色管理の経路を分けないため、
-    // 最終出力パスを含む合成器に一本化する。レンダラがあるとき合成器も必ず存在するが、型の縮約のため
-    // 存在を確かめ、万一無ければ素のシーン描画へ倒す。
+    // 常に合成パイプライン経由で3次元世界を描く。理由を先に述べる。ブルームの有効・無効で色管理の経路を
+    // 分けないため、最終出力パスを含む合成器に一本化する。レンダラがあるとき合成器も必ず存在するが、型の
+    // 縮約のため存在を確かめ、万一無ければ素のシーン描画へ倒す。
     if (bloomComposer) {
       bloomComposer.render();
     } else {
+      // 防御経路（合成器が無い縮退）。autoClear を偽に固定しているため、3次元を描く前に色と深度を自前で消す。
+      renderer.clear();
       renderer.render(scene, camera);
     }
+    // 2次元層を最前面へ重ねる（Issue #15）。出力先を画面へ明示し、深度のみ消してから正射影カメラで描く。
+    // 色は3次元の結果を保持する（autoClear が偽のため消えない）。
+    overlay?.composite(renderer);
   }
 
   // 起動直後にクリアカラーを適用するため、ループの初回フレームを待たず1回描く。
@@ -320,6 +355,12 @@ export function createRenderRoot(
     render,
     update,
     mountCenterCharacter,
+    addOverlayObject(object: Object3D): void {
+      overlay?.addObject(object);
+    },
+    removeOverlayObject(object: Object3D): void {
+      overlay?.removeObject(object);
+    },
     setCameraPose,
     resize,
     state(): RenderState {
@@ -351,6 +392,16 @@ export function createRenderRoot(
         // 中心オブジェクトの表示状態。作っていない（WebGL 不可）なら fallback を返す。
         centerFigureStatus: centerFigure ? centerFigure.status() : "fallback",
         centerFigureError,
+        // 2次元層（Issue #15）。作っていない（WebGL 不可）なら null。視錐台と載っている表示物の数を返す。
+        overlay: overlay
+          ? {
+              objectCount: overlay.objectCount(),
+              frustumLeft: overlay.frustum().left,
+              frustumRight: overlay.frustum().right,
+              frustumTop: overlay.frustum().top,
+              frustumBottom: overlay.frustum().bottom,
+            }
+          : null,
       };
     },
     dispose(): void {
@@ -388,6 +439,11 @@ export function createRenderRoot(
       if (bloomComposer) {
         bloomComposer.dispose();
         bloomComposer = null;
+      }
+      // 2次元層を解放する（Issue #15）。シーンから表示物を外すのみで、表示物のGPU資源は載せた側が解放する。
+      if (overlay) {
+        overlay.dispose();
+        overlay = null;
       }
       if (renderer) {
         renderer.dispose();

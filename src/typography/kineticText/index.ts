@@ -26,6 +26,8 @@ export {
   computeBatchedLayerLimit,
 } from "./layerLimits";
 export { ZEN_KAKU_GOTHIC_NEW_CREDIT } from "./fontCredits";
+export { DEFAULT_ORIENTATION } from "./orientation";
+export type { OrientationPolicy, OrientationMode, PhraseOrientationGranularity } from "./orientation";
 export type {
   FontCredit,
   FontEntry,

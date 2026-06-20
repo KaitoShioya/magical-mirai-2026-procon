@@ -138,12 +138,32 @@ let activeEngine: KineticTextEngine;
 
 // ---- 計測（1フレームごとの所要時間） ----
 const frameDeltas: number[] = [];
+// 文字エンジンの同期的主スレッド費用（出現時の sync 発火＋向き更新）の1フレーム所要時間（ミリ秒）。
+// 配置確定の worker 組版は主スレッドに乗らず、描画中の行列データテクスチャ書き込みと後処理は
+// この区間に含めない（後処理混入で文字以外の費用が乗るのを避けるため。除外分は単発落ち・平均フレーム率が抑える）。
+const textCosts: number[] = [];
+// 参考値: 描画（composer.render）の1フレーム所要時間（ミリ秒）。後処理を含むためゲート対象外。
+const renderCosts: number[] = [];
 let measuring = false;
 let lastFrameTime = 0;
 let lastInstantFps = 0;
 
+// 昇順に並べた配列の上位パーセンタイル値を返す（標本が空なら0）。
+// 最近接順位法を採る。理由: 順位 = 切り上げ(割合 × 標本数) を1基点の順位とし、これは
+// 「その値以下が割合以上を占める最小の値」を一意に与える標準的な定義で、切り捨て方式より
+// 1順位高い（最大側に近い）保守的な値になり、合否ゲートを甘くしないためである。
+function upperPercentile(values: readonly number[], fraction: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const rank = Math.ceil(fraction * sorted.length);
+  const index = Math.min(sorted.length, Math.max(1, rank)) - 1;
+  return sorted[index];
+}
+
 window.__resetFps = (): void => {
   frameDeltas.length = 0;
+  textCosts.length = 0;
+  renderCosts.length = 0;
   measuring = true;
   lastFrameTime = performance.now();
 };
@@ -171,6 +191,15 @@ window.__activeDeformUnits = (): number => lastActiveDeformUnits;
 // 文字プール上限超過で出現が無操作になった回数。0でなければ計測した負荷が意図した同時数を代表しない。
 let animNoopCount = 0;
 window.__animNoopCount = (): number => animNoopCount;
+
+window.__textSyncCostMaxMs = (): number =>
+  textCosts.length === 0 ? 0 : Math.max(...textCosts);
+window.__textSyncCostP95Ms = (): number => upperPercentile(textCosts, 0.95);
+window.__textSyncCostP99Ms = (): number => upperPercentile(textCosts, 0.99);
+window.__textSyncCostOverCount = (): number => textCosts.filter((cost) => cost >= 1).length;
+window.__textSyncCostFrames = (): number => textCosts.length;
+window.__renderCostMaxMs = (): number =>
+  renderCosts.length === 0 ? 0 : Math.max(...renderCosts);
 
 // ---- 出現の駆動 ----
 interface ScheduledSpawn {
@@ -437,6 +466,12 @@ async function start(): Promise<void> {
     cameraCurve.getPointAt((now * 0.00002) % 1, camera.position);
     camera.lookAt(cameraTarget);
 
+    // 同期的主スレッド費用の計測開始。出現処理（sync 発火を含む）の直前から、向き更新を行う
+    // engine.update の戻りまでを挟む。worker 組版・描画・後処理は含めない。
+    // この区間には再生時刻計算や出現スケジュールの走査も入るが、sync 発火を取り逃さないために
+    // 出現処理の手前から測る意図的な設計で、文字エンジンの実費用に対する保守的な上限として扱う。
+    const textStart = performance.now();
+
     let playbackMs = START_MS + (now - playbackStart) * REPLAY_SPEED;
 
     if (replay) {
@@ -506,6 +541,9 @@ async function start(): Promise<void> {
         fontSize: 2.5,
         color: 0x9ffbd0,
         opacity: 1,
+        // 群正対にして、毎フレームのメンバ位置再計算（一括層で最も重い向き処理）を
+        // 同期費用の計測へ含める。最大負荷プロファイルで合否対象とする。
+        orientation: { mode: "faceCamera", granularity: "asGroup" },
       });
       phraseSpawned = true;
     }
@@ -546,6 +584,10 @@ async function start(): Promise<void> {
 
     activeEngine.update({ gameTimeMs: playbackMs, frameDeltaMs: now - lastFrameTime });
 
+    // 同期的主スレッド費用の計測終了（アニメーション反映と描画の前で閉じる）。
+    // 計測対象は出現時の sync 発火と向き更新のみで、Issue #21 のアニメーション反映は含めない。
+    const textCost = performance.now() - textStart;
+
     // アニメーションの反映はエンジン更新の後に行う（回転が正対を上書きするため。Issue #21 判断3）。
     if (ANIM_ON) {
       for (const animation of activeAnimations) {
@@ -553,7 +595,10 @@ async function start(): Promise<void> {
       }
     }
 
+    // 描画費用は参考値として別に測る（後処理を含むためゲート対象外）。
+    const renderStart = performance.now();
     composer.render();
+    const renderCost = performance.now() - renderStart;
 
     // 初回表示遅延を可視化の次の描画完了で確定する。
     if (pendingInitRender && initLatencyMs < 0) {
@@ -569,13 +614,18 @@ async function start(): Promise<void> {
     }
     if (measuring && delta > 0) {
       frameDeltas.push(delta);
+      textCosts.push(textCost);
+      renderCosts.push(renderCost);
     }
 
     const stats = activeEngine.stats();
     lastActiveDeformUnits = stats.activeDeformingTexts;
+    const syncMax = window.__textSyncCostMaxMs ? window.__textSyncCostMaxMs() : 0;
+    const renderMax = window.__renderCostMaxMs ? window.__renderCostMaxMs() : 0;
     hud.textContent =
       `profile=${PROFILE}${ANIM_ON ? " anim=1" : ""} fps=${lastInstantFps} avg=${window.__avgFps ? window.__avgFps() : 0} ` +
       `p5=${window.__p5Fps ? window.__p5Fps() : 0} drops>33ms=${window.__frameDrops ? window.__frameDrops() : 0}\n` +
+      `同期費用max=${syncMax.toFixed(3)}ms 描画max(参考)=${renderMax.toFixed(2)}ms ` +
       `init=${initLatencyMs}ms warm=${warmMs}ms 上限(単一${singleLimit}/一括${batchedLimit}) ` +
       `活動${stats.activeGlyphs} 一括${stats.activeBatchedMembers} 変形${stats.activeDeformingTexts} ` +
       `描画命令${renderer.info.render.calls} 残存${Math.round(RESIDENCE_MS)}ms` +

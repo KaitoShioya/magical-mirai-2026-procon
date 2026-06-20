@@ -9,6 +9,10 @@ import type { Scene, Camera } from "three";
 import type { FontCredit } from "../../types/credits";
 export type { FontCredit };
 
+// 向き方針の型は orientation.ts に集約し、取り込み経路を変えないよう同名で再公開する。
+import type { OrientationPolicy } from "./orientation";
+export type { OrientationPolicy };
+
 /** 登録されたフォント1件。 */
 export interface FontEntry {
   /** 演出から参照する論理名。 */
@@ -60,6 +64,8 @@ export interface GlyphSpawnRequest {
   readonly opacity: number;
   /** 表示残存時間（ミリ秒）。これを過ぎると update で自動解放する。省略時は自動解放しない。 */
   readonly lifetimeMs?: number;
+  /** 向き方針。省略時はカメラ正対（既定）。 */
+  readonly orientation?: OrientationPolicy;
 }
 
 /** 一括文字層へフレーズを出す要求。 */
@@ -74,6 +80,8 @@ export interface PhraseSpawnRequest {
   readonly color: number;
   readonly opacity: number;
   readonly lifetimeMs?: number;
+  /** 向き方針。省略時はカメラ正対・文字ごと（既定）。 */
+  readonly orientation?: OrientationPolicy;
 }
 
 /**
@@ -87,6 +95,8 @@ export interface GlyphHandle {
   setScale(scale: number): void;
   setColor(color: number): void;
   setOpacity(opacity: number): void;
+  /** 向き方針を後から変える。拍・区間に合わせた切替（#132/#33）で使う。 */
+  setOrientation(policy: OrientationPolicy): void;
   /** 表示を終え、資源をプールへ返す。冪等。 */
   release(): void;
 }

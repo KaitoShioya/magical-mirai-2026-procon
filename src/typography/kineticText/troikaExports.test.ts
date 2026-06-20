@@ -11,6 +11,14 @@ describe("troika-three-text のエクスポート実体確認", () => {
     expect(typeof troika.preloadFont).toBe("function");
     expect(typeof troika.createTextDerivedMaterial).toBe("function");
   });
+
+  it("Text の実体に sdfGlyphSize と gpuAccelerateSDF が存在する（型宣言の裏取り）", () => {
+    const text = new troika.Text();
+    // sdfGlyphSize は既定 null（生成時に解像度を明示設定する）、gpuAccelerateSDF は既定 true。
+    expect("sdfGlyphSize" in text).toBe(true);
+    expect(text.gpuAccelerateSDF).toBe(true);
+    text.dispose();
+  });
 });
 
 describe("troika-three-utils のエクスポート実体確認", () => {

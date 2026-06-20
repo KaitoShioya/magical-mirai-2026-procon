@@ -35,5 +35,8 @@
 - README の「以下と同じ内容」が、READMEにある補足行を含めると厳密でなかった点 → 「同じ出典を示す。補足の説明を加えている箇所がある」と文言を正した。
 変更不要と判断した指摘: `src/types/credits.ts` が同層の `./character` を取り込む点。`src/types/README.md` と `docs/decisions/architecture.md` に「types は一切importしない」という規則は無く、`CharacterCredit` 自体が types 層のドメイン型であるため、上位層への依存でも循環でもない。
 
+## 提出状況
+ブランチ `worktree-feat+issue-82-credits-system` にコミットし origin へ push 済み。Pull Request #140（base: main、本文に Closes #82）を作成済み。
+
 ## 次の作業
-未コミット（ユーザーの指示待ち）。#77 は creditsView と buildCreditRegistry を取り込んで設定画面へ統合する。
+#77（設定・クレジット画面、M6）は creditsView と buildCreditRegistry を取り込み、効果音の消音切替と較正の再実行を足す。テクスチャ・舞台土台の出典は素材統合（#105・#106）の時点で CreditRegistry へ項目を追加する。

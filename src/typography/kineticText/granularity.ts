@@ -55,7 +55,13 @@ export interface GranularityUnitRef {
   readonly charIndex?: number;
 }
 
-/** 表示粒度プランの1セグメント。ある時間範囲を1つの粒度・判定理由で表示する。 */
+/**
+ * 表示粒度プランの1セグメント。ある時間範囲を1つの粒度・判定理由で表示する。
+ *
+ * 時刻範囲 startTimeMs・endTimeMs は、表示の切替のタイミング（ビートへ吸着し、隣接セグメントと
+ * 隙間も重複も無く連結したもの）を表す。これは元の歌詞単位の発声時刻とは一致しない。発声の実時刻が
+ * 要るときは unitRefs が指す歌詞単位を歌詞タイムライン（src/textalive/lyricsTimeline.ts）で引く。
+ */
 export interface GranularitySegment {
   readonly startTimeMs: number;
   readonly endTimeMs: number;
@@ -69,9 +75,9 @@ export interface GranularitySegment {
   /** フレーズをチャンク分割した1まとまりのとき、その位置と総数。分割しないときは null。 */
   readonly phraseChunk: { readonly chunkIndex: number; readonly chunkCount: number } | null;
   /**
-   * 文字粒度のときの発火の間引き間隔（拍）。1なら毎拍、2なら2拍に1回。他粒度では null。
-   * これは間引きの拍数の決定であり、各文字を実際にどの瞬間に描画するかの最終割付は
-   * #132・#33・本編結線 #59 の責務である。
+   * 文字粒度のときの発火の間引き間隔（拍）。1なら毎拍に1回発火、2なら2拍に1回発火。他粒度では null。
+   * これは発火の間隔の拍数であって、1回の発火で表示する文字数ではない。1回の発火で何文字を表示するか、
+   * および各文字を実際にどの瞬間に描画するかの最終割付は #132・#33・本編結線 #59 の責務である。
    */
   readonly charCadenceBeats: number | null;
 }
@@ -200,6 +206,21 @@ function snapToNearestBeat(beatStartTimesMs: readonly number[], timeMs: number):
   return timeMs - before <= after - timeMs ? before : after;
 }
 
+/** 指定時刻より厳密に大きい最初のビート開始時刻を返す。無ければ null。ビートは昇順を前提とする。 */
+function firstBeatGreaterThan(beatStartTimesMs: readonly number[], timeMs: number): number | null {
+  let low = 0;
+  let high = beatStartTimesMs.length;
+  while (low < high) {
+    const mid = (low + high) >> 1;
+    if (beatStartTimesMs[mid] > timeMs) {
+      high = mid;
+    } else {
+      low = mid + 1;
+    }
+  }
+  return low < beatStartTimesMs.length ? beatStartTimesMs[low] : null;
+}
+
 // ---- フレーズの特徴量と粒度判定 ----
 
 interface PhraseFeatures {
@@ -237,7 +258,12 @@ function computeFeatures(
     }
   }
   const loudMax = loudnessMaxInRange(input.loudnessCurve, phrase.startTimeMs, phrase.endTimeMs);
-  const loud = loudMax >= input.loudnessCurve.maxAmplitude * GRANULARITY_HIGH_LOUDNESS_RATIO;
+  // 最大声量が正のときだけ比率で判断する。最大声量が0以下のとき（声量データが無い、または曲全体が
+  // 無音）は「声量が大きい」を判断できないため、大きくないとみなす。これを入れないと、最大声量0の
+  // 入力で 0 >= 0 が常に真になり、全フレーズが声量大と誤判定される。
+  const loud =
+    input.loudnessCurve.maxAmplitude > 0 &&
+    loudMax >= input.loudnessCurve.maxAmplitude * GRANULARITY_HIGH_LOUDNESS_RATIO;
   return {
     phrase,
     charCount,
@@ -254,6 +280,11 @@ function computeFeatures(
  * 近接反復（連発）のフレーズ番号の集合を求める。同一のフレーズ文字列が、近接反復の時間窓の中に
  * 2回以上現れるフレーズを連発とする。窓を設けるのは、遠く離れて再登場するサビの歌詞を連発と
  * 誤らないためである。
+ *
+ * フレーズは開始時刻の昇順である（findLyricsTimelineIssues が確認し、入力契約でも要求する）。
+ * このため、同一文字列の出現は時間順に並び、ある出現が連発かどうかは時間的に隣り合う出現との
+ * 間隔だけで決まる。よって文字列ごとに隣り合う出現の対を一度ずつ調べれば足り、計算量は全体で
+ * フレーズ数に比例する（同一文字列が多数あっても二乗にならない）。
  */
 function findNearRepeatPhraseIndexes(timeline: LyricsTimeline): Set<number> {
   const byText = new Map<string, LyricPhraseUnit[]>();
@@ -267,19 +298,11 @@ function findNearRepeatPhraseIndexes(timeline: LyricsTimeline): Set<number> {
   }
   const result = new Set<number>();
   for (const list of byText.values()) {
-    if (list.length < 2) {
-      continue;
-    }
-    for (let i = 0; i < list.length; i++) {
-      for (let j = 0; j < list.length; j++) {
-        if (i === j) {
-          continue;
-        }
-        const gap = Math.abs(list[i].startTimeMs - list[j].startTimeMs);
-        if (gap <= GRANULARITY_NEAR_REPEAT_WINDOW_MS) {
-          result.add(list[i].phraseIndex);
-          break;
-        }
+    for (let i = 1; i < list.length; i++) {
+      const gap = list[i].startTimeMs - list[i - 1].startTimeMs;
+      if (gap <= GRANULARITY_NEAR_REPEAT_WINDOW_MS) {
+        result.add(list[i - 1].phraseIndex);
+        result.add(list[i].phraseIndex);
       }
     }
   }
@@ -362,6 +385,11 @@ function charRefs(phrase: LyricPhraseUnit): GranularityUnitRef[] {
 /**
  * 長いフレーズを、連続する単語を先頭から足して可読数を超えない最大の範囲で区切ったチャンクへ分ける。
  * 単語の境界で区切るのは、単語の途中で改行すると読みにくいためである。各チャンクは少なくとも1単語を含む。
+ *
+ * 1つの単語そのものが可読数を超える場合は、単語境界では分割できないため、その単語が単独で可読数を
+ * 超えるチャンクになる。対象曲TAKEOVERの最長単語は10文字で可読数14以下のため、この場合は起きない。
+ * 他曲への横展開でこの場合が起きたときの過大な表示寸法の扱いは、読ませる役の想定表示寸法を持つ #33 と
+ * 演出割付の #132 の責務とする。
  */
 function splitPhraseIntoChunks(phrase: LyricPhraseUnit): LyricWordUnit[][] {
   const chunks: LyricWordUnit[][] = [];
@@ -489,6 +517,12 @@ export function buildGranularityPlan(input: GranularityInput): GranularityPlan {
     // フレーズ前の無音を評価する。
     maybeInsertGap(raw, previousEndMs, phrase.startTimeMs, input);
     const features = computeFeatures(phrase, input, nearRepeat);
+    // 文字を1つも持たないフレーズは表示する単位が無いため、セグメントを作らない。
+    // 時間は隣接セグメントの鎖状連結で吸収される。次の無音評価のため終了時刻だけ進める。
+    if (features.charCount === 0) {
+      previousEndMs = phrase.endTimeMs;
+      continue;
+    }
     const decision = decideGranularity(features);
     for (const segment of segmentsForPhrase(phrase, decision)) {
       raw.push(segment);
@@ -547,8 +581,16 @@ function normalize(
     const segment = raw[i];
     let start = i === 0 ? 0 : snapToNearestBeat(beatStartTimesMs, segment.startTimeMs);
     if (start <= previousStart) {
-      // 吸着で前のセグメントと同じか前になった場合、このセグメントは長さを持てないため取り除く。
-      continue;
+      // 吸着で前のセグメントの開始と同じか前になった場合、内容を捨てないために、前の開始より後の
+      // 最初のビートへ置き直す。そのビートがこのセグメントの終了より前にあり長さを持てるときだけ採る。
+      // 置けるビートが無い（このセグメントがビート間隔より短く隣のフレーズと同じビートに丸まる）ときに
+      // 限り、このセグメントを取り除く（隣接セグメントの連結で時間は吸収される）。
+      const next = firstBeatGreaterThan(beatStartTimesMs, previousStart);
+      if (next !== null && next < segment.endTimeMs) {
+        start = next;
+      } else {
+        continue;
+      }
     }
     segment.startTimeMs = start;
     snapped.push(segment);
@@ -560,7 +602,8 @@ function normalize(
     snapped[i].endTimeMs = i + 1 < snapped.length ? snapped[i + 1].startTimeMs : songEndMs;
   }
 
-  // 末尾が曲の終了時刻以上に吸着された等で長さゼロになる場合に備え、長さゼロを取り除いて再連結する。
+  // 末尾セグメントの開始が曲の終了時刻以上に吸着された等で長さゼロまたは負になったものを取り除き、
+  // 取り除いた分で連結が崩れないよう、残ったセグメントの終了時刻を鎖状に再計算する。
   const cleaned = snapped.filter((s) => s.endTimeMs > s.startTimeMs);
   for (let i = 0; i < cleaned.length; i++) {
     cleaned[i].endTimeMs = i + 1 < cleaned.length ? cleaned[i + 1].startTimeMs : songEndMs;

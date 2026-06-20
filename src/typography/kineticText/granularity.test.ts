@@ -322,6 +322,103 @@ describe("正規化と決定性", () => {
   });
 });
 
+describe("ビート吸着の衝突時にセグメントを脱落させない", () => {
+  it("近い2フレーズの開始が同じビートに丸まっても、後続フレーズは次のビートへ置き直して残る", () => {
+    // ビートは1000ミリ秒間隔。フレーズ0(100〜250)とフレーズ1(300〜1500)はどちらも最近傍ビートが0で衝突する。
+    // フォールバックでフレーズ1は0より後の最初のビート1000へ置き直され、両フレーズのセグメントが残る。
+    const input: GranularityInput = {
+      lyricsTimeline: buildLyricsTimeline({
+        phrases: [
+          {
+            text: "あ",
+            startTime: 100,
+            endTime: 250,
+            children: [{ text: "あ", startTime: 100, endTime: 250, children: [{ text: "あ", startTime: 100, endTime: 250 }] }],
+          },
+          {
+            text: "いうえ",
+            startTime: 300,
+            endTime: 1500,
+            children: [
+              {
+                text: "いうえ",
+                startTime: 300,
+                endTime: 1500,
+                children: [
+                  { text: "い", startTime: 300, endTime: 700 },
+                  { text: "う", startTime: 700, endTime: 1100 },
+                  { text: "え", startTime: 1100, endTime: 1500 },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+      beatStartTimesMs: [0, 1000, 2000, 3000],
+      loudnessCurve: { stepMs: 200, values: new Array(16).fill(10), maxAmplitude: 100 },
+      sectionBoundariesMs: [],
+      songEndMs: 2000,
+    };
+    const plan = buildGranularityPlan(input);
+    const phraseIndexes = new Set(plan.segments.map((s) => s.phraseIndex));
+    expect(phraseIndexes.has(0)).toBe(true);
+    expect(phraseIndexes.has(1)).toBe(true);
+    expect(findGranularityPlanIssues(plan, input)).toEqual([]);
+  });
+});
+
+describe("最大声量が0のときの長音主体の判定", () => {
+  it("長音だけのフレーズでも最大声量が0なら長音主体にしない", () => {
+    const base = longToneInput();
+    const input: GranularityInput = {
+      ...base,
+      loudnessCurve: { stepMs: 200, values: new Array(24).fill(0), maxAmplitude: 0 },
+    };
+    const plan = buildGranularityPlan(input);
+    const seg = plan.segments.find((s) => s.phraseIndex === 0)!;
+    expect(seg.reason).not.toBe("longTone");
+    expect(seg.reason).toBe("middle");
+    expect(seg.granularity).toBe("word");
+  });
+});
+
+describe("文字を持たないフレーズの扱い", () => {
+  it("文字0のフレーズはセグメントを作らず、プランは整合する", () => {
+    const input: GranularityInput = {
+      lyricsTimeline: buildLyricsTimeline({
+        phrases: [
+          {
+            text: "あい",
+            startTime: 0,
+            endTime: 500,
+            children: [
+              {
+                text: "あい",
+                startTime: 0,
+                endTime: 500,
+                children: [
+                  { text: "あ", startTime: 0, endTime: 250 },
+                  { text: "い", startTime: 250, endTime: 500 },
+                ],
+              },
+            ],
+          },
+          // 文字を持たないフレーズ（単語が空）。
+          { text: "", startTime: 1500, endTime: 2000, children: [] },
+        ],
+      }),
+      beatStartTimesMs: makeBeats(250, 16),
+      loudnessCurve: { stepMs: 200, values: new Array(16).fill(10), maxAmplitude: 100 },
+      sectionBoundariesMs: [],
+      songEndMs: 2500,
+    };
+    const plan = buildGranularityPlan(input);
+    const phraseIndexes = new Set(plan.segments.map((s) => s.phraseIndex));
+    expect(phraseIndexes.has(1)).toBe(false);
+    expect(findGranularityPlanIssues(plan, input)).toEqual([]);
+  });
+});
+
 describe("依存規則の回帰", () => {
   it("取り込み（import）の行に禁止された依存先が現れない", () => {
     const modulePath = fileURLToPath(new URL("./granularity.ts", import.meta.url));

@@ -27,5 +27,14 @@
 ## 検証で判明した運用上の注意
 ワークツリーでスモーク検証する際、ポート4173に旧プレビューサーバが残っていると旧distが配信され誤った失敗になる。プレビュー起動失敗（ポート競合）を `preview.log` で確認し、占有プロセスを停止してから再起動する。
 
+## 目視確認
+開発サーバ（`npm run dev`）で次を確認した。`/layer-composite.html` は緑の背景（3次元）の上に赤い四角（2次元層）が中央に最前面で表示され、2次元層が3次元より手前・z-fightなしを目視で確認。`/?smoke=1` は従来どおりの深夜の湖の情景（反射・ブルーム・雨・中心の光の柱）が見え、2次元層が全面を覆うなどの異常がなく既存描画に回帰がないことを確認。
+
+## レビュー
+Codex（読み取り専用）に3回レビューを委譲した。1回目は基盤の妥当性確認、2回目で `OrthographicCamera` の near=-1000 が three.js 0.184 の公開契約外（near は0以上）との指摘を受け near=0・far=2000・カメラz=1000 へ修正、3回目で「このまま push して良い・要修正なし」の判定を得た。
+
+## 提出状況
+ブランチ `worktree-issue-15-layer-composite` にコミットして origin へ push 済み。Pull Request #146（base: main、本文に Closes #15）を作成済み。
+
 ## 次の作業
-2次元層の土台（`addOverlayObject`／`removeOverlayObject`、座標写像 `overlayPointFromNormalized`）の上に #57・#58・入力フィードバックの光点を構築する。提出（コミット・PR）はユーザー指示待ち。
+2次元層の土台（`addOverlayObject`／`removeOverlayObject`、座標写像 `overlayPointFromNormalized`）の上に #57・#58・入力フィードバックの光点を構築する。

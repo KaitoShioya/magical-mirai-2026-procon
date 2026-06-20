@@ -2,7 +2,8 @@
 // 状態を読んで描く「ビュー」であり、判定・得点・時刻の論理を持たない（依存規則 docs/decisions/architecture.md §5）。
 // profiles・tools は import しない。後続の反射(#9)・発光点(#10)・層合成(#15)はこの土台へ積み上げる。
 
-import { Color, FogExp2, PerspectiveCamera, Scene, Vector2, WebGLRenderer } from "three";
+import { Color, FogExp2, PerspectiveCamera, Scene, Vector2, Vector3, WebGLRenderer } from "three";
+import type { Vec3Like } from "../utils/cameraTrajectory";
 import {
   CAMERA_FAR,
   CAMERA_FOV,
@@ -16,6 +17,7 @@ import {
 import { createPlaceholderGlow, type PlaceholderGlow } from "./placeholderGlow";
 import { clampPixelRatio, computeAspect } from "./viewport";
 import { createWater, type Water } from "./water";
+import { createBloomComposer, type BloomComposer, type BloomState } from "./bloom";
 
 // 暫定カメラ視点（Issue #9）。カメラ軌跡本実装（Issue #13）で置換する暫定の固定視点である。
 // 採用理由を先に述べる。土台のカメラは原点・回転なしで湖面と発光点を画面に収めず、本編で映り込みを
@@ -38,10 +40,18 @@ export interface RenderState {
   clearColorHex: string;
   /** 透視投影カメラの縦横比。 */
   cameraAspect: number;
+  /** 現在のカメラ位置（setCameraPose 適用後）。診断・検証で読む。 */
+  cameraPosition: { x: number; y: number; z: number };
+  /** 現在のカメラの前方向き（単位ベクトル）。lookAt の適用を診断・検証で確かめる。 */
+  cameraDirection: { x: number; y: number; z: number };
+  /** setCameraPose が適用を拒否した累積回数（位置と注視点が同一・非有限値）。無音の不具合を診断・検証で検出する。 */
+  cameraPoseRejectedCount: number;
   /** 平面反射が有効か。反射水面を Reflector で作ったとき真、refl=0 の不透明な面と WebGL 不可のとき偽。 */
   reflectionEnabled: boolean;
   /** 反射が有効なときの一辺の画素数。無効・WebGL 不可のとき0。 */
   reflectionResolution: number;
+  /** ブルーム後処理の状態（Issue #11）。WebGL が無く合成を生成しない端末では null。 */
+  bloom: BloomState | null;
 }
 
 /** 描画基盤の外部契約。 */
@@ -50,6 +60,10 @@ export interface RenderRoot {
   render(): void;
   /** 表示寸法の変更を反映する（カメラ縦横比とレンダラ寸法・画素密度）。 */
   resize(width: number, height: number): void;
+  /** カメラの位置と注視点（ワールド座標）を設定する。適用できたら true、位置と注視点が同一または
+   *  非有限値で適用しなかったら false を返す。演出カメラ軌跡（#13）が毎フレーム駆動する。戻り値で
+   *  下流（#59）が適用失敗を検知でき、無音の不具合を避ける。WebGL無効時もカメラ物体は存在するため反映する。 */
+  setCameraPose(position: Vec3Like, target: Vec3Like): boolean;
   /** 診断・検証用の現在状態を返す。 */
   state(): RenderState;
   /** 後始末。リサイズ待ち受けの解除・GPU資源の解放・canvas の取り外しを行う。冪等。 */
@@ -84,12 +98,14 @@ function isWebGL2Available(): boolean {
  * WebGL の生成に失敗しても例外を投げず、描画を無効化して他層（エンジン・画面）の動作を妨げない。
  * options.reflectionResolution は反射解像度（0で無効、256または512で有効）。採用理由を先に述べる。
  * 省略可・既定512にすることで、引数1個の既存の呼び出しとの互換を保つ。
+ * options.bloomEnabled が偽のときはブルームを無効にして起動する（既定は有効。?bloom=0 から渡る）。
  */
 export function createRenderRoot(
   container: HTMLElement,
-  options: { reflectionResolution?: number } = {}
+  options: { reflectionResolution?: number; bloomEnabled?: boolean } = {}
 ): RenderRoot {
   const reflectionResolution = options.reflectionResolution ?? DEFAULT_REFLECTION_RESOLUTION;
+  const bloomEnabled = options.bloomEnabled ?? true;
 
   const scene = new Scene();
   scene.background = new Color(NIGHT_COLOR);
@@ -138,11 +154,12 @@ export function createRenderRoot(
     console.warn("この環境では WebGL2 を利用できません。描画を無効化します。");
   }
 
-  // 反射水面と暫定発光点は、描画器を生成できたときだけ作りシーンへ追加する。採用理由を先に述べる。
-  // 描画器が無い端末では描画しないため資源を作らず、縮退の状態（reflectionEnabled 偽・解像度0）を
-  // この分岐の構造で保証する（描画器が null のとき water は null のままになる）。
+  // 反射水面・暫定発光点・ブルーム合成は、描画器を生成できたときだけ作る。採用理由を先に述べる。
+  // いずれもレンダラ・シーン・カメラを用いるため、描画器が無い端末では資源を作らず、縮退の状態
+  // （反射無効・解像度0・ブルームは null）をこの分岐の構造で保証する。
   let water: Water | null = null;
   let placeholderGlow: PlaceholderGlow | null = null;
+  let bloomComposer: BloomComposer | null = null;
   if (renderer) {
     water = createWater({ reflectionResolution });
     scene.add(water.object3d);
@@ -160,6 +177,12 @@ export function createRenderRoot(
       PLACEHOLDER_CAMERA_TARGET.y,
       PLACEHOLDER_CAMERA_TARGET.z
     );
+    // ブルーム後処理（Issue #11）。シーンへ水面と発光点を載せカメラを据えた後に合成を作る。
+    bloomComposer = createBloomComposer(renderer, scene, camera, {
+      enabled: bloomEnabled,
+      displayWidth: window.innerWidth,
+      displayHeight: window.innerHeight,
+    });
   }
 
   let disposed = false;
@@ -176,6 +199,8 @@ export function createRenderRoot(
         renderer.setPixelRatio(nextPixelRatio);
       }
       renderer.setSize(width, height);
+      // 合成の往復バッファを描画バッファ全解像度へ合わせ、ブルーム入力解像度を半分へ再適用する。
+      bloomComposer?.setSize(width, height);
     }
   }
 
@@ -184,11 +209,41 @@ export function createRenderRoot(
   }
   window.addEventListener("resize", handleResize);
 
+  // setCameraPose が適用を拒否した累積回数。診断・検証で無音の不具合を検出するために数える。
+  let cameraPoseRejectedCount = 0;
+
+  // 防御的処理の理由を先に述べる。位置と注視点が同一、または非有限値だと lookAt の向きが定まらず
+  // カメラ姿勢が壊れる。いずれの場合も姿勢を変更せず（前フレームの姿勢を保ち）、拒否を数えて false を返す。
+  function isFiniteVec(v: Vec3Like): boolean {
+    return Number.isFinite(v.x) && Number.isFinite(v.y) && Number.isFinite(v.z);
+  }
+
+  function setCameraPose(position: Vec3Like, target: Vec3Like): boolean {
+    if (
+      !isFiniteVec(position) ||
+      !isFiniteVec(target) ||
+      (position.x === target.x && position.y === target.y && position.z === target.z)
+    ) {
+      cameraPoseRejectedCount += 1;
+      return false;
+    }
+    camera.position.set(position.x, position.y, position.z);
+    camera.lookAt(target.x, target.y, target.z);
+    return true;
+  }
+
   function render(): void {
     if (!renderer || disposed) {
       return;
     }
-    renderer.render(scene, camera);
+    // 常に合成パイプライン経由で描く。理由を先に述べる。ブルームの有効・無効で色管理の経路を分けないため、
+    // 最終出力パスを含む合成器に一本化する。レンダラがあるとき合成器も必ず存在するが、型の縮約のため
+    // 存在を確かめ、万一無ければ素のシーン描画へ倒す。
+    if (bloomComposer) {
+      bloomComposer.render();
+    } else {
+      renderer.render(scene, camera);
+    }
   }
 
   // 起動直後にクリアカラーを適用するため、ループの初回フレームを待たず1回描く。
@@ -196,6 +251,7 @@ export function createRenderRoot(
 
   return {
     render,
+    setCameraPose,
     resize,
     state(): RenderState {
       // 採用理由を先に述べる。three.js の色管理は16進数をsRGBとして取り込み、getHexString(sRGB既定)で
@@ -208,6 +264,7 @@ export function createRenderRoot(
       // setSize は表示寸法×画素密度倍率を Math.floor して描画バッファへ設定するため、その確定値を
       // 公式関数から読むのが内部実装の変更に最も強い。
       const bufferSize = renderer ? renderer.getDrawingBufferSize(new Vector2()) : null;
+      const direction = camera.getWorldDirection(new Vector3());
       return {
         webglAvailable: renderer !== null,
         pixelRatio: renderer ? renderer.getPixelRatio() : 0,
@@ -215,9 +272,13 @@ export function createRenderRoot(
         drawingBufferHeight: bufferSize ? bufferSize.y : 0,
         clearColorHex,
         cameraAspect: camera.aspect,
+        cameraPosition: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+        cameraDirection: { x: direction.x, y: direction.y, z: direction.z },
+        cameraPoseRejectedCount,
         // 反射水面を作っていればその有効・解像度を返す。作っていない（WebGL 不可）なら無効・0。
         reflectionEnabled: water ? water.reflective : false,
         reflectionResolution: water ? water.reflectionResolution : 0,
+        bloom: bloomComposer ? bloomComposer.state() : null,
       };
     },
     dispose(): void {
@@ -226,7 +287,9 @@ export function createRenderRoot(
       }
       disposed = true;
       window.removeEventListener("resize", handleResize);
-      // 反射水面と暫定発光点を、描画器の破棄より前に解放する。
+      // 反射水面・暫定発光点・ブルーム合成を、描画器の破棄より前に解放する。理由を先に述べる。
+      // renderer.dispose は WebGL の描画文脈と結び付く GPU資源を解放するため、文脈が失われた後に各資源を
+      // 解放しようとすると空振りし資源が残る恐れがある。
       if (water) {
         scene.remove(water.object3d);
         water.dispose();
@@ -236,6 +299,10 @@ export function createRenderRoot(
         scene.remove(placeholderGlow.object3d);
         placeholderGlow.dispose();
         placeholderGlow = null;
+      }
+      if (bloomComposer) {
+        bloomComposer.dispose();
+        bloomComposer = null;
       }
       if (renderer) {
         renderer.dispose();

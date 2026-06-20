@@ -7,7 +7,7 @@ import { defineConfig, loadEnv } from "vite";
 // 本番配信（Cloudflare Pages）は規約適合のため本体 index.html のみを公開する（Issue #7）。
 // `vite build --mode app` のときだけ入口を index.html に絞り、開発ツールと診断ページを
 // 成果物から除外する。開発検証用の `npm run build`（mode は既定の "production"）は本体に加え
-// 解析・性能・文字診断・雨診断・発光点診断の各ページを出す。
+// 解析・性能・文字診断・雨診断・カメラ軌跡診断・発光点診断の各ページを出す。
 // 補足: `--mode app` でもビルドの NODE_ENV は "production" のままで、import.meta.env.PROD は true、
 // import.meta.env.MODE が "app" になる。本番判定が必要な箇所では MODE ではなく import.meta.env.PROD を使う。
 export default defineConfig(({ mode }) => {
@@ -20,7 +20,8 @@ export default defineConfig(({ mode }) => {
 
   // 本番（--mode app）は本体のみ。開発検証用は本体＋開発ツール・診断ページ。
   // typography.html は kineticText エンジンの受け入れ診断（性能計測）、rain.html は雨パーティクルの
-  // 単独診断、rendering.html は発光点（#10）の描画命令数の受け入れ診断の入口で、いずれも本番では配信しない。
+  // 単独診断、camera-trajectory.html はカメラ軌跡システムの受け入れ診断、rendering.html は発光点（#10）の
+  // 描画命令数の受け入れ診断の入口で、いずれも本番では配信しない。
   const input: Record<string, string> = deployAppOnly
     ? { main: "index.html" }
     : {
@@ -29,6 +30,7 @@ export default defineConfig(({ mode }) => {
         prototype: "prototype.html",
         typography: "typography.html",
         rain: "rain.html",
+        cameraTrajectory: "camera-trajectory.html",
         rendering: "rendering.html",
       };
 

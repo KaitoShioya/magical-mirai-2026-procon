@@ -52,6 +52,22 @@ declare global {
       drawingBufferHeight: number;
       clearColorHex: string;
       cameraAspect: number;
+      cameraPosition: { x: number; y: number; z: number };
+      cameraDirection: { x: number; y: number; z: number };
+      cameraPoseRejectedCount: number;
+    };
+    /** カメラ軌跡の受け入れ診断 camera-trajectory.html が公開する掃引結果。scripts/camera-trajectory-smoke.mjs が取得する。 */
+    __cameraTrajectory?: () => {
+      startTimeMs: number;
+      endTimeMs: number;
+      maxStepDistance: number;
+      meanStepDistance: number;
+      minSpeed: number;
+      cameraPosition: { x: number; y: number; z: number };
+      cameraDirection: { x: number; y: number; z: number };
+      cameraPoseRejectedCount: number;
+      expectedEndPosition: { x: number; y: number; z: number };
+      expectedEndDirection: { x: number; y: number; z: number };
     };
     /**
      * 検証用の発光点診断アクセサ。発光点診断ページ（rendering.html）だけが取り付ける。

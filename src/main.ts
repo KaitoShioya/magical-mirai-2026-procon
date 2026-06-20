@@ -25,7 +25,7 @@ app.replaceChildren(screenRoot);
 
 // 起動時パラメータを読む。get は同名パラメータが重複したとき最初の値を返すため、refl を重複指定した
 // 場合は最初の値が使われる。
-// 診断モードの判定のみを行い、その真偽を統括へ渡す。
+// 診断モードの判定と、各機能の起動時パラメータの解釈を行い、その結果を統括へ渡す。
 // 状態履歴アクセサ window.__screenHistory の取り付けと削除は統括（src/app）が担う。
 const query = new URLSearchParams(window.location.search);
 const diagnostics = query.get("smoke") === "1";
@@ -34,4 +34,8 @@ const diagnostics = query.get("smoke") === "1";
 // 手動調整手段であり、自動縮退（Issue #97）導入前に反射を切る退避手段として本番でも有用なためである。
 const reflectionResolution = resolveReflectionResolution(query.get("refl"));
 
-createApp(screenRoot, { diagnostics, stageRoot, reflectionResolution });
+// ブルームの有無（Issue #11）。?bloom=0 のときだけ無効、未指定や他値は有効（既定有効）。
+// 受け入れ基準が bloom=0 を無効条件と明示するため、値が文字列 "0" のときに限り無効と判定する。
+const bloomEnabled = query.get("bloom") !== "0";
+
+createApp(screenRoot, { diagnostics, stageRoot, reflectionResolution, bloomEnabled });

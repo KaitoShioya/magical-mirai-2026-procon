@@ -302,3 +302,84 @@ body {
   line-height: 1.4;
   color: var(--accent);
 }
+
+/* 素材全体の出典を常設するクレジット表示の開閉（Issue #82）。
+   常時到達できること（受け入れ基準）を満たすため、覆い（.overlay, z-index:1000）より上の z-index:1100 に置く。
+   採用値の理由を先に述べる。既存の最前面が覆いの1000であり確実にそれを上回る必要があるため1000超とし、
+   将来の中間要素を差し込む余地を残し過大な値で意味を失わないよう1100とする。
+   開閉ボタンは操作を受け取り（覆いが出ている間も押せる）、一覧は開いている時だけ表示し操作を受け取る。 */
+.credits-toggle {
+  position: fixed;
+  top: max(env(safe-area-inset-top), 8px);
+  right: max(env(safe-area-inset-right), 8px);
+  z-index: 1100;
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: clamp(11px, 2vw, 13px);
+  color: var(--text-dim);
+  background: rgba(5, 6, 10, 0.7);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.credits-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding:
+    max(env(safe-area-inset-top), 24px)
+    max(env(safe-area-inset-right), 24px)
+    max(env(safe-area-inset-bottom), 24px)
+    max(env(safe-area-inset-left), 24px);
+  overflow-y: auto;
+  background: rgba(8, 9, 14, 0.96);
+  color: var(--text);
+}
+
+/* hidden 属性で出し入れする。display 指定があると hidden が効かないため、明示的に分岐する。 */
+.credits-panel[hidden] {
+  display: none;
+}
+
+.credits-panel__close {
+  align-self: flex-end;
+  min-height: 40px;
+  padding: 8px 20px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  color: var(--text);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.credits-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 640px;
+}
+
+.credits-panel__heading {
+  margin: 12px 0 4px;
+  font-size: clamp(14px, 2.6vw, 18px);
+  color: var(--accent);
+}
+
+.credits-panel__text {
+  font-size: clamp(12px, 2vw, 15px);
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.credits-panel__link {
+  font-size: clamp(12px, 2vw, 15px);
+  line-height: 1.5;
+  color: var(--accent);
+  word-break: break-all;
+}

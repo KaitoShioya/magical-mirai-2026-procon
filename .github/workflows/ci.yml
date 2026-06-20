@@ -81,6 +81,10 @@ jobs:
         # 入力アーキテクチャ（Issue #47）の受け入れ基準の実ブラウザ検証。多指独立・スクロール無効化・
         # タッチとマウスとキーボードの入力同等性を、検証用ビルドの入力診断ページに対して確認する。
         run: BASE=http://127.0.0.1:4173 npm run smoke:input
+      - name: Run credits smoke test
+        # クレジット表示（Issue #82）の受け入れ基準の実ブラウザ検証。規定文言が漏れなく表示され、
+        # 開閉でき、覆いより上の重なり順に置かれることを、トークン不要の診断経路で確認する。
+        run: BASE=http://127.0.0.1:4173 npm run smoke:credits
       - name: Quality harness (cloud schema checks only)
         # GPUの無いCIでは描画・撮影・フレーム計測を行わず、登録済みのファイル存在とJSONスキーマ
         # だけを検査する（docs/research/08 の1節）。Issue #95時点は検査の登録が無いため登録0件で合格し、

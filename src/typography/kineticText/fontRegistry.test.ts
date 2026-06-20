@@ -5,7 +5,8 @@ import type { FontEntry } from "./types";
 const credit = {
   fontName: "見本書体",
   author: "作者名",
-  source: "配布元",
+  sourceLabel: "配布元",
+  sourceUrl: "https://example.com/font",
   license: "SIL Open Font License",
   licenseFileUrl: "/fonts/OFL.txt",
 };

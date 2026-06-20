@@ -4,19 +4,10 @@
 
 import type { Scene, Camera } from "three";
 
-/** フォントの出典情報（アプリ内クレジットとREADMEに記す素材）。 */
-export interface FontCredit {
-  /** 書体名。 */
-  readonly fontName: string;
-  /** 作者。 */
-  readonly author: string;
-  /** 配布元。 */
-  readonly source: string;
-  /** ライセンス名（例: SIL Open Font License）。 */
-  readonly license: string;
-  /** 同梱したライセンス本文の場所。 */
-  readonly licenseFileUrl: string;
-}
+// フォントの出典の型は、クレジットの共有型の層（src/types/credits.ts）に集約した。
+// 取り込み経路を変えないよう、ここでは同名で再公開する。
+import type { FontCredit } from "../../types/credits";
+export type { FontCredit };
 
 /** 登録されたフォント1件。 */
 export interface FontEntry {

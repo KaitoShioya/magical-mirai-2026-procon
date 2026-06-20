@@ -210,6 +210,7 @@ describe("createBeatScheduler", () => {
     const fired: number[] = [];
     expect(scheduler.advance(Number.NaN, (e) => fired.push(e.index))).toBe(0);
     expect(scheduler.advance(Number.POSITIVE_INFINITY, (e) => fired.push(e.index))).toBe(0);
+    expect(scheduler.advance(Number.NEGATIVE_INFINITY, (e) => fired.push(e.index))).toBe(0);
     expect(fired).toEqual([]);
     expect(scheduler.lastProcessedMs).toBe(0); // 基準は変わらない
     scheduler.advance(250, (e) => fired.push(e.index)); // 有限値では正しく発火
@@ -221,6 +222,33 @@ describe("createBeatScheduler", () => {
     scheduler.syncTo(0);
     scheduler.advance(150, () => undefined); // 基準は 150 になる
     scheduler.syncTo(Number.NaN); // 無視される
+    scheduler.syncTo(Number.POSITIVE_INFINITY); // 無視される
     expect(scheduler.lastProcessedMs).toBe(150);
+  });
+
+  it("単一拍の配列でも跨いだフレームで1回発火し、再呼び出しでは発火しない", () => {
+    const scheduler = createBeatScheduler([100]);
+    scheduler.syncTo(0);
+    const fired: number[] = [];
+    expect(scheduler.advance(100, (e) => fired.push(e.index))).toBe(1); // 100 ちょうどで発火
+    expect(scheduler.advance(200, (e) => fired.push(e.index))).toBe(0); // 以後は発火しない
+    expect(fired).toEqual([0]);
+  });
+
+  it("空配列の初回 advance は基準確定のみで0を返し、以後も発火しない", () => {
+    const scheduler = createBeatScheduler([]);
+    const fired: number[] = [];
+    expect(scheduler.advance(0, (e) => fired.push(e.index))).toBe(0); // 初回は基準確定のみ
+    expect(scheduler.advance(1000, (e) => fired.push(e.index))).toBe(0); // 拍がないので発火しない
+    expect(fired).toEqual([]);
+  });
+
+  it("同時刻の拍は同一フレームで添字の昇順にそれぞれ1回ずつ発火する", () => {
+    const scheduler = createBeatScheduler([100, 200, 200, 300]);
+    scheduler.syncTo(0);
+    const indices: number[] = [];
+    const count = scheduler.advance(300, (e) => indices.push(e.index));
+    expect(count).toBe(4);
+    expect(indices).toEqual([0, 1, 2, 3]);
   });
 });

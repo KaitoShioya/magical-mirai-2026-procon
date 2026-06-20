@@ -57,6 +57,9 @@ export function createPlaceholderGlow(): PlaceholderGlow {
     mesh.setMatrixAt(index, dummy.matrix);
     mesh.setColorAt(index, point.kind === "butterfly" ? butterfly : sunflower);
   });
+  // setMatrixAt と setColorAt で書き込んだ配列をGPUへ転送するため、更新が必要であることを通知する。
+  // three.js の InstancedMesh は、行列の書き込み後に instanceMatrix.needsUpdate を立てるよう定めている。
+  mesh.instanceMatrix.needsUpdate = true;
   if (mesh.instanceColor) {
     mesh.instanceColor.needsUpdate = true;
   }

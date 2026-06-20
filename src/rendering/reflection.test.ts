@@ -36,3 +36,14 @@ describe("resolveReflectionResolution", () => {
     expect(resolveReflectionResolution(Number.POSITIVE_INFINITY)).toBe(512);
   });
 });
+
+// 重複指定の仕様。入口（src/main.ts）は URLSearchParams.get("refl") で読み、get は同名パラメータが
+// 重複したとき最初の値を返す。読取と解釈を結合し、重複時は最初の値で解釈されることを明示する。
+describe("refl の重複指定（URLSearchParams.get と解釈の結合）", () => {
+  it("最初の値で解釈する（最初が0なら無効、最初が512なら512）", () => {
+    const firstZero = new URLSearchParams("refl=0&refl=512").get("refl");
+    expect(resolveReflectionResolution(firstZero)).toBe(0);
+    const firstFive = new URLSearchParams("refl=512&refl=0").get("refl");
+    expect(resolveReflectionResolution(firstFive)).toBe(512);
+  });
+});

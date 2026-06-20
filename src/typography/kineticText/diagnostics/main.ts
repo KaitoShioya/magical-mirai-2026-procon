@@ -37,8 +37,11 @@ import {
   uniqueCharsOf,
   buildRealReplayProfile,
   buildMaxLoadProfile,
+  extractPhrases,
+  buildDeformProfile,
 } from "./stressProfile";
-import type { GlyphHandle, KineticTextEngine } from "../types";
+import { warmUpDeform } from "./deformWarmup";
+import type { DeformingTextHandle, GlyphHandle, KineticTextEngine } from "../types";
 import type { GlyphAnimation, GlyphAnimationSpec } from "../glyphAnimation";
 
 // 依存規則により本体中核は tools を import しないため、要素取得は内製する。
@@ -60,7 +63,7 @@ const RESIDENCE_MS = numberKnob("residence", BEAT_MS * 4); // 表示残存の既
 const PIXEL_CAP = numberKnob("dpr", MAX_PIXEL_RATIO);
 const BLOOM_ON = numberKnob("bloom", 1) === 1;
 const REPLAY_SPEED = numberKnob("speed", 1);
-const PROFILE = stringKnob("profile", "real"); // "real"（実測再現・合否）| "maxload"（最大負荷・余力）。
+const PROFILE = stringKnob("profile", "real"); // "real"（実測再現・合否）| "maxload"（最大負荷・余力）| "deform"（全文一括変形・合否）。
 const START_MS = numberKnob("start", 0); // 実測再現の再生開始時刻（ミリ秒）。最悪集中区間を計測に含めるため指定する。
 const ANIM_ON = numberKnob("anim", 0) === 1; // 1のとき各文字に4系統のアニメーション（Issue #21）を付ける。
 const FONT_NAME = "main";
@@ -159,6 +162,11 @@ window.__p5Fps = (): number => {
 };
 window.__frameDrops = (): number => frameDeltas.filter((delta) => delta > 33).length;
 window.__initLatencyMs = (): number => initLatencyMs;
+// 変形シナリオの実レンダリング検査（scripts/typography-deform-smoke.mjs）に使う。
+// 描画命令の回数は three.js が毎描画で更新する renderer.info から読む。変形単位の数は直近フレームの値を返す。
+let lastActiveDeformUnits = 0;
+window.__drawCalls = (): number => renderer.info.render.calls;
+window.__activeDeformUnits = (): number => lastActiveDeformUnits;
 
 // 文字プール上限超過で出現が無操作になった回数。0でなければ計測した負荷が意図した同時数を代表しない。
 let animNoopCount = 0;
@@ -288,29 +296,57 @@ async function start(): Promise<void> {
   activeEngine.update({ gameTimeMs: 0, frameDeltaMs: 16 });
   const warmMs = Math.round(performance.now() - warmStart);
 
-  // 初回表示遅延の計測。パイプライン暖め後に最初の文字を出し、可視化された直後の描画完了までを測る。
-  // 計測は次の描画ループ（出現が続きワーカーが稼働する実プレイに近い状態）で確定する。
-  initProbeStartedAt = performance.now();
-  activeEngine.spawnGlyph({
-    char: uniqueChars[0] ?? "あ",
-    fontName: FONT_NAME,
-    position: { x: 0, y: 4, z: 0 },
-    fontSize: 3,
-    color: 0xffffff,
-    opacity: 1,
-    lifetimeMs: 500,
-  });
-
-  const replay =
-    PROFILE === "maxload"
-      ? null
-      : buildRealReplayProfile(onsets, RESIDENCE_MS);
+  const replay = PROFILE === "real" ? buildRealReplayProfile(onsets, RESIDENCE_MS) : null;
   const maxLoad =
     PROFILE === "maxload"
       ? buildMaxLoadProfile({ singleLimit, batchedLimit, charSample: uniqueChars })
       : null;
+  const deform = PROFILE === "deform" ? buildDeformProfile(extractPhrases(songmap), RESIDENCE_MS) : null;
 
-  const songEndMs = onsets.length > 0 ? onsets[onsets.length - 1].startTimeMs + RESIDENCE_MS : 1000;
+  // 変形シナリオは渦・波打ち両方のシェーダを先行コンパイルしてから計測する（初回コンパイル遅延を計測前に支払う）。
+  if (deform) {
+    await warmUpDeform({
+      engine: activeEngine,
+      render: () => composer.render(),
+      sampleChar: uniqueChars[0] ?? "あ",
+      fontName: FONT_NAME,
+    });
+  }
+
+  // 初回表示遅延の計測。暖め後に最初の出現を出し、可視化された直後の描画完了までを測る。
+  // 計測は次の描画ループ（出現が続きワーカーが稼働する実プレイに近い状態）で確定する。
+  // 変形シナリオでは変形テキストを、それ以外では単一文字を出す（profile に合わせて初回コンパイル後の表示を測る）。
+  initProbeStartedAt = performance.now();
+  if (deform) {
+    activeEngine.spawnDeformingText({
+      text: uniqueChars[0] ?? "あ",
+      fontName: FONT_NAME,
+      position: { x: 0, y: 4, z: 0 },
+      fontSize: 3,
+      color: 0xffffff,
+      opacity: 1,
+      kind: "swirl",
+      params: { strength: 0.35, speed: 3, spatialFreq: 0.12, phaseOffset: 0 },
+      lifetimeMs: 500,
+    });
+  } else {
+    activeEngine.spawnGlyph({
+      char: uniqueChars[0] ?? "あ",
+      fontName: FONT_NAME,
+      position: { x: 0, y: 4, z: 0 },
+      fontSize: 3,
+      color: 0xffffff,
+      opacity: 1,
+      lifetimeMs: 500,
+    });
+  }
+
+  const lastDeformAtMs = deform && deform.events.length > 0 ? deform.events[deform.events.length - 1].atMs : 0;
+  const songEndMs = deform
+    ? lastDeformAtMs + RESIDENCE_MS
+    : onsets.length > 0
+      ? onsets[onsets.length - 1].startTimeMs + RESIDENCE_MS
+      : 1000;
   const schedule: ScheduledSpawn[] = replay ? [...replay.events] : [];
   // 再生開始時刻 START_MS 以降の最初の出現から始める（最悪集中区間を計測に含めるため）。
   // START_MS が全出現より後（範囲外）のときは findIndex が -1 を返すため、先頭（0）から再生する
@@ -335,6 +371,13 @@ async function start(): Promise<void> {
       });
     }
   }
+
+  // 変形シナリオの出現計画。フレーズを変形単位として開始時刻に出す。実測再現と同じく START_MS から始める。
+  const deformSchedule = deform ? [...deform.events] : [];
+  const deformFoundIndex = deformSchedule.findIndex((event) => event.atMs >= START_MS);
+  const deformStartIndex = deformFoundIndex >= 0 ? deformFoundIndex : 0;
+  let deformIndex = deformStartIndex;
+  const activeDeformHandles = new Set<DeformingTextHandle>();
 
   let playbackStart = performance.now();
   let seed = 0;
@@ -467,6 +510,40 @@ async function start(): Promise<void> {
       phraseSpawned = true;
     }
 
+    if (deform) {
+      // 変形シナリオ: 開始時刻が来たフレーズを変形単位として出す。曲末で開始時刻へ戻して連続計測する。
+      if (playbackMs > songEndMs) {
+        for (const handle of activeDeformHandles) {
+          handle.release();
+        }
+        activeDeformHandles.clear();
+        playbackStart = now;
+        deformIndex = deformStartIndex;
+        playbackMs = START_MS;
+      }
+      while (deformIndex < deformSchedule.length && deformSchedule[deformIndex].atMs <= playbackMs) {
+        const event = deformSchedule[deformIndex];
+        // 渦と波打ちで形の出やすいパラメータを与える。渦は回転角を控えめに、波打ちは振幅を大きめにする。
+        const params =
+          event.kind === "swirl"
+            ? { strength: 0.35, speed: 3, spatialFreq: 0.12, phaseOffset: 0 }
+            : { strength: 0.6, speed: 3, spatialFreq: 0.35, phaseOffset: 0 };
+        const handle = activeEngine.spawnDeformingText({
+          text: event.text,
+          fontName: FONT_NAME,
+          position: randomGlyphPosition(seed++),
+          fontSize: 2.2,
+          color: 0x9ffbd0,
+          opacity: 1,
+          kind: event.kind,
+          params,
+          lifetimeMs: event.lifetimeMs,
+        });
+        activeDeformHandles.add(handle);
+        deformIndex += 1;
+      }
+    }
+
     activeEngine.update({ gameTimeMs: playbackMs, frameDeltaMs: now - lastFrameTime });
 
     // アニメーションの反映はエンジン更新の後に行う（回転が正対を上書きするため。Issue #21 判断3）。
@@ -495,11 +572,13 @@ async function start(): Promise<void> {
     }
 
     const stats = activeEngine.stats();
+    lastActiveDeformUnits = stats.activeDeformingTexts;
     hud.textContent =
       `profile=${PROFILE}${ANIM_ON ? " anim=1" : ""} fps=${lastInstantFps} avg=${window.__avgFps ? window.__avgFps() : 0} ` +
       `p5=${window.__p5Fps ? window.__p5Fps() : 0} drops>33ms=${window.__frameDrops ? window.__frameDrops() : 0}\n` +
       `init=${initLatencyMs}ms warm=${warmMs}ms 上限(単一${singleLimit}/一括${batchedLimit}) ` +
-      `活動${stats.activeGlyphs} 一括${stats.activeBatchedMembers} 残存${Math.round(RESIDENCE_MS)}ms` +
+      `活動${stats.activeGlyphs} 一括${stats.activeBatchedMembers} 変形${stats.activeDeformingTexts} ` +
+      `描画命令${renderer.info.render.calls} 残存${Math.round(RESIDENCE_MS)}ms` +
       (ANIM_ON ? ` アニメ${activeAnimations.size} 無操作${animNoopCount}` : "") +
       (phraseHandle ? " phrase出現" : "");
   }

@@ -21,6 +21,10 @@ declare global {
     __frameDrops?: () => number;
     /** 初回表示遅延（暖め後の最初の出現要求から最初の描画完了まで、ミリ秒）を返す（kineticText 診断が公開する） */
     __initLatencyMs?: () => number;
+    /** 直近フレームの描画命令の回数を返す（kineticText 診断 typography.html の変形シナリオが公開する）。 */
+    __drawCalls?: () => number;
+    /** 現在表示中の変形単位（変形テキスト）の数を返す（kineticText 診断 typography.html の変形シナリオが公開する）。 */
+    __activeDeformUnits?: () => number;
     /**
      * アニメーション付き診断（typography.html の anim=1）で、文字プール上限超過により出現が無操作になった回数を返す。
      * 0でない場合、計測した負荷が意図した同時数を代表しない（scripts/typography-instances-fps.mjs が取得する）。

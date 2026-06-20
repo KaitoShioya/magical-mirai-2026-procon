@@ -91,6 +91,51 @@ export interface GlyphHandle {
   release(): void;
 }
 
+/** 全文一括変形の種類。"swirl"＝渦（中心からの半径依存回転）、"wave"＝波打ち（各文字の縦揺れ）。 */
+export type DeformKind = "swirl" | "wave";
+
+/** 変形のパラメータ。各値の意味は deformMaterial の頂点シェーダに対応する。 */
+export interface DeformParams {
+  /** 渦の最大回転角（ラジアン）または波打ちの振幅（ワールド単位）。 */
+  readonly strength: number;
+  /** 時間に対する進行の速さ。 */
+  readonly speed: number;
+  /** 文字の位置に対する空間周波数（うねりの細かさ）。 */
+  readonly spatialFreq: number;
+  /** 位相の初期ずれ（ラジアン）。 */
+  readonly phaseOffset: number;
+  /** 渦の回転中心のX（文字ローカル座標）。省略時は0（変形単位の中心）。 */
+  readonly originX?: number;
+  /** 渦の回転中心のY（文字ローカル座標）。省略時は0（変形単位の中心）。 */
+  readonly originY?: number;
+}
+
+/**
+ * 全文一括変形のテキストを出す要求。粒度（1つの変形単位に何文字をまとめるか）は固定しない。
+ * 呼び出し側が1つの変形単位として渡した text 全体が、1回の描画命令でまとめて変形する。
+ */
+export interface DeformingTextSpawnRequest {
+  readonly text: string;
+  readonly fontName: string;
+  /** 変形単位の基準位置（ワールド座標）。 */
+  readonly position: Vector3Like;
+  readonly fontSize: number;
+  /** 16進の色（例: 0xffffff）。 */
+  readonly color: number;
+  readonly opacity: number;
+  /** 文字間隔（em単位）。省略時は troika の既定。単一 Text のためワールド単位ではない。 */
+  readonly letterSpacing?: number;
+  readonly kind: DeformKind;
+  readonly params: DeformParams;
+  /** 表示残存時間（ミリ秒）。これを過ぎると update で自動解放する。省略時は自動解放しない。 */
+  readonly lifetimeMs?: number;
+}
+
+/** 変形テキストの取っ手。GlyphHandle に変形パラメータの更新を加える。 */
+export interface DeformingTextHandle extends GlyphHandle {
+  setDeformParams(params: DeformParams): void;
+}
+
 export interface EngineUpdateArgs {
   readonly gameTimeMs: number;
   readonly frameDeltaMs: number;
@@ -101,6 +146,8 @@ export interface EngineStats {
   readonly activeGlyphs: number;
   readonly pooledGlyphs: number;
   readonly activeBatchedMembers: number;
+  /** 現在表示中の変形テキスト（変形単位）の数。 */
+  readonly activeDeformingTexts: number;
 }
 
 export interface KineticTextEngine {
@@ -108,7 +155,9 @@ export interface KineticTextEngine {
   warmUp(characters: string): Promise<void>;
   spawnGlyph(request: GlyphSpawnRequest): GlyphHandle;
   spawnPhrase(request: PhraseSpawnRequest): GlyphHandle;
-  /** 毎フレームの寿命処理（自動解放）とカメラ正対を行う。 */
+  /** 渡した文字内容を1つの変形単位として出し、頂点シェーダで全文一括変形する。 */
+  spawnDeformingText(request: DeformingTextSpawnRequest): DeformingTextHandle;
+  /** 毎フレームの寿命処理（自動解放）とカメラ正対と変形の時間進行を行う。 */
   update(args: EngineUpdateArgs): void;
   dispose(): void;
   stats(): EngineStats;

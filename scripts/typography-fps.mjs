@@ -77,13 +77,15 @@ async function run(browser, options) {
     failures.push(`${label}: ページ例外 ${pageErrors.join(" / ")}`);
   }
   await page.context().close();
+  return metrics;
 }
 
 const { browser, meta } = await launchGpuBrowser({});
 console.log(`起動: channel=${meta.channel} angle=${meta.angle} browser=${meta.browserVersion}`);
 
 // 平均フレーム毎秒と単発フレーム落ちの合否対象（実測再現・デスクトップ・最悪集中区間）。
-await run(browser, {
+// 変形なしの平均は、変形ありとの差分（頂点変形の追加負荷）を見る参考の基準にも使う。
+const realMetrics = await run(browser, {
   label: "desktop_real",
   query: `profile=real&start=${PEAK_START_MS}`,
   viewport: { width: 1280, height: 720 },
@@ -111,6 +113,42 @@ await run(browser, {
   bindInitLatency: true,
 });
 
+// 全文一括変形（渦・波打ち）の平均フレーム毎秒と単発フレーム落ちの合否対象（最悪集中区間）。
+const deformMetrics = await run(browser, {
+  label: "desktop_deform",
+  query: `profile=deform&start=${PEAK_START_MS}`,
+  viewport: { width: 1280, height: 720 },
+  deviceScaleFactor: 1,
+  bindFrameRate: true,
+  bindInitLatency: false,
+});
+// 全文一括変形の参考（モバイル相当の解像度と画素密度）。スマートフォン主軸の想定に対する参考値。
+await run(browser, {
+  label: "mobile_deform",
+  query: `profile=deform&start=${PEAK_START_MS}`,
+  viewport: { width: 390, height: 844 },
+  deviceScaleFactor: 3,
+  bindFrameRate: false,
+  bindInitLatency: false,
+});
+// 全文一括変形の初回表示遅延の合否対象（先行暖機の後に最初の変形単位を出した表示完了までを測る）。
+await run(browser, {
+  label: "desktop_deform_initlatency",
+  query: "profile=deform",
+  viewport: { width: 1280, height: 720 },
+  deviceScaleFactor: 1,
+  bindFrameRate: false,
+  bindInitLatency: true,
+});
+
+// 頂点変形の追加負荷の参考表示（変形あり desktop_deform と 変形なし desktop_real の平均の差）。
+// 差分の硬い閾値は測定の揺らぎと区別できる根拠が無いため設けない（参考表示のみ）。
+const avgDiff = realMetrics.avg - deformMetrics.avg;
+console.log(
+  `[参考] 頂点変形の追加負荷: 変形なし平均=${realMetrics.avg} 変形あり平均=${deformMetrics.avg} ` +
+    `差=${avgDiff}（正なら変形ありが低い）`
+);
+
 await closeBrowser(browser);
 
 if (failures.length > 0) {
@@ -118,7 +156,7 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  "合格: 実GPU描画で、平均フレーム毎秒と単発フレーム落ちを desktop_real（実測再現・最悪集中区間）で、" +
-    "初回表示遅延を desktop_maxload（連続出現）で判定し、いずれも☆目標" +
-    "（平均55以上・単発落ち5回未満・初回遅延100ミリ秒未満）を満たす"
+  "合格: 実GPU描画で、平均フレーム毎秒と単発フレーム落ちを desktop_real（実測再現）と desktop_deform" +
+    "（全文一括変形）の最悪集中区間で、初回表示遅延を desktop_maxload と desktop_deform_initlatency（連続出現）で" +
+    "判定し、いずれも☆目標（平均55以上・単発落ち5回未満・初回遅延100ミリ秒未満）を満たす"
 );

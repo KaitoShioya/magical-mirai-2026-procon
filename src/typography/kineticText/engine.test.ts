@@ -89,7 +89,8 @@ function setup(single = 2, batched = 4) {
     credit: {
       fontName: "見本",
       author: "作者",
-      source: "配布元",
+      sourceLabel: "配布元",
+      sourceUrl: "https://example.com/font",
       license: "SIL Open Font License",
       licenseFileUrl: "/fonts/OFL.txt",
     },

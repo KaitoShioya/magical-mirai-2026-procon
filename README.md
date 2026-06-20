@@ -160,6 +160,28 @@ Variables（非秘匿の設定値）:
 
 ## ライセンス・出典
 
-- 楽曲・歌詞: 各作者様（piapro.jp）— マジカルミライ2026楽曲コンテスト受賞作品
-- フォント: Zen Kaku Gothic New（作者 Yoshimichi Ohira / Zenfonts、配布元 Google Fonts、SIL Open Font License 1.1）。課題曲の歌詞の文字へサブセット化して同梱している（ライセンス本文 `public/fonts/zen-kaku-gothic-new-OFL.txt`）。アプリ内の常設クレジット区画への表示は後続Issueで結線する。
-- 本アプリに AI 生成の絵・音楽・文章は使用していません
+アプリ内にも常設のクレジット表示がある（画面隅の「クレジット」ボタンから開く一覧）。アプリ内の表示とこの節は、同じ出典（初音ミク・フォント・楽曲・AI生成物の不使用）を示す。この節には、読み手向けの補足の説明を加えている箇所がある。
+
+### 初音ミク（ピアプロ・キャラクター・ライセンス）
+
+- この作品はピアプロ・キャラクター・ライセンスに基づいて初音ミクを描いています。
+- ライセンス: ピアプロ・キャラクター・ライセンス（https://piapro.jp/license/pcl/summary ）
+- © Crypton Future Media, INC. www.piapro.net
+- 本作品はクリプトン・フューチャー・メディア株式会社のキャラクター利用のガイドラインに従います。
+- モデルは VRoid Studio で人間が自作した二次創作モデルであり、AI が生成したものではありません。
+
+### フォント
+
+- Zen Kaku Gothic New（作者 Yoshimichi Ohira / Zenfonts）
+- 配布元 Google Fonts（https://fonts.google.com/specimen/Zen+Kaku+Gothic+New ）
+- SIL Open Font License 1.1（同梱したライセンス本文 `/fonts/zen-kaku-gothic-new-OFL.txt`）
+- 課題曲の歌詞に現れる文字へサブセット化して同梱している。
+
+### 楽曲・歌詞
+
+- TAKEOVER（作者 Twinfield） https://piapro.jp/t/E2i3/20251215092113
+- 課題曲は piapro.jp で公開されたマジカルミライ2026楽曲コンテストの楽曲であり、TextAlive App API を通じてロードする。
+
+### AI 生成物について
+
+- 本作品が表示する絵・音楽・文章に、AIが生成した素材は使用していません。視覚表現はすべてコードによる動的描画です。

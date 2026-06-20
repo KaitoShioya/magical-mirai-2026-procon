@@ -16,6 +16,7 @@
     "smoke": "node scripts/screens-smoke.mjs",
     "smoke:glow": "node scripts/rendering-glow-smoke.mjs",
     "smoke:input": "node scripts/input-smoke.mjs",
+    "smoke:credits": "node scripts/credits-smoke.mjs",
     "quality": "node scripts/quality-harness.mjs --mode=local",
     "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud"
   },

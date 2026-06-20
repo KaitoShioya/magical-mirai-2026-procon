@@ -18,6 +18,8 @@ import { createOverlays } from "./overlay";
 import { createRenderRoot } from "../rendering";
 import { MIKU_CHARACTER } from "../config/character";
 import { createAttributionBadge, type AttributionBadge } from "./attribution";
+import { buildCreditRegistry } from "./credits/registry";
+import { createCreditsView, type CreditsView } from "./credits/creditsView";
 
 /** 統括の外部契約。後始末のみを公開する。 */
 export interface App {
@@ -69,6 +71,11 @@ export function createApp(
     void renderRoot.mountCenterCharacter(MIKU_CHARACTER);
     attribution = createAttributionBadge(MIKU_CHARACTER.credit);
   }
+
+  // 素材全体の出典を、操作で常時到達できるクレジット表示として常設する（Issue #82）。
+  // ミクの描画に依存しない規約上の表示のため、診断モードと通常モードの両方で生成する。
+  // これにより、トークン不要の診断経路（?smoke=1）でも表示を検証できる。
+  const creditsView: CreditsView = createCreditsView(buildCreditRegistry(song));
 
   // 診断モード（?smoke=1）はトークン非依存の擬似再生、通常はトークンで実プレイヤーを使う。
   const playback: Playback = options.diagnostics
@@ -226,6 +233,7 @@ export function createApp(
       unsubscribe();
       overlays.dispose();
       attribution?.dispose();
+      creditsView.dispose();
       playback.dispose();
       renderRoot.dispose();
       // 確定前に破棄された場合に備え、renderOverlays が付けた inert 属性を外す。

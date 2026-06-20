@@ -11,7 +11,8 @@ import type { FontCredit } from "./types";
 export const ZEN_KAKU_GOTHIC_NEW_CREDIT: FontCredit = {
   fontName: "Zen Kaku Gothic New",
   author: "Yoshimichi Ohira / Zenfonts",
-  source: "Google Fonts（https://fonts.google.com/specimen/Zen+Kaku+Gothic+New）",
+  sourceLabel: "Google Fonts",
+  sourceUrl: "https://fonts.google.com/specimen/Zen+Kaku+Gothic+New",
   license: "SIL Open Font License 1.1",
   licenseFileUrl: "/fonts/zen-kaku-gothic-new-OFL.txt",
 };

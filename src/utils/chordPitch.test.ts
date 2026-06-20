@@ -8,6 +8,7 @@ import {
   chordSymbolToPitchSet,
   CHORD_QUALITY_INTERVALS,
   CHORD_PITCH_BASE_C_MIDI,
+  type ParsedChord,
 } from "./chordPitch";
 
 // 1オクターブの半音数（音高クラスの算出に使う）。
@@ -112,6 +113,21 @@ describe("変化記号（根音の音高クラス）", () => {
     expect(parseChordSymbol("Eb").rootPitchClass).toBe(3);
     expect(parseChordSymbol("Ab").rootPitchClass).toBe(8);
   });
+
+  it("シャープ付きの根音を正しく解釈し、品質と組み合わせても音高化できる", () => {
+    // TAKEOVER にシャープは出現しないが、将来の曲のために実装した分岐を固定する。
+    expect(parseChordSymbol("C#").rootPitchClass).toBe(1);
+    expect(parseChordSymbol("F#").rootPitchClass).toBe(6);
+    expect(parseChordSymbol("C#m").quality).toBe("minor");
+    expect(parseChordSymbol("C#m").rootPitchClass).toBe(1);
+    // C#=1、長三和音=[0,4,7]、根音MIDI=73 の2オクターブ展開。
+    expect(chordSymbolToPitchSet("C#")).toEqual([73, 77, 80, 85, 89, 92]);
+  });
+
+  it("二重の変化記号は未対応の品質として例外になる", () => {
+    expect(() => parseChordSymbol("Cbb")).toThrow();
+    expect(() => parseChordSymbol("C##")).toThrow();
+  });
 });
 
 describe("品質の大文字小文字区別", () => {
@@ -142,6 +158,23 @@ describe("異常入力", () => {
     expect(() => parseChordSymbol("Csus4")).toThrow();
     expect(() => parseChordSymbol("Hm")).toThrow();
   });
+
+  it("分数和音の不正な低音は例外になる", () => {
+    // 低音の音名が不正（H）、低音が空、低音に余分な文字（品質）が付く場合。
+    expect(() => parseChordSymbol("C/H")).toThrow();
+    expect(() => parseChordSymbol("C/")).toThrow();
+    expect(() => parseChordSymbol("F/Am")).toThrow();
+  });
+
+  it("品質が契約外の解析結果は明示的な例外になる", () => {
+    // 型検査を経ない呼び出し元が契約外の品質を渡した場合を模す。
+    const invalid = {
+      rootPitchClass: 0,
+      quality: "unknown",
+      bassPitchClass: null,
+    } as unknown as ParsedChord;
+    expect(() => expandChordToPitchSet(invalid)).toThrow();
+  });
 });
 
 describe("基準オクターブの上書き", () => {
@@ -152,8 +185,9 @@ describe("基準オクターブの上書き", () => {
     expect(raised).toEqual(base.map((pitch) => pitch + 12));
   });
 
-  it("範囲外になる極端な上書きは例外になる", () => {
+  it("上限と下限のいずれの範囲外になる上書きも例外になる", () => {
     const parsed = parseChordSymbol("Fm");
     expect(() => expandChordToPitchSet(parsed, { baseCMidi: 200 })).toThrow();
+    expect(() => expandChordToPitchSet(parsed, { baseCMidi: -100 })).toThrow();
   });
 });

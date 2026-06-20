@@ -150,7 +150,12 @@ export function parseChordSymbol(name: string): ParsedChord {
 export function expandChordToPitchSet(parsed: ParsedChord, options?: ChordPitchOptions): number[] {
   const baseCMidi = options?.baseCMidi ?? CHORD_PITCH_BASE_C_MIDI;
   const rootMidi = baseCMidi + parsed.rootPitchClass;
-  const intervals = CHORD_QUALITY_INTERVALS[parsed.quality];
+  // 型注釈で undefined を許すのは、型検査を経ない呼び出し元が契約外の品質を渡した場合に
+  // 明確なメッセージで失敗させるためである（parseChordSymbol 経由では常に定義済みになる）。
+  const intervals: readonly number[] | undefined = CHORD_QUALITY_INTERVALS[parsed.quality];
+  if (intervals === undefined) {
+    throw new Error(`和音の品質が未対応です: "${String(parsed.quality)}"`);
+  }
 
   const pitches = new Set<number>();
   for (const interval of intervals) {

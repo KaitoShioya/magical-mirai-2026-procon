@@ -80,13 +80,15 @@ try {
     console.log("確認: 全曲長で滑らかに追従（移動量に飛びなし）");
   }
 
+  // 差が非有限値（NaN・無限大）のときは一致と誤判定しないよう、Number.isFinite を併用して失敗扱いにする。
+  // 採用理由を先に述べる。比較 `差 > 許容` は差が NaN だと偽になり素通りするため、有限値であることを先に要求する。
   const positionError = Math.sqrt(
     (result.cameraPosition.x - result.expectedEndPosition.x) ** 2 +
       (result.cameraPosition.y - result.expectedEndPosition.y) ** 2 +
       (result.cameraPosition.z - result.expectedEndPosition.z) ** 2
   );
-  if (positionError > END_TOLERANCE) {
-    fail(`終点で描画カメラ位置が評価器と一致しません（差 ${positionError.toFixed(5)}）`);
+  if (!Number.isFinite(positionError) || positionError > END_TOLERANCE) {
+    fail(`終点で描画カメラ位置が評価器と一致しません（差 ${positionError}）`);
   } else {
     console.log("確認: setCameraPose が評価器の終点位置を反映");
   }
@@ -96,8 +98,8 @@ try {
       (result.cameraDirection.y - result.expectedEndDirection.y) ** 2 +
       (result.cameraDirection.z - result.expectedEndDirection.z) ** 2
   );
-  if (directionError > END_TOLERANCE) {
-    fail(`終点で描画カメラの前方向きが評価器と一致しません（差 ${directionError.toFixed(5)}）`);
+  if (!Number.isFinite(directionError) || directionError > END_TOLERANCE) {
+    fail(`終点で描画カメラの前方向きが評価器と一致しません（差 ${directionError}）`);
   } else {
     console.log("確認: lookAt が評価器の終点注視方向を反映");
   }

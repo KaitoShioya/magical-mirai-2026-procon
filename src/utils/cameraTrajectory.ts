@@ -170,6 +170,9 @@ export function createCameraTrajectory(
     const clamped = Math.min(Math.max(distance, 0), totalDistance);
     // cumulativeDistances[i] <= clamped を満たす最大の i を二分探索し、時刻を線形補間する。
     // 累積距離は単調増加（カメラが一方向に進む。concept-final.md §4）なので逆変換は一意。
+    // 軌跡上距離が単調増加であることの保証は曲プロファイルの読込時検証（architecture.md §3.6、Issue #46・#96）が担う。
+    // 仮に停止区間（前後で累積距離が等しい区間）が混入しても、本関数は二分探索でその区間の終端時刻を返す
+    // 決定的な挙動をとり、破綻しない（範囲外参照や未定義の戻り値は生じない）。
     let low = 0;
     let high = cumulativeDistances.length - 2;
     while (low < high) {

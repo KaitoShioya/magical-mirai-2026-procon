@@ -25,6 +25,8 @@ describe("createCameraTrajectory poseAt", () => {
       expect(pose.position.y).toBeCloseTo(keyframe.position.y, 5);
       expect(pose.position.z).toBeCloseTo(keyframe.position.z, 5);
       expect(pose.target.x).toBeCloseTo(keyframe.target.x, 5);
+      expect(pose.target.y).toBeCloseTo(keyframe.target.y, 5);
+      expect(pose.target.z).toBeCloseTo(keyframe.target.z, 5);
     }
   });
 

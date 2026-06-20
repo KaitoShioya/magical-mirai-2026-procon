@@ -3,6 +3,7 @@
 // （依存規則 docs/decisions/architecture.md §5）。
 export type { RenderRoot, RenderState } from "./renderRoot";
 export type { BloomState } from "./bloom";
+export type { CenterFigureStatus } from "./entities/centerFigure";
 export { createRenderRoot } from "./renderRoot";
 export { resolveReflectionResolution } from "./reflection";
 export type { GlowPoints, GlowInstance, GlowPointsOptions } from "./entities/glowPoints";

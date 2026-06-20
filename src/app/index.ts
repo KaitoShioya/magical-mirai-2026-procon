@@ -16,6 +16,8 @@ import type { ScreenContext, ScreenFactory, ScreenKey } from "../screens";
 import { createFakePlayback, createTextAlivePlayback, type Playback } from "../textalive";
 import { createOverlays } from "./overlay";
 import { createRenderRoot } from "../rendering";
+import { MIKU_CHARACTER } from "../config/character";
+import { createAttributionBadge } from "./attribution";
 
 /** 統括の外部契約。後始末のみを公開する。 */
 export interface App {
@@ -54,6 +56,12 @@ export function createApp(
     reflectionResolution: options.reflectionResolution,
     bloomEnabled: options.bloomEnabled,
   });
+
+  // 中心キャラクター（初音ミク）のVRMを読み込み、成功したら中心の光柱からVRMへ差し替える（Issue #64）。
+  // 非同期で読み込み、待たずに進める。失敗しても光柱の表示が続くため、結果を待つ必要はない。
+  void renderRoot.mountCenterCharacter(MIKU_CHARACTER);
+  // 出典（ピアプロ・キャラクター・ライセンス）を起動時から常時表示する。読み込みの成否に依らず常設する。
+  const attribution = createAttributionBadge(MIKU_CHARACTER.credit);
 
   // 診断モード（?smoke=1）はトークン非依存の擬似再生、通常はトークンで実プレイヤーを使う。
   const playback: Playback = options.diagnostics
@@ -176,6 +184,9 @@ export function createApp(
     onFrame: (realDeltaMs: number): void => {
       machine.update(realDeltaMs);
       tickPlay(realDeltaMs);
+      // 中心オブジェクト（Issue #64）を毎フレーム進めてから描く。秒へ変換する理由を先に述べる。
+      // three.js のVRM更新は経過時間を秒で受け取る仕様のため、1秒=1000ミリ秒の関係でミリ秒を1000で割る。
+      renderRoot.update(realDeltaMs / 1000);
       // 状態の更新後に1フレーム描く。タブ非表示中は loop が onFrame を呼ばないため描画も止まる。
       renderRoot.render();
     },
@@ -207,6 +218,7 @@ export function createApp(
       machine.dispose();
       unsubscribe();
       overlays.dispose();
+      attribution.dispose();
       playback.dispose();
       renderRoot.dispose();
       // 確定前に破棄された場合に備え、renderOverlays が付けた inert 属性を外す。

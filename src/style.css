@@ -263,3 +263,42 @@ body {
   font-size: clamp(13px, 2vw, 16px);
   color: var(--accent);
 }
+
+/* 初音ミクの出典（ピアプロ・キャラクター・ライセンス）の常時表示バッジ（Issue #64）。
+   画面下端に小さく常設する。重なり順は画面UI（z-index:1）より上、重ね表示の overlay（z-index:1000）より下に置き、
+   読み込み中・失敗時も含めて常に見えるようにする。操作を妨げない理由を先に述べる。バッジ自体は入力を受けず
+   （pointer-events:none）、ライセンスのリンクだけ入力を受ける（pointer-events:auto）ため、ゲームのタップを吸わない。
+   読みやすさのため暗い半透明の帯を敷き、安全領域（safe-area）に文字が隠れないよう下端の余白を確保する。 */
+.attribution {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 500;
+  pointer-events: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 8px;
+  padding:
+    4px
+    max(env(safe-area-inset-right), 8px)
+    max(env(safe-area-inset-bottom), 4px)
+    max(env(safe-area-inset-left), 8px);
+  background: rgba(5, 6, 10, 0.55);
+  text-align: center;
+}
+
+.attribution__text {
+  font-size: clamp(9px, 1.6vw, 11px);
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.attribution__link {
+  pointer-events: auto;
+  font-size: clamp(9px, 1.6vw, 11px);
+  line-height: 1.4;
+  color: var(--accent);
+}

@@ -27,3 +27,21 @@ export const CAMERA_FOV = 60;
 // 余裕をもって収め、近接の欠けと遠方の打ち切りを起こさない範囲として試作と同じ0.1と500を採る。
 export const CAMERA_NEAR = 0.1;
 export const CAMERA_FAR = 500;
+
+// 水面の平面の一辺（ワールド単位）。採用理由を先に述べる。試作の平面400四方が、灯し半径およそ28・
+// 遠方面500・霧の濃さ0.012と破綻なく組めることを確認済みであり、反射面の寸法をこれに合わせる
+// （src/tools/perf/main.ts、docs/research/03-rendering-ui.md §1）。
+export const WATER_PLANE_SIZE = 400;
+
+// 水面の色。採用理由を先に述べる。試作で深夜の暗い湖面の狙いの見えを確認済みのこの暗色を、反射が
+// 有効なときは反射像へ重ねる基調色として、反射が無効なときは不透明な水面の色として用いる
+// （src/tools/perf/main.ts、docs/research/03-rendering-ui.md §1）。
+export const WATER_COLOR = 0x0a0c12;
+
+// 反射解像度の既定値（一辺の画素数）。採用理由を先に述べる。受け入れ基準が256と512の双方を要求し、
+// 既定は高品質側とするため512を採る（docs/research/03-rendering-ui.md §1、Issue #9 技術要件）。
+export const DEFAULT_REFLECTION_RESOLUTION = 512;
+
+// 反射解像度として受け付ける値の集合（0は無効化、256と512は可変解像度）。採用理由を先に述べる。
+// 技術要件が256・512の可変解像度と、0による無効化のみを規定するため、この3値だけを受け付ける。
+export const REFLECTION_RESOLUTIONS = [0, 256, 512] as const;

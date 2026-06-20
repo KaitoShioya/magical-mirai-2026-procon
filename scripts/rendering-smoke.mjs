@@ -165,6 +165,39 @@ try {
     }
   }
 
+  // 反射の配線確認（Issue #9）。起動時パラメータ refl により反射の有効・解像度が診断状態へ反映される
+  // ことを確かめる。これは配線の検証であり、発光点が実際に反射像へ描かれることの視覚確認は性能ゲート
+  // （scripts/reflection-fps.mjs）の保存画像で行う。WebGL の描画文脈の生成はソフトウェア描画でも成立する
+  // ため、反射を作ったか・解像度はいくつかの真偽は GPU の無い自動実行環境でも正しく確認できる。
+  async function checkReflection(query, expectedEnabled, expectedResolution) {
+    await page.goto(BASE + query, { waitUntil: "load" });
+    await page.waitForFunction(() => typeof window.__renderState === "function", undefined, {
+      timeout: 15000,
+    });
+    const reflectionState = await readRenderState();
+    if (!reflectionState) {
+      fail(`反射確認(${query}): window.__renderState を取得できませんでした`);
+      return;
+    }
+    if (reflectionState.reflectionEnabled !== expectedEnabled) {
+      fail(
+        `反射確認(${query}): reflectionEnabled が ${reflectionState.reflectionEnabled} です` +
+          `（期待: ${expectedEnabled}）`
+      );
+    } else if (reflectionState.reflectionResolution !== expectedResolution) {
+      fail(
+        `反射確認(${query}): reflectionResolution が ${reflectionState.reflectionResolution} です` +
+          `（期待: ${expectedResolution}）`
+      );
+    } else {
+      console.log(`確認: 反射(${query}) 有効=${expectedEnabled} 解像度=${expectedResolution}`);
+    }
+  }
+  await checkReflection("/?smoke=1", true, 512);
+  await checkReflection("/?smoke=1&refl=256", true, 256);
+  await checkReflection("/?smoke=1&refl=0", false, 0);
+  await checkReflection("/?smoke=1&refl=9999", true, 512);
+
   // 通常構成（?smoke=1 なし）では診断アクセサが公開されていない。
   await page.goto(BASE + "/", { waitUntil: "load" });
   const absent = await page.evaluate(() => typeof window.__renderState === "undefined");

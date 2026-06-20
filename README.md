@@ -6,32 +6,36 @@ TextAlive App API を使った、歌詞がリアルタイムに同期して動�
 
 ## 対応楽曲
 
-課題曲6曲を登録済みです（URLパラメータ `?song=<key>` で曲を切り替える設計。曲選択をアプリに反映する処理は後続の実装で追加する）。
+課題曲6曲を登録しています。アプリ本体（`index.html`）では題名画面で曲を選びます。ただし現在遊べるのは TAKEOVER のみで、他の5曲は題名画面に「準備中」と表示され、まだ選べません。縦切りで TAKEOVER を最初に完成させる方針のためです。
 
-| key | 曲名 | アーティスト |
-|-----|------|-------------|
-| `kotaete` | こたえて | imie |
-| `after-the-curtain` | アフター・ザ・カーテン | Rulmry |
-| `shutter-chance` | シャッターチャンス | 夜未アガリ |
-| `sekai-saigo` | 世界最後の音楽隊 | 夏山よつぎ×ど～ぱみん |
-| `toritsuku-logy` | トリツクロジー | 鶴三 |
-| `takeover` *(デフォルト)* | TAKEOVER | Twinfield |
+| key | 曲名 | アーティスト | 現在の状態 |
+|-----|------|-------------|-----------|
+| `kotaete` | こたえて | imie | 準備中 |
+| `after-the-curtain` | アフター・ザ・カーテン | Rulmry | 準備中 |
+| `shutter-chance` | シャッターチャンス | 夜未アガリ | 準備中 |
+| `sekai-saigo` | 世界最後の音楽隊 | 夏山よつぎ×ど～ぱみん | 準備中 |
+| `toritsuku-logy` | トリツクロジー | 鶴三 | 準備中 |
+| `takeover` | TAKEOVER | Twinfield | 遊べる（既定の読み込み曲） |
 
-> デフォルトを TAKEOVER にしているのは、共通エンジンを最初に縦切りで完成させる対象が TAKEOVER のためです（作品仕様の正典 `docs/idea/concept-final.md`）。
+> TAKEOVER を既定の読み込み曲にしているのは、共通エンジンを最初に縦切りで完成させる対象が TAKEOVER のためです（作品仕様の正典 `docs/idea/concept-final.md`）。
+
+URLパラメータ `?song=<key>` で曲を指定できるのは、開発用の楽曲データ解析ツール（`analysis.html`、後述の「ページ構成」を参照）だけです。アプリ本体（`index.html`）は `?song=` を読まず、常に TAKEOVER を読み込みます。アプリ本体で `?song=` から曲を切り替える処理は後続の実装で追加します。
 
 ## セットアップ
 
 ### 必要なもの
-- Node.js 20系 または 22系 の長期サポート版（22系を推奨）。**Node.js 24系は使わないこと。** 理由を先に述べる。本作のビルド工具（Vite 5.4系とそれが用いる Rollup）は Node.js 24系での本番ビルド中に異常終了し、Node.js 22系の長期サポート版では正常に完了することを確認済みのためである。推奨版はプロジェクト直下の `.nvmrc`（22）に記載している。
+- Node.js は 22系の長期サポート版を推奨します（推奨版はプロジェクト直下の `.nvmrc` に `22` と記載）。動作条件は `package.json` の `engines` に従い、20.19.0 以上または 22.12.0 以上です。**Node.js 24系は使わないでください。** これは応募規約による制限ではなく、本作のビルド工具の都合です。理由を先に述べると、ビルド工具（Vite 5.4系とそれが用いる Rollup）が Node.js 24系での本番ビルド中に異常終了し、Node.js 22系の長期サポート版では正常に完了することを確認済みのためです。
 - TextAlive アプリトークン（[developer.textalive.jp/profile](https://developer.textalive.jp/profile) で取得）
 
 ### 手順
 
 ```bash
-# 依存関係のインストール
-npm install
+# 依存関係のインストール。第三者が同じ依存の版で再現するため、固定版（package-lock.json）どおりに導入する npm ci を使う
+npm ci
+# 開発中に依存を更新したい場合は npm install を使う（package-lock.json を更新する）
 
-# .env.example をコピーして .env を作成し、TEXT_ALIVE_API_TOKEN に取得したトークンを設定（.env はコミットしない）
+# .env.example をコピーして .env を作成し、TEXT_ALIVE_API_TOKEN に取得したトークンを設定する（.env はコミットしない）。
+# ここに設定した TEXT_ALIVE_API_TOKEN は、ビルド時に import.meta.env.VITE_TEXTALIVE_TOKEN としてアプリへ渡る。
 cp .env.example .env
 
 # 開発サーバ起動（http://localhost:5173）
@@ -40,26 +44,57 @@ npm run dev
 # 型検査（strict）。tsconfig.json と tsconfig.node.json を個別に検査する
 npm run typecheck
 
-# 開発検証用の静的ビルド（型検査を経て dist/ に出力。本体に加え開発ツール2ページも出力される）
+# 単体テスト（vitest）。動作確認に使う
+npm test
+
+# 開発検証用の静的ビルド（型検査を経て dist/ に出力。本体に加え開発・診断用の7ページも出力される）
 npm run build
 
-# 本番配信用ビルド（本体 index.html のみを dist/ に出力。開発ツール2ページは含めない）
+# 本番配信用ビルド（本体 index.html のみを dist/ に出力。開発・診断用ページは含めない）
 npm run build:app
 
-# ビルド後のプレビュー
+# ビルド後のプレビュー（http://localhost:4173）
 npm run preview
 ```
 
 ## ページ構成
 
-下表はローカル開発時（`npm run dev` / `npm run build`）のページである。**本番配信（Cloudflare Pages）に含めるのは本体 index.html のみ**で、開発ツールの3ページは配信に含めない。
+Vite のマルチページ構成です。ローカル開発時（`npm run dev` または `npm run build`）には次のページが出力されます。**本番配信（Cloudflare Pages）に含めるのは本体 `index.html` のみ**で、開発・診断用のページは配信に含めません（本番配信用ビルド `npm run build:app` では本体だけを出力します）。
+
+本番配信に含めるページ:
 
 | URL | 説明 |
 |-----|------|
-| `/` または `/index.html` | アプリ本体（リリックアプリ）。本番配信対象 |
-| `/analysis.html?song=<key>` | 開発用: 楽曲データ解析ツール。本番配信に含めない |
-| `/prototype.html` | 開発用: 描画負荷の基準検証ツール。本番配信に含めない |
-| `/typography.html` | 開発用: キネティック文字エンジンの受け入れ診断（性能計測）。本番配信に含めない |
+| `/` または `/index.html` | アプリ本体（リリックアプリ） |
+
+開発・診断用のページ（全7ページ。いずれも本番配信に含めない）:
+
+| URL | 説明 |
+|-----|------|
+| `/analysis.html?song=<key>` | 楽曲データ解析ツール。`?song=` で解析する曲を指定する |
+| `/prototype.html` | 描画負荷の基準検証ツール |
+| `/typography.html` | キネティック文字エンジンの受け入れ診断（性能計測） |
+| `/rain.html` | 雨パーティクルの単独診断 |
+| `/camera-trajectory.html` | カメラ軌跡システムの受け入れ診断 |
+| `/rendering.html` | 発光点の描画命令数の受け入れ診断 |
+| `/input.html` | 入力アーキテクチャの受け入れ診断 |
+
+## アプリ本体のURLパラメータ
+
+アプリ本体（`index.html`）は次のURLパラメータを解釈します。用途ごとに分けて示します。
+
+本番ビルドでも有効な表示調整:
+
+| パラメータ | 値 | 効果 |
+|-----------|-----|------|
+| `refl` | `0`（反射を無効化）・`256`・`512` のいずれか。未指定や不正値は既定の `512` | 水面反射の解像度を変える。自動の負荷調整を入れる前に反射を手動で抑える退避手段として本番でも有効にしている |
+| `bloom` | `0` で無効。未指定や他の値（明示的に有効化するなら `1`）は有効 | 発光のにじみ（ブルーム）後処理の有無を切り替える |
+
+開発・検証用:
+
+| パラメータ | 値 | 効果 |
+|-----------|-----|------|
+| `smoke` | `1` で有効 | 診断モード。トークンに依存しない擬似再生で画面遷移を検証し、中心キャラクターのモデルは読み込まない |
 
 ## ディレクトリ構成（概要）
 
@@ -96,7 +131,7 @@ BASE=http://localhost:5173 npm run typography:fps
 
 ## 配信（Cloudflare Pages + Cloudflare Access）
 
-募集期間中の一般公開は規約で禁止されているため（応募のきまり）、本番は Cloudflare Pages に配信し、Cloudflare Access で閲覧者を限定する（自分の Cloudflare アカウント、または許可したメールアドレスのみが閲覧可能）。GitHub Pages は有料プランでもサイトが一般公開され、サイト自体の閲覧制限には上位プランが必要なため採用しない。本番に公開するのは本体 `index.html` のみで、開発ツール（analysis.html / prototype.html）は配信に含めない。
+募集期間中の一般公開は規約で禁止されているため（応募のきまり）、本番は Cloudflare Pages に配信し、Cloudflare Access で閲覧者を限定する（自分の Cloudflare アカウント、または許可したメールアドレスのみが閲覧可能）。GitHub Pages は有料プランでもサイトが一般公開され、サイト自体の閲覧制限には上位プランが必要なため採用しない。本番に公開するのは本体 `index.html` のみで、開発・診断用のページ（「ページ構成」に挙げた7ページ）は配信に含めない。
 
 ### デプロイの仕組み
 
@@ -155,8 +190,13 @@ Variables（非秘匿の設定値）:
 
 ## 動作環境
 
-- Google Chrome / Edge 最新版（スマートフォン横持ちを主軸、パソコン対応）
+実行環境（このアプリを動かすブラウザと端末）:
+
+- Google Chrome または Microsoft Edge の最新版
+- スマートフォン横持ちを主軸とし、パソコンにも対応
 - TextAlive ホストには接続不要（スタンドアロン動作）
+
+ビルド環境（開発とビルドに使う環境）は、上の「セットアップ」に記した Node.js の条件を参照してください。
 
 ## ライセンス・出典
 

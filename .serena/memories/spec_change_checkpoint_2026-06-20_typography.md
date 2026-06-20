@@ -23,5 +23,8 @@ concept-final §11、research/01・06・08、decisions/architecture.md・app-ove
 ## ロードマップ
 dev-roadmap-graph.md・dev-roadmap-gantt.md とSVG（graph-a/b/c・phase2）を更新。本体ノード 97→101、エッジ 163→182、総数 107→111、新M3 14→18。レベル: #23 L3、#33 L4、#81・#98・#99 L5、#130・#31 L2、#131・#132 L3、#133 L1。クリティカルパス（M1→M4→M5→M7）は不変。
 
+## 反映先
+本変更はブランチ `worktree-issue-31-typography-composition-foundation` で実施し、PR #134（base main）で提出した。資料・ロードマップ・SVG・本チェックポイントはこのブランチのコミットに含む。GitHub Issue（#31/#33/#98/#102 の修正、#130〜#133 の新設、#23 等への接続注記）は即時反映済み。
+
 ## 経緯の補足
 本変更は CodeX の二重チェックレビューを3巡反映して確定した。設計を止める未解決点は無い。実装Issue着手時に確定する技術選択は2点（#31の影の実装方式、#131の競合解消規則の将来拡張）。

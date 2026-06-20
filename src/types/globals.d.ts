@@ -79,5 +79,30 @@ declare global {
       drawCalls: number;
       triangles: number;
     };
+    /**
+     * 検証用の入力イベント履歴アクセサ。入力診断ページ（input.html）だけが取り付ける。
+     * これまでに受けた入力イベントを受けた順に返す。scripts/input-smoke.mjs が取得する。
+     * 共有型が input に依存しないよう素の構造で宣言し、入力源は文字列で表す。
+     */
+    __inputReactions?: () => readonly {
+      source: string;
+      pointerId: number | null;
+      normalizedX: number;
+      normalizedY: number;
+      slotIndex: number;
+      slotCount: number;
+      colorX01: number;
+      eventTimeMs: number;
+    }[];
+    /**
+     * 検証用の入力状態アクセサ。入力診断ページ（input.html）だけが取り付ける。
+     * 追跡中の接触数・キーボード仮想カーソルのX位置・入力面要素の算出 touch-action を返す。
+     * scripts/input-smoke.mjs が取得する。
+     */
+    __inputState?: () => {
+      activePointerCount: number;
+      keyboardColorX01: number;
+      touchAction: string;
+    };
   }
 }

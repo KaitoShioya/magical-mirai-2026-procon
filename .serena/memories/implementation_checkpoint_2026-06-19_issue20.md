@@ -3,7 +3,8 @@
 状態: ブランチ `feat/issue-20-sdf-text-engine`（`origin/main`＝Issue #8 等のマージを含む から作成）に実装完了。PR #119。型検査・単体テスト196件・両モードビルド・実GPU性能正式判定が緑。受け入れ基準を満たしマージ待ち。
 
 ## 実装範囲（Issue #20 = M3・P0「troika最小初期化を内包するSDF文字エンジン」）
-`src/typography/` を2副領域へ分割し、`kineticText/`（troika製の3次元演出文字エンジン）を実装した。`readableLyrics/`（DOM歌詞、#31）は本Issueでは作らない。
+`src/typography/` を `kineticText/`（troika製の3次元演出文字エンジン）として実装した。
+（2026-06-20 仕様変更で更新: 当時は `readableLyrics/`（DOM歌詞、#31）を別副領域に作らないと記したが、その後DOM主役歌詞層を廃止し、歌詞はキネティックタイポグラフィのみで表示・可読性も文字エンジン自体で担保する方針へ変更した。#31は「可読性処理」へ修正済み。詳細は [[spec_change_checkpoint_2026-06-20_typography]]。）
 
 実装ファイル（`src/typography/kineticText/`）:
 - `types.ts`・`index.ts` — 公開インターフェース。

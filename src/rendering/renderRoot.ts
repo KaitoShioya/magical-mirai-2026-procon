@@ -18,6 +18,14 @@ import { createPlaceholderGlow, type PlaceholderGlow } from "./placeholderGlow";
 import { clampPixelRatio, computeAspect } from "./viewport";
 import { createWater, type Water } from "./water";
 import { createBloomComposer, type BloomComposer, type BloomState } from "./bloom";
+import { createNightLighting, type NightLighting } from "./lighting";
+import {
+  createCenterFigure,
+  type CenterFigure,
+  type CenterFigureStatus,
+} from "./entities/centerFigure";
+import { loadVrm } from "./loaders/vrmLoader";
+import type { CharacterModelConfig } from "../types/character";
 
 // 暫定カメラ視点（Issue #9）。カメラ軌跡本実装（Issue #13）で置換する暫定の固定視点である。
 // 採用理由を先に述べる。土台のカメラは原点・回転なしで湖面と発光点を画面に収めず、本編で映り込みを
@@ -52,12 +60,24 @@ export interface RenderState {
   reflectionResolution: number;
   /** ブルーム後処理の状態（Issue #11）。WebGL が無く合成を生成しない端末では null。 */
   bloom: BloomState | null;
+  /** 中心オブジェクト（Issue #64）の表示状態。fallback=光柱、loaded=VRM、error=読み込み失敗で光柱を継続。
+   *  WebGL が無く中心オブジェクトを作らない端末でも、診断の値としては fallback を返す。 */
+  centerFigureStatus: CenterFigureStatus;
+  /** 中心オブジェクトのVRM読み込みが失敗したときの短い理由（無ければ null）。無音の不具合を診断・検証で検出する。 */
+  centerFigureError: string | null;
 }
 
 /** 描画基盤の外部契約。 */
 export interface RenderRoot {
   /** 1フレーム描く。WebGL が無い端末では何もしない。 */
   render(): void;
+  /** 中心オブジェクトを毎フレーム進める（Issue #64、引数は秒）。光柱は明滅を、VRMは内部更新を進める。
+   *  統括（src/app）が render の前に呼ぶ。WebGL が無い端末では何もしない。 */
+  update(deltaSeconds: number): void;
+  /** 中心キャラクター（初音ミク）のVRMを読み込み、成功したら光柱からVRMへ差し替える（Issue #64）。
+   *  成功で true、失敗または WebGL が無いとき false を返す。失敗時は光柱を表示し続ける。
+   *  複数回呼ばれたときは最後の呼び出しの結果だけを採り、古い読み込みの完了は破棄する（世代管理）。 */
+  mountCenterCharacter(config: CharacterModelConfig): Promise<boolean>;
   /** 表示寸法の変更を反映する（カメラ縦横比とレンダラ寸法・画素密度）。 */
   resize(width: number, height: number): void;
   /** カメラの位置と注視点（ワールド座標）を設定する。適用できたら true、位置と注視点が同一または
@@ -160,12 +180,21 @@ export function createRenderRoot(
   let water: Water | null = null;
   let placeholderGlow: PlaceholderGlow | null = null;
   let bloomComposer: BloomComposer | null = null;
+  // 夜の照明と中心オブジェクト（Issue #64）。標準マテリアルのモデルを照らす光源と、中心に常在する造形。
+  let lighting: NightLighting | null = null;
+  let centerFigure: CenterFigure | null = null;
   if (renderer) {
     water = createWater({ reflectionResolution });
     scene.add(water.object3d);
     // 暫定発光点（Issue #10 で発光点本実装へ置換）。反射に映る対象として置く。
     placeholderGlow = createPlaceholderGlow();
     scene.add(placeholderGlow.object3d);
+    // 夜の照明（Issue #64）。中心オブジェクトを深夜の背景から分離する淡い環境光とリムライト。
+    lighting = createNightLighting();
+    scene.add(lighting.object3d);
+    // 中心オブジェクト（Issue #64）。初期は光柱（fallback）を中心へ立て、VRM読み込み成功で差し替える。
+    centerFigure = createCenterFigure();
+    scene.add(centerFigure.object3d);
     // 暫定カメラ視点（Issue #13 で置換）。湖面と発光点を画面に収め、映り込みを目視できるようにする。
     camera.position.set(
       PLACEHOLDER_CAMERA_POSITION.x,
@@ -186,6 +215,11 @@ export function createRenderRoot(
   }
 
   let disposed = false;
+
+  // 中心オブジェクトのVRM読み込みの世代番号と、最後の失敗理由（Issue #64）。
+  // 世代番号は mountCenterCharacter を呼ぶたびに増やし、読み込み完了時に最新の世代だけを採る。
+  let centerMountGeneration = 0;
+  let centerFigureError: string | null = null;
 
   function resize(width: number, height: number): void {
     camera.aspect = computeAspect(width, height);
@@ -232,6 +266,39 @@ export function createRenderRoot(
     return true;
   }
 
+  function update(deltaSeconds: number): void {
+    if (disposed) {
+      return;
+    }
+    centerFigure?.update(deltaSeconds);
+  }
+
+  async function mountCenterCharacter(config: CharacterModelConfig): Promise<boolean> {
+    // 描画器が無い（WebGL 不可）端末では中心オブジェクトを作っていないため、読み込まずに false を返す。
+    if (!centerFigure) {
+      return false;
+    }
+    const generation = (centerMountGeneration += 1);
+    try {
+      const loaded = await loadVrm(config.url);
+      // 後始末済み、または新しい呼び出しに追い越されたら取り込まず、読み込んだVRMを解放する（競合ガードと世代管理）。
+      if (disposed || generation !== centerMountGeneration || !centerFigure) {
+        loaded.dispose();
+        return false;
+      }
+      centerFigure.swapToVrm(loaded, config);
+      centerFigureError = null;
+      return true;
+    } catch (error) {
+      // 失敗は最新の世代のときだけ記録する。古い失敗が新しい読み込みの状態を上書きしないようにする。
+      if (!disposed && generation === centerMountGeneration && centerFigure) {
+        centerFigure.markLoadFailed();
+        centerFigureError = error instanceof Error ? error.message : String(error);
+      }
+      return false;
+    }
+  }
+
   function render(): void {
     if (!renderer || disposed) {
       return;
@@ -251,6 +318,8 @@ export function createRenderRoot(
 
   return {
     render,
+    update,
+    mountCenterCharacter,
     setCameraPose,
     resize,
     state(): RenderState {
@@ -279,6 +348,9 @@ export function createRenderRoot(
         reflectionEnabled: water ? water.reflective : false,
         reflectionResolution: water ? water.reflectionResolution : 0,
         bloom: bloomComposer ? bloomComposer.state() : null,
+        // 中心オブジェクトの表示状態。作っていない（WebGL 不可）なら fallback を返す。
+        centerFigureStatus: centerFigure ? centerFigure.status() : "fallback",
+        centerFigureError,
       };
     },
     dispose(): void {
@@ -299,6 +371,19 @@ export function createRenderRoot(
         scene.remove(placeholderGlow.object3d);
         placeholderGlow.dispose();
         placeholderGlow = null;
+      }
+      // 中心オブジェクト（光柱または読み込み済みVRM）を解放する。読み込み中に dispose された場合は、
+      // mountCenterCharacter 側の世代・後始末ガードが、後から届く読み込みを取り込まず解放する。
+      if (centerFigure) {
+        scene.remove(centerFigure.object3d);
+        centerFigure.dispose();
+        centerFigure = null;
+      }
+      // 夜の照明を解放する。
+      if (lighting) {
+        scene.remove(lighting.object3d);
+        lighting.dispose();
+        lighting = null;
       }
       if (bloomComposer) {
         bloomComposer.dispose();

@@ -20,4 +20,12 @@
   - 受け入れ診断 `camera-trajectory.html`（`main.ts`）: 暫定キーフレームで全曲長を掃引し、滑らか追従・最小速度・適用拒否0・終点一致の指標を `window.__cameraTrajectory` で公開する。`scripts/camera-trajectory-smoke.mjs` が検査し、検証ビルド（`vite.config.ts` の入力）に含む（本番ビルド `--mode app` では非配信）。
   - 目視確認 `camera-trajectory-view.html`（`view.ts`）: 俯瞰視点で軌跡曲線・キーフレーム点・床格子・カメラ位置と注視点と視線方向を描き、評価器の `poseAt` 出力に沿って動かす可視化ツール。**開発サーバ（`npm run dev`）専用**で、ビルド入力・本番配信・スモークには含めない。クエリ `seconds` で1周の再生秒数を変える。
 - **WebGL不可時の縮退**: WebGL の描画文脈を生成できない端末では `createRenderRoot` は WebGLRenderer を呼ぶ前に `isWebGL2Available` で判定して縮退し、`webglAvailable` を偽にし描画を無効化する。エンジン・画面・操作は動き続ける。
+- **夜の照明・中心オブジェクト・VRMローダ（Issue #64）**: 湖の中心に常在する初音ミクを描く。
+  - **照明**: `lighting.ts`（`createNightLighting`）。淡い環境光（`AmbientLight`）と背後上方からのリムライト（`DirectionalLight`）の2灯を `Group` で返す。標準マテリアルのモデルを深夜の背景から分離する。水面（Reflector）と発光点（光源非依存の `MeshBasicMaterial`）は影響を受けない。影は本Issueでは扱わない。
+  - **中心オブジェクト**: `entities/centerFigure.ts`（`createCenterFigure`）。初期はコード描画の光柱（縮退表示）を中心へ立て、VRM読み込み成功で光柱からVRMへ差し替える（`swapToVrm`）。契約は `object3d`・`update(秒)`・`status()`・`dispose()`。
+  - **VRMローダ**: `loaders/vrmLoader.ts`（`loadVrm`）。`GLTFLoader` に `VRMLoaderPlugin` を登録して読み込み、頂点と骨を整理（`VRMUtils.removeUnnecessaryVertices`・`combineSkeletons`）、視錐台カリングを無効化、VRM0.0系は前方を正規化（`VRMUtils.rotateVRM0`）。後始末は各テクスチャの画像ビットマップ（ImageBitmap）を閉じてから `VRMUtils.deepDispose` でGPU資源を解放する（`docs/decisions/architecture.md` §3.5）。
+  - **公開契約の追加**: `RenderRoot` に `update(秒)` と `mountCenterCharacter(config)` を持つ。`update` は中心オブジェクトを毎フレーム進め、統括が `render` の前に呼ぶ。`mountCenterCharacter` はVRMを読み込んで差し替え、成功で `true`・失敗で `false` を返す。複数回呼んでも最後の呼び出しの結果だけを採り（世代管理）、後始末との競合では後から届く読み込みを取り込まず解放する。
+  - **設定と差し替え**: モデルの配信先・配置・スケール・向き・出典・来歴は `src/config/character.ts`（`MIKU_CHARACTER`、型は `src/types/character.ts`）に集約する。差し替えは設定値の変更と `public/models/miku/` のファイル置換だけで完結する。
+  - **診断状態**: `state()` の `centerFigureStatus`（`fallback`＝光柱・`loaded`＝VRM・`error`＝読み込み失敗で光柱継続）と `centerFigureError`（失敗の短い理由）で、表示と縮退をスモークが判定できる。
+  - **出典の常時表示**: ピアプロ・キャラクター・ライセンスの指定文言は、読み込みの成否に依らずアプリ起動時から常時表示する（DOMバッジは `src/app/attribution.ts`）。包括的なクレジット区画は #77・#82 が統合する。
 - 将来の内部構成: 描画器統括 / Renderer / cameras / pipeline / scene / entities / loaders。詳細は `docs/decisions/architecture.md`。

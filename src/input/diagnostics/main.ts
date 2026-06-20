@@ -51,7 +51,10 @@ function paintMark(reaction: Reaction): void {
   mark.style.marginTop = "-8px";
   mark.style.borderRadius = "50%";
   mark.style.border = "2px solid #9ffbd0";
-  mark.style.background = `hsl(${reaction.colorX01 * 360} 80% 55% / 0.6)`;
+  // 色相は背景グラデーションと同じ範囲（0度の赤から240度の青）に合わせる。
+  // 色相環は360度で一周するため 0から360 を使うと右端の色相360度が左端の赤へ戻り、背景の青と食い違う。
+  // 0から240 にすることで左=赤・中央=緑・右=青と背景に一致し、右端で赤へ戻る食い違いを無くす。
+  mark.style.background = `hsl(${reaction.colorX01 * 240} 80% 55% / 0.6)`;
   mark.style.pointerEvents = "none";
   surface.appendChild(mark);
   // 印は一定時間で消す。残り続けると画面が埋まるため。

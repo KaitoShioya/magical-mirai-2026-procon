@@ -20,6 +20,10 @@ docs/idea/video/
 # === 解析中間ファイル（巨大・再生成可能） ===
 *_y.csv
 
+# === 舞台土台の元データ（国土地理院の数値標高データ等。ローカル変換専用、提出物に含めない） ===
+# scripts/build-stage-model.mjs の入力。アプリは変換後の public/models/stage/*.glb のみを使う。
+model/
+
 # === 描画性能検証スクリプトのスクリーンショット（実行ごとに再生成される一時生成物） ===
 scripts/proto-*.png
 scripts/typography-*.png

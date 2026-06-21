@@ -3,7 +3,12 @@
 // document.body 直下に置く（既存の src/app/attribution.ts・src/app/overlay.ts と同じ作法）。
 // 後続の設定・クレジット画面（Issue #77）が、この集約データと表示を取り込んで SE 消音切替や較正を足す。
 
-import type { CreditRegistry, FontCredit, SongCredit } from "../../types/credits";
+import type {
+  CreditRegistry,
+  FontCredit,
+  SongCredit,
+  TerrainSourceCredit,
+} from "../../types/credits";
 import type { CharacterCredit } from "../../types/character";
 
 export interface CreditsView {
@@ -72,6 +77,14 @@ function songSection(songs: readonly SongCredit[]): HTMLElement {
   return section("楽曲・歌詞", rows);
 }
 
+function terrainSection(terrain: TerrainSourceCredit): HTMLElement {
+  return section("舞台土台の地形", [
+    textRow(`${terrain.label}（素材源 ${terrain.source}）`),
+    linkRow(terrain.source, terrain.sourceUrl),
+    textRow(terrain.note),
+  ]);
+}
+
 /**
  * クレジット表示を生成して host（既定は document.body）へ取り付ける。
  * 小さな開閉ボタンと、初期は隠した一覧を作り、ボタンで開閉する。
@@ -106,6 +119,7 @@ export function createCreditsView(
     characterSection(registry.character),
     fontSection(registry.fonts),
     songSection(registry.songs),
+    terrainSection(registry.terrain),
     section("AI生成物について", [textRow(registry.provenance)])
   );
 

@@ -37,13 +37,30 @@ export interface SongCredit {
 }
 
 /**
+ * 舞台土台の地形素材の出典情報（Issue #105）。地形は静的な3Dモデルとして用意し、素材源を明示する。
+ * source は素材源の名称（配布元）、sourceUrl はその配布元のアドレス、note は素材の扱い（形式変換のみで
+ * AI生成物でない旨など）を表す。最終的な文言と規約適合の確認は Issue #106 で行う。
+ */
+export interface TerrainSourceCredit {
+  /** 地形素材の説明（例: 舞台土台の地形）。 */
+  readonly label: string;
+  /** 素材源の名称（配布元。例: 国土地理院 地理院地図）。 */
+  readonly source: string;
+  /** 素材源のアドレス（絶対アドレス）。 */
+  readonly sourceUrl: string;
+  /** 素材の扱いの説明（形式変換のみでAI生成物でない旨など）。 */
+  readonly note: string;
+}
+
+/**
  * クレジットの集約結果。分散した出典データを1つに束ねた、表示の単一の出典。
  * character は初音ミクの指定文言、fonts は使用フォント、songs は使用楽曲、
- * provenance はAI生成物を使っていない旨である。
+ * terrain は舞台土台の地形素材、provenance はAI生成物を使っていない旨である。
  */
 export interface CreditRegistry {
   readonly character: CharacterCredit;
   readonly fonts: readonly FontCredit[];
   readonly songs: readonly SongCredit[];
+  readonly terrain: TerrainSourceCredit;
   readonly provenance: string;
 }

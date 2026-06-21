@@ -19,6 +19,7 @@ import { createRenderRoot, createPerfBudget } from "../rendering";
 import { createBeatScheduler } from "../utils/beatScheduler";
 import { createScreenShake, resolveBeatAmplitudes } from "../utils/screenShake";
 import { MIKU_CHARACTER } from "../config/character";
+import { LAKE_STAGE } from "../config/stage";
 import { createAttributionBadge, type AttributionBadge } from "./attribution";
 import { buildCreditRegistry } from "./credits/registry";
 import { createCreditsView, type CreditsView } from "./credits/creditsView";
@@ -90,6 +91,10 @@ export function createApp(
   if (!options.diagnostics) {
     void renderRoot.mountCenterCharacter(MIKU_CHARACTER);
     attribution = createAttributionBadge(MIKU_CHARACTER.credit);
+    // 舞台土台（Issue #105）を非同期で読み込み、待たずに進める。失敗しても暫定平面の水面が続く。
+    // 診断モードでは画面遷移スモークの描画負荷を抑えるため読み込まない（ミクと同じ判断）。地形を検証する
+    // 専用診断ページ（stage.html）は別経路で必ず読む。
+    void renderRoot.mountStageTerrain(LAKE_STAGE);
   }
 
   // 素材全体の出典を、操作で常時到達できるクレジット表示として常設する（Issue #82）。

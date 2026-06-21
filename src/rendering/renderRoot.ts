@@ -38,7 +38,19 @@ import {
 import { loadVrm } from "./loaders/vrmLoader";
 import type { CharacterModelConfig } from "../types/character";
 import { createOverlayLayer, type OverlayLayer } from "./overlay";
+import { createStageTerrain, type StageTerrain } from "./entities/stageTerrain";
+import { loadStageTerrain } from "./loaders/stageTerrainLoader";
+import type {
+  OriginalWaterBoundsWorld,
+  StageModelConfig,
+  WaterRegion,
+} from "../types/stage";
 import type { Object3D } from "three";
+
+/** 舞台土台（Issue #105）の読み込み状態。none=未読込、loaded=読込済み、error=読み込み失敗で暫定平面を継続。 */
+export type StageTerrainStatus = "none" | "loaded" | "error";
+/** 水面の供給元。placeholder-plane=暫定の原点平面、stage-mesh=土台モデルの水面領域から作った平面。 */
+export type WaterSource = "placeholder-plane" | "stage-mesh";
 
 // 暫定カメラ視点（Issue #9）。カメラ軌跡本実装（Issue #13）で置換する暫定の固定視点である。
 // 採用理由を先に述べる。土台のカメラは原点・回転なしで湖面と発光点を画面に収めず、本編で映り込みを
@@ -91,6 +103,17 @@ export interface RenderState {
     frustumTop: number;
     frustumBottom: number;
   } | null;
+  /** 舞台土台（Issue #105）の読み込み状態。WebGL が無い端末でも診断の値としては none を返す。 */
+  stageTerrainStatus: StageTerrainStatus;
+  /** 舞台土台の読み込みが失敗したときの短い理由（無ければ null）。無音の不具合を診断・検証で検出する。 */
+  stageTerrainError: string | null;
+  /** 水面の供給元。土台モデルの水面領域から作ったとき stage-mesh、暫定の原点平面のとき placeholder-plane。 */
+  waterSource: WaterSource;
+  /** 反射面に渡した水面領域（幅・奥行き・中心・高さ）。土台未読込のとき null。診断・検証用。 */
+  waterRegion: WaterRegion | null;
+  /** 水面マーカーの元範囲（土台モデルの extras 由来）。土台未読込・extras 無しのとき null。診断・検証用。
+   *  反射面に渡した waterRegion とは別物であり、混同を避けるため別項目で返す。 */
+  originalWaterBoundsWorld: OriginalWaterBoundsWorld | null;
   /** 現在 canvas に適用している画面拡大・減衰揺れの変換（Issue #76）。倍率1・移動0は恒等（拡大していない）。
    *  診断・検証と、入力の逆変換契約（#59）のために読む。 */
   screenTransform: { scale: number; offsetX: number; offsetY: number };
@@ -125,6 +148,10 @@ export interface RenderRoot {
    *  成功で true、失敗または WebGL が無いとき false を返す。失敗時は光柱を表示し続ける。
    *  複数回呼ばれたときは最後の呼び出しの結果だけを採り、古い読み込みの完了は破棄する（世代管理）。 */
   mountCenterCharacter(config: CharacterModelConfig): Promise<boolean>;
+  /** 舞台土台（Issue #105）の glTF を読み込み、成功したら地形をシーンへ加え、暫定平面の水面を土台モデルの
+   *  水面領域から作り直した水面へ差し替える。成功で true、失敗または WebGL が無いとき false を返す。
+   *  失敗時は暫定平面の水面を保つ。複数回呼ばれたときは最後の呼び出しの結果だけを採る（世代管理）。 */
+  mountStageTerrain(config: StageModelConfig): Promise<boolean>;
   /** 2次元層（Issue #15）へ表示物を足す。後続Issue（落下式レーン #57・音程帯 #58・反応位置の光点）が、
    *  最前面に重ねる表示物をここへ載せる。WebGL が無く2次元層が無い端末では何もしない。 */
   addOverlayObject(object: Object3D): void;
@@ -332,6 +359,16 @@ export function createRenderRoot(
   let centerMountGeneration = 0;
   let centerFigureError: string | null = null;
 
+  // 舞台土台（Issue #105）の状態。読み込みの世代番号は mountStageTerrain を呼ぶたびに増やし、読み込み完了時に
+  // 最新の世代だけを採る。水面の供給元・読み込み状態・失敗理由・水面領域・水面の元範囲を保持する。
+  let stageTerrain: StageTerrain | null = null;
+  let stageMountGeneration = 0;
+  let stageTerrainStatus: StageTerrainStatus = "none";
+  let stageTerrainError: string | null = null;
+  let waterSource: WaterSource = "placeholder-plane";
+  let currentWaterRegion: WaterRegion | null = null;
+  let currentWaterBounds: OriginalWaterBoundsWorld | null = null;
+
   function resize(width: number, height: number): void {
     // 劣化段階の適用がリサイズ事象なしに寸法を要するため、最後の表示寸法を保持する。
     currentDisplayWidth = width;
@@ -488,6 +525,57 @@ export function createRenderRoot(
     }
   }
 
+  async function mountStageTerrain(config: StageModelConfig): Promise<boolean> {
+    // 描画器が無い（WebGL 不可）端末では水面・地形を作っていないため、読み込まずに false を返す。
+    if (!renderer || !water) {
+      return false;
+    }
+    const generation = (stageMountGeneration += 1);
+    try {
+      const loaded = await loadStageTerrain(config);
+      // 後始末済み、または新しい呼び出しに追い越されたら取り込まず、読み込んだ資源を解放する（競合ガードと世代管理）。
+      if (disposed || generation !== stageMountGeneration || !renderer || !water) {
+        loaded.dispose();
+        return false;
+      }
+      // 新しい地形と水面を、シーンと状態を変える前に両方とも生成する。理由を先に述べる。
+      // 生成の途中で同期例外が出ても、シーンと状態を一切変えていなければ、部分的に適用された不整合
+      // （例: 状態は error なのに地形だけシーンに残る）が起きず、縮退（暫定平面の保持）を保てるため。
+      const terrain = createStageTerrain(loaded);
+      const newWater = createWater({ reflectionResolution, waterRegion: loaded.waterRegion });
+
+      // ここから先はシーンと状態の更新で、例外を投げない。新しいものを加えてから旧いものを外して破棄する
+      // 順にする。理由を先に述べる。先に旧いものを破棄すると一瞬対象が無くなるため、新しいものを先に加える。
+      // 旧地形は前回の成功で残るもの（複数回成功時の世代管理）。旧水面は起動時の暫定平面または前回の水面。
+      const previousTerrain = stageTerrain;
+      const previousWater = water;
+      scene.add(terrain.object3d);
+      scene.add(newWater.object3d);
+      stageTerrain = terrain;
+      water = newWater;
+      if (previousTerrain) {
+        scene.remove(previousTerrain.object3d);
+        previousTerrain.dispose();
+      }
+      scene.remove(previousWater.object3d);
+      previousWater.dispose();
+      // 診断状態を更新する。反射面に渡した水面領域と、水面マーカーの元範囲を別々に保持する。
+      currentWaterRegion = loaded.waterRegion;
+      currentWaterBounds = loaded.waterBounds;
+      waterSource = "stage-mesh";
+      stageTerrainStatus = "loaded";
+      stageTerrainError = null;
+      return true;
+    } catch (error) {
+      // 失敗は最新の世代のときだけ記録する。古い失敗が新しい読み込みの状態を上書きしないようにする。
+      if (!disposed && generation === stageMountGeneration) {
+        stageTerrainStatus = "error";
+        stageTerrainError = error instanceof Error ? error.message : String(error);
+      }
+      return false;
+    }
+  }
+
   function render(): void {
     if (!renderer || disposed) {
       return;
@@ -517,6 +605,7 @@ export function createRenderRoot(
     render,
     update,
     mountCenterCharacter,
+    mountStageTerrain,
     addOverlayObject(object: Object3D): void {
       overlay?.addObject(object);
     },
@@ -573,6 +662,12 @@ export function createRenderRoot(
               frustumBottom: overlay.frustum().bottom,
             }
           : null,
+        // 舞台土台（Issue #105）の状態。読み込み状態・失敗理由・水面の供給元・水面領域・水面の元範囲を返す。
+        stageTerrainStatus,
+        stageTerrainError,
+        waterSource,
+        waterRegion: currentWaterRegion,
+        originalWaterBoundsWorld: currentWaterBounds,
         // 現在 canvas に当てている画面拡大・減衰揺れの変換（Issue #76）。複製して外部からの変更を防ぐ。
         screenTransform: { ...currentScreenTransform },
         // 色管理の明示設定（レンダラが無い端末では既定値を返す）。後処理を線形空間で作用させる前提を診断で確かめる。
@@ -593,6 +688,12 @@ export function createRenderRoot(
         scene.remove(water.object3d);
         water.dispose();
         water = null;
+      }
+      // 舞台土台（Issue #105）を解放する。水面を先・地形を後の順にする（差し替えと同じ向き）。
+      if (stageTerrain) {
+        scene.remove(stageTerrain.object3d);
+        stageTerrain.dispose();
+        stageTerrain = null;
       }
       if (placeholderGlow) {
         scene.remove(placeholderGlow.object3d);

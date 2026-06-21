@@ -71,6 +71,14 @@ export const BLOOM_THRESHOLD = 0.5;
 // 計測値を引き継ぐ（docs/research/03-rendering-ui.md §3）。
 export const BLOOM_RESOLUTION_SCALE = 0.5;
 
+// 舞台土台の地形（Issue #105）の深夜のマテリアルの色・粗さ・金属度。採用理由を先に述べる。深夜・雨の暗い湖の
+// 色彩方針に合わせ、水面色（0x0a0c12）と区別する暗色を地形に与える。輝度はブルームの下限（0.5）を下回り、
+// 地形がブルームでにじまない。リムライト（lighting.ts）で背景から分離させるため、無光沢寄り（粗さを高く）・
+// 非金属（金属度0）にする。値は実機目視で調整できる初期値とする。
+export const LAND_COLOR = 0x0b0e14;
+export const LAND_ROUGHNESS = 0.95;
+export const LAND_METALNESS = 0.0;
+
 // 蝶の造形（Issue #61）。各値は採用理由を先に述べる。出典は docs/research/02-non-text-expression.md §5・
 // docs/idea/concept-final.md §6・docs/decisions/app-overall-decisions.md §3.9。具体値は美観依存のため仮値で置き、
 // 診断ページ butterfly.html の実機表示で目視調整して確定する。

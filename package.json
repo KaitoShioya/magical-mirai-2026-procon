@@ -22,6 +22,7 @@
     "smoke:butterfly": "node scripts/rendering-butterfly-smoke.mjs",
     "smoke:layer": "node scripts/rendering-layer-smoke.mjs",
     "smoke:stage": "node scripts/rendering-stage-smoke.mjs",
+    "smoke:spatial": "node scripts/rendering-spatial-smoke.mjs",
     "smoke:center-figure": "node scripts/rendering-center-figure-smoke.mjs",
     "smoke:perf": "node scripts/rendering-perf-smoke.mjs",
     "smoke:posteffects": "node scripts/rendering-posteffects-smoke.mjs",
@@ -31,7 +32,8 @@
     "smoke:typography": "node scripts/typography-deform-smoke.mjs",
     "smoke:screen-shake": "node scripts/screen-shake-smoke.mjs",
     "quality": "node scripts/quality-harness.mjs --mode=local",
-    "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud"
+    "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud",
+    "quality:spatial": "node scripts/spatial-quality.mjs"
   },
   "dependencies": {
     "@pixiv/three-vrm": "3.5.4",

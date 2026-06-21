@@ -159,9 +159,11 @@ export function calculateTapBudget(fullPossible: number, options?: TapBudgetOpti
     throw new InvalidTapBudgetInputError(`母数は正の整数である必要がある（受け取った値 ${fullPossible}）`);
   }
   const ratio = options?.limitRatio ?? TAP_LIMIT_RATIO_DEFAULT;
-  if (ratio < TAP_LIMIT_RATIO_MIN || ratio > TAP_LIMIT_RATIO_MAX) {
+  // 有限数であることを範囲検査より先に確かめる。理由を先に述べる。比較演算は非数（NaN）に対して常に偽を返すため、
+  // 有限数ガードがないと NaN が範囲検査をすり抜け、上限が非数になった不正な値を返してしまう。
+  if (!Number.isFinite(ratio) || ratio < TAP_LIMIT_RATIO_MIN || ratio > TAP_LIMIT_RATIO_MAX) {
     throw new InvalidTapBudgetInputError(
-      `比率は${TAP_LIMIT_RATIO_MIN}〜${TAP_LIMIT_RATIO_MAX}である必要がある（受け取った値 ${ratio}）`,
+      `比率は${TAP_LIMIT_RATIO_MIN}〜${TAP_LIMIT_RATIO_MAX}の有限数である必要がある（受け取った値 ${ratio}）`,
     );
   }
 

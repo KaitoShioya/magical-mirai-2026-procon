@@ -163,6 +163,17 @@ describe("calculateTapBudget（上限算出）", () => {
     expect(() => calculateTapBudget(100, { limitRatio: 0.9 })).toThrow(InvalidTapBudgetInputError);
   });
 
+  it("比率が非数または非有限なら例外になる（範囲検査をすり抜けさせない）", () => {
+    // 非数（NaN）は比較演算が常に偽になり範囲検査をすり抜けるため、有限数ガードで弾く。
+    expect(() => calculateTapBudget(100, { limitRatio: Number.NaN })).toThrow(InvalidTapBudgetInputError);
+    expect(() => calculateTapBudget(100, { limitRatio: Number.POSITIVE_INFINITY })).toThrow(
+      InvalidTapBudgetInputError,
+    );
+    expect(() => calculateTapBudget(100, { limitRatio: Number.NEGATIVE_INFINITY })).toThrow(
+      InvalidTapBudgetInputError,
+    );
+  });
+
   it("母数が正の整数でない（小数・非有限・ゼロ・負）なら例外になる", () => {
     expect(() => calculateTapBudget(100.5)).toThrow(InvalidTapBudgetInputError);
     expect(() => calculateTapBudget(Number.NaN)).toThrow(InvalidTapBudgetInputError);

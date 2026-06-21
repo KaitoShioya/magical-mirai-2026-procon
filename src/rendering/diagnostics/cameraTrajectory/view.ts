@@ -30,7 +30,7 @@ import {
 } from "../../constants";
 import { clampPixelRatio, computeAspect } from "../../viewport";
 import { createCameraTrajectory } from "../../../utils/cameraTrajectory";
-import { PROVISIONAL_TAKEOVER_CAMERA } from "./provisionalTakeoverCamera";
+import { takeoverCameraKeyframes } from "../../../profiles/takeover/takeoverInputs";
 
 function requireElement<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
@@ -71,7 +71,7 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-const trajectory = createCameraTrajectory(PROVISIONAL_TAKEOVER_CAMERA);
+const trajectory = createCameraTrajectory(takeoverCameraKeyframes);
 const startMs = trajectory.startTimeMs;
 const endMs = trajectory.endTimeMs;
 const spanMs = endMs - startMs;
@@ -96,7 +96,7 @@ const trajectoryLine = new Line(lineGeometry, new LineBasicMaterial({ color: 0x4
 scene.add(trajectoryLine);
 
 // キーフレーム点（緑の小球）。
-for (const keyframe of PROVISIONAL_TAKEOVER_CAMERA) {
+for (const keyframe of takeoverCameraKeyframes) {
   const node = new Mesh(
     new SphereGeometry(0.9, 14, 14),
     new MeshBasicMaterial({ color: 0x9ffbd0 })

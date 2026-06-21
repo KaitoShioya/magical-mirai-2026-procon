@@ -66,14 +66,19 @@ describe("曲プロファイル生成 実データ検証（Issue #45 受け入�
     expect(profile.tempoBpm).toBe(175);
   });
 
-  it("無和音区間の埋め方の既定規則: 曲頭の無和音は scale、直前が非Nの無和音は previous", () => {
+  it("無和音区間の埋め方: 曲頭は scale・直前が非Nは previous・索引24は Issue #46 の上書きで scale", () => {
     // TAKEOVER の無和音は和音索引 0・22・24・99・170・209 の6区間で、連続する無和音は無い。
-    // 索引0は曲頭で直前和音が無いため scale、残り5区間は直前に無和音でない和音が隣接するため previous になる。
+    // 索引0は曲頭で直前和音が無いため既定規則で scale、索引24は Issue #46 が「調の音階」へ上書きするため scale、
+    // 残り（索引22・99・170・209）は直前に無和音でない和音が隣接するため既定規則で previous になる。
     expect(profile.ncRanges).toHaveLength(6);
-    expect(profile.ncRanges[0].treatment).toBe("scale");
-    for (let i = 1; i < profile.ncRanges.length; i++) {
-      expect(profile.ncRanges[i].treatment).toBe("previous");
-    }
+    expect(profile.ncRanges.map((r) => r.treatment)).toEqual([
+      "scale",
+      "previous",
+      "scale",
+      "previous",
+      "previous",
+      "previous",
+    ]);
   });
 });
 
@@ -105,12 +110,14 @@ describe("無和音区間の埋め方の既定規則と上書き（buildNcRanges
   });
 });
 
-describe("暫定値の検出（後続 Issue での置換を促すための主張）", () => {
-  it("TAKEOVER の手動カメラが未指定で、生成プロファイルが自動の暫定2点軌跡を持つ", () => {
-    // 後続 Issue #32・#46 が takeoverInputs.camera に実カメラ軌跡を与えると camera が未指定でなくなり、
-    // この主張が落ちて置換を検知できる。暫定値が無言で本番内容に居座るのを防ぐためである。
-    expect(takeoverInputs.camera).toBeUndefined();
+describe("Issue #46 が手動カメラ軌跡を与えている", () => {
+  it("TAKEOVER の手動カメラが6点で与えられ、生成プロファイルがその軌跡を持つ", () => {
+    // Issue #45 は手動カメラ未指定で自動の暫定2点軌跡を生成していた。Issue #46 が takeoverInputs.camera に6点の
+    // 実カメラ軌跡を与えたため、camera が指定され、生成プロファイルの camera がその点数（6点）になる。これにより
+    // 手動カメラを取り除いて暫定2点へ戻す退行を検知できる。
+    expect(takeoverInputs.camera).toHaveLength(6);
     const { profile } = buildProfile({ songmap, manual: takeoverInputs, source });
-    expect(profile.camera).toHaveLength(2);
+    expect(profile.camera).toHaveLength(6);
+    expect(profile.camera[profile.camera.length - 1].timeMs).toBe(237250);
   });
 });

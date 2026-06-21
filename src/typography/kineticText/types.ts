@@ -196,9 +196,26 @@ export interface GlyphHandle {
   setPosition(x: number, y: number, z: number): void;
   /** オイラー角（ラジアン）で回転を設定する。 */
   setRotation(x: number, y: number, z: number): void;
+  /**
+   * 一律倍率で大きさを設定する（縦横同率）。アニメーション（#21）が使う既存の経路。
+   * setScale3 と同じ大きさへ書き込むため、最後に呼んだ方が有効になる。合成適用層（#131）は
+   * setScale3 のみを用い、setScale と setScale3 を同一取っ手で混在させない。
+   */
   setScale(scale: number): void;
+  /**
+   * 縦横独立の倍率で大きさを設定する（#131 の縦伸ばし等）。setScale と同じ大きさへ書き込む。
+   * 可読性下地がある読ませる役へは、合成器が一律倍率に畳んだ値（3成分が等しい）だけが渡る。
+   */
+  setScale3(x: number, y: number, z: number): void;
   setColor(color: number): void;
   setOpacity(opacity: number): void;
+  /**
+   * 字間を動的に設定する（#131 の字間拡大等）。引数の単位は取っ手の種別で異なる。
+   * フレーズ取っ手（spawnPhrase・読ませる役フレーズ）はワールド単位、変形取っ手は em単位
+   * （フォント寸法に対する相対値、DeformingTextSpawnRequest.letterSpacing と同じ）。
+   * 単一文字（spawnGlyph）は字間の概念が無いため無操作。
+   */
+  setLetterSpacing(value: number): void;
   /**
    * 最後段の可読性補正を適用し直す（Issue #31）。確定可読性指定の塗り色・縁取り・影を反映する。
    * 寸法は変えない（寸法の下限は大きさの段で扱う）。#131 が合成の最後段で呼ぶことを想定する。

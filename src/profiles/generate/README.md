@@ -1,7 +1,7 @@
-# profiles/generate — 曲プロファイル生成の純粋関数群（Issue #41・#37・#36・#44・#38・#43）
+# profiles/generate — 曲プロファイル生成の純粋関数群（Issue #41・#37・#36・#44・#38・#43・#39）
 
 曲解析データ（songmap 由来の素の配列や解決済みの和音区間）から、曲プロファイルの各派生フィールドを決定論的に生成する純粋関数群を置く。
-現在は見せ場マップ生成（Issue #41、`showcases` フィールド）、無和音区間の解決（Issue #37）、JUST音程7スロット生成（Issue #36、`slots` フィールド）、タップ総数上限算出（Issue #44、`tapBudget` フィールド）、オンセット選択・ノーツ生成（Issue #38、`notes` フィールドの第1段）、譜面密度設計（Issue #43、`density.ts`。密度プランは中間データで保存しない）を収める。
+現在は見せ場マップ生成（Issue #41、`showcases` フィールド）、無和音区間の解決（Issue #37）、JUST音程7スロット生成（Issue #36、`slots` フィールド）、タップ総数上限算出（Issue #44、`tapBudget` フィールド）、オンセット選択・ノーツ生成（Issue #38、`notes` フィールドの第1段）、譜面パターン適用（Issue #39、`notePatterns.ts`。`notes` の `slotIndex`・`pattern` を付与）、譜面密度設計（Issue #43、`density.ts`。密度プランは中間データで保存しない）を収める。
 いずれも曲プロファイルJSONへの書き込みは行わない（それは #45・#46 の責務）。
 
 ## 見せ場マップ自動生成（Issue #41）
@@ -82,6 +82,17 @@
 - **後段との契約**: 後段（#39・#40・#45・#46）が `OnsetNote` から最終 `Note` を作るときは、`id`・`timeMs`・`beatIndex` だけを引き継ぎ、`slotIndex`（#39）・`pattern`（#39）・`trajectoryPosition`（#40）を付与する。中間メタデータの `sectionKind` は最終 `Note` の項目ではないため最終出力に含めない。引き継ぎはオブジェクト全体の展開（スプレッド）ではなく項目を明示して写す。理由を先に述べる。全体展開だと `sectionKind` が最終ノーツへ余剰項目として残り、スキーマ外の項目が曲プロファイルJSONへ混入するためである。
 - **担当Issue**: #38。後続の #39（slotIndex・pattern 付与）・#40（trajectoryPosition 付与）・#45（生成スクリプト）・#46（TAKEOVERプロファイル生成）が本関数の出力を入力に使う。
 
+## ノーツ軌跡上配置（Issue #40、`noteTrajectory.ts`）
+
+- **責務**: 各ノーツを、その時刻のカメラ軌跡上の位置（カメラ位置そのもの）へ配置し、ノーツ識別子と位置の対を返す。出力は最終 `SongProfile.notes` の `trajectoryPosition`（`Vec3`）項目で、`docs/idea/concept-final.md` §4・§7、`docs/research/04-ux-and-chart-design.md` §4 に基づく。配置の真下が楽曲終了後のひまわり位置になるが、その真下への投影は本モジュールの対象外（#60・#62・#63）。判定で使う軌跡上距離・速さは保存せず、`camera` と `timeMs` から #48 が実行時に導出する。
+- **公開関数**: `placeNotesOnTrajectory(notes, trajectory) => NoteTrajectoryPlacement[]` — 入力 `notes`（`{ id, timeMs }` の最小型 `TrajectoryNoteInput` の配列）の各要素について `trajectory.poseAt(timeMs).position` を求め、`{ id, trajectoryPosition }` を入力順に返す。判定（#48・#49）が使うのと同一の軌跡補間器の戻り値を保存形へ写すため、配置は判定と同じ軌跡上に乗る。座標は代入のみで写し算術を行わない。空配列入力は空配列を返す。
+- **引数の軌跡型**: `trajectory` は `startTimeMs`・`endTimeMs`・`poseAt(timeMs): { position: Vec3 }` の3つだけを持つ最小の構造型 `TrajectorySampler`。`src/utils/cameraTrajectory.ts` の `CameraTrajectory` はこの形を構造的に満たすため、`createCameraTrajectory(profile.camera)` の戻り値をそのまま渡せる。最小構造型にする理由を先に述べる。`cameraTrajectory.ts` は three.js を実行時に取り込み `CameraTrajectory` は本Issueが使わない `speedAt`・`distanceAt`・`timeAtDistance` も含むため、最小構造型を自前定義すると、本モジュールは `cameraTrajectory.ts` を型としても取り込まず three.js への依存も持たず不要機能へ結合しない。
+- **異常の扱い**: 軌跡側の契約違反（時刻範囲が非有限・`startTimeMs < endTimeMs` を満たさず長さが正でない・`poseAt` の算出座標が非有限）と、入力ノーツの異常（識別子が空・時刻が非有限・時刻が `[startTimeMs, endTimeMs]` の外）を、識別子・入力配列内の番号・問題の値・許容範囲を含む文脈付きの例外で失敗させる。時刻範囲の検査を厳密（`startTimeMs < endTimeMs`）にする理由を先に述べる。現実に渡る軌跡は `createCameraTrajectory` の戻り値で、同関数は2点以上かつ厳密増加するキーフレームを要求し戻り値は常に `startTimeMs < endTimeMs` を満たすため、時刻範囲が0の縮退軌跡（全ノーツが同一点へ潰れ固定位置を壊す）を実補間器の契約に揃えて拒否する。
+- **依存の向き**: `engine` 等の中核から import されない。`tools`・`rendering`・three.js を import しない。`src/utils/cameraTrajectory.ts` を型としても取り込まない。`../schema/profileSchema` から `Vec3` だけを型として取り込む。
+- **後段との契約**: 軌跡補間器の構築（`createCameraTrajectory`）は呼び出し側（#45・#46・テスト）が行う。#45・#46 は本関数の出力 `{ id, trajectoryPosition }` を、#39 が付与する `{ id, slotIndex, pattern }` と `id` で結合し、`OnsetNote` から引き継ぐ `id`・`timeMs`・`beatIndex` と合わせて最終 `Note` を組み立てる。
+- **テスト方針**: 実カメラキーフレームは #46 まで存在しないため `*.takeover.test.ts` は作らず、合成キーフレームから `createCameraTrajectory` で軌跡補間器を作り `TrajectorySampler` として渡し、「補間器を正しく消費して保存形へ写す」ことのみを検査する。補間器そのものの補間精度は #13 の `src/utils/cameraTrajectory.test.ts` の責務とし再検査しない。
+- **担当Issue**: #40。後続の #45（生成スクリプト）・#46（TAKEOVERプロファイル生成）が本関数の出力を最終 `Note` の組み立てに使う。
+
 ## タップ総数上限算出（Issue #44、`tapBudget.ts`）
 
 - **責務**: 曲解析データ（拍の開始時刻の並びとサビ区間）から、一回性を成立させる `tapBudget`（出力は `SongProfile.tapBudget`）を決定論的に算出する。`tapBudget` はフルに可能なタップの総数 `fullPossible`（母数）とタップ総数上限 `limit` の2値を持つ。曲プロファイルJSONへの書き込みは行わない（それは #45・#46 の責務）。
@@ -95,6 +106,22 @@
 - **依存の向き**: `engine` 等の中核から import されない。`tools` を import しない。`../../config/tuning`（比率定数）と `../schema/profileSchema`（`TapBudget` 型）だけを取り込む。
 - **担当Issue**: #44。後続の #45（生成スクリプト）・#46（TAKEOVERプロファイル生成）・#55（スコアリング合成）が本関数と算出値を再利用する。
 
+## 譜面パターン適用（Issue #39、`notePatterns.ts`）
+
+- **責務**: オンセット選択（#38）の中間ノーツ列に、Y軸スロット番号 `slotIndex` と譜面パターン名 `pattern` を付ける。`docs/research/04-ux-and-chart-design.md` §4 のノーツ生成の第2段（各ノーツへY軸スロットを割り当てる）と第3段（同音連打・上昇下降のパターンを当てて楽曲の感触を映す）にあたる。出力は最終 `SongProfile.notes` の途中段で、カメラ軌跡上の位置（`trajectoryPosition`）は #40 が後段で付与する。
+- **slotIndex 空間のみで動作**: #36 の並び順契約により `slots[].pitches` はMIDIノート番号の昇順で、`slotIndex` が大きいほど音高が高い。本モジュールは音高の値を読まず、`slots` から各区間の時刻境界とスロット数（`pitches.length`）だけを読む。`slotIndex` を増やすことが音高を上げることに自動的に対応する。画面の上下と音の高低の対応は入力写像（#47）の責務である。
+- **駆動信号（勢い値）**: 旋律はTAKEOVERで信頼性が低く使えないため（§2）、声量曲線と感情曲線の興奮度（arousal）を正規化合成した「勢い値」（0以上1以下）を各ノーツに割り当てる。勢い値が上がる箇所では `slotIndex` を上げ（上昇）、下がる箇所では下げ（下降）、平坦な箇所では据え置く（同音連打）。和音が変わる境界では `slotIndex` を勢い値から再シードする（スロットの音高集合が変わるため）。
+- **同時押し（2点から3点）は本モジュールでは扱わない**: 1オンセットを1ノーツに保ち、タップ総数の母数（#44）と整合させる。同時押しは下流（#46・#48・#55）へ分離する。
+- **公開関数**:
+  - `applyNotePatterns(input, options?) => PatternedNote[]` — 中間ノーツ `PatternedNote`（`id`・`timeMs`・`beatIndex`・`slotIndex`・`pattern`）を返す。本Issueの主たる成果物。
+  - `sampleContour(timeMs, loudness, emotion, options) => number` — 単一時刻の勢い値を返す。受け入れ基準を実データで検証するため公開する。
+- **`pattern` の決め方と前後基準の違い**: `pattern`（`"ascending"`・`"descending"`・`"sameTone"`）は確定後の `slotIndex` の差から決める。天井や床のクランプで `slotIndex` が動かない箇所が確実に同音連打になり、表示上のY移動と `pattern` が一致するためである。run の先頭ノーツは同じ run の直後ノーツとの差で性格付け（run の長さが1または差が0なら同音連打）、それ以外のノーツは直前ノーツとの差で決める。前後の基準が異なる点に注意する。
+- **声量曲線と感情曲線の刻みの扱いの違い**: 声量曲線は等間隔前提で `stepMs` を使ってサンプル添字を求め、感情曲線は `points` の `tMs` を時刻昇順前提で直接走査して `stepMs` を読まない（感情点が等間隔でない楽曲でも階段補間が正しく動くため）。
+- **後段との契約**: #40 は `PatternedNote` の `id`・`timeMs`・`beatIndex`・`slotIndex`・`pattern` を引き継ぎ、`trajectoryPosition` を付与して最終 `Note` にする。
+- **依存の向き**: `engine` 等の中核から import されない。`tools`・`rendering`・three.js を import しない。`./onsetNotes`（`OnsetNote` 型）と `../schema/profileSchema`（`ChordToneSlotRegion`・`LoudnessCurve`・`EmotionCurve` 型）だけを取り込み、最終 `Note` 型にも依存しない。
+- **オプション既定値（`DEFAULT_NOTE_PATTERN_OPTIONS`）**: `loudnessWeight=0.5`・`emotionWeight=0.5`（声量と感情を等価に混ぜる初期値。見せ場生成の前例に揃える）/ `flatEpsilon=0.02`（同音連打とみなす勢い値差の不感帯。全幅の2パーセント）。実データの事実として、TAKEOVERは arousal の変動幅が狭く勢い値の方向はほぼ声量曲線が決める。重みは曲非依存の既定値であり、arousal の変動幅が大きい他の課題曲では感情成分が方向に寄与する。
+- **担当Issue**: #39。後続の #40（`trajectoryPosition` 付与）・#45（生成スクリプト）・#46（TAKEOVERプロファイル生成）が本関数の出力を入力に使う。
+
 ## テスト手順（実行環境 Node 22、`.nvmrc` 準拠）
 
 ```sh
@@ -102,4 +129,4 @@ npm run typecheck
 npm test
 ```
 
-`showcases.takeover.test.ts`・`chordToneSlots.takeover.test.ts`・`tapBudget.takeover.test.ts`・`onsetNotes.takeover.test.ts`・`density.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を素読みして各Issueの達成基準を実データで表明する（`src/tools/` を import しない）。各機能の単体テストは同居の `*.test.ts`。
+`showcases.takeover.test.ts`・`chordToneSlots.takeover.test.ts`・`tapBudget.takeover.test.ts`・`onsetNotes.takeover.test.ts`・`density.takeover.test.ts`・`notePatterns.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を素読みして各Issueの達成基準を実データで表明する（`src/tools/` を import しない）。各機能の単体テストは同居の `*.test.ts`。

@@ -35,12 +35,16 @@ function createRecordingHandle(): { handle: GlyphHandle; record: HandleRecord } 
     setScale: (scale): void => {
       record.scales.push(scale);
     },
+    setScale3: (x, _y, _z): void => {
+      record.scales.push(x);
+    },
     setColor: (color): void => {
       record.colors.push(color);
     },
     setOpacity: (opacity): void => {
       record.opacities.push(opacity);
     },
+    setLetterSpacing: (): void => {},
     setOrientation: (): void => {},
     applyReadability: (): void => {},
     release: (): void => {

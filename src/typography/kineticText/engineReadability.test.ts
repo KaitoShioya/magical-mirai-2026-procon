@@ -27,7 +27,7 @@ interface ReadableFakeText {
   outlineBlur: number | string;
   position: { x: number; y: number; z: number; set(x: number, y: number, z: number): void };
   rotation: { set(): void };
-  scale: { x: number; setScalar(s: number): void };
+  scale: { x: number; y: number; z: number; setScalar(s: number): void; set(x: number, y: number, z: number): void };
   quaternion: { copy(): void; identity(): void };
   lastSyncCallback: (() => void) | null;
   syncCount: number;
@@ -67,8 +67,17 @@ function makeReadableFakeText(): ReadableFakeText {
     rotation: { set(): void {} },
     scale: {
       x: 1,
+      y: 1,
+      z: 1,
       setScalar(s: number): void {
         this.x = s;
+        this.y = s;
+        this.z = s;
+      },
+      set(x: number, y: number, z: number): void {
+        this.x = x;
+        this.y = y;
+        this.z = z;
       },
     },
     quaternion: { copy(): void {}, identity(): void {} },
@@ -284,6 +293,27 @@ describe("可読性下地", () => {
     const { engine } = setup({ needsBacking: true });
     engine.spawnGlyph(readableGlyph);
     expect(engine.stats().activeBackings).toBe(1);
+  });
+});
+
+describe("縦横独立の大きさと下地の追従（#131 setScale3）", () => {
+  it("setScale3 で文字は縦横独立に拡大し、下地へは各軸の最大値が一律倍率として渡る", async () => {
+    const { engine, created } = setup({ needsBacking: true });
+    // 収録範囲に入れると、文字形の暗い複製（glyphCopy）の下地が選ばれる（代替フォントなら単位背面の暗い面になる）。
+    await engine.warmUp("あ");
+    const handle = engine.spawnGlyph(readableGlyph);
+    // created[0]=主文字、created[1]=文字形の暗い複製の下地。
+    expect(created.length).toBeGreaterThanOrEqual(2);
+    const mainText = created[0];
+    const backingText = created[1];
+    handle.setScale3(1, 3, 1);
+    // 主文字は縦横独立で拡大する。
+    expect(mainText.scale.x).toBe(1);
+    expect(mainText.scale.y).toBe(3);
+    expect(mainText.scale.z).toBe(1);
+    // 下地は各軸の最大値（3）を一律倍率として受け取り、縦伸ばし時も文字を覆える。
+    expect(backingText.scale.x).toBe(3);
+    expect(backingText.scale.y).toBe(3);
   });
 });
 

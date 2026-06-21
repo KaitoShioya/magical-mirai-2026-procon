@@ -8,6 +8,7 @@ import readmeText from "../../../README.md?raw";
 import { PCL_CREDIT } from "../../config/character";
 import { AI_PROVENANCE_STATEMENT } from "../../config/credits";
 import { DEFAULT_SONG_KEY, findSong } from "../../config/songs";
+import { LAKE_STAGE } from "../../config/stage";
 import { ZEN_KAKU_GOTHIC_NEW_CREDIT } from "../../typography/kineticText/fontCredits";
 
 describe("README のライセンス・出典がアプリ内の出典と一致する", () => {
@@ -30,6 +31,8 @@ describe("README のライセンス・出典がアプリ内の出典と一致す
     song.title,
     song.artist,
     song.songUrl,
+    LAKE_STAGE.sourceCredit.source,
+    LAKE_STAGE.sourceCredit.sourceUrl,
     AI_PROVENANCE_STATEMENT,
   ];
 

@@ -96,6 +96,51 @@ declare global {
         frustumTop: number;
         frustumBottom: number;
       } | null;
+      stageTerrainStatus: "none" | "loaded" | "error";
+      stageTerrainError: string | null;
+      waterSource: "placeholder-plane" | "stage-mesh";
+      waterRegion: {
+        width: number;
+        depth: number;
+        centerX: number;
+        centerZ: number;
+        y: number;
+      } | null;
+      originalWaterBoundsWorld: {
+        minX: number;
+        maxX: number;
+        minZ: number;
+        maxZ: number;
+        y: number;
+      } | null;
+    };
+    /**
+     * 検証用の舞台土台診断アクセサ。舞台土台の受け入れ診断ページ（stage.html）だけが取り付ける。
+     * 地形を読み込んだ描画基盤の状態と、地形メッシュ数を返す。scripts/rendering-stage-smoke.mjs が取得する。
+     * 反射面に渡した水面領域（waterRegion）と、水面マーカーの元範囲（originalWaterBoundsWorld）は別物のため
+     * 別項目で返す。共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __stageState?: () => {
+      webglAvailable: boolean;
+      stageTerrainStatus: "none" | "loaded" | "error";
+      stageTerrainError: string | null;
+      waterSource: "placeholder-plane" | "stage-mesh";
+      reflectionEnabled: boolean;
+      overlayObjectCount: number | null;
+      waterRegion: {
+        width: number;
+        depth: number;
+        centerX: number;
+        centerZ: number;
+        y: number;
+      } | null;
+      originalWaterBoundsWorld: {
+        minX: number;
+        maxX: number;
+        minZ: number;
+        maxZ: number;
+        y: number;
+      } | null;
     };
     /** カメラ軌跡の受け入れ診断 camera-trajectory.html が公開する掃引結果。scripts/camera-trajectory-smoke.mjs が取得する。 */
     __cameraTrajectory?: () => {

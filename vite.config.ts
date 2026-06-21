@@ -26,7 +26,8 @@ export default defineConfig(({ mode }) => {
   // 舞台土台モデル（#105）の受け入れ診断（地形・水面・反射の成立）、butterfly.html は蝶造形（#61）の受け入れ診断、
   // perf-budget.html は性能バジェット自動劣化制御（#18）の受け入れ診断、screen-shake.html は画面拡大・減衰揺れ（#76）の
   // 受け入れ診断、posteffects.html は拍同期ポストエフェクト（#17）の受け入れ診断（周縁減光・色収差・性能計測）、
-  // char-smash.html は1文字1拍スマッシュ（#23）の実描画プレビューの入口で、いずれも本番では配信しない。
+  // char-smash.html は1文字1拍スマッシュ（#23）の実描画プレビューの入口、audio.html は操作音エンジン（#52）の
+  // 受け入れ診断（Y軸7スロットの発音・起動・同時発音上限）で、いずれも本番では配信しない。
   const input: Record<string, string> = deployAppOnly
     ? { main: "index.html" }
     : {
@@ -46,6 +47,7 @@ export default defineConfig(({ mode }) => {
         screenShake: "screen-shake.html",
         postEffects: "posteffects.html",
         charSmash: "char-smash.html",
+        audio: "audio.html",
       };
 
   return {

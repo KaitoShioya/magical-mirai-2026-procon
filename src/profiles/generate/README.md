@@ -1,7 +1,7 @@
-# profiles/generate — 曲プロファイル生成の純粋関数群（Issue #41・#37・#36・#44・#38・#43）
+# profiles/generate — 曲プロファイル生成の純粋関数群（Issue #41・#37・#36・#44・#38・#43・#39）
 
 曲解析データ（songmap 由来の素の配列や解決済みの和音区間）から、曲プロファイルの各派生フィールドを決定論的に生成する純粋関数群を置く。
-現在は見せ場マップ生成（Issue #41、`showcases` フィールド）、無和音区間の解決（Issue #37）、JUST音程7スロット生成（Issue #36、`slots` フィールド）、タップ総数上限算出（Issue #44、`tapBudget` フィールド）、オンセット選択・ノーツ生成（Issue #38、`notes` フィールドの第1段）、譜面密度設計（Issue #43、`density.ts`。密度プランは中間データで保存しない）を収める。
+現在は見せ場マップ生成（Issue #41、`showcases` フィールド）、無和音区間の解決（Issue #37）、JUST音程7スロット生成（Issue #36、`slots` フィールド）、タップ総数上限算出（Issue #44、`tapBudget` フィールド）、オンセット選択・ノーツ生成（Issue #38、`notes` フィールドの第1段）、譜面パターン適用（Issue #39、`notePatterns.ts`。`notes` の `slotIndex`・`pattern` を付与）、譜面密度設計（Issue #43、`density.ts`。密度プランは中間データで保存しない）を収める。
 いずれも曲プロファイルJSONへの書き込みは行わない（それは #45・#46 の責務）。
 
 ## 見せ場マップ自動生成（Issue #41）
@@ -106,6 +106,22 @@
 - **依存の向き**: `engine` 等の中核から import されない。`tools` を import しない。`../../config/tuning`（比率定数）と `../schema/profileSchema`（`TapBudget` 型）だけを取り込む。
 - **担当Issue**: #44。後続の #45（生成スクリプト）・#46（TAKEOVERプロファイル生成）・#55（スコアリング合成）が本関数と算出値を再利用する。
 
+## 譜面パターン適用（Issue #39、`notePatterns.ts`）
+
+- **責務**: オンセット選択（#38）の中間ノーツ列に、Y軸スロット番号 `slotIndex` と譜面パターン名 `pattern` を付ける。`docs/research/04-ux-and-chart-design.md` §4 のノーツ生成の第2段（各ノーツへY軸スロットを割り当てる）と第3段（同音連打・上昇下降のパターンを当てて楽曲の感触を映す）にあたる。出力は最終 `SongProfile.notes` の途中段で、カメラ軌跡上の位置（`trajectoryPosition`）は #40 が後段で付与する。
+- **slotIndex 空間のみで動作**: #36 の並び順契約により `slots[].pitches` はMIDIノート番号の昇順で、`slotIndex` が大きいほど音高が高い。本モジュールは音高の値を読まず、`slots` から各区間の時刻境界とスロット数（`pitches.length`）だけを読む。`slotIndex` を増やすことが音高を上げることに自動的に対応する。画面の上下と音の高低の対応は入力写像（#47）の責務である。
+- **駆動信号（勢い値）**: 旋律はTAKEOVERで信頼性が低く使えないため（§2）、声量曲線と感情曲線の興奮度（arousal）を正規化合成した「勢い値」（0以上1以下）を各ノーツに割り当てる。勢い値が上がる箇所では `slotIndex` を上げ（上昇）、下がる箇所では下げ（下降）、平坦な箇所では据え置く（同音連打）。和音が変わる境界では `slotIndex` を勢い値から再シードする（スロットの音高集合が変わるため）。
+- **同時押し（2点から3点）は本モジュールでは扱わない**: 1オンセットを1ノーツに保ち、タップ総数の母数（#44）と整合させる。同時押しは下流（#46・#48・#55）へ分離する。
+- **公開関数**:
+  - `applyNotePatterns(input, options?) => PatternedNote[]` — 中間ノーツ `PatternedNote`（`id`・`timeMs`・`beatIndex`・`slotIndex`・`pattern`）を返す。本Issueの主たる成果物。
+  - `sampleContour(timeMs, loudness, emotion, options) => number` — 単一時刻の勢い値を返す。受け入れ基準を実データで検証するため公開する。
+- **`pattern` の決め方と前後基準の違い**: `pattern`（`"ascending"`・`"descending"`・`"sameTone"`）は確定後の `slotIndex` の差から決める。天井や床のクランプで `slotIndex` が動かない箇所が確実に同音連打になり、表示上のY移動と `pattern` が一致するためである。run の先頭ノーツは同じ run の直後ノーツとの差で性格付け（run の長さが1または差が0なら同音連打）、それ以外のノーツは直前ノーツとの差で決める。前後の基準が異なる点に注意する。
+- **声量曲線と感情曲線の刻みの扱いの違い**: 声量曲線は等間隔前提で `stepMs` を使ってサンプル添字を求め、感情曲線は `points` の `tMs` を時刻昇順前提で直接走査して `stepMs` を読まない（感情点が等間隔でない楽曲でも階段補間が正しく動くため）。
+- **後段との契約**: #40 は `PatternedNote` の `id`・`timeMs`・`beatIndex`・`slotIndex`・`pattern` を引き継ぎ、`trajectoryPosition` を付与して最終 `Note` にする。
+- **依存の向き**: `engine` 等の中核から import されない。`tools`・`rendering`・three.js を import しない。`./onsetNotes`（`OnsetNote` 型）と `../schema/profileSchema`（`ChordToneSlotRegion`・`LoudnessCurve`・`EmotionCurve` 型）だけを取り込み、最終 `Note` 型にも依存しない。
+- **オプション既定値（`DEFAULT_NOTE_PATTERN_OPTIONS`）**: `loudnessWeight=0.5`・`emotionWeight=0.5`（声量と感情を等価に混ぜる初期値。見せ場生成の前例に揃える）/ `flatEpsilon=0.02`（同音連打とみなす勢い値差の不感帯。全幅の2パーセント）。実データの事実として、TAKEOVERは arousal の変動幅が狭く勢い値の方向はほぼ声量曲線が決める。重みは曲非依存の既定値であり、arousal の変動幅が大きい他の課題曲では感情成分が方向に寄与する。
+- **担当Issue**: #39。後続の #40（`trajectoryPosition` 付与）・#45（生成スクリプト）・#46（TAKEOVERプロファイル生成）が本関数の出力を入力に使う。
+
 ## テスト手順（実行環境 Node 22、`.nvmrc` 準拠）
 
 ```sh
@@ -113,4 +129,4 @@ npm run typecheck
 npm test
 ```
 
-`showcases.takeover.test.ts`・`chordToneSlots.takeover.test.ts`・`tapBudget.takeover.test.ts`・`onsetNotes.takeover.test.ts`・`density.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を素読みして各Issueの達成基準を実データで表明する（`src/tools/` を import しない）。各機能の単体テストは同居の `*.test.ts`。
+`showcases.takeover.test.ts`・`chordToneSlots.takeover.test.ts`・`tapBudget.takeover.test.ts`・`onsetNotes.takeover.test.ts`・`density.takeover.test.ts`・`notePatterns.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を素読みして各Issueの達成基準を実データで表明する（`src/tools/` を import しない）。各機能の単体テストは同居の `*.test.ts`。

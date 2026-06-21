@@ -1,7 +1,7 @@
-# profiles/generate — 曲プロファイル生成の純粋関数群（Issue #41・#37・#36）
+# profiles/generate — 曲プロファイル生成の純粋関数群（Issue #41・#37・#36・#38）
 
 曲解析データ（songmap 由来の素の配列や解決済みの和音区間）から、曲プロファイルの各派生フィールドを決定論的に生成する純粋関数群を置く。
-現在は見せ場マップ生成（Issue #41、`showcases` フィールド）、無和音区間の解決（Issue #37）、JUST音程7スロット生成（Issue #36、`slots` フィールド）を収める。
+現在は見せ場マップ生成（Issue #41、`showcases` フィールド）、無和音区間の解決（Issue #37）、JUST音程7スロット生成（Issue #36、`slots` フィールド）、オンセット選択・ノーツ生成（Issue #38、`notes` フィールドの第1段）を収める。
 いずれも曲プロファイルJSONへの書き込みは行わない（それは #45・#46 の責務）。
 
 ## 見せ場マップ自動生成（Issue #41）
@@ -55,6 +55,16 @@
 - 「協和」は本作のゲーム上の定義（和音構成音、または和音構成音と半音衝突しない安全な付加音であり、和音に収まること）であり、音響学の厳密な協和とは別である。
 - スロット数は既定7（範囲5〜9、`src/config/tuning.ts`）。安全付加音の区分は長調系=9度と6度、短調系=♭7度と11度で、重複と半音隣接（12を法とする循環距離）を避けて採用する。増三和音はスロット数9では候補不足の例外になる。
 
+## オンセット選択・ノーツ生成（Issue #38、`onsetNotes.ts`）
+
+- **責務**: 拍格子（`beats`）とサビ区間（`chorusSegments`）から、サビは毎拍・サビ以外は2拍に1回の頻度でノーツを選び、間引いて中間ノーツの配列を返す。`docs/research/04-ux-and-chart-design.md` §4 のノーツ生成の第1段にあたる。出力は最終 `SongProfile.notes` の第1段で、`slotIndex`・`pattern`（#39）と `trajectoryPosition`（#40）は後段が付与するため中間型 `OnsetNote` には持たせない。
+- **抽出源の限定**: §4 は抽出源として拍・アクセント・和音変化・声量と感情の山を挙げるが、本作の密度規則（基本2拍に1回、サビ毎拍）は拍を単位に定義され、その見積もり（フルに可能なタップ434）も拍由来である（`docs/research/07-feasibility-and-parameters.md` §2.1・§2.6）。よって第1段の抽出源を拍格子に限定し、アクセント・和音変化・声量と感情の山は #39・#43 に委ねる（ユーザー承認済み）。
+- **公開関数**: `generateOnsetNotes(input, options?) => OnsetNote[]` — 中間ノーツを入力の拍順（昇順入力なら時刻昇順）で返す。種別ごとに独立した計数器を曲全体で累積し（リセットしない）、計数器が間引き間隔で割り切れる拍を選ぶため、サビ先頭拍を必ず選び、出力は拍の並びだけで決まる決定論になる。サビ判定は右半開区間（`startMs` 以上 `endMs` 未満）で行う。間引き間隔は1以上の整数で、満たさなければ例外で失敗させる。
+- **オプション既定値（`DEFAULT_ONSET_OPTIONS`）**: `chorusBeatStride=1`（サビ毎拍）/ `nonChorusBeatStride=2`（サビ以外2拍に1回）/ `idPrefix="note-"`。密度の谷の休符・見せ場前の溜めは #43 が間引き間隔の上書きで精緻化する。
+- **依存の向き**: `engine` 等の中核から import されない。`tools`・`rendering`・three.js を import しない。`./types`（共通型 `ChorusSegment`）だけを取り込み、最終 `Note` 型にも依存しない。
+- **後段との契約**: 後段（#39・#40・#45・#46）が `OnsetNote` から最終 `Note` を作るときは、`id`・`timeMs`・`beatIndex` だけを引き継ぎ、`slotIndex`（#39）・`pattern`（#39）・`trajectoryPosition`（#40）を付与する。中間メタデータの `sectionKind` は最終 `Note` の項目ではないため最終出力に含めない。引き継ぎはオブジェクト全体の展開（スプレッド）ではなく項目を明示して写す。理由を先に述べる。全体展開だと `sectionKind` が最終ノーツへ余剰項目として残り、スキーマ外の項目が曲プロファイルJSONへ混入するためである。
+- **担当Issue**: #38。後続の #39（slotIndex・pattern 付与）・#40（trajectoryPosition 付与）・#45（生成スクリプト）・#46（TAKEOVERプロファイル生成）が本関数の出力を入力に使う。
+
 ## テスト手順（実行環境 Node 22、`.nvmrc` 準拠）
 
 ```sh
@@ -62,4 +72,4 @@ npm run typecheck
 npm test
 ```
 
-`showcases.takeover.test.ts` と `chordToneSlots.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を素読みして各Issueの達成基準を実データで表明する（`src/tools/` を import しない）。各機能の単体テストは同居の `*.test.ts`。
+`showcases.takeover.test.ts`・`chordToneSlots.takeover.test.ts`・`onsetNotes.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を素読みして各Issueの達成基準を実データで表明する（`src/tools/` を import しない）。各機能の単体テストは同居の `*.test.ts`。

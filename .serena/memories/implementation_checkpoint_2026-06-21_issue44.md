@@ -1,0 +1,46 @@
+# 実装チェックポイント（2026-06-21・Issue #44）
+
+**状態: Issue #44（タップ総数上限算出）の実装を完了。ブランチ `worktree-issue-44-tap-budget` で PR #155 を作成・push 済み。マージ前。**
+**用途**: セッション喪失時の復帰点（実装フェーズ）。出力先の型は曲プロファイルスキーマ [[implementation_checkpoint_2026-06-19_issue34]]、同種の生成処理の先例は見せ場マップ生成 [[implementation_checkpoint_2026-06-20_issue41]] と JUST音程スロット生成 [[implementation_checkpoint_2026-06-21_issue36]]。設計正典は [[phase2_design_checkpoint_2026-06-14]]、開発基盤の現状は [[dev_infrastructure_notes]]。
+
+## 位置づけ
+
+マイルストーンM1「譜面・曲プロファイルパイプライン」の処理である。目的関数の柱「一回性」を実現する。一回性とは、1回のプレイで叩ける音を全部は取り切れない上限を設けることで、限られたタップをどの見せ場へ投下するかの取捨選択を生み、別の配分を試す動機（反復プレイ）を作ることである。出力は曲プロファイルの `tapBudget` フィールド（`TapBudget = { fullPossible, limit }`）で、プロファイル組み立て（#45・#46）と得点合成（#55）が消費する。
+
+## 配置
+
+`src/profiles/generate/tapBudget.ts`（新規）。曲プロファイルの1フィールドを生成する純粋関数であり、同種の見せ場マップ生成（#41）・JUST音程スロット生成（#36）にそろえて `src/profiles/generate` に置く。型・検証・比率定数は #34 で実装済みのため、本Issueは生成器とテストのみを追加し、`profileSchema.ts`・`validateProfile.ts`・`tuning.ts` は変更しない。
+
+## 最重要の意思決定
+
+- **母数は固定値で埋めず音楽地図から算出する**（データドリブン原則）。`tapBudget` は母数 `fullPossible` と上限 `limit` の2値を持ち両方がプロファイルに入る。実データで `docs/research/07-feasibility-and-parameters.md` §2.1 の式が母数434を完全再現することを確認したため、母数を算出する設計（generateTapBudget を主成果物とし、calculateTapBudget を低レベル関数として残す）を採った。固定値434を入力する案は根拠値の手写しになるため不採用。
+- **密度は母数見積もり用の粗い2値モデルに限定**（#43 との責務境界）。本モジュールの密度はサビと非サビの2値だけである。§2.1 はフル母数をこの2値で見積もる。一方 §2.6 の密度の谷（休符）・見せ場前の溜め・16分音符の量子化といった細かい配置密度は、実際のノーツ数を母数より減らす要素であり、譜面密度設計（#43）とノーツ生成（#38）の責務である。本モジュールはそれらを扱わない。
+- **受け入れ基準の線引き**。#44 の達成は「スキーマに適合する `tapBudget` を生成し `validateProfile` に合格する」までとする。曲プロファイルJSONへの実際の書き込みは #45・#46 の責務であり後続Issueで確認する。
+- **入力契約**。`beatsMs` は厳密昇順（結果として重複なし。実データで676拍が厳密昇順・重複なしを確認）。`chorusSegments` の各区間は開始が終端より小さく有限で、区間の並び順と重なりは許容する。サビ判定を各拍の真偽で1回だけ数えるため、区間が重なっても二重計上が起きない。契約違反は文脈付き例外で失敗させる。
+- **境界判定は半開区間**。サビ区間は開始を含み終端を含まない `[startMs, endMs)` で判定する。区間の終端が次の区間の開始に接する設計のため、終端を含めると境界の拍を二重に数えるためである。
+
+## 採用した数値とその理由（すべて理由を先に述べる）
+
+- 母数の密度の既定: サビ1拍に1回（1.0）、非サビ2拍に1回（0.5）。`docs/research/07-feasibility-and-parameters.md` §2.6 の TAKEOVER の密度設計に一致させる。これにより実データの総拍676・サビ192拍・非サビ484拍から `192×1.0 + 484×0.5 = 434` が再現する（§2.1）。密度は曲固有のため tuning.ts の定数にせず関数の引数（既定値つき）とする（`src/config/tuning.ts:12-14` がセクション密度は曲プロファイルと譜面に置くと定めるため）。
+- 上限の比率: 既定0.6、範囲0.4〜0.8（`tuning.ts` の `TAP_LIMIT_RATIO_DEFAULT`・`MIN`・`MAX`、§2.2）。0.4未満は取捨選択が鋭くなりすぎ「失敗のない床」と矛盾し、0.8超は取り切れて一回性が薄れる。実データで `round(434×0.6)=260`、比率260/434=0.5991（範囲内）。
+- 丸めは最近接整数（Math.round）。母数は叩ける音の個数であり整数でなければならず（スキーマの非負整数検査に合致）、上限は「フルの約6割」という目安への最近接整数が設計意図を最もよく表すためである。母数と上限の二段の丸めで母数が小さい曲は比率が境界を外れうるため、calculateTapBudget は上限の比率を事後検証し範囲外は例外とする。
+
+## 実装した内容
+
+- 新規 `src/profiles/generate/tapBudget.ts`: 関数 `estimateFullPossibleTaps`・`calculateTapBudget`・`generateTapBudget`、型 `TapBudgetInput`・`TapBudgetOptions`、例外 `InvalidTapBudgetInputError`。import は `../../config/tuning`（比率定数）と `../schema/profileSchema`（`TapBudget` 型、`import type`）の2つだけ。
+- 新規 `src/profiles/generate/tapBudget.test.ts`: 単体テスト20件（密度計算・半開区間境界・区間重なり・並び順の乱れ・空サビ区間・各種例外・比率境界・二段丸めの境界逸脱）。
+- 新規 `src/profiles/generate/tapBudget.takeover.test.ts`: 実データ検証4件（母数434・`{434,260}`・上限<母数・`validateProfile` 合格）。
+- 更新 `src/profiles/generate/README.md`: Issue #44 節（責務・公開関数・密度モデルの範囲・入力契約・依存の向き）を追加し、冒頭の生成器一覧に #44 を加えた。
+
+## レビューと検証（事実）
+
+- Codex に計画を2回レビュー依頼。1巡目の12指摘（拍の重複の契約化、サビ区間の重なりを各拍の真偽判定で一度だけ数える、二段丸めの比率境界の事後検証、密度を正の値に限る、母数の正整数検査、#43 との責務境界の明記、受け入れ基準の線引き、空サビ区間の許容、`import type` の利用、実データテストでの `src/tools` 不使用）をすべて反映した。2巡目で1〜12の解消を確認し、新規指摘（重複サビ区間の入力契約の明文化）を反映した。
+- `npm run typecheck`（`tsconfig.json` と `tsconfig.node.json` の両方）: 型エラーなし。
+- `npm test`（vitest）: 60ファイル821テスト全通過（本Issueで24を新規追加。既存を破壊せず）。
+- 受け入れ基準の保証: `tapBudget.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を読み、母数434・上限260・上限が母数より小さいこと・算出 `tapBudget` がスキーマ検証に合格することを確認する。
+- 依存規則: 中核（engine・chart・scoring・input・audio）・profiles 以外・tools・rendering・three.js を import しない。
+
+## 次の主要作業
+
+1. PR #155 のレビュー・マージ。
+2. M1 の続き: 譜面密度設計 #43（細かい配置密度。本Issueの粗い母数モデルとは別）、オンセット選択・ノーツ生成 #38、パターン適用 #39、軌跡上配置 #40、タップ総数上限の調整余地 170〜350 は実装後のプレイ検証で確定。曲プロファイル生成スクリプト #45・TAKEOVER曲プロファイル生成 #46（generateTapBudget を呼んで `tapBudget` を他フィールドと統合）、解析先行スキーマ検証ゲート #96。

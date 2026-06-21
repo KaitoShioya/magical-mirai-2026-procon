@@ -1,7 +1,7 @@
-# profiles/generate — 曲プロファイル生成の純粋関数群（Issue #41・#37・#36・#38）
+# profiles/generate — 曲プロファイル生成の純粋関数群（Issue #41・#37・#36・#44・#38）
 
 曲解析データ（songmap 由来の素の配列や解決済みの和音区間）から、曲プロファイルの各派生フィールドを決定論的に生成する純粋関数群を置く。
-現在は見せ場マップ生成（Issue #41、`showcases` フィールド）、無和音区間の解決（Issue #37）、JUST音程7スロット生成（Issue #36、`slots` フィールド）、オンセット選択・ノーツ生成（Issue #38、`notes` フィールドの第1段）を収める。
+現在は見せ場マップ生成（Issue #41、`showcases` フィールド）、無和音区間の解決（Issue #37）、JUST音程7スロット生成（Issue #36、`slots` フィールド）、タップ総数上限算出（Issue #44、`tapBudget` フィールド）、オンセット選択・ノーツ生成（Issue #38、`notes` フィールドの第1段）を収める。
 いずれも曲プロファイルJSONへの書き込みは行わない（それは #45・#46 の責務）。
 
 ## 見せ場マップ自動生成（Issue #41）
@@ -65,6 +65,19 @@
 - **後段との契約**: 後段（#39・#40・#45・#46）が `OnsetNote` から最終 `Note` を作るときは、`id`・`timeMs`・`beatIndex` だけを引き継ぎ、`slotIndex`（#39）・`pattern`（#39）・`trajectoryPosition`（#40）を付与する。中間メタデータの `sectionKind` は最終 `Note` の項目ではないため最終出力に含めない。引き継ぎはオブジェクト全体の展開（スプレッド）ではなく項目を明示して写す。理由を先に述べる。全体展開だと `sectionKind` が最終ノーツへ余剰項目として残り、スキーマ外の項目が曲プロファイルJSONへ混入するためである。
 - **担当Issue**: #38。後続の #39（slotIndex・pattern 付与）・#40（trajectoryPosition 付与）・#45（生成スクリプト）・#46（TAKEOVERプロファイル生成）が本関数の出力を入力に使う。
 
+## タップ総数上限算出（Issue #44、`tapBudget.ts`）
+
+- **責務**: 曲解析データ（拍の開始時刻の並びとサビ区間）から、一回性を成立させる `tapBudget`（出力は `SongProfile.tapBudget`）を決定論的に算出する。`tapBudget` はフルに可能なタップの総数 `fullPossible`（母数）とタップ総数上限 `limit` の2値を持つ。曲プロファイルJSONへの書き込みは行わない（それは #45・#46 の責務）。
+- **入力源**: TextAlive 音楽地図ダンプ（`docs/analysis/<key>.songmap.json`）。拍＝beats の開始時刻、サビ区間＝isChorus の区間。songmap から `TapBudgetInput` への変換は呼び出し側（本Issueはテスト、横展開時は #45 の生成スクリプト）が行う。
+- **公開関数**:
+  - `estimateFullPossibleTaps(input, options?) => number` — 母数を算出する。各拍がいずれかのサビ区間に入るかを真偽で1回だけ数え、サビの拍数×サビ密度と非サビの拍数×非サビ密度を合計し最近接整数へ丸める。
+  - `calculateTapBudget(fullPossible, options?) => TapBudget` — 母数から上限を算出する。上限＝最近接整数の `母数 × 比率`。比率の既定は `TAP_LIMIT_RATIO_DEFAULT`、範囲は `TAP_LIMIT_RATIO_MIN`〜`MAX`。
+  - `generateTapBudget(input, options?) => TapBudget` — 上記2関数の合成。#45・#46 はこの関数1つで曲の `tapBudget` を得る。本Issueの主たる成果物。
+- **密度モデルの範囲（#43・#38 との責務境界）**: 本モジュールの密度は母数の見積もりに用いる粗いモデルであり、サビと非サビの2値だけを持つ（`docs/research/07-feasibility-and-parameters.md` §2.1）。密度の谷（休符）・見せ場前の溜め・16分音符の量子化といった細かい配置密度（§2.6）は、実際のノーツ数を母数より少なくする要素であり、譜面密度設計（Issue #43）とノーツ生成（Issue #38）の責務である。本モジュールはそれらを扱わない。
+- **入力契約**: `beatsMs` は厳密昇順（結果として重複なし）。`chorusSegments` の各区間は開始が終端より小さく有限であり、区間どうしの並び順と重なりは許容する（各拍を真偽で1回だけ数えるため二重計上が起きない）。違反は文脈付きの例外で失敗させる。
+- **依存の向き**: `engine` 等の中核から import されない。`tools` を import しない。`../../config/tuning`（比率定数）と `../schema/profileSchema`（`TapBudget` 型）だけを取り込む。
+- **担当Issue**: #44。後続の #45（生成スクリプト）・#46（TAKEOVERプロファイル生成）・#55（スコアリング合成）が本関数と算出値を再利用する。
+
 ## テスト手順（実行環境 Node 22、`.nvmrc` 準拠）
 
 ```sh
@@ -72,4 +85,4 @@ npm run typecheck
 npm test
 ```
 
-`showcases.takeover.test.ts`・`chordToneSlots.takeover.test.ts`・`onsetNotes.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を素読みして各Issueの達成基準を実データで表明する（`src/tools/` を import しない）。各機能の単体テストは同居の `*.test.ts`。
+`showcases.takeover.test.ts`・`chordToneSlots.takeover.test.ts`・`tapBudget.takeover.test.ts`・`onsetNotes.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を素読みして各Issueの達成基準を実データで表明する（`src/tools/` を import しない）。各機能の単体テストは同居の `*.test.ts`。

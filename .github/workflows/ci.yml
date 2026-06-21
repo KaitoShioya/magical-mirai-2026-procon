@@ -48,7 +48,7 @@ jobs:
         # 診断ページは規約適合のため本番配信に含めてはならない（Issue #47、docs/decisions/architecture.md §7.2）。
         # 本番ビルド成果物に入力診断ページ input.html と層合成診断ページ layer-composite.html が無いことを、
         # 後続の検証用ビルドが全ページを出す前に確認する。
-        run: test ! -f dist/input.html && test ! -f dist/layer-composite.html && test ! -f dist/butterfly.html
+        run: test ! -f dist/input.html && test ! -f dist/layer-composite.html && test ! -f dist/butterfly.html && test ! -f dist/spatial.html
       - name: Build verification bundle (all pages)
         # 既定ビルド。最終的な dist は本体に加え解析・性能・文字診断・雨診断・カメラ軌跡診断・発光点診断の
         # 各ページを含み、後続の preview の配信対象となる。この成果物を後続のスモークが配信するため、本番と同じトークンを注入する。
@@ -87,6 +87,12 @@ jobs:
         # 合成手順で描いた画面の画素を読み戻し、2次元層が最前面（中央が赤）で3次元の色を保持する（外側が緑）
         # ことを確かめる。画素の読み戻しはソフトウェア描画でも正しく得られる。
         run: BASE=http://127.0.0.1:4173 npm run smoke:layer
+      - name: Run spatial structural smoke test
+        # 空間品質ゲート（Issue #100）の構造スモーク。診断ページが既定起動（反射有効・ブルーム有効）で例外なく
+        # 立ち上がり、構造的事実（描画文脈・地形読み込み完了・水面供給元が地形メッシュ・反射有効・ブルーム有効）が
+        # 成立することを確かめる。これは配線の確認であり空間品質そのものの保証ではない（品質判定の本体は手元の
+        # 実機GPUで動かす）。状態の読み取りはソフトウェア描画でも正しく得られる。
+        run: BASE=http://127.0.0.1:4173 npm run smoke:spatial
       - name: Run input smoke test
         # 入力アーキテクチャ（Issue #47）の受け入れ基準の実ブラウザ検証。多指独立・スクロール無効化・
         # タッチとマウスとキーボードの入力同等性を、検証用ビルドの入力診断ページに対して確認する。

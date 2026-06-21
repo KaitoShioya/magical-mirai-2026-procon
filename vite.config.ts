@@ -46,6 +46,7 @@ export default defineConfig(({ mode }) => {
         screenShake: "screen-shake.html",
         postEffects: "posteffects.html",
         charSmash: "char-smash.html",
+        spatial: "spatial.html",
       };
 
   return {

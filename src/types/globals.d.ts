@@ -4,6 +4,11 @@
 export {};
 
 declare global {
+  /** 空間品質診断（spatial.html）の1姿勢ぶんの、カメラ位置と固定発光点の射影画面座標。 */
+  interface SpatialDiagnosticPose {
+    position: { x: number; y: number; z: number };
+    projected: Array<{ x: number; y: number; onScreen: boolean }>;
+  }
   interface Window {
     /** 楽曲解析ツールが公開する songMap（scripts/dump-songmap.mjs が取得する） */
     __songMap?: unknown;
@@ -156,6 +161,44 @@ declare global {
         maxZ: number;
         y: number;
       } | null;
+    };
+    /**
+     * 空間品質ゲート（Issue #100）の受け入れ診断ページ（spatial.html）だけが取り付ける。
+     * __spatialReady は地形読み込みの確定後に真を返す（駆動部は「関数として存在し、かつ呼び出した戻り値が真」を待つ）。
+     * __spatialState は構造状態と、3姿勢（遠景・近景・横移動）の射影画面座標を返す。
+     * __spatialCapture は姿勢名（far・near・lateral）を受け取り、指定姿勢で描画した画素を縦横各区画の平均輝度へ
+     * 縮約した格子を返す。scripts/spatial-quality.mjs と scripts/rendering-spatial-smoke.mjs が読む。
+     * 共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __spatialReady?: () => boolean;
+    __spatialState?: () => {
+      webglAvailable: boolean;
+      reflectionEnabled: boolean;
+      reflectionResolution: number;
+      waterSource: "placeholder-plane" | "stage-mesh";
+      stageTerrainStatus: "none" | "loaded" | "error";
+      stageTerrainError: string | null;
+      bloomEnabled: boolean;
+      bloomStrength: number;
+      bloomOutputPassEnabled: boolean;
+      cameraPoseRejectedCount: number;
+      waterRegion: {
+        width: number;
+        depth: number;
+        centerX: number;
+        centerZ: number;
+        y: number;
+      } | null;
+      poses: {
+        far: SpatialDiagnosticPose;
+        near: SpatialDiagnosticPose;
+        lateral: SpatialDiagnosticPose;
+      };
+    };
+    __spatialCapture?: (poseName: string) => {
+      cols: number;
+      rows: number;
+      cells: number[];
     };
     /**
      * 自動劣化制御（Issue #18）の受け入れ診断 perf-budget.html が公開する、各劣化段階の適用結果。

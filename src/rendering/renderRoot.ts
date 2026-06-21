@@ -2,7 +2,17 @@
 // 状態を読んで描く「ビュー」であり、判定・得点・時刻の論理を持たない（依存規則 docs/decisions/architecture.md §5）。
 // profiles・tools は import しない。後続の反射(#9)・発光点(#10)・層合成(#15)はこの土台へ積み上げる。
 
-import { Color, FogExp2, PerspectiveCamera, Scene, Vector2, Vector3, WebGLRenderer } from "three";
+import {
+  Color,
+  FogExp2,
+  NoToneMapping,
+  PerspectiveCamera,
+  Scene,
+  SRGBColorSpace,
+  Vector2,
+  Vector3,
+  WebGLRenderer,
+} from "three";
 import type { Vec3Like } from "../utils/cameraTrajectory";
 import {
   CAMERA_FAR,
@@ -81,6 +91,15 @@ export interface RenderState {
     frustumTop: number;
     frustumBottom: number;
   } | null;
+  /** 現在 canvas に適用している画面拡大・減衰揺れの変換（Issue #76）。倍率1・移動0は恒等（拡大していない）。
+   *  診断・検証と、入力の逆変換契約（#59）のために読む。 */
+  screenTransform: { scale: number; offsetX: number; offsetY: number };
+  /** レンダラの出力色空間。後処理を線形空間で作用させる前提（最終段の色管理は OutputPass）の明示設定を検証する。
+   *  レンダラが無い端末では既定の "srgb" を返す。 */
+  outputColorSpace: string;
+  /** レンダラのトーンマッピング方式の数値。現状はトーンマッピング無し（NoToneMapping）を明示設定し検証する。
+   *  レンダラが無い端末では NoToneMapping の値を返す。 */
+  toneMapping: number;
 }
 
 /** applyPerformanceLevel の戻り値。段階適用で描画上の何が実際に変わったかを示す（Issue #18）。 */
@@ -121,6 +140,15 @@ export interface RenderRoot {
    *  非有限値で適用しなかったら false を返す。演出カメラ軌跡（#13）が毎フレーム駆動する。戻り値で
    *  下流（#59）が適用失敗を検知でき、無音の不具合を避ける。WebGL無効時もカメラ物体は存在するため反映する。 */
   setCameraPose(position: Vec3Like, target: Vec3Like): boolean;
+  /** 画面拡大・減衰揺れの変換を canvas へ当てる（Issue #76）。倍率（中心原点）と画素移動を受け取り、
+   *  canvas の表示変換（CSSのtransform）として matrix 形式で適用する。引数は時刻の論理を持たない確定値で、
+   *  演出評価器（src/utils/screenShake）が算出する。前回適用値と一致すれば書き換えない。破棄後・canvas が
+   *  無い（WebGL 不可）ときは何もしない。 */
+  setScreenTransform(scale: number, offsetXPx: number, offsetYPx: number): void;
+  /** 拍同期ポストエフェクト（Issue #17）の色収差バースト強度を注入する。intensity は0から1で、強拍直後に1、
+   *  減衰で0へ向かう。値を橋渡しするだけで時刻ロジックは持たない。後処理パスが無効（既定）の端末では効果は出ない。
+   *  本編での有効化は #59 が createRenderRoot({ postEffectEnabled: true }) で行う。WebGL が無い端末では何もしない。 */
+  setChromaBurstIntensity(intensity: number): void;
   /** 診断・検証用の現在状態を返す。 */
   state(): RenderState;
   /** 後始末。リサイズ待ち受けの解除・GPU資源の解放・canvas の取り外しを行う。冪等。 */
@@ -156,13 +184,20 @@ function isWebGL2Available(): boolean {
  * options.reflectionResolution は反射解像度（0で無効、256または512で有効）。採用理由を先に述べる。
  * 省略可・既定512にすることで、引数1個の既存の呼び出しとの互換を保つ。
  * options.bloomEnabled が偽のときはブルームを無効にして起動する（既定は有効。?bloom=0 から渡る）。
+ * options.postEffectEnabled が真のときは拍同期ポストエフェクト（Issue #17、周縁減光＋色収差）を有効にして起動する
+ * （既定は無効。本編での有効化は #59 がこの引数で行い、既定無効により既存の見えを変えない）。
  */
 export function createRenderRoot(
   container: HTMLElement,
-  options: { reflectionResolution?: number; bloomEnabled?: boolean } = {}
+  options: {
+    reflectionResolution?: number;
+    bloomEnabled?: boolean;
+    postEffectEnabled?: boolean;
+  } = {}
 ): RenderRoot {
   const reflectionResolution = options.reflectionResolution ?? DEFAULT_REFLECTION_RESOLUTION;
   const bloomEnabled = options.bloomEnabled ?? true;
+  const postEffectEnabled = options.postEffectEnabled ?? false;
 
   const scene = new Scene();
   scene.background = new Color(NIGHT_COLOR);
@@ -206,6 +241,12 @@ export function createRenderRoot(
     try {
       created = new WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
       created.setClearColor(NIGHT_COLOR, 1);
+      // 色管理を明示設定する（現状はトーンマッピング無しのためsRGB変換のみ。将来トーンマッピングを変えても
+      // 最終段の色管理は OutputPass に集約する）。明示設定する理由を先に述べる。拍同期ポストエフェクト（#17）は
+      // ブルームと最終出力の間で線形空間に作用させる前提であり、この前提が three.js の既定変更で崩れる事故を避ける
+      // ため、現在の既定と同値（出力sRGB・トーンマッピング無し、見えは不変）を明示して固定する。
+      created.outputColorSpace = SRGBColorSpace;
+      created.toneMapping = NoToneMapping;
       // 自動消去を無効にする（Issue #15 層合成）。採用理由を先に述べる。3次元の合成の後に深度のみ消して
       // 2次元層を最前面へ重ねるため、描画のたびに色を自動で消されては困る。合成器の内部パス（RenderPass）は
       // autoClear に依らず自前で色と深度を消すため通常経路は影響を受けず、防御経路（合成器が無い縮退）では
@@ -275,6 +316,7 @@ export function createRenderRoot(
       enabled: bloomEnabled,
       displayWidth: window.innerWidth,
       displayHeight: window.innerHeight,
+      postEffectEnabled,
     });
     // 2次元層（Issue #15）。3次元の合成の後に最前面へ重ねる。初回の構築時描画より前に生成する。
     overlay = createOverlayLayer({
@@ -321,6 +363,9 @@ export function createRenderRoot(
 
   // setCameraPose が適用を拒否した累積回数。診断・検証で無音の不具合を検出するために数える。
   let cameraPoseRejectedCount = 0;
+
+  // 現在 canvas に適用している画面拡大・減衰揺れの変換（Issue #76）。初期は恒等（拡大していない）。
+  let currentScreenTransform = { scale: 1, offsetX: 0, offsetY: 0 };
 
   // 防御的処理の理由を先に述べる。位置と注視点が同一、または非有限値だと lookAt の向きが定まらず
   // カメラ姿勢が壊れる。いずれの場合も姿勢を変更せず（前フレームの姿勢を保ち）、拒否を数えて false を返す。
@@ -387,6 +432,27 @@ export function createRenderRoot(
     result.effectiveChanged =
       result.pixelRatioChanged || result.bloomResolutionChanged || result.bloomEnabledChanged;
     return result;
+  }
+
+  function setScreenTransform(scale: number, offsetXPx: number, offsetYPx: number): void {
+    // 破棄後、または canvas が無い（WebGL 不可）ときは何もしない。後始末の順序に依らず安全にする。
+    if (disposed || !renderer) {
+      return;
+    }
+    // 前回適用値と一致すれば書き換えない。恒等が続く（拡大していない）間の毎フレームの要素書き換えをなくす。
+    // 演出評価器が倍率4桁・移動1桁へ丸め恒等近傍を恒等へ吸着するため、恒等が続く間は値が一定で一致する。
+    if (
+      scale === currentScreenTransform.scale &&
+      offsetXPx === currentScreenTransform.offsetX &&
+      offsetYPx === currentScreenTransform.offsetY
+    ) {
+      return;
+    }
+    currentScreenTransform = { scale, offsetX: offsetXPx, offsetY: offsetYPx };
+    // 行列形式 matrix(倍率,0,0,倍率,横移動,縦移動) で当てる。原点は #stage canvas の transform-origin:50% 50%
+    // （src/style.css）で中心に固定する。回転・剪断を含めないため、移動は倍率の後段に画素単位で加わる平行移動になり、
+    // 揺れの移動量が画面外余白の内側に収まる前提が成り立つ。
+    renderer.domElement.style.transform = `matrix(${scale},0,0,${scale},${offsetXPx},${offsetYPx})`;
   }
 
   function update(deltaSeconds: number): void {
@@ -458,6 +524,11 @@ export function createRenderRoot(
       overlay?.removeObject(object);
     },
     setCameraPose,
+    setScreenTransform,
+    setChromaBurstIntensity(intensity: number): void {
+      // 値を橋渡しするだけ（時刻ロジックは持たない）。WebGL が無く合成器が無い端末では何もしない。
+      bloomComposer?.setChromaBurstIntensity(intensity);
+    },
     resize,
     applyPerformanceLevel,
     state(): RenderState {
@@ -502,6 +573,11 @@ export function createRenderRoot(
               frustumBottom: overlay.frustum().bottom,
             }
           : null,
+        // 現在 canvas に当てている画面拡大・減衰揺れの変換（Issue #76）。複製して外部からの変更を防ぐ。
+        screenTransform: { ...currentScreenTransform },
+        // 色管理の明示設定（レンダラが無い端末では既定値を返す）。後処理を線形空間で作用させる前提を診断で確かめる。
+        outputColorSpace: renderer ? renderer.outputColorSpace : SRGBColorSpace,
+        toneMapping: renderer ? renderer.toneMapping : NoToneMapping,
       };
     },
     dispose(): void {

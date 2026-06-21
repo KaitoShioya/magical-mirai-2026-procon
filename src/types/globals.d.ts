@@ -95,6 +95,9 @@ declare global {
         bloomInputHeight: number;
         resolutionScale: number;
         outputPassEnabled: boolean;
+        postEffectEnabled: boolean;
+        vignetteStrength: number;
+        chromaIntensity: number;
       } | null;
       centerFigureStatus: "fallback" | "loaded" | "error";
       centerFigureError: string | null;
@@ -105,6 +108,9 @@ declare global {
         frustumTop: number;
         frustumBottom: number;
       } | null;
+      screenTransform: { scale: number; offsetX: number; offsetY: number };
+      outputColorSpace: string;
+      toneMapping: number;
     };
     /**
      * 自動劣化制御（Issue #18）の受け入れ診断 perf-budget.html が公開する、各劣化段階の適用結果。
@@ -191,6 +197,30 @@ declare global {
       keyboardColorX01: number;
       touchAction: string;
     };
+    /**
+     * 拍同期ポストエフェクト診断（posteffects.html）のステップ実行。指定したゲーム時刻まで拍同期スケジューラと
+     * 拍バースト包絡を進め、色収差バースト強度を注入して1フレーム描き、画素を読み戻して状態を更新する。
+     * scripts/rendering-posteffects-smoke.mjs が基準・ピーク・減衰の各時刻で呼ぶ。
+     */
+    __postEffectsStep?: (gameTimeMs: number) => void;
+    /** 拍同期ポストエフェクト診断を未発火・基準時刻0へ戻す（再実行用）。 */
+    __postEffectsReset?: () => void;
+    /**
+     * 拍同期ポストエフェクト診断の状態。明領域系統（減光・黒潰れ判定）と境界系統（色収差判定）を分けて返す。
+     * scripts/rendering-posteffects-smoke.mjs が取得する。共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __postEffectsState?: () => {
+      webglAvailable: boolean;
+      // 明領域系統（一様に明るい領域。減光と黒潰れの判定に使う）。
+      centerLuminance: number;
+      peripheryLuminance: number;
+      peripheryMinLuminance: number;
+      // 境界系統（白黒の鋭い境界近傍の複数点での色ずれの最大値）。現在のバースト強度に対応する。
+      boundaryMaxAbsRB: number;
+      // 現在の色収差バースト強度（0以上1以下）と周縁減光の基準強度。
+      chromaIntensity: number;
+      vignetteStrength: number;
+    };
     /** 可読性診断（readability.html）の計測が終わったら真を返す。scripts/readability-contrast.mjs が待つ。 */
     __readabilityReady?: () => boolean;
     /**
@@ -213,5 +243,21 @@ declare global {
         borderVsBackground: number;
       }[];
     };
+    /**
+     * 画面拡大・減衰揺れの受け入れ診断アクセサ（Issue #76）。診断ページ（screen-shake.html）だけが取り付ける。
+     * WebGL の可否、動きを減らす設定の現在値、直近に canvas へ当てた変換（倍率・横移動・縦移動）を返す。
+     * scripts/screen-shake-smoke.mjs が取得する。共有型が rendering・utils に依存しないよう素の構造で宣言する。
+     */
+    __screenShakeState?: () => {
+      webglAvailable: boolean;
+      reducedMotion: boolean;
+      transform: { scale: number; offsetX: number; offsetY: number };
+    };
+    /**
+     * 画面拡大・減衰揺れの決定的評価アクセサ（Issue #76）。診断ページ（screen-shake.html）だけが取り付ける。
+     * 小節頭の拡大量の拍を時刻0で1回登録した評価器に対し、経過ミリ秒を与えた変換を返す。
+     * scripts/screen-shake-smoke.mjs が減衰比と余白内拘束を時間非依存に検証するために取得する。
+     */
+    __screenShakeProbe?: (elapsedMs: number) => { scale: number; offsetX: number; offsetY: number };
   }
 }

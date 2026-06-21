@@ -60,6 +60,35 @@ export type {
 } from "./granularity";
 export { DEFAULT_ORIENTATION } from "./orientation";
 export type { OrientationPolicy, OrientationMode, PhraseOrientationGranularity } from "./orientation";
+// 演出要素の登録・共通インターフェース基盤（#130）。後続の合成（#131）・割付（#132）・個別演出
+// （#23・#24〜#28・#30・#32）はこれらの型と登録の仕組みを取り込み、本基盤を改変せず追加する。
+export { createEffectRegistry, validateEffectElement, findContributionIssues } from "./effectElement";
+export type {
+  EffectTargetUnit,
+  TransformLayer,
+  ColorLayer,
+  OperatedAttributes,
+  EffectCostInput,
+  EffectCost,
+  EffectPriority,
+  UnitLifecyclePhase,
+  ConditionDimension,
+  StartCondition,
+  TransformContribution,
+  ScaleContribution,
+  LetterSpacingContribution,
+  ColorContribution,
+  GlowContribution,
+  OpacityContribution,
+  DeformContribution,
+  DuplicateCopy,
+  DuplicationContribution,
+  AttributeContribution,
+  EffectContext,
+  EffectElement,
+  EffectElementIssue,
+  EffectRegistry,
+} from "./effectElement";
 export type {
   FontCredit,
   FontEntry,

@@ -167,6 +167,30 @@ try {
       }
     }
 
+    // 拍同期ポストエフェクト（Issue #17）と色管理の明示設定。
+    // 後処理パスは本編で既定無効のため postEffectEnabled は偽だが、診断フィールドが真偽値で存在し配線されて
+    // いることを確かめる。色管理は後処理を線形空間で作用させる前提（最終段の色管理は OutputPass）を保つため、
+    // 出力sRGB・トーンマッピング無しを明示設定したことを確かめる。期待値の根拠を先に述べる。three.js では
+    // SRGBColorSpace は文字列 "srgb"、NoToneMapping は数値0であり、現在の既定と同値（見えは不変）をそのまま
+    // 明示設定したことの確認である。
+    if (!state.bloom || typeof state.bloom.postEffectEnabled !== "boolean") {
+      fail(`診断状態の bloom.postEffectEnabled が真偽値ではありません（${state.bloom && state.bloom.postEffectEnabled}）`);
+    } else if (state.bloom.postEffectEnabled !== false) {
+      fail(`本編で後処理が既定有効になっています（postEffectEnabled=${state.bloom.postEffectEnabled}、期待: false）`);
+    } else {
+      console.log("確認: 拍同期ポストエフェクトは本編で既定無効（配線あり）");
+    }
+    if (state.outputColorSpace !== "srgb") {
+      fail(`出力色空間が ${state.outputColorSpace} です（期待: srgb）`);
+    } else {
+      console.log("確認: 出力色空間が sRGB");
+    }
+    if (state.toneMapping !== 0) {
+      fail(`トーンマッピングが ${state.toneMapping} です（期待: 0 = トーンマッピング無し）`);
+    } else {
+      console.log("確認: トーンマッピング無し（最終段の色管理は OutputPass に集約）");
+    }
+
     // 2次元層（Issue #15）。本番の描画基盤が2次元層を組み込み、正射影カメラの視錐台が座標規約どおりで
     // あることを確認する。視錐台の上下は +1 と -1、左右は符号反転で絶対値がカメラ縦横比に一致する。
     if (!state.overlay) {

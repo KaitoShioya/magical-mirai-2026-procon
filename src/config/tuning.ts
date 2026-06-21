@@ -145,3 +145,18 @@ export const GRANULARITY_NEAR_REPEAT_WINDOW_MS = 8000;
  * 慌ただしく、2拍以上の無音を曲の切れ目とみなすのが自然である。拍数で定めるため曲のテンポに依存しない。★暫定。
  */
 export const GRANULARITY_FULLSCREEN_MIN_GAP_BEATS = 2;
+
+// --- 拍同期ポストエフェクト（#17 色収差バーストの減衰） ---
+// 強拍（小節頭）で出した色収差を時間とともに消すための減衰時定数。楽曲非依存の時間値であり、本編結線（#59）の
+// app 統括と描画診断（#17）の双方が、拍バースト包絡（src/utils/beatBurstEnvelope.ts）の入力として参照する。
+// 出典: docs/research/02-non-text-expression.md §2、docs/analysis/takeover.songmap.json。
+// 消費Issue: #17（診断ページの駆動）、#59（本編プレイへの結線）。
+
+/**
+ * 色収差バーストの減衰時定数（ミリ秒）。強度は exp(マイナス経過時間 ÷ この時定数)で減る。採用理由を先に述べる。
+ * 強拍の間隔は小節長およそ1029から1372ミリ秒（3から4拍×1拍343から376ミリ秒、takeover.songmap.json 実測）であり、
+ * この時定数の3倍の360ミリ秒で強度が5パーセント以下まで減衰すると、次の強拍より十分早く消えてバーストが
+ * 重ならない。短すぎると瞬きが知覚されず、長すぎると色ずれが残留して不快になるため、80から150ミリ秒で
+ * 実機調整する。★暫定。
+ */
+export const POST_CHROMA_DECAY_TAU_MS = 120;

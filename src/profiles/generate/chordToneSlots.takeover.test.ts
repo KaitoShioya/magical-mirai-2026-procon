@@ -8,14 +8,13 @@ import {
 } from "./chordToneSlots";
 import { parseChordSymbol, CHORD_PITCH_BASE_C_MIDI } from "../../utils/chordPitch";
 import { PITCH_SLOT_COUNT_DEFAULT } from "../../config/tuning";
+import { toChords, type RawSongmap } from "./songmapAdapters";
 
 // 実データ（TAKEOVERの音楽地図ダンプ）を素のデータファイルとして読む。src/tools/ への import は一切しない
 // （profiles から tools への依存禁止に抵触しない）。songmap → ResolvedChordRegion の変換はテスト側で行い、
 // 生成関数を songmap の形から切り離す。これは #45 の生成スクリプトが行う変換と同じである。
 const songmapPath = fileURLToPath(new URL("../../../docs/analysis/takeover.songmap.json", import.meta.url));
-const songmap = JSON.parse(readFileSync(songmapPath, "utf8")) as {
-  chords: { index: number; name: string; startTime: number; endTime: number; duration: number }[];
-};
+const songmap = JSON.parse(readFileSync(songmapPath, "utf8")) as RawSongmap;
 
 const SEMITONES_PER_OCTAVE = 12;
 const MIDI_MIN = 0;
@@ -23,9 +22,10 @@ const MIDI_MAX = 127;
 const NO_CHORD_SYMBOL = "N";
 
 // 無和音「N」区間は Issue #37 の解決を経てから #36 へ渡るため、本テストでは除外し実在和音区間だけを対象とする。
-const realChordRegions: ResolvedChordRegion[] = songmap.chords
+// 共有アダプタ toChords は無和音を含む全210区間を返すため、ここで無和音6区間を除いた204区間を作る。
+const realChordRegions: ResolvedChordRegion[] = toChords(songmap)
   .filter((chord) => chord.name.trim() !== NO_CHORD_SYMBOL)
-  .map((chord) => ({ startTimeMs: chord.startTime, endTimeMs: chord.endTime, chordName: chord.name }));
+  .map((chord) => ({ startTimeMs: chord.startTimeMs, endTimeMs: chord.endTimeMs, chordName: chord.name }));
 
 describe("JUST音程7スロット自動生成 実データ検証（Issue #36 受け入れ基準）", () => {
   const slots = generateChordToneSlots(realChordRegions);

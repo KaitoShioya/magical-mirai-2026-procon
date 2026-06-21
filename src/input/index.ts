@@ -15,3 +15,13 @@ export {
 } from "./coordinateMapping";
 export type { Input, InputOptions, InputSource, Reaction } from "./pointerInput";
 export { createInput } from "./pointerInput";
+export type {
+  JudgeWindowsDistance,
+  JudgeWindowsMs,
+  TrajectoryTimingSource,
+} from "./timingTranslation";
+export {
+  noteDistanceWindows,
+  timeWindowToDistance,
+  trajectoryDistanceFromNote,
+} from "./timingTranslation";

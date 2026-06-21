@@ -2,31 +2,19 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { generateOnsetNotes, type OnsetInput } from "./onsetNotes";
+import { toOnsetInput, type RawSongmap } from "./songmapAdapters";
 import { validateProfile } from "../schema/validateProfile";
 import { minimalValidProfile } from "../schema/fixtures/minimalValidProfile";
 import type { Note, SongProfile } from "../schema/profileSchema";
 
 // 実データ（TAKEOVERの音楽地図ダンプ）を素のデータファイルとして読む。src/tools/ への import は一切しない
-// （profiles から tools への依存禁止に抵触しない）。songmap → OnsetInput の変換はテスト側で行い、
-// 生成関数を songmap の形から切り離す。これは #45 の生成スクリプトが行う変換と同じである。
+// （profiles から tools への依存禁止に抵触しない）。songmap → 各入力への変換は共有アダプタ songmapAdapters を使い、
+// 生成本体（#45 の buildProfile）と同じ変換でテストする。
 const songmapPath = fileURLToPath(new URL("../../../docs/analysis/takeover.songmap.json", import.meta.url));
-const songmap = JSON.parse(readFileSync(songmapPath, "utf8")) as {
-  song: { duration: number };
-  beats: { index: number; startTime: number }[];
-  segments: { startTime: number; endTime: number; isChorus: boolean }[];
-};
-
-function toOnsetInput(): OnsetInput {
-  return {
-    beats: songmap.beats.map((b) => ({ index: b.index, startTimeMs: b.startTime })),
-    chorusSegments: songmap.segments
-      .filter((s) => s.isChorus)
-      .map((s) => ({ startMs: s.startTime, endMs: s.endTime })),
-  };
-}
+const songmap = JSON.parse(readFileSync(songmapPath, "utf8")) as RawSongmap;
 
 describe("オンセット選択・ノーツ生成 実データ検証（Issue #38 受け入れ基準）", () => {
-  const input = toOnsetInput();
+  const input = toOnsetInput(songmap);
   const notes = generateOnsetNotes(input);
   const chorusNotes = notes.filter((n) => n.sectionKind === "chorus");
   const nonChorusNotes = notes.filter((n) => n.sectionKind === "nonChorus");

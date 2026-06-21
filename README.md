@@ -215,7 +215,7 @@ Variables（非秘匿の設定値）:
 - Zen Kaku Gothic New（作者 Yoshimichi Ohira / Zenfonts）
 - 配布元 Google Fonts（https://fonts.google.com/specimen/Zen+Kaku+Gothic+New ）
 - SIL Open Font License 1.1（同梱したライセンス本文 `/fonts/zen-kaku-gothic-new-OFL.txt`）
-- 課題曲の歌詞に現れる文字へサブセット化して同梱している。
+- 課題曲 TAKEOVER の歌詞に現れる文字へサブセット化して同梱している。
 
 ### 楽曲・歌詞
 

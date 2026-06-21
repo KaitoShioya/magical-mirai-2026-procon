@@ -21,8 +21,14 @@ declare global {
     __frameDrops?: () => number;
     /** 初回表示遅延（暖め後の最初の出現要求から最初の描画完了まで、ミリ秒）を返す（kineticText 診断が公開する） */
     __initLatencyMs?: () => number;
-    /** 直近フレームの描画命令の回数を返す（kineticText 診断 typography.html の変形シナリオが公開する）。 */
+    /** 直近フレームの描画命令の回数を返す（kineticText 診断 typography.html の変形シナリオと、本編アプリの
+     *  自動劣化制御 Issue #18 が診断モードで公開する）。 */
     __drawCalls?: () => number;
+    /** 現在の自動劣化制御（Issue #18）の劣化段階を返す。本編アプリが診断モード（?smoke=1）で公開する。 */
+    __perfLevel?: () => number;
+    /** 劣化段階が変化した履歴（変化時の累積時刻ミリ秒と変化後の段階）を返す。本編アプリが診断モードで公開する。
+     *  段階変更の回数と頻度から「低下が滑らか（振動しない）」を検証するために用いる。 */
+    __perfLevelHistory?: () => readonly { atMs: number; level: number }[];
     /** 現在表示中の変形単位（変形テキスト）の数を返す（kineticText 診断 typography.html の変形シナリオが公開する）。 */
     __activeDeformUnits?: () => number;
     /**
@@ -71,6 +77,8 @@ declare global {
       pixelRatio: number;
       drawingBufferWidth: number;
       drawingBufferHeight: number;
+      degradationLevel: number;
+      drawCalls: number;
       clearColorHex: string;
       cameraAspect: number;
       cameraPosition: { x: number; y: number; z: number };
@@ -85,6 +93,7 @@ declare global {
         threshold: number;
         bloomInputWidth: number;
         bloomInputHeight: number;
+        resolutionScale: number;
         outputPassEnabled: boolean;
         postEffectEnabled: boolean;
         vignetteStrength: number;
@@ -102,6 +111,30 @@ declare global {
       screenTransform: { scale: number; offsetX: number; offsetY: number };
       outputColorSpace: string;
       toneMapping: number;
+    };
+    /**
+     * 自動劣化制御（Issue #18）の受け入れ診断 perf-budget.html が公開する、各劣化段階の適用結果。
+     * scripts/rendering-perf-smoke.mjs が取得し、段階ごとに画素密度倍率・ブルーム解像度倍率・ブルーム有効・
+     * 最終出力パスの維持・描画命令数・段階適用直後のフレーム時間を確かめる。共有型が rendering に依存しないよう
+     * 素の構造で宣言する。
+     */
+    __perfApplied?: () => {
+      webglAvailable: boolean;
+      devicePixelRatio: number;
+      levels: {
+        requestedLevel: number;
+        degradationLevel: number;
+        pixelRatio: number;
+        bloomResolutionScale: number;
+        bloomEnabled: boolean;
+        outputPassEnabled: boolean;
+        drawCalls: number;
+        pixelRatioChanged: boolean;
+        bloomResolutionChanged: boolean;
+        bloomEnabledChanged: boolean;
+        effectiveChanged: boolean;
+        applyFrameMs: number;
+      }[];
     };
     /** カメラ軌跡の受け入れ診断 camera-trajectory.html が公開する掃引結果。scripts/camera-trajectory-smoke.mjs が取得する。 */
     __cameraTrajectory?: () => {

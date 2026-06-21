@@ -18,6 +18,7 @@
     "smoke": "node scripts/screens-smoke.mjs",
     "smoke:glow": "node scripts/rendering-glow-smoke.mjs",
     "smoke:layer": "node scripts/rendering-layer-smoke.mjs",
+    "smoke:perf": "node scripts/rendering-perf-smoke.mjs",
     "smoke:posteffects": "node scripts/rendering-posteffects-smoke.mjs",
     "posteffects:fps": "node scripts/rendering-posteffects-fps.mjs",
     "smoke:input": "node scripts/input-smoke.mjs",

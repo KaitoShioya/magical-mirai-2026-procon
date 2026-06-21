@@ -15,7 +15,7 @@ import {
 import type { ScreenContext, ScreenFactory, ScreenKey } from "../screens";
 import { createFakePlayback, createTextAlivePlayback, type Playback } from "../textalive";
 import { createOverlays } from "./overlay";
-import { createRenderRoot } from "../rendering";
+import { createRenderRoot, createPerfBudget } from "../rendering";
 import { createBeatScheduler } from "../utils/beatScheduler";
 import { createScreenShake, resolveBeatAmplitudes } from "../utils/screenShake";
 import { MIKU_CHARACTER } from "../config/character";
@@ -60,6 +60,24 @@ export function createApp(
     reflectionResolution: options.reflectionResolution,
     bloomEnabled: options.bloomEnabled,
   });
+
+  // 性能バジェットの自動劣化制御（Issue #18）。診断の有無に依らず常時生成する。理由を先に述べる。これは実機の
+  // 性能に追従する本番機能であり、本番ビルドでも監視と劣化適用を動かす必要がある。FPSの読み出し口（window.__fps
+  // 系）だけを診断モードに限る。
+  const perfBudget = createPerfBudget();
+
+  // 診断モードの計測標本（試作ツール src/tools/perf/main.ts と同じ500ミリ秒区間・上限120）。本番では更新しない。
+  // 制御器の2秒制御窓とは別に持つ理由を先に述べる。既存ハーネス（scripts/harness）の平均・下位パーセンタイル
+  // 算出をそのまま再現するためで、用途が異なる。
+  let diagLastFps = 0;
+  let diagFpsWindowMs = 0;
+  let diagFpsWindowFrames = 0;
+  const diagFpsSamples: number[] = [];
+  // 劣化段階の変化履歴（診断モードのみ）。累積時刻と変化後の段階を、段階変更が起きたときだけ追記する。
+  let diagPerfClockMs = 0;
+  const diagPerfHistory: { atMs: number; level: number }[] = [];
+  // 履歴の保持上限。段階変更は滞留時間で律速され稀なため、上限で古いものを捨てても検証に支障はない。
+  const DIAG_PERF_HISTORY_MAX = 240;
 
   // 中心キャラクター（初音ミク）のVRMを読み込み、成功したら中心の光柱からVRMへ差し替える（Issue #64）。
   // 非同期で読み込み、待たずに進める。失敗しても光柱の表示が続くため、結果を待つ必要はない。
@@ -210,6 +228,34 @@ export function createApp(
       world.step(stepEndGameTimeMs);
     },
     onFrame: (realDeltaMs: number): void => {
+      // 自動劣化制御（Issue #18）。毎フレームの実経過を制御器へ渡し、段階が変化したときだけ描画へ適用する。
+      // 適用結果の実効変化の有無を制御器へ返す（端末画素密度倍率が1以下で段階0→1が無変化のときの判定に使う）。
+      const perfDecision = perfBudget.recordFrame(realDeltaMs);
+      if (perfDecision.changed) {
+        const applied = renderRoot.applyPerformanceLevel(perfDecision.level);
+        perfBudget.notifyApplied(applied.effectiveChanged);
+      }
+      // 診断モードのみ、計測標本と段階変化履歴を更新する（本番では公開も更新もしない）。
+      if (options.diagnostics) {
+        diagLastFps = realDeltaMs > 0 ? Math.round(1000 / realDeltaMs) : 0;
+        diagFpsWindowMs += realDeltaMs;
+        diagFpsWindowFrames += 1;
+        if (diagFpsWindowMs >= 500) {
+          diagFpsSamples.push(Math.round((diagFpsWindowFrames * 1000) / diagFpsWindowMs));
+          if (diagFpsSamples.length > 120) {
+            diagFpsSamples.shift();
+          }
+          diagFpsWindowMs = 0;
+          diagFpsWindowFrames = 0;
+        }
+        diagPerfClockMs += realDeltaMs;
+        if (perfDecision.changed) {
+          diagPerfHistory.push({ atMs: diagPerfClockMs, level: perfDecision.level });
+          if (diagPerfHistory.length > DIAG_PERF_HISTORY_MAX) {
+            diagPerfHistory.shift();
+          }
+        }
+      }
       machine.update(realDeltaMs);
       tickPlay(realDeltaMs);
       // 画面拡大・減衰揺れ（Issue #76）。プレイ進行中だけ拍へ反応させ、それ以外は恒等へ戻す。
@@ -244,6 +290,9 @@ export function createApp(
       }
     },
     onResume: (): void => {
+      // タブ復帰でフレームが間隔をあけて再開するため、制御器の時間窓を初期化して復帰前の古い標本を混ぜない
+      // （段階は保持される）。プレイ進行の有無に依らず行う。
+      perfBudget.reset();
       if (inPlayPhase) {
         playback.play();
       }
@@ -256,6 +305,24 @@ export function createApp(
     window.__screenHistory = (): readonly string[] => machine.history();
     window.__engineState = () => loop.state();
     window.__renderState = () => renderRoot.state();
+    // 性能計測フック（Issue #18）。試作ツールと同じ契約名で、本編アプリでも scripts/harness が計測できる。
+    window.__fps = (): number => diagLastFps;
+    window.__avgFps = (): number =>
+      diagFpsSamples.length
+        ? diagFpsSamples.reduce((acc, value) => acc + value, 0) / diagFpsSamples.length
+        : 0;
+    window.__fpsSamples = (): readonly number[] => diagFpsSamples.slice();
+    window.__resetFps = (): void => {
+      diagFpsSamples.length = 0;
+      diagFpsWindowMs = 0;
+      diagFpsWindowFrames = 0;
+      diagLastFps = 0;
+      perfBudget.reset();
+    };
+    window.__drawCalls = (): number => renderRoot.state().drawCalls;
+    window.__perfLevel = (): number => renderRoot.state().degradationLevel;
+    window.__perfLevelHistory = (): readonly { atMs: number; level: number }[] =>
+      diagPerfHistory.slice();
   }
 
   return {
@@ -274,6 +341,13 @@ export function createApp(
         delete window.__screenHistory;
         delete window.__engineState;
         delete window.__renderState;
+        delete window.__fps;
+        delete window.__avgFps;
+        delete window.__fpsSamples;
+        delete window.__resetFps;
+        delete window.__drawCalls;
+        delete window.__perfLevel;
+        delete window.__perfLevelHistory;
       }
     },
   };

@@ -1,6 +1,6 @@
 # 実装チェックポイント（2026-06-22・Issue #97）
 
-**状態: 描画性能ゲート（Issue #97）の実装を完了。ブランチ `worktree-issue-97-render-perf-gate`。型検査・全テスト（1143件）・開発ビルド・本番ビルド除外・実GPUでのゲートE2E実行まで確認済み。PR作成とマージはこの後。**
+**状態: 描画性能ゲート（Issue #97）の実装を完了。ブランチ `worktree-issue-97-render-perf-gate`、PR #176（base main、Closes #97）。型検査・全テスト（1143件）・開発ビルド・本番ビルド除外・実GPUでのゲートE2E実行・目視確認まで完了。マージはこの後。**
 **用途**: セッション喪失時の復帰点（実装フェーズ）。前提のハーネス基盤は [[implementation_checkpoint_2026-06-19_issue95]]、前例の空間品質ゲートは [[implementation_checkpoint_2026-06-22_issue100]]、自動劣化制御（床定数の出所）は [[implementation_checkpoint_2026-06-21_issue18]]、中心キャラクター常在は [[implementation_checkpoint_2026-06-21_issue92]]、開発基盤の現状は [[dev_infrastructure_notes]]。
 
 ## 位置づけ
@@ -27,9 +27,11 @@ M9「品質保証（ローカル継続的検査）」のクリティカルパス
 
 ## レビューと検証（事実）
 - 計画段階で Codex と通常subagent（Planエージェント）の二重チェックレビューを実施。両者の指摘（vite除外機構・フック公開順序・mount非同期・state()安全性・矛盾クエリ・段階値域・--warn-only常用・床値drift検出・標本刻みの踏襲元・参考行のVRM有無と対象ページ・契約コメント更新・理由列挙順）をすべて実ファイルで検証して反映した。
+- 実装後に未push実装の妥当性レビュー（Planエージェント）を実施。妥当な指摘1件「--duration に非数を渡すとガードなく NaN が page.waitForTimeout へ伝播する」を解消した。`resolveDurationMs` で有限かつ正の数のときだけ採り、不正値は警告して既定値（DEFAULT_SAMPLE_DURATION_MS=12000）へフォールバックする（縮退段階 level の検証と同水準に揃えた）。あわせて config.mjs の PROFILES[].query を本ゲートが使わない旨をコメント補足した。globals.d.ts 冒頭の総括コメントの古さは本タスク以前からの既存事項のため対象外とした。
 - 型検査（npm run typecheck、strict）合格。単体テスト（vitest）全1143件合格（新規6件含む）。開発ビルド合格で dist に performance.html を生成、本番ビルド（build:app）では performance.html を除外、index.html は生成を確認。
-- 実GPU（NVIDIA GeForce RTX 3050 / ANGLE Direct3D11）でゲートをE2E実行し、判定行60.2・60で成功・exit=0、モバイル相当参考行15.2・13は「参考（終了コードに影響しない）」で exit に算入されないことを確認した。
+- 実GPU（NVIDIA GeForce RTX 3050 / ANGLE Direct3D11）でゲートをE2E実行し、判定行60・60で成功・exit=0、モバイル相当参考行15・13は「参考（終了コードに影響しない）」で exit に算入されないこと、--duration に不正値を渡すと既定値へフォールバックすることを確認した。
+- 目視確認: 計測ページがVRMミクを実ロード（centerFigureStatus=loaded、光柱フォールバックでない）し、湖・反射・ブルームを含む情景を60fpsで描画すること、要因ノブ（miku=1満載は描画命令71・miku=0は23・reflectMiku=0は45・bloom=0は58）が見た目と描画命令数の両方で期待どおり差を生むこと、miku=0時に反射含有指定が無視される表示を確認した。
 
 ## 次の一手
-- PR を push（base main、Closes #97）。
+- PR #176（base main、Closes #97）をマージ。
 - 閾値（目標60・床55）の最終確定は Issue #104。モバイル実機の正式判定は Issue #85。VRMの造形や灯しの本実装を載せた後は閾値の再較正が要る。

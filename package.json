@@ -34,7 +34,8 @@
     "smoke:audio": "node scripts/audio-smoke.mjs",
     "quality": "node scripts/quality-harness.mjs --mode=local",
     "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud",
-    "quality:spatial": "node scripts/spatial-quality.mjs"
+    "quality:spatial": "node scripts/spatial-quality.mjs",
+    "quality:fps": "node scripts/performance-quality.mjs"
   },
   "dependencies": {
     "@pixiv/three-vrm": "3.5.4",

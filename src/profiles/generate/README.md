@@ -1,7 +1,7 @@
-# profiles/generate — 曲プロファイル生成の純粋関数群（Issue #41・#37・#36・#44・#38）
+# profiles/generate — 曲プロファイル生成の純粋関数群（Issue #41・#37・#36・#44・#38・#43）
 
 曲解析データ（songmap 由来の素の配列や解決済みの和音区間）から、曲プロファイルの各派生フィールドを決定論的に生成する純粋関数群を置く。
-現在は見せ場マップ生成（Issue #41、`showcases` フィールド）、無和音区間の解決（Issue #37）、JUST音程7スロット生成（Issue #36、`slots` フィールド）、タップ総数上限算出（Issue #44、`tapBudget` フィールド）、オンセット選択・ノーツ生成（Issue #38、`notes` フィールドの第1段）を収める。
+現在は見せ場マップ生成（Issue #41、`showcases` フィールド）、無和音区間の解決（Issue #37）、JUST音程7スロット生成（Issue #36、`slots` フィールド）、タップ総数上限算出（Issue #44、`tapBudget` フィールド）、オンセット選択・ノーツ生成（Issue #38、`notes` フィールドの第1段）、譜面密度設計（Issue #43、`density.ts`。密度プランは中間データで保存しない）を収める。
 いずれも曲プロファイルJSONへの書き込みは行わない（それは #45・#46 の責務）。
 
 ## 見せ場マップ自動生成（Issue #41）
@@ -55,6 +55,23 @@
 - 「協和」は本作のゲーム上の定義（和音構成音、または和音構成音と半音衝突しない安全な付加音であり、和音に収まること）であり、音響学の厳密な協和とは別である。
 - スロット数は既定7（範囲5〜9、`src/config/tuning.ts`）。安全付加音の区分は長調系=9度と6度、短調系=♭7度と11度で、重複と半音隣接（12を法とする循環距離）を避けて採用する。増三和音はスロット数9では候補不足の例外になる。
 
+## 譜面密度設計（Issue #43、`density.ts`）
+
+- **責務**: 楽曲解析データ（拍・サビ区間・歌詞文字の開始時刻・見せ場・クライマックス代表時刻）から、曲全体を時間方向に切れ目なく覆う密度プランを決定論的に生成する。密度プランは中間データで曲プロファイルには保存しない（スキーマに密度フィールドは無い）。下流の Issue #38（オンセット間引き）と Issue #44（タップ総数上限）が消費する。設計根拠は `docs/research/04-ux-and-chart-design.md` 第4節と `docs/research/07-feasibility-and-parameters.md` 第2.1節・第2.6節。
+- **区間モデル**: サビ＝1拍1回、非サビ基本＝2拍1回、休符＝置かない、溜め＝見せ場区間の直前1小節の非サビ助走。分類の優先順位はサビ＞休符＞溜め＞基本。物語弧の表現はこの密度の対比と休符・溜めで充足する。
+- **境界と計数の分離**: 区間境界は音楽地図の時刻（サビ区間の開始・終端など）を正とし、拍がどの区間に属するかは拍の開始時刻で許容差なしの厳密な右半開比較で判定する。これにより各サビ64拍・骨格434が保たれる（第2サビ開始の生値は88800.20000000001で、直前拍88800.2は非サビになる）。
+- **計数の2系統**: 骨格ノーツ数は分類別の合計式（サビ密度・基本密度のみ）で数え、Issue #44 の `tapBudget.fullPossible` の入力になる。実効目標ノーツ数は分類済み拍列を時間順に歩く整数累積（サビ4・基本2・溜め1・休符0、4到達で1ノーツ、端数を持ち越す）で数え、区間別割当も同時に得る。TAKEOVERは骨格434・実効387（休符84拍・溜め20拍の削減）。
+- **量子化**: 最小間隔は、クライマックス見せ場の窓とサビの重なる区間で86ミリ秒（16分音符＝60000÷175÷4）、その他は171ミリ秒（8分音符）。同一スロットの連打の最小間隔は171ミリ秒。
+- **依存の向き**: `tools`・TextAlive を import しない。`../schema/profileSchema`（`Showcase`・`LyricDensityWindow` 型）と `./types`（`ChorusSegment`）だけを取り込む。
+- **担当Issue**: #43。後続の #38（ノーツ生成）・#44（タップ上限）・#45（生成スクリプト）が本関数を再利用する。
+- 暫定値（密度・休符閾値・溜め長と密度・核半幅。`DEFAULT_DENSITY_OPTIONS`）を変えると区間別割当 `byRegion` の整数値が変わり、テストの期待値が追従する。
+
+### 公開関数（`density.ts`）
+
+- `generateDensityPlan(input, options?) => DensityPlan` — 区間列・分類済み拍列・歌詞密度・選択強調信号を持つ密度プランを返す。
+- `countTargetNotes(plan) => NoteCountSummary` — 骨格・実効・分類別・区間別の目標ノーツ数を返す。引数は密度プランだけに限り、不整合な組を渡せないようにする。
+- `lyricDensityWindows(onsetsMs, durationMs, windowMs) => LyricDensityWindow[]` — 窓ごとの文字毎秒。戻り型は既存スキーマの `LyricDensityWindow` の配列（`SongProfile.lyricDensity.windows` と同形）で、下流 #46 が `lyricDensity` フィールドの生成へ直接再利用できる。休符判定に使う全窓の中央値はこの戻り値に含めず、`generateDensityPlan` が窓の `charsPerSecond` から計算して密度プランの `lyricDensity` へ入れる（中央値は曲プロファイルの保存項目でないため、再利用する窓配列と分ける）。
+
 ## オンセット選択・ノーツ生成（Issue #38、`onsetNotes.ts`）
 
 - **責務**: 拍格子（`beats`）とサビ区間（`chorusSegments`）から、サビは毎拍・サビ以外は2拍に1回の頻度でノーツを選び、間引いて中間ノーツの配列を返す。`docs/research/04-ux-and-chart-design.md` §4 のノーツ生成の第1段にあたる。出力は最終 `SongProfile.notes` の第1段で、`slotIndex`・`pattern`（#39）と `trajectoryPosition`（#40）は後段が付与するため中間型 `OnsetNote` には持たせない。
@@ -85,4 +102,4 @@ npm run typecheck
 npm test
 ```
 
-`showcases.takeover.test.ts`・`chordToneSlots.takeover.test.ts`・`tapBudget.takeover.test.ts`・`onsetNotes.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を素読みして各Issueの達成基準を実データで表明する（`src/tools/` を import しない）。各機能の単体テストは同居の `*.test.ts`。
+`showcases.takeover.test.ts`・`chordToneSlots.takeover.test.ts`・`tapBudget.takeover.test.ts`・`onsetNotes.takeover.test.ts`・`density.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を素読みして各Issueの達成基準を実データで表明する（`src/tools/` を import しない）。各機能の単体テストは同居の `*.test.ts`。

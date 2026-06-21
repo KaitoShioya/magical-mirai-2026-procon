@@ -115,3 +115,31 @@ export type {
   ReadabilityBacking,
   ResolvedReadabilityStyle,
 } from "./types";
+// 演出割付規則（#132）。#29 の表示粒度プランを既定の演出群へ写像する曲非依存の純粋ロジック。
+// 後続の曲固有譜面（#33）・本編結線（#59）が割付プランの型と関数を取り込む。EFFECT_ID は
+// #24〜#32 の各実演出が識別名に使う命名契約のため値として輸出する。
+export {
+  buildAssignmentPlan,
+  assignmentAt,
+  activeAssignmentsAt,
+  resolveSegmentAssignments,
+  defaultRulesFor,
+  signalAvailabilityFrom,
+  findAssignmentPlanIssues,
+  EFFECT_ID,
+  DEFAULT_OVERLAY_RULES,
+  EFFECT_PRIORITY_SHORT_DENSE_RUSH_ADJUST,
+  EFFECT_PRIORITY_BOUNDARY_BLACKOUT_ADJUST,
+} from "./effectAssignment";
+export type {
+  EffectGrammar,
+  SignalAvailability,
+  DefaultEffectRule,
+  EffectAssignmentStatus,
+  EffectAssignment,
+  SegmentAssignment,
+  AssignmentPlan,
+  GranularityOverrides,
+  AssignmentPlanInput,
+  AssignmentPlanIssue,
+} from "./effectAssignment";

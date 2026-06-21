@@ -15,18 +15,24 @@ import { phraseAt } from "../../textalive/lyricsTimeline";
 import type { ReadingDisplayUnit, TypographyDisplayRegion, TypographyChart } from "../../types/typography";
 
 // 1文字の占有幅を想定表示寸法の何倍とみなすか（採用理由を先に述べる）。
-// 読ませる役のフレーズは文字エンジンが各文字を一定の文字送り量で配置する（engine.ts の spawnReadablePhrase が
-// 各文字を「基準位置 + 添字 × 字間」へ置き、字間は駆動部が想定表示寸法に等しいワールド文字送り量を渡す）。
-// したがって収まり判定も、文字ごとの字形幅ではなく、1文字を一定送り量（想定表示寸法と同じ）とみなして見積もる。
-// 文字ごとの字形幅で見積もると実配置と食い違い、半角主体のフレーズで実幅が見積もりを上回ってはみ出す。
+// 読ませる役は駆動部が行全体を1つのテキストとして文字エンジンへ渡し（conductor.ts の spawnGlyph に行の文字列を渡す）、
+// 文字エンジンが内包する troika が各文字を字形ごとの送り幅で組む。この送り幅は、課題曲の歌詞に現れる文字種では
+// フォント寸法（1文字＝想定表示寸法）を超えない。全角の仮名・漢字の送り幅はフォント寸法とほぼ等しく、半角の英字・
+// 数字・記号の送り幅はフォント寸法のおよそ半分である。したがって、1文字を一律にフォント寸法ぶん（係数1.0）とみなすと、
+// 推定幅は実際に組まれる幅以上になる。推定を実幅以上の保守値にすると収まり判定が安全側に倒れ、領域からはみ出さない。
+// troika の実際の送り幅は文字配置の非同期確定の後でしか得られないため、同期的に計算できる一律の上限近似を使う。
+// 半角主体の行では実幅より過大に見積もり分割が増えるが、はみ出すよりも安全であり、過大評価の精緻化は Issue #59 で行う。
 export const READING_CHAR_ADVANCE_FACTOR = 1.0;
 
 // 表示領域の縁に文字を接しさせない安全余白（採用理由を先に述べる）。字送り量はフォント寸法に等しい近似であり
 // 末尾文字の字形が送り量をわずかに超えうるため、表示領域幅の5パーセントを縁の余白として確保し誤差を吸収する。
 export const READING_FIT_SAFETY_MARGIN = 0.05;
 
-// 被覆検証の走査刻み（採用理由を先に述べる）。毎秒60フレームを想定し1フレームは 1000 ÷ 60 ミリ秒である。
-// 実フレーム間隔と同じ刻みで走査すれば、実行時に被覆が途切れる時刻を取りこぼさず検出できる。
+// 標本式の被覆検査（findReadingCoverageGaps）の走査刻み（採用理由を先に述べる）。毎秒60フレームを想定し
+// 1フレームは 1000 ÷ 60 ミリ秒である。実フレーム間隔と同じ刻みで、駆動部が実行時に使う問い合わせの組み合わせ
+// （phraseAt で発声中フレーズを引き readingSpanAt で区間を引く）を再現して走査する。
+// この刻みより短いフレーズや、この刻みより狭い被覆の欠落は標本の間に落ちて取りこぼしうる。被覆が成り立つことの
+// 厳密な証明は、標本に依らない区間ベースの検証 findReadingCoverageDefects で行う。本定数は実行時経路の標本検査専用である。
 export const READING_COVERAGE_SAMPLE_STEP_MS = 1000 / 60;
 
 /** 読ませる役で表示する1区間。表示時刻範囲は半開区間（displayStartMs 以上 displayEndMs 未満）。 */
@@ -373,8 +379,17 @@ export function buildReadingSpansByPhrase(
 }
 
 /**
- * 発声中のフレーズが読ませる役で切れ目なく被覆されているかを走査し、被覆が無い時刻の一覧を返す（空＝被覆）。
- * 各時刻でフレーズが発声中（phraseAt が非null）なら、そのフレーズの区間にその時刻を含むものが要る。
+ * 標本式の被覆検査。再生位置を一定刻みで走査し、駆動部が実行時に使う問い合わせの組み合わせ
+ * （phraseAt で発声中フレーズを引き、そのフレーズの区間に対し readingSpanAt で区間を引く）が、発声中の各時刻で
+ * 読ませる役の区間を返すかを確かめ、返さない時刻の一覧を返す（空＝被覆）。実行時の経路をそのまま再現するため、
+ * 駆動部の結線の取りこぼしを検出する役に立つ。標本に依る検査のため、刻みより短いフレーズや狭い欠落は取りこぼしうる。
+ * 被覆の厳密な証明は findReadingCoverageDefects を使う。
+ *
+ * 発声中の窓を半開区間 [フレーズ開始, フレーズ終了) とする理由を先に述べる。読ませる役の区間はこの半開区間を
+ * 構成上分割する（buildReadingSpansForPhrase が先頭をフレーズ開始、末尾をフレーズ終了として境界を連続させる）。
+ * 終了時刻ちょうどは発声が止まる時刻であり、そこで読ませる役を出さないのは正しい。phraseAt は終了時刻を含む
+ * 閉区間で判定するため終了時刻ちょうどでフレーズを返すが、その瞬間は被覆を要求しない（t < フレーズ終了 のときだけ要求する）。
+ * これにより終了時刻ちょうどでの偽の欠落を生まない。
  */
 export function findReadingCoverageGaps(
   timeline: LyricsTimeline,
@@ -385,7 +400,8 @@ export function findReadingCoverageGaps(
   const gaps: number[] = [];
   for (let t = 0; t < songEndMs; t += sampleStepMs) {
     const phrase = phraseAt(timeline, t);
-    if (phrase === null) {
+    if (phrase === null || t >= phrase.endTimeMs) {
+      // 発声中のフレーズが無い、または発声中の窓の外（終了時刻ちょうど）。被覆を要求しない。
       continue;
     }
     const spans = spansByPhrase.get(phrase.phraseIndex);
@@ -394,4 +410,59 @@ export function findReadingCoverageGaps(
     }
   }
   return gaps;
+}
+
+/** 区間ベースの被覆検証が返す不備の1件。 */
+export interface ReadingCoverageDefect {
+  /** 不備のあるフレーズの番号。 */
+  readonly phraseIndex: number;
+  /** 不備の内容。 */
+  readonly reason: string;
+  /** 不備が現れる時刻（ミリ秒）。被覆の欠落が始まる時刻、または境界が連続しない時刻。 */
+  readonly atTimeMs: number;
+}
+
+/**
+ * 区間ベースの被覆検証。標本に依らず、各フレーズの読ませる役の区間が発声中の窓 [フレーズ開始, フレーズ終了) を
+ * 切れ目なく重なりなく分割することを厳密に確かめ、満たさないフレーズの不備一覧を返す（空＝被覆が証明された）。
+ * 標本式の findReadingCoverageGaps と違い、刻みより短いフレーズや刻みより狭い欠落も取りこぼさない。
+ *
+ * 検証する条件と、それで半開区間の被覆が証明される理由を先に述べる。区間は表示時刻の半開区間
+ * [displayStartMs, displayEndMs) を持つ。あるフレーズの区間列について次の3条件が成り立てば、区間の和集合は
+ * ちょうど [フレーズ開始, フレーズ終了) に等しく、隙間も重なりも無い。条件1: 先頭区間の開始がフレーズ開始に等しい。
+ * 条件2: 隣り合う区間で後の区間の開始が前の区間の終了に等しい（小さければ重なり、大きければ隙間）。
+ * 条件3: 末尾区間の終了がフレーズ終了に等しい。
+ *
+ * 発声中の窓を半開区間とする理由、およびゼロ時間フレーズの扱いを先に述べる。終了時刻ちょうどは発声が止まる時刻で
+ * あり発声中に含めない。よって発声中の窓は半開区間 [フレーズ開始, フレーズ終了) であり、終了時刻が開始時刻以下の
+ * フレーズ（ゼロ時間フレーズを含む）は発声中の窓が空集合で、読ませる役を要求しない（不備としない）。
+ */
+export function findReadingCoverageDefects(
+  timeline: LyricsTimeline,
+  spansByPhrase: ReadingSpansByPhrase
+): ReadingCoverageDefect[] {
+  const defects: ReadingCoverageDefect[] = [];
+  for (const phrase of timeline.phrases) {
+    if (phrase.endTimeMs <= phrase.startTimeMs) {
+      // 発声中の窓が空集合（ゼロ時間または不正な時刻）。読ませる役を要求しない。
+      continue;
+    }
+    const spans = spansByPhrase.get(phrase.phraseIndex);
+    if (spans === undefined || spans.length === 0) {
+      defects.push({ phraseIndex: phrase.phraseIndex, reason: "発声中のフレーズに読ませる役の区間が無い", atTimeMs: phrase.startTimeMs });
+      continue;
+    }
+    if (spans[0].displayStartMs !== phrase.startTimeMs) {
+      defects.push({ phraseIndex: phrase.phraseIndex, reason: "先頭区間の開始がフレーズ開始と一致しない", atTimeMs: phrase.startTimeMs });
+    }
+    for (let i = 1; i < spans.length; i++) {
+      if (spans[i].displayStartMs !== spans[i - 1].displayEndMs) {
+        defects.push({ phraseIndex: phrase.phraseIndex, reason: "隣り合う区間の境界が連続しない（隙間または重なり）", atTimeMs: spans[i - 1].displayEndMs });
+      }
+    }
+    if (spans[spans.length - 1].displayEndMs !== phrase.endTimeMs) {
+      defects.push({ phraseIndex: phrase.phraseIndex, reason: "末尾区間の終了がフレーズ終了と一致しない", atTimeMs: phrase.endTimeMs });
+    }
+  }
+  return defects;
 }

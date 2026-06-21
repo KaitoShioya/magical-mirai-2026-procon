@@ -126,6 +126,11 @@ function buildPlayback(play: PlayWiring): { engine: KineticTextEngine; conductor
   const registry = createEffectRegistry();
   registry.register(charSmash);
 
+  // 読ませる役の収まり判定（分割・縦抑制）は、ここでプレイ開始時の画面寸法を一度だけ読んで確定する。
+  // 再生中の画面リサイズや端末の向きの変更で画面寸法が変わると、確定済みの分割が新しい幅に対して過不足になりうる。
+  // 本Issue（#33）は固定寸法で被覆と分割を成立させるところまでを範囲とし、リサイズ・向き変更時の再レイアウトは
+  // 描画系の本編結線を担う Issue #59 の範囲とする。カメラ配置（createCameraPlacement）は画面の縦寸法を毎フレーム読むため
+  // 配置自体は寸法変化に追従するが、分割の確定は追従しない点を明示する。
   const content = prepareConductorContent({
     source,
     registry,

@@ -8,9 +8,12 @@ import {
   buildReadingSpansForPhrase,
   buildReadingSpansByPhrase,
   findReadingCoverageGaps,
+  findReadingCoverageDefects,
   clampReadingPixelHeight,
   createPlacementResolver,
   type ReadingPlacementResolved,
+  type ReadingSpan,
+  type ReadingSpansByPhrase,
 } from "./readingLayout";
 import type { TypographyChart } from "../../types/typography";
 import { buildLyricsTimeline } from "../../textalive/lyricsTimeline";
@@ -141,6 +144,105 @@ describe("findReadingCoverageGaps 被覆判定", () => {
       const inPhrase1 = t >= 1000 && t < 1500;
       expect(inPhrase0 || inPhrase1).toBe(true);
     }
+  });
+});
+
+describe("findReadingCoverageGaps 終了時刻ちょうどの偽検出をしない", () => {
+  const region = { centerXRatio: 0.5, centerYRatio: 0.7, widthRatio: 0.8, heightRatio: 0.2 };
+  // フレーズ0（0〜200）、無音（200〜1000）、フレーズ1（1000〜1500）。
+  const timeline = makeTimeline([
+    makePhraseSource("あい", 0, 100),
+    makePhraseSource("うえお", 1000, 100),
+  ]);
+
+  it("無音が続くフレーズ終了時刻ちょうどを走査しても欠落としない（半開区間の窓）", () => {
+    const spans = buildReadingSpansByPhrase(
+      timeline,
+      (): ReadingPlacementResolved => ({ unit: "phrase", targetPixelHeight: 20, region }),
+      { viewportPixelWidth: 1000, defaultTargetPixelHeight: 20, defaultRegion: region }
+    );
+    // 刻み100は終了時刻200ちょうどを標本に含む。フレーズ0の終了時刻200は発声中の窓 [0,200) の外であり、
+    // 後に無音が続くため、その瞬間に読ませる役を要求しない。
+    const gaps = findReadingCoverageGaps(timeline, spans, 1500, 100);
+    expect(gaps).toEqual([]);
+  });
+});
+
+describe("findReadingCoverageDefects 区間ベースの被覆証明", () => {
+  const region = { centerXRatio: 0.5, centerYRatio: 0.7, widthRatio: 0.8, heightRatio: 0.2 };
+
+  it("正しく分割された区間は不備が無い", () => {
+    const timeline = makeTimeline([
+      makePhraseSource("あい", 0, 100),
+      makePhraseSource("うえおかき", 1000, 100),
+    ]);
+    const spans = buildReadingSpansByPhrase(
+      timeline,
+      (): ReadingPlacementResolved => ({ unit: "phrase", targetPixelHeight: 20, region }),
+      { viewportPixelWidth: 1000, defaultTargetPixelHeight: 20, defaultRegion: region }
+    );
+    expect(findReadingCoverageDefects(timeline, spans)).toEqual([]);
+  });
+
+  it("標本より狭い被覆の欠落を検出する（標本式は取りこぼす）", () => {
+    // フレーズ0（0〜1000）に対し、[503,508) の5ミリ秒の隙間を持つ区間列を手で与える。
+    // 標本刻み 1000÷60 ミリ秒の標本は 500.0 と 516.67… であり、[503,508) に標本が落ちないため標本式は取りこぼす。
+    const timeline = makeTimeline([makePhraseSource("ああああああああああ", 0, 100)]);
+    const phraseIndex = timeline.phrases[0].phraseIndex;
+    const brokenSpans: ReadingSpan[] = [
+      { phraseIndex, text: "ああ", displayStartMs: 0, displayEndMs: 503, charRefs: [] },
+      { phraseIndex, text: "ああ", displayStartMs: 508, displayEndMs: 1000, charRefs: [] },
+    ];
+    const spansByPhrase: ReadingSpansByPhrase = new Map([[phraseIndex, brokenSpans]]);
+
+    const defects = findReadingCoverageDefects(timeline, spansByPhrase);
+    expect(defects.length).toBeGreaterThan(0);
+    expect(defects[0].atTimeMs).toBe(503);
+    // 同じ欠落を標本式は取りこぼす（区間ベース検証の優位を示す）。
+    expect(findReadingCoverageGaps(timeline, spansByPhrase, 1000)).toEqual([]);
+  });
+
+  it("区間の重なりを検出する", () => {
+    const timeline = makeTimeline([makePhraseSource("ああああ", 0, 100)]);
+    const phraseIndex = timeline.phrases[0].phraseIndex;
+    const overlapSpans: ReadingSpan[] = [
+      { phraseIndex, text: "ああ", displayStartMs: 0, displayEndMs: 250, charRefs: [] },
+      { phraseIndex, text: "ああ", displayStartMs: 200, displayEndMs: 400, charRefs: [] },
+    ];
+    const spansByPhrase: ReadingSpansByPhrase = new Map([[phraseIndex, overlapSpans]]);
+    const defects = findReadingCoverageDefects(timeline, spansByPhrase);
+    expect(defects.length).toBeGreaterThan(0);
+  });
+
+  it("発声中のフレーズに区間が無いとき不備とする", () => {
+    const timeline = makeTimeline([makePhraseSource("あい", 0, 100)]);
+    const defects = findReadingCoverageDefects(timeline, new Map());
+    expect(defects).toHaveLength(1);
+    expect(defects[0].reason).toContain("区間が無い");
+  });
+
+  it("ゼロ時間フレーズは読ませる役を要求せず不備としない", () => {
+    // 開始時刻と終了時刻が等しいフレーズ（発声中の窓が空集合）。
+    const timeline = makeTimeline([makePhraseSource("あ", 1000, 0)]);
+    expect(timeline.phrases[0].startTimeMs).toBe(timeline.phrases[0].endTimeMs);
+    const spans = buildReadingSpansByPhrase(
+      timeline,
+      (): ReadingPlacementResolved => ({ unit: "phrase", targetPixelHeight: 20, region }),
+      { viewportPixelWidth: 1000, defaultTargetPixelHeight: 20, defaultRegion: region }
+    );
+    expect(findReadingCoverageDefects(timeline, spans)).toEqual([]);
+  });
+
+  it("標本刻みより短いフレーズでも被覆を証明する", () => {
+    // 継続時間10ミリ秒（標本刻み 1000÷60≈16.67 ミリ秒より短い）のフレーズ。
+    const timeline = makeTimeline([makePhraseSource("あ", 100, 10)]);
+    expect(timeline.phrases[0].endTimeMs - timeline.phrases[0].startTimeMs).toBe(10);
+    const spans = buildReadingSpansByPhrase(
+      timeline,
+      (): ReadingPlacementResolved => ({ unit: "phrase", targetPixelHeight: 20, region }),
+      { viewportPixelWidth: 1000, defaultTargetPixelHeight: 20, defaultRegion: region }
+    );
+    expect(findReadingCoverageDefects(timeline, spans)).toEqual([]);
   });
 });
 

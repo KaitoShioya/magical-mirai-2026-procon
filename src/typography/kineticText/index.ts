@@ -187,6 +187,7 @@ export {
   createPlacementResolver,
   clampReadingPixelHeight,
   findReadingCoverageGaps,
+  findReadingCoverageDefects,
   READING_CHAR_ADVANCE_FACTOR,
   READING_FIT_SAFETY_MARGIN,
   READING_COVERAGE_SAMPLE_STEP_MS,
@@ -197,6 +198,7 @@ export type {
   ReadingLayoutOptions,
   ReadingPlacementResolved,
   ReadingHeightClamp,
+  ReadingCoverageDefect,
 } from "./readingLayout";
 // 駆動部（指揮者、#33）と内容組み立て、世界座標への配置。本Issueのプレイ結線と本編結線（#59）が使う。
 export { createConductor } from "./conductor";

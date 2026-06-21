@@ -108,7 +108,15 @@ export function createConductor(deps: ConductorDeps): Conductor {
     return active.some((assignment) => assignment.effectId === EFFECT_ID.smash);
   }
 
-  /** 表示されているべき読ませる役の区間へ合わせる（生成・解放）。 */
+  /** 表示されているべき読ませる役の区間へ合わせる（生成・解放）。
+   *
+   * 時刻境界の規約を先に述べる。読ませる役の被覆は、発声中の半開区間 [フレーズ開始, フレーズ終了) を基準とする。
+   * 読ませる役の区間はこの半開区間を構成上分割する（readingLayout.ts の buildReadingSpansForPhrase）。
+   * phraseAt は終了時刻を含む閉区間で判定するため、フレーズ終了時刻ちょうどでもフレーズを返すが、次の2つの場合があり
+   * いずれも正しい状態へ収束する。第一に、次のフレーズが同時刻に始まる隣接の場合、phraseAt は後のフレーズを返し、
+   * その区間が同時刻から始まるため切れ目なく繋がる。第二に、後に無音が続く場合、phraseAt は終了したフレーズを返すが
+   * readingSpanAt は半開区間のため null を返し、読ませる役を解放する。終了時刻ちょうどは発声が止まる時刻であり、
+   * そこから無音が始まるまで何も出さないのは正しい。よって閉区間の phraseAt ゲートは被覆を損なわない。 */
   function reconcileReading(gameTimeMs: number): void {
     const phrase = phraseAt(content.timeline, gameTimeMs);
     let desired: ReadingSpan | null = null;

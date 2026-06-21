@@ -6,7 +6,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { prepareConductorContent } from "./conductorContent";
-import { findReadingCoverageGaps } from "./readingLayout";
+import { findReadingCoverageGaps, findReadingCoverageDefects } from "./readingLayout";
 import { createEffectRegistry } from "./effectElement";
 import { charSmash } from "./effects/charSmash";
 import { createFakeMusicMapSource } from "../../textalive/musicMap";
@@ -81,12 +81,15 @@ describe("TAKEOVER 実データの読ませる役の被覆", () => {
   it("一般的な縦長スマートフォンの画面で全フレーズが切れ目なく被覆される", () => {
     // 390×844 を画素密度3とみなした 1170×2532。
     const content = buildContent(1170, 2532);
+    // 区間ベースの厳密な証明（実90フレーズの窓を標本に依らず分割することを確かめる）。
+    expect(findReadingCoverageDefects(content.timeline, content.spansByPhrase)).toEqual([]);
     const gaps = findReadingCoverageGaps(content.timeline, content.spansByPhrase, songmap.song.duration);
     expect(gaps).toEqual([]);
   });
 
   it("狭い画面で長フレーズの分割が多発しても被覆に隙間が無い", () => {
     const content = buildContent(320, 600);
+    expect(findReadingCoverageDefects(content.timeline, content.spansByPhrase)).toEqual([]);
     const gaps = findReadingCoverageGaps(content.timeline, content.spansByPhrase, songmap.song.duration);
     expect(gaps).toEqual([]);
   });

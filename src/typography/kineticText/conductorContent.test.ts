@@ -9,7 +9,7 @@ import { createFakeMusicMapSource } from "../../textalive/musicMap";
 import type { LyricSourceVideo } from "../../textalive/lyricsTimeline";
 import { createEffectRegistry } from "./effectElement";
 import { charSmash } from "./effects/charSmash";
-import { findReadingCoverageGaps, READING_COVERAGE_SAMPLE_STEP_MS } from "./readingLayout";
+import { findReadingCoverageGaps, findReadingCoverageDefects, READING_COVERAGE_SAMPLE_STEP_MS } from "./readingLayout";
 import type { GlyphHandle, ReadabilityOptions } from "./types";
 
 // ---- 擬似の歌詞・音楽地図 ----
@@ -124,12 +124,16 @@ const readability: ReadabilityOptions = {
 describe("prepareConductorContent 統合", () => {
   it("読ませる役の区間が発声中のフレーズを隙間なく被覆する（広い画面）", () => {
     const content = buildContent(1000);
+    // 区間ベースの厳密な証明（標本に依らず各フレーズの窓を分割することを確かめる）。
+    expect(findReadingCoverageDefects(content.timeline, content.spansByPhrase)).toEqual([]);
+    // 実行時経路の標本検査も合わせて確かめる。
     const gaps = findReadingCoverageGaps(content.timeline, content.spansByPhrase, songEndMs);
     expect(gaps).toEqual([]);
   });
 
   it("長フレーズが分割される狭い画面でも被覆に隙間が無い", () => {
     const content = buildContent(120);
+    expect(findReadingCoverageDefects(content.timeline, content.spansByPhrase)).toEqual([]);
     const gaps = findReadingCoverageGaps(content.timeline, content.spansByPhrase, songEndMs);
     expect(gaps).toEqual([]);
   });

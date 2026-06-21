@@ -64,7 +64,7 @@ BASE=http://localhost:5173 npm run quality
 
 - 新しいゲートは `scripts/harness` の必要なモジュールを直接読み込む（再エクスポートの入口は設けない。純粋関数の単体テストやクラウド経路が不要にブラウザ起動部品へ到達するのを防ぐため）。
 - 新しい計測フックは `src/tools/perf/main.ts` に足し、`src/types/globals.d.ts` と `src/tools/README.md` の契約記述を更新する。
-- 例外: 性能プロトタイプ（`prototype.html`）と別の情景を検査するゲートは、文字可読性ゲート（`readability.html`）と同じく専用診断ページに固有のフックを置く。空間品質ゲート（下記9節）は専用診断ページ `spatial.html` に `window.__spatialReady`／`__spatialState`／`__spatialCapture` を置き、契約は `src/types/globals.d.ts` と `src/rendering/README.md` に記す。
+- 例外: 性能プロトタイプ（`prototype.html`）と別の情景を検査するゲートは、文字可読性ゲート（`readability.html`）と同じく専用診断ページに固有のフックを置く。空間品質ゲート（下記9節）は専用診断ページ `spatial.html` に `window.__spatialReady`／`__spatialState`／`__spatialCapture` を置き、契約は `src/types/globals.d.ts` と `src/rendering/README.md` に記す。描画性能ゲート（下記10節）は専用診断ページ `performance.html` で本番描画基盤のVRM常在情景を描き、既存の計測フック `window.__fps`／`__avgFps`／`__fpsSamples`／`__resetFps`／`__drawCalls`／`__pixelRatio` を読み込み完了後に公開する。
 - ローカル実行の合否は描画系統名の実測で決まる。閾値判定（例: 平均と下位5パーセンタイルが毎秒60フレーム以上）は各ゲート側で持ち込む。
 
 ## 8. トラブルシュート
@@ -101,3 +101,38 @@ BASE=http://localhost:5173 npm run quality:spatial
 
 ### 閾値（初期値、Issue #104 で確定）
 閾値は `scripts/harness/spatial-metrics.mjs` の `DEFAULT_THRESHOLDS` にあり、各値の採用理由を併記する。反射の整合は「反射有効と無効の上位2区画の輝度増分の平均が8以上」（反射は離散的な発光点の小さな鏡像で明るく変化する区画が少数のため、上位の少数区画で代表させる）。明部区画は背景輝度（全区画の下位5パーセンタイル）に16を加えた値以上の区画。視差は固定発光点を2姿勢へ射影した画面移動量のばらつき（画面の幅に対する割合）と、射影位置が明部であることの画素裏付け。スケール変化は近景と遠景の明部区画数の比。検査対象の情景は暫定発光点と中心の光柱のみで、発光点本実装（Issue #10）・蝶（#61）・ミクの造形を載せた後は閾値の再較正が要る。
+
+## 10. 描画性能ゲート（Issue #97）
+
+初音ミクのVRMモデルを湖の中心に常時配置した描画（VRM常在）を含む計測ケースで、毎秒フレーム数の平均と下位5パーセンタイルの両方が60以上かを、専用計測ページ `performance.html` の連続描画から判定するゲート。仕様の正典は `docs/research/08-quality-assurance.md` の3節と6節、`docs/research/03-rendering-ui.md` の6節。本ゲート本体は手元の実機GPU環境で動かす（GPU が無い環境では毎秒フレーム数が実機性能を表さないため。同文書1節）。モバイル実機での正式な合格判定は実機テストマトリクス（Issue #85）が担い、本ゲートはローカルでゲート論理・閾値・計測ページを確立する。
+
+### 構成
+- 計測ページ `performance.html`（`src/rendering/diagnostics/performance/main.ts`）。本番描画基盤 `createRenderRoot` でミクのVRMと舞台土台を読み込み、読み込み完了後に計測フック（`window.__fps`／`__avgFps`／`__fpsSamples`／`__resetFps`／`__drawCalls`／`__pixelRatio`）を公開する。500ミリ秒ごとに1標本を採る。
+- 純粋関数 `scripts/harness/fps-metrics.mjs`（目標と最低フレーム下限の合否判定）。単体テスト `scripts/harness/fps-metrics.test.mjs`。
+- ゲート本体 `scripts/performance-quality.mjs`（`npm run quality:fps`）。
+
+### 実行手順
+別端末で開発サーバを起動してから実行する。
+
+```sh
+npm run dev   # 5173番で起動（別端末で起動したまま）
+```
+
+```sh
+# PowerShell
+$env:BASE='http://localhost:5173'; npm run quality:fps
+# Unix系シェル
+BASE=http://localhost:5173 npm run quality:fps
+```
+
+任意ノブ（起動引数）:
+- `--warn-only` — 逼迫時の退避手段。目標未達を警告にとどめ終了コード0で返す。ただし最低フレーム下限の割れは格下げ不可のため、このノブを与えても失敗にする（同文書6節）。**提出判定では使わない**。
+- `--allow-unknown-renderer` — 描画系統名が取得できない環境を調べるときだけ使う（ソフトウェア描画は許容しない）。
+- `--skip-reference` — 参考行を省き判定行だけを短時間で回す。提出直前の最終確認に使う。
+- `--duration=12000` — 計測時間（ミリ秒）。既定12000。突発的な記憶解放で下位5パーセンタイルが揺れるときに延長する。
+
+### 判定行と参考行
+判定行（終了コードに効く）はデスクトッププロファイル × VRM常在満載の1行。参考行（終了コードに影響しない）はモバイル相当のVRM常在満載・VRMなし基準・VRM反射除外・ブルーム除外で、`docs/research/03` の6節の律速切り分け（頂点負荷・反射の再描画・後処理の切り分け）に対応する。参考行はログに「参考（終了コードに影響しない）」と明示する。
+
+### 閾値（初期値、Issue #104 で確定）
+閾値は `scripts/harness/fps-metrics.mjs` の `DEFAULT_FPS_THRESHOLDS` にあり、各値の採用理由を併記する。目標は平均60と下位5パーセンタイル60（平均だけでは瞬間的なカクつきを見逃すため両方に課す。同文書3節・`docs/research/03` の6節）。最低フレーム下限は下位5パーセンタイル55（Issue #18 の自動劣化制御が縮退を発火する閾値 `PERF_DOWNSHIFT_FPS`＝`src/rendering/constants.ts` の55を流用し、操作が破綻する床として両者を連携させる。単一の最悪フレームは雑音が大きいため、仕様が合否に用いる頑健な下位5パーセンタイルに床を課す）。床値が `PERF_DOWNSHIFT_FPS` と一致することは単体テストが検査する。VRMの造形や灯しの本実装を載せた後は閾値の再較正が要る。

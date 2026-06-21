@@ -27,12 +27,14 @@ declare global {
     /** 初回表示遅延（暖め後の最初の出現要求から最初の描画完了まで、ミリ秒）を返す（kineticText 診断が公開する） */
     __initLatencyMs?: () => number;
     /** 直近フレームの描画命令の回数を返す（kineticText 診断 typography.html の変形シナリオと、本編アプリの
-     *  自動劣化制御 Issue #18 が診断モードで公開し、描画性能検証ツール prototype.html も公開する。
-     *  scripts/prototype-fps.mjs が取得する）。prototype.html では最初の描画完了前は空値（null）を返す
-     *  （取得不能と実測0を区別するため）。 */
+     *  自動劣化制御 Issue #18 が診断モードで公開し、描画性能検証ツール prototype.html と描画性能ゲート
+     *  Issue #97 の計測ページ performance.html も公開する。scripts/prototype-fps.mjs が取得する）。
+     *  prototype.html では最初の描画完了前は空値（null）を返す（取得不能と実測0を区別するため）。
+     *  performance.html は本番描画基盤の状態から読むため常に数値を返す。 */
     __drawCalls?: () => number | null;
-    /** 実際に適用された画素密度倍率を返す（描画性能検証ツール prototype.html が公開し、
-     *  scripts/prototype-fps.mjs が取得する）。 */
+    /** 実際に適用された画素密度倍率を返す（描画性能検証ツール prototype.html と描画性能ゲート Issue #97 の
+     *  計測ページ performance.html が公開し、scripts/prototype-fps.mjs と scripts/performance-quality.mjs が
+     *  取得する）。 */
     __pixelRatio?: () => number;
     /** 現在の自動劣化制御（Issue #18）の劣化段階を返す。本編アプリが診断モード（?smoke=1）で公開する。 */
     __perfLevel?: () => number;

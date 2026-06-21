@@ -1,6 +1,6 @@
 # 実装チェックポイント（2026-06-22・Issue #39）
 
-**状態: Issue #39（譜面パターン適用）の実装を完了。ブランチ `worktree-issue-39-note-patterns` で実装・テスト通過済み。PR作成段階。**
+**状態: Issue #39（譜面パターン適用）の実装を完了。ブランチ `worktree-issue-39-note-patterns` で PR #162 を作成・push 済み。マージ前。**
 **用途**: セッション喪失時の復帰点（実装フェーズ）。入力の中間ノーツはオンセット選択 [[implementation_checkpoint_2026-06-21_issue38]]、入力のスロット区間はJUST音程7スロット生成 [[implementation_checkpoint_2026-06-21_issue36]]、出力先の型は曲プロファイルスキーマ [[implementation_checkpoint_2026-06-19_issue34]]、無和音区間の解決は [[implementation_checkpoint_2026-06-21_issue37]]。
 
 ## 位置づけ

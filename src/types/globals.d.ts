@@ -121,6 +121,22 @@ declare global {
       triangles: number;
     };
     /**
+     * 検証用の蝶造形診断アクセサ。蝶診断ページ（butterfly.html）だけが取り付ける。
+     * 蝶のみのシーンを描いた直後の描画命令の回数（drawCalls）と三角形の数（triangles）、描画個体数
+     * （instanceCount）、個体あたり三角形数（trianglesPerInstance）、活動個体数（activeCount）、
+     * 代表個体の大きさ・輝度の標本を同一スナップショットで返す。scripts/rendering-butterfly-smoke.mjs が取得する。
+     * 共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __butterflyState?: () => {
+      drawCalls: number;
+      triangles: number;
+      instanceCount: number;
+      trianglesPerInstance: number;
+      activeCount: number;
+      sampleScales: readonly number[];
+      sampleBrightnesses: readonly number[];
+    };
+    /**
      * 検証用の層合成診断アクセサ。層合成の受け入れ診断ページ（layer-composite.html）だけが取り付ける。
      * 本番と同じ合成手順（3次元の合成→深度のみ消去→正射影で2次元層を最前面）で数フレーム描いた直後に、
      * 画面の画素を読み戻したスナップショットを返す。scripts/rendering-layer-smoke.mjs が取得する。

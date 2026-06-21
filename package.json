@@ -16,6 +16,7 @@
     "reflection:fps": "node scripts/reflection-fps.mjs",
     "smoke": "node scripts/screens-smoke.mjs",
     "smoke:glow": "node scripts/rendering-glow-smoke.mjs",
+    "smoke:butterfly": "node scripts/rendering-butterfly-smoke.mjs",
     "smoke:layer": "node scripts/rendering-layer-smoke.mjs",
     "smoke:input": "node scripts/input-smoke.mjs",
     "smoke:credits": "node scripts/credits-smoke.mjs",

@@ -23,6 +23,7 @@ import { LAKE_STAGE } from "../config/stage";
 import { createAttributionBadge, type AttributionBadge } from "./attribution";
 import { buildCreditRegistry } from "./credits/registry";
 import { createCreditsView, type CreditsView } from "./credits/creditsView";
+import { createOperationSoundEngine } from "../audio";
 
 /** 統括の外部契約。後始末のみを公開する。 */
 export interface App {
@@ -132,6 +133,12 @@ export function createApp(
 
   const machine = createScreenMachine(root, factories);
 
+  // 操作音エンジン（Issue #52）。AudioContextの起動だけを本Issueで結線し、発音のトリガ（タップ→playSlot）は
+  // 後続（#48・#59）が担う。通常モードと診断モードの両方で生成する。理由を先に述べる。音声エンジンは描画負荷を
+  // 持たないため画面遷移スモークの検証を妨げず、両モードで生成して warmup で unlock を呼ぶことで、画面遷移スモーク
+  //（?smoke=1 で warmup を含む全状態を走破する）が起動結線で未捕捉例外が出ないことを自動検査できる。
+  const operationSound = createOperationSoundEngine();
+
   // 画面拡大・減衰揺れ（Issue #76）。拍に同期して画面を一瞬拡大し減衰させる演出を防御的に結線する。
   // 現状の曲設定は拍時刻配列を持たないため拍は空で、演出は恒等変換のまま無作用である。拍時刻の供給は
   // 曲プロファイル生成（#46）が、実プレイ中の拍駆動・再生位置の飛びでの基準貼り直しは #59 が担う。
@@ -171,8 +178,10 @@ export function createApp(
     })),
     requestTransition: (to: ScreenKey): void => {
       // 「はじめる」の操作の最中（題名→ウォームアップ）に音声再生の許可を最善努力で確立する。
+      // 同じ確実な利用者操作の文脈で、操作音のオシレーター用AudioContextも起動する（戻り値は待たない）。
       if (to === "warmup") {
         playback.primeAudioPermission();
+        void operationSound.unlock();
       }
       machine.requestTransition(to);
       // ウォームアップ→プレイの遷移が成立した後に、先頭から再生を開始する。
@@ -338,6 +347,7 @@ export function createApp(
       overlays.dispose();
       attribution?.dispose();
       creditsView.dispose();
+      operationSound.dispose();
       playback.dispose();
       renderRoot.dispose();
       // 確定前に破棄された場合に備え、renderOverlays が付けた inert 属性を外す。

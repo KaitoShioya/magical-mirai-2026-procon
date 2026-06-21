@@ -48,7 +48,7 @@ jobs:
         # 診断ページは規約適合のため本番配信に含めてはならない（Issue #47、docs/decisions/architecture.md §7.2）。
         # 本番ビルド成果物に入力診断ページ input.html と層合成診断ページ layer-composite.html が無いことを、
         # 後続の検証用ビルドが全ページを出す前に確認する。
-        run: test ! -f dist/input.html && test ! -f dist/layer-composite.html && test ! -f dist/butterfly.html && test ! -f dist/spatial.html && test ! -f dist/center-figure.html
+        run: test ! -f dist/input.html && test ! -f dist/layer-composite.html && test ! -f dist/butterfly.html && test ! -f dist/spatial.html && test ! -f dist/center-figure.html && test ! -f dist/audio.html
       - name: Build verification bundle (all pages)
         # 既定ビルド。最終的な dist は本体に加え解析・性能・文字診断・雨診断・カメラ軌跡診断・発光点診断の
         # 各ページを含み、後続の preview の配信対象となる。この成果物を後続のスモークが配信するため、本番と同じトークンを注入する。
@@ -97,6 +97,10 @@ jobs:
         # 入力アーキテクチャ（Issue #47）の受け入れ基準の実ブラウザ検証。多指独立・スクロール無効化・
         # タッチとマウスとキーボードの入力同等性を、検証用ビルドの入力診断ページに対して確認する。
         run: BASE=http://127.0.0.1:4173 npm run smoke:input
+      - name: Run audio smoke test
+        # 操作音エンジン（Issue #52）の受け入れ検証。起動前は無音、信頼された入力で AudioContext が running へ到達、
+        # 16音同時で発音中16・非破綻、30音同時で上限24以下に保たれ減衰後に接続中が0へ収束することを確かめる。
+        run: BASE=http://127.0.0.1:4173 npm run smoke:audio
       - name: Run credits smoke test
         # クレジット表示（Issue #82）の受け入れ基準の実ブラウザ検証。規定文言が漏れなく表示され、
         # 開閉でき、覆いより上の重なり順に置かれることを、トークン不要の診断経路で確認する。

@@ -31,6 +31,7 @@
     "smoke:credits": "node scripts/credits-smoke.mjs",
     "smoke:typography": "node scripts/typography-deform-smoke.mjs",
     "smoke:screen-shake": "node scripts/screen-shake-smoke.mjs",
+    "smoke:audio": "node scripts/audio-smoke.mjs",
     "quality": "node scripts/quality-harness.mjs --mode=local",
     "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud",
     "quality:spatial": "node scripts/spatial-quality.mjs"

@@ -8,73 +8,37 @@ import { generateChordToneSlots, type ResolvedChordRegion } from "./chordToneSlo
 import { validateProfile } from "../schema/validateProfile";
 import { minimalValidProfile } from "../schema/fixtures/minimalValidProfile";
 import type {
-  Chord,
   ChordToneSlotRegion,
-  EmotionCurve,
-  LoudnessCurve,
   MusicalKey,
   NcRange,
   Note,
   SongProfile,
 } from "../schema/profileSchema";
+import {
+  toChords,
+  toLoudnessCurve,
+  toEmotionCurve,
+  toOnsetInput,
+  type RawSongmap,
+} from "./songmapAdapters";
 
 // 実データ（TAKEOVERの音楽地図ダンプ）を素のデータファイルとして読む。src/tools/ への import は一切しない
-// （profiles から tools への依存禁止に抵触しない）。songmap の生フィールドから曲プロファイルの型への変換は
-// テスト側で行う。これは #45 の生成スクリプトが行う変換と同じ位置である。
+// （profiles から tools への依存禁止に抵触しない）。songmap → 各入力への変換は共有アダプタ songmapAdapters を使い、
+// 生成本体（#45 の buildProfile）と同じ変換でテストする。
 const songmapPath = fileURLToPath(new URL("../../../docs/analysis/takeover.songmap.json", import.meta.url));
-const songmap = JSON.parse(readFileSync(songmapPath, "utf8")) as {
-  song: { duration: number };
-  beats: { index: number; startTime: number }[];
-  segments: { startTime: number; endTime: number; isChorus: boolean }[];
-  chords: { index: number; name: string; startTime: number; endTime: number; duration: number }[];
-  amplitudeStep: number;
-  maxVocalAmplitude: number;
-  amplitudeCurve: number[];
-  vaCurve: { t: number; v: number; a: number }[];
-  valenceArousal: { median: { valence: number; arousal: number } };
-};
+const songmap = JSON.parse(readFileSync(songmapPath, "utf8")) as RawSongmap;
 
 // TAKEOVERの調はファ短調（profileSchema.ts の MusicalKey 注釈）。主音の音名クラスはファ＝5。
 const TAKEOVER_KEY: MusicalKey = { tonicPitchClass: 5, mode: "minor" };
 
 const NO_CHORD_SYMBOL = "N";
 
-/** 声量曲線を songmap の生フィールドから組む。 */
-function toLoudnessCurve(): LoudnessCurve {
-  return { stepMs: songmap.amplitudeStep, maxAmplitude: songmap.maxVocalAmplitude, values: songmap.amplitudeCurve };
-}
-
-/** 感情曲線を songmap の生フィールドから組む。刻みは vaCurve の隣接点の時刻差（0・1000・2000）から1000ミリ秒とする。 */
-function toEmotionCurve(): EmotionCurve {
-  return {
-    stepMs: 1000,
-    points: songmap.vaCurve.map((p) => ({ tMs: p.t, valence: p.v, arousal: p.a })),
-    median: songmap.valenceArousal.median,
-  };
-}
-
-/** オンセット選択（#38）の入力を songmap から組む。 */
-function toOnsetInput(): OnsetInput {
-  return {
-    beats: songmap.beats.map((b) => ({ index: b.index, startTimeMs: b.startTime })),
-    chorusSegments: songmap.segments
-      .filter((s) => s.isChorus)
-      .map((s) => ({ startMs: s.startTime, endMs: s.endTime })),
-  };
-}
-
 /** スロット区間（#36の出力）を全210区間の曲全域被覆で組む。
  *  既存 chordToneSlots.takeover.test.ts は無和音6区間を除外した204区間で組むため、無和音区間を #37 で解決して
  *  210区間へ統合し resolveNoChordRegions を呼ぶ部分は本テストの新規手順である。共有するのはフィールド名の変換の作法だけである。 */
 function buildSlots(): ChordToneSlotRegion[] {
-  // 1. songmap の生の和音配列を Chord 型へ変換する。生は startTime/endTime/name、#37・#36 は startTimeMs/endTimeMs/chordName を読むため。
-  const chords: Chord[] = songmap.chords.map((c) => ({
-    index: c.index,
-    name: c.name,
-    startTimeMs: c.startTime,
-    endTimeMs: c.endTime,
-    durationMs: c.duration,
-  }));
+  // 1. songmap の和音配列を共有アダプタでスキーマの Chord 型へ変換する（無和音を含む全210区間）。
+  const chords = toChords(songmap);
 
   // 2. 無和音6区間から ncRanges を全て "scale" で作る。"scale" は調の主和音へ解決するため直前和音の有無に依らず
   //    成立し、先頭索引0（開始時刻0で直前和音が無い）でも失敗しない。#39 は音高の値を読まないため treatment 選択は出力に影響しない。
@@ -111,9 +75,9 @@ function regionIndexOf(timeMs: number, slots: ChordToneSlotRegion[]): number {
 }
 
 describe("譜面パターン適用 実データ検証（Issue #39 受け入れ基準）", () => {
-  const loudness = toLoudnessCurve();
-  const emotion = toEmotionCurve();
-  const onsets = generateOnsetNotes(toOnsetInput());
+  const loudness = toLoudnessCurve(songmap);
+  const emotion = toEmotionCurve(songmap);
+  const onsets = generateOnsetNotes(toOnsetInput(songmap));
   const slots = buildSlots();
   const patterned = applyNotePatterns({ notes: onsets, slots, loudness, emotion });
 

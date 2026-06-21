@@ -26,6 +26,12 @@ const BLOOM_RESOLUTION_SCALE = 0.5;
 const EXPECTED_BLOOM_STRENGTH = 1.2;
 const EXPECTED_BLOOM_RADIUS = 0.6;
 const EXPECTED_BLOOM_THRESHOLD = 0.5;
+// 描画命令の回数の上限（Issue #18 の指標「描画命令<100」）。採用理由を先に述べる。
+// docs/research/03-rendering-ui.md §3 が描画命令を100回未満に保つことを目安とするため、本編アプリの現行シーンが
+// この目安を満たすことを確かめる。ここで確認するのは本編アプリ経路で drawCalls 指標が実際に配線され、現行シーン
+// （ミクVRMは診断モードでは読み込まないため含まない）で100未満であることまでであり、VRM常在を含む実機計測は
+// Issue #97 の描画性能ゲートが担う。
+const DRAW_CALL_LIMIT = 100;
 
 const errors = [];
 let failed = false;
@@ -167,6 +173,30 @@ try {
       }
     }
 
+    // 拍同期ポストエフェクト（Issue #17）と色管理の明示設定。
+    // 後処理パスは本編で既定無効のため postEffectEnabled は偽だが、診断フィールドが真偽値で存在し配線されて
+    // いることを確かめる。色管理は後処理を線形空間で作用させる前提（最終段の色管理は OutputPass）を保つため、
+    // 出力sRGB・トーンマッピング無しを明示設定したことを確かめる。期待値の根拠を先に述べる。three.js では
+    // SRGBColorSpace は文字列 "srgb"、NoToneMapping は数値0であり、現在の既定と同値（見えは不変）をそのまま
+    // 明示設定したことの確認である。
+    if (!state.bloom || typeof state.bloom.postEffectEnabled !== "boolean") {
+      fail(`診断状態の bloom.postEffectEnabled が真偽値ではありません（${state.bloom && state.bloom.postEffectEnabled}）`);
+    } else if (state.bloom.postEffectEnabled !== false) {
+      fail(`本編で後処理が既定有効になっています（postEffectEnabled=${state.bloom.postEffectEnabled}、期待: false）`);
+    } else {
+      console.log("確認: 拍同期ポストエフェクトは本編で既定無効（配線あり）");
+    }
+    if (state.outputColorSpace !== "srgb") {
+      fail(`出力色空間が ${state.outputColorSpace} です（期待: srgb）`);
+    } else {
+      console.log("確認: 出力色空間が sRGB");
+    }
+    if (state.toneMapping !== 0) {
+      fail(`トーンマッピングが ${state.toneMapping} です（期待: 0 = トーンマッピング無し）`);
+    } else {
+      console.log("確認: トーンマッピング無し（最終段の色管理は OutputPass に集約）");
+    }
+
     // 2次元層（Issue #15）。本番の描画基盤が2次元層を組み込み、正射影カメラの視錐台が座標規約どおりで
     // あることを確認する。視錐台の上下は +1 と -1、左右は符号反転で絶対値がカメラ縦横比に一致する。
     if (!state.overlay) {
@@ -194,6 +224,21 @@ try {
       } else {
         console.log("確認: 2次元層の視錐台の左右が±縦横比");
       }
+    }
+
+    // 自動劣化制御（Issue #18）。本編アプリ経路で描画命令数の指標と劣化段階が配線され、現行シーンの描画命令数が
+    // 100未満であることを確認する。drawCalls は直前フレームの値で、本体は毎フレーム描くため正の値が出る。
+    if (typeof state.degradationLevel !== "number" || state.degradationLevel < 0) {
+      fail(`劣化段階が不正です（degradationLevel=${state.degradationLevel}）`);
+    } else {
+      console.log(`確認: 劣化段階が配線されている（degradationLevel=${state.degradationLevel}）`);
+    }
+    if (typeof state.drawCalls !== "number" || !(state.drawCalls > 0)) {
+      fail(`描画命令の回数が取得できません（drawCalls=${state.drawCalls}）`);
+    } else if (!(state.drawCalls < DRAW_CALL_LIMIT)) {
+      fail(`描画命令の回数が上限${DRAW_CALL_LIMIT}以上です（drawCalls=${state.drawCalls}）`);
+    } else {
+      console.log(`確認: 本編アプリの描画命令の回数が100未満（drawCalls=${state.drawCalls}）`);
     }
   }
 

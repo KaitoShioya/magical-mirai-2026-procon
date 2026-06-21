@@ -21,8 +21,14 @@ declare global {
     __frameDrops?: () => number;
     /** 初回表示遅延（暖め後の最初の出現要求から最初の描画完了まで、ミリ秒）を返す（kineticText 診断が公開する） */
     __initLatencyMs?: () => number;
-    /** 直近フレームの描画命令の回数を返す（kineticText 診断 typography.html の変形シナリオが公開する）。 */
+    /** 直近フレームの描画命令の回数を返す（kineticText 診断 typography.html の変形シナリオと、本編アプリの
+     *  自動劣化制御 Issue #18 が診断モードで公開する）。 */
     __drawCalls?: () => number;
+    /** 現在の自動劣化制御（Issue #18）の劣化段階を返す。本編アプリが診断モード（?smoke=1）で公開する。 */
+    __perfLevel?: () => number;
+    /** 劣化段階が変化した履歴（変化時の累積時刻ミリ秒と変化後の段階）を返す。本編アプリが診断モードで公開する。
+     *  段階変更の回数と頻度から「低下が滑らか（振動しない）」を検証するために用いる。 */
+    __perfLevelHistory?: () => readonly { atMs: number; level: number }[];
     /** 現在表示中の変形単位（変形テキスト）の数を返す（kineticText 診断 typography.html の変形シナリオが公開する）。 */
     __activeDeformUnits?: () => number;
     /**
@@ -71,6 +77,8 @@ declare global {
       pixelRatio: number;
       drawingBufferWidth: number;
       drawingBufferHeight: number;
+      degradationLevel: number;
+      drawCalls: number;
       clearColorHex: string;
       cameraAspect: number;
       cameraPosition: { x: number; y: number; z: number };
@@ -85,7 +93,11 @@ declare global {
         threshold: number;
         bloomInputWidth: number;
         bloomInputHeight: number;
+        resolutionScale: number;
         outputPassEnabled: boolean;
+        postEffectEnabled: boolean;
+        vignetteStrength: number;
+        chromaIntensity: number;
       } | null;
       centerFigureStatus: "fallback" | "loaded" | "error";
       centerFigureError: string | null;
@@ -113,6 +125,9 @@ declare global {
         maxZ: number;
         y: number;
       } | null;
+      screenTransform: { scale: number; offsetX: number; offsetY: number };
+      outputColorSpace: string;
+      toneMapping: number;
     };
     /**
      * 検証用の舞台土台診断アクセサ。舞台土台の受け入れ診断ページ（stage.html）だけが取り付ける。
@@ -142,6 +157,30 @@ declare global {
         y: number;
       } | null;
     };
+    /**
+     * 自動劣化制御（Issue #18）の受け入れ診断 perf-budget.html が公開する、各劣化段階の適用結果。
+     * scripts/rendering-perf-smoke.mjs が取得し、段階ごとに画素密度倍率・ブルーム解像度倍率・ブルーム有効・
+     * 最終出力パスの維持・描画命令数・段階適用直後のフレーム時間を確かめる。共有型が rendering に依存しないよう
+     * 素の構造で宣言する。
+     */
+    __perfApplied?: () => {
+      webglAvailable: boolean;
+      devicePixelRatio: number;
+      levels: {
+        requestedLevel: number;
+        degradationLevel: number;
+        pixelRatio: number;
+        bloomResolutionScale: number;
+        bloomEnabled: boolean;
+        outputPassEnabled: boolean;
+        drawCalls: number;
+        pixelRatioChanged: boolean;
+        bloomResolutionChanged: boolean;
+        bloomEnabledChanged: boolean;
+        effectiveChanged: boolean;
+        applyFrameMs: number;
+      }[];
+    };
     /** カメラ軌跡の受け入れ診断 camera-trajectory.html が公開する掃引結果。scripts/camera-trajectory-smoke.mjs が取得する。 */
     __cameraTrajectory?: () => {
       startTimeMs: number;
@@ -164,6 +203,22 @@ declare global {
     __glowState?: () => {
       drawCalls: number;
       triangles: number;
+    };
+    /**
+     * 検証用の蝶造形診断アクセサ。蝶診断ページ（butterfly.html）だけが取り付ける。
+     * 蝶のみのシーンを描いた直後の描画命令の回数（drawCalls）と三角形の数（triangles）、描画個体数
+     * （instanceCount）、個体あたり三角形数（trianglesPerInstance）、活動個体数（activeCount）、
+     * 代表個体の大きさ・輝度の標本を同一スナップショットで返す。scripts/rendering-butterfly-smoke.mjs が取得する。
+     * 共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __butterflyState?: () => {
+      drawCalls: number;
+      triangles: number;
+      instanceCount: number;
+      trianglesPerInstance: number;
+      activeCount: number;
+      sampleScales: readonly number[];
+      sampleBrightnesses: readonly number[];
     };
     /**
      * 検証用の層合成診断アクセサ。層合成の受け入れ診断ページ（layer-composite.html）だけが取り付ける。
@@ -203,6 +258,30 @@ declare global {
       keyboardColorX01: number;
       touchAction: string;
     };
+    /**
+     * 拍同期ポストエフェクト診断（posteffects.html）のステップ実行。指定したゲーム時刻まで拍同期スケジューラと
+     * 拍バースト包絡を進め、色収差バースト強度を注入して1フレーム描き、画素を読み戻して状態を更新する。
+     * scripts/rendering-posteffects-smoke.mjs が基準・ピーク・減衰の各時刻で呼ぶ。
+     */
+    __postEffectsStep?: (gameTimeMs: number) => void;
+    /** 拍同期ポストエフェクト診断を未発火・基準時刻0へ戻す（再実行用）。 */
+    __postEffectsReset?: () => void;
+    /**
+     * 拍同期ポストエフェクト診断の状態。明領域系統（減光・黒潰れ判定）と境界系統（色収差判定）を分けて返す。
+     * scripts/rendering-posteffects-smoke.mjs が取得する。共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __postEffectsState?: () => {
+      webglAvailable: boolean;
+      // 明領域系統（一様に明るい領域。減光と黒潰れの判定に使う）。
+      centerLuminance: number;
+      peripheryLuminance: number;
+      peripheryMinLuminance: number;
+      // 境界系統（白黒の鋭い境界近傍の複数点での色ずれの最大値）。現在のバースト強度に対応する。
+      boundaryMaxAbsRB: number;
+      // 現在の色収差バースト強度（0以上1以下）と周縁減光の基準強度。
+      chromaIntensity: number;
+      vignetteStrength: number;
+    };
     /** 可読性診断（readability.html）の計測が終わったら真を返す。scripts/readability-contrast.mjs が待つ。 */
     __readabilityReady?: () => boolean;
     /**
@@ -225,5 +304,21 @@ declare global {
         borderVsBackground: number;
       }[];
     };
+    /**
+     * 画面拡大・減衰揺れの受け入れ診断アクセサ（Issue #76）。診断ページ（screen-shake.html）だけが取り付ける。
+     * WebGL の可否、動きを減らす設定の現在値、直近に canvas へ当てた変換（倍率・横移動・縦移動）を返す。
+     * scripts/screen-shake-smoke.mjs が取得する。共有型が rendering・utils に依存しないよう素の構造で宣言する。
+     */
+    __screenShakeState?: () => {
+      webglAvailable: boolean;
+      reducedMotion: boolean;
+      transform: { scale: number; offsetX: number; offsetY: number };
+    };
+    /**
+     * 画面拡大・減衰揺れの決定的評価アクセサ（Issue #76）。診断ページ（screen-shake.html）だけが取り付ける。
+     * 小節頭の拡大量の拍を時刻0で1回登録した評価器に対し、経過ミリ秒を与えた変換を返す。
+     * scripts/screen-shake-smoke.mjs が減衰比と余白内拘束を時間非依存に検証するために取得する。
+     */
+    __screenShakeProbe?: (elapsedMs: number) => { scale: number; offsetX: number; offsetY: number };
   }
 }

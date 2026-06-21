@@ -122,3 +122,151 @@ describe("createCenterFigure の状態と後始末", () => {
     }).not.toThrow();
   });
 });
+
+// 識別子を共有配列へ push する疑似の読み込み済みVRM。update と dispose の呼び出し順を観測する。
+function makeLoggingLoadedVrm(
+  events: string[],
+  label: string
+): { loaded: LoadedVrm; object3d: Object3D } {
+  const object3d = new Group();
+  const loaded: LoadedVrm = {
+    vrm: {} as unknown as LoadedVrm["vrm"],
+    object3d,
+    update: () => {
+      events.push(`${label}:update`);
+    },
+    dispose: () => {
+      events.push(`${label}:dispose`);
+    },
+  };
+  return { loaded, object3d };
+}
+
+describe("createCenterFigure のモーション層（Issue #93）", () => {
+  it("update はモーション層を vrm.update の前に進める", () => {
+    const events: string[] = [];
+    const figure = createCenterFigure();
+    const { loaded } = makeLoggingLoadedVrm(events, "vrm");
+    figure.swapToVrm(loaded, CONFIG);
+    figure.setMotion(() => ({
+      update: () => events.push("motion:update"),
+      dispose: () => {},
+    }));
+    events.length = 0;
+    figure.update(0.016);
+    expect(events).toEqual(["motion:update", "vrm:update"]);
+  });
+
+  it("setMotion は直前のモーションを解放し、新しいモーションへ置き換える", () => {
+    const figure = createCenterFigure();
+    figure.swapToVrm(makeFakeLoadedVrm().loaded, CONFIG);
+    let motionADisposed = false;
+    let motionBUpdates = 0;
+    figure.setMotion(() => ({
+      update: () => {},
+      dispose: () => {
+        motionADisposed = true;
+      },
+    }));
+    figure.setMotion(() => ({
+      update: () => {
+        motionBUpdates += 1;
+      },
+      dispose: () => {},
+    }));
+    expect(motionADisposed).toBe(true);
+    figure.update(0.016);
+    expect(motionBUpdates).toBe(1);
+  });
+
+  it("setMotion の生成関数が例外を投げると、直前のモーションを保持して例外を伝える", () => {
+    const events: string[] = [];
+    const figure = createCenterFigure();
+    const { loaded } = makeLoggingLoadedVrm(events, "vrm");
+    figure.swapToVrm(loaded, CONFIG);
+    let motionAUpdates = 0;
+    let motionADisposed = false;
+    figure.setMotion(() => ({
+      update: () => {
+        motionAUpdates += 1;
+      },
+      dispose: () => {
+        motionADisposed = true;
+      },
+    }));
+    expect(() =>
+      figure.setMotion(() => {
+        throw new Error("生成失敗");
+      })
+    ).toThrow("生成失敗");
+    expect(motionADisposed).toBe(false);
+    figure.update(0.016);
+    expect(motionAUpdates).toBe(1);
+  });
+
+  it("VRM未読み込みのときの setMotion は生成関数を呼ばず、状態も update も安全", () => {
+    const figure = createCenterFigure();
+    let created = false;
+    figure.setMotion(() => {
+      created = true;
+      return { update: () => {}, dispose: () => {} };
+    });
+    expect(created).toBe(false);
+    expect(figure.status()).toBe("fallback");
+    expect(() => figure.update(0.016)).not.toThrow();
+  });
+
+  it("後始末済みのときの setMotion は生成関数を呼ばない", () => {
+    const figure = createCenterFigure();
+    figure.swapToVrm(makeFakeLoadedVrm().loaded, CONFIG);
+    figure.dispose();
+    let created = false;
+    figure.setMotion(() => {
+      created = true;
+      return { update: () => {}, dispose: () => {} };
+    });
+    expect(created).toBe(false);
+  });
+
+  it("swapToVrm の後、setMotion なしでも既定の固定ポーズで update が例外を投げない", () => {
+    const figure = createCenterFigure();
+    const fake = makeFakeLoadedVrm();
+    figure.swapToVrm(fake.loaded, CONFIG);
+    expect(() => figure.update(0.016)).not.toThrow();
+    expect(fake.updateCount()).toBe(1);
+  });
+
+  it("dispose はモーション → VRM の順で解放する", () => {
+    const events: string[] = [];
+    const figure = createCenterFigure();
+    const { loaded } = makeLoggingLoadedVrm(events, "vrm");
+    figure.swapToVrm(loaded, CONFIG);
+    figure.setMotion(() => ({
+      update: () => {},
+      dispose: () => events.push("motion:dispose"),
+    }));
+    figure.dispose();
+    expect(events).toEqual(["motion:dispose", "vrm:dispose"]);
+  });
+
+  it("再差し替えは旧VRM・旧モーションを解放し、二度目のVRMは解放せず子は二度目のVRMのみ", () => {
+    const figure = createCenterFigure();
+    const first = makeFakeLoadedVrm();
+    figure.swapToVrm(first.loaded, CONFIG);
+    let firstMotionDisposed = false;
+    figure.setMotion(() => ({
+      update: () => {},
+      dispose: () => {
+        firstMotionDisposed = true;
+      },
+    }));
+    const second = makeFakeLoadedVrm();
+    figure.swapToVrm(second.loaded, CONFIG);
+    expect(first.disposed()).toBe(true);
+    expect(firstMotionDisposed).toBe(true);
+    expect(second.disposed()).toBe(false);
+    expect(figure.object3d.children).toContain(second.object3d);
+    expect(figure.object3d.children).not.toContain(first.object3d);
+    expect(figure.object3d.children.some((c) => c instanceof Mesh)).toBe(false);
+  });
+});

@@ -16,6 +16,8 @@ import type { ScreenContext, ScreenFactory, ScreenKey } from "../screens";
 import { createFakePlayback, createTextAlivePlayback, type Playback } from "../textalive";
 import { createOverlays } from "./overlay";
 import { createRenderRoot } from "../rendering";
+import { createBeatScheduler } from "../utils/beatScheduler";
+import { createScreenShake, resolveBeatAmplitudes } from "../utils/screenShake";
 import { MIKU_CHARACTER } from "../config/character";
 import { createAttributionBadge, type AttributionBadge } from "./attribution";
 import { buildCreditRegistry } from "./credits/registry";
@@ -107,6 +109,15 @@ export function createApp(
 
   const machine = createScreenMachine(root, factories);
 
+  // 画面拡大・減衰揺れ（Issue #76）。拍に同期して画面を一瞬拡大し減衰させる演出を防御的に結線する。
+  // 現状の曲設定は拍時刻配列を持たないため拍は空で、演出は恒等変換のまま無作用である。拍時刻の供給は
+  // 曲プロファイル生成（#46）が、実プレイ中の拍駆動・再生位置の飛びでの基準貼り直しは #59 が担う。
+  const screenShakeBeats: { startTimeMs: number; position: number }[] = [];
+  const screenShakeAmplitudes = resolveBeatAmplitudes(screenShakeBeats);
+  const beatScheduler = createBeatScheduler(screenShakeBeats.map((b) => b.startTimeMs));
+  const screenShake = createScreenShake();
+  const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
   // プレイ進行中だけ、タブ離脱時の楽曲停止・再開と、楽曲終了・再生開始の観測を行う。
   let inPlayPhase = false;
   // 再生開始の成立を待つ累積時間と、「触れて再生」表示中かどうか。
@@ -121,6 +132,9 @@ export function createApp(
     tapToPlayShown = false;
     tapToPlayAcknowledged = false;
     overlays.hideTapToPlay();
+    // プレイ開始ごとに画面拡大・減衰揺れの状態を初期化する（再挑戦で前回の拍・余韻を持ち越さない）。
+    beatScheduler.reset();
+    screenShake.reset();
     playback.beginFromStart();
   }
 
@@ -198,6 +212,24 @@ export function createApp(
     onFrame: (realDeltaMs: number): void => {
       machine.update(realDeltaMs);
       tickPlay(realDeltaMs);
+      // 画面拡大・減衰揺れ（Issue #76）。プレイ進行中だけ拍へ反応させ、それ以外は恒等へ戻す。
+      // 拍の時刻源はゲームの時計 world.gameTimeMs（再生位置の平滑化値）で、advanceFrame が onFrame より
+      // 先にこれを更新するため当該フレームの最新値になる。画面寸法は canvas を載せた常在領域から毎フレーム読む。
+      if (inPlayPhase) {
+        const gameTimeMs = world.gameTimeMs;
+        beatScheduler.advance(gameTimeMs, (event): void => {
+          screenShake.trigger(event.timeMs, screenShakeAmplitudes[event.index], event.index);
+        });
+        const transform = screenShake.evaluate(
+          gameTimeMs,
+          options.stageRoot.clientWidth,
+          options.stageRoot.clientHeight,
+          reduceMotionQuery.matches
+        );
+        renderRoot.setScreenTransform(transform.scale, transform.offsetX, transform.offsetY);
+      } else {
+        renderRoot.setScreenTransform(1, 0, 0);
+      }
       // 中心オブジェクト（Issue #64）を毎フレーム進めてから描く。秒へ変換する理由を先に述べる。
       // three.js のVRM更新は経過時間を秒で受け取る仕様のため、1秒=1000ミリ秒の関係でミリ秒を1000で割る。
       renderRoot.update(realDeltaMs / 1000);

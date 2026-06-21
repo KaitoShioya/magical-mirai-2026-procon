@@ -180,5 +180,21 @@ declare global {
         borderVsBackground: number;
       }[];
     };
+    /**
+     * 画面拡大・減衰揺れの受け入れ診断アクセサ（Issue #76）。診断ページ（screen-shake.html）だけが取り付ける。
+     * WebGL の可否、動きを減らす設定の現在値、直近に canvas へ当てた変換（倍率・横移動・縦移動）を返す。
+     * scripts/screen-shake-smoke.mjs が取得する。共有型が rendering・utils に依存しないよう素の構造で宣言する。
+     */
+    __screenShakeState?: () => {
+      webglAvailable: boolean;
+      reducedMotion: boolean;
+      transform: { scale: number; offsetX: number; offsetY: number };
+    };
+    /**
+     * 画面拡大・減衰揺れの決定的評価アクセサ（Issue #76）。診断ページ（screen-shake.html）だけが取り付ける。
+     * 小節頭の拡大量の拍を時刻0で1回登録した評価器に対し、経過ミリ秒を与えた変換を返す。
+     * scripts/screen-shake-smoke.mjs が減衰比と余白内拘束を時間非依存に検証するために取得する。
+     */
+    __screenShakeProbe?: (elapsedMs: number) => { scale: number; offsetX: number; offsetY: number };
   }
 }

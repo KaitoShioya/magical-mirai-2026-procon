@@ -33,12 +33,17 @@ body {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /* 画面拡大・減衰揺れ（Issue #76）で canvas を拡大すると常在領域からはみ出すため切り取る。
+     body も overflow:hidden だが、常在領域の外へ描画が漏れないことを構造で保証する。 */
+  overflow: hidden;
 }
 
 /* three.js が生成する canvas。行内要素の余白を消し、背面領域いっぱいに表示する。入力は受けない。 */
 #stage canvas {
   display: block;
   pointer-events: none;
+  /* 画面拡大・減衰揺れ（Issue #76）の拡大の中心を画面中央へ固定する。 */
+  transform-origin: 50% 50%;
 }
 
 #app {

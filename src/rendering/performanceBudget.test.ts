@@ -37,28 +37,33 @@ describe("createPerfBudget", () => {
     expect(budget.state().level).toBe(1);
   });
 
-  it("低下が続くと画素密度→ブルーム→ブルーム無効へ1段ずつ進み最大段階で止まる", () => {
+  it("低下が続くと反射停止→画素密度→ブルーム解像度→ブルーム無効へ1段ずつ進み最大段階で止まる", () => {
     const budget = createPerfBudget();
     const seen: number[] = [];
+    // 下降は内部時刻2000・5000・8000・11000ミリ秒で起きる（窓2000の充填後、下降の滞留3000ごと）。
+    // 12000ミリ秒供給すると11000ミリ秒の下降まで含み、最大段階4へ達する。
     feed(budget, 50, 12000, (decision) => {
       seen.push(decision.level);
       budget.notifyApplied(true);
     });
-    // 1段ずつ進み、飛ばさず、最大段階3で止まる。
-    expect(seen).toEqual([1, 2, 3]);
-    expect(budget.state().level).toBe(3);
+    // 1段ずつ進み、飛ばさず、最大段階4で止まる。
+    expect(seen).toEqual([1, 2, 3, 4]);
+    expect(budget.state().level).toBe(4);
   });
 
   it("回復が続くと1段ずつ復帰し段階0で止まる", () => {
     const budget = createPerfBudget();
-    feed(budget, 50, 9000); // 段階3まで下げる
-    expect(budget.state().level).toBe(3);
+    feed(budget, 50, 12000); // 段階4まで下げる（最深段からの回復を検証するため）
+    expect(budget.state().level).toBe(4);
     const seen: number[] = [];
-    feed(budget, 60, 30000, (decision) => {
+    // 段階4からの復帰は4回の上昇を要する。上昇は内部時刻19000・27000・35000・43000ミリ秒で起きる
+    // （直前の下降が内部時刻11000、復帰の滞留8000ごと）。回復開始は内部時刻12000のため、43000ミリ秒へ
+    // 到達するには31000ミリ秒以上の供給が必要で、安全余裕を見て40000ミリ秒を供給する。
+    feed(budget, 60, 40000, (decision) => {
       seen.push(decision.level);
       budget.notifyApplied(true);
     });
-    expect(seen).toEqual([2, 1, 0]);
+    expect(seen).toEqual([3, 2, 1, 0]);
     expect(budget.state().level).toBe(0);
   });
 

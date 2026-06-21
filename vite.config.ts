@@ -24,7 +24,8 @@ export default defineConfig(({ mode }) => {
   // 軌跡システムの受け入れ診断、rendering.html は発光点（#10）の描画命令数の受け入れ診断、input.html は入力
   // アーキテクチャ（#47）の受け入れ診断、layer-composite.html は描画層合成（#15）の受け入れ診断、stage.html は
   // 舞台土台モデル（#105）の受け入れ診断（地形・水面・反射の成立）、butterfly.html は蝶造形（#61）の受け入れ診断、
-  // perf-budget.html は性能バジェット自動劣化制御（#18）の受け入れ診断、screen-shake.html は画面拡大・減衰揺れ（#76）の
+  // perf-budget.html は性能バジェット自動劣化制御（#18）の受け入れ診断、center-figure.html は中心キャラクター常在配置・
+  // 反射対象制御（#92）の受け入れ診断、screen-shake.html は画面拡大・減衰揺れ（#76）の
   // 受け入れ診断、posteffects.html は拍同期ポストエフェクト（#17）の受け入れ診断（周縁減光・色収差・性能計測）、
   // char-smash.html は1文字1拍スマッシュ（#23）の実描画プレビューの入口で、いずれも本番では配信しない。
   const input: Record<string, string> = deployAppOnly
@@ -43,6 +44,7 @@ export default defineConfig(({ mode }) => {
         stage: "stage.html",
         butterfly: "butterfly.html",
         perfBudget: "perf-budget.html",
+        centerFigure: "center-figure.html",
         screenShake: "screen-shake.html",
         postEffects: "posteffects.html",
         charSmash: "char-smash.html",

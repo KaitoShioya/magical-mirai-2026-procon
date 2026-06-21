@@ -1,14 +1,14 @@
 // 性能バジェットの自動劣化制御（Issue #18）の受け入れ診断ページ（perf-budget.html の入口）。
 // 2つのモードを持つ。本ページは本番ビルド（--mode app）では配信しない。
 //
-// 計測モード（クエリなし、既定）: 本番と同じ描画基盤（createRenderRoot）を作り、劣化段階0から3を順に適用して
-// 各段階で数フレーム描き、適用後の状態（画素密度倍率・ブルーム解像度倍率・ブルーム有効・最終出力パスの維持・
-// 描画命令数）と段階適用直後のフレーム時間を window.__perfApplied に公開する。scripts/rendering-perf-smoke.mjs
-// が読む。描画器が段階を実際に適用するかを実FPSに依存せず決定的に確かめる。
+// 計測モード（クエリなし、既定）: 本番と同じ描画基盤（createRenderRoot）を作り、劣化段階0から4を順に適用して
+// 各段階で数フレーム描き、適用後の状態（中心オブジェクトの反射への含有・画素密度倍率・ブルーム解像度倍率・
+// ブルーム有効・最終出力パスの維持・描画命令数）と段階適用直後のフレーム時間を window.__perfApplied に公開する。
+// scripts/rendering-perf-smoke.mjs が読む。描画器が段階を実際に適用するかを実FPSに依存せず決定的に確かめる。
 //
-// 閲覧モード（?view=1）: 目視確認用。湖のシーンを連続描画し、キーボードの 0・1・2・3 で劣化段階を切り替える。
-// 各段階の見え方（画素密度の精細さ、ブルームのにじみの強さ、ブルーム無効時の色味の保持）を比較できる。
-// 初期段階は ?level=N で指定できる（既定0）。計測用アクセサは公開しない。
+// 閲覧モード（?view=1）: 目視確認用。湖のシーンを連続描画し、キーボードの 0・1・2・3・4 で劣化段階を切り替える。
+// 各段階の見え方（ミクの湖面反射の有無、画素密度の精細さ、ブルームのにじみの強さ、ブルーム無効時の色味の保持）を
+// 比較できる。初期段階は ?level=N で指定できる（既定0）。計測用アクセサは公開しない。
 //
 // 実機での平均55以上・滑らかさの確認は本編アプリ（?smoke=1）に対する別計測が担い、正式な性能ゲートは
 // Issue #97 が担う。
@@ -24,7 +24,7 @@ function requireElement<T extends HTMLElement>(id: string): T {
   return element as T;
 }
 
-const MAX_LEVEL = 3;
+const MAX_LEVEL = 4;
 
 const params = new URLSearchParams(location.search);
 const viewMode = params.get("view") === "1";
@@ -45,13 +45,15 @@ function levelDescription(level: number): string {
   // 各段階の縮退内容を日本語で示す（目視確認の手掛かり）。
   switch (level) {
     case 0:
-      return "段階0 最高画質（画素密度上限2・ブルーム0.5）";
+      return "段階0 最高画質（ミク反射あり・画素密度上限2・ブルーム0.5）";
     case 1:
-      return "段階1 画素密度上限1.0（やや精細さが下がる）・ブルーム0.5";
+      return "段階1 ミク反射を停止（湖面の負荷を軽くする第一手・画素密度上限2・ブルーム0.5）";
     case 2:
-      return "段階2 画素密度上限1.0・ブルーム0.25（にじみ控えめ）";
+      return "段階2 画素密度上限1.0（やや精細さが下がる）・ブルーム0.5";
     case 3:
-      return "段階3 画素密度上限1.0・ブルーム無効（にじみ無し、色味は保持）";
+      return "段階3 画素密度上限1.0・ブルーム0.25（にじみ控えめ）";
+    case 4:
+      return "段階4 画素密度上限1.0・ブルーム無効（にじみ無し、色味は保持）";
     default:
       return `段階${level}`;
   }
@@ -66,7 +68,7 @@ if (viewMode) {
     const state = renderRoot.state();
     const bloom = state.bloom;
     hud.textContent =
-      `閲覧モード（キー 0・1・2・3 で段階切替、devicePixelRatio ${window.devicePixelRatio}）\n` +
+      `閲覧モード（キー 0・1・2・3・4 で段階切替、devicePixelRatio ${window.devicePixelRatio}）\n` +
       `${levelDescription(currentLevel)}\n` +
       `画素密度倍率=${state.pixelRatio} ` +
       `ブルーム=${bloom ? (bloom.enabled ? "有効" : "無効") : "なし"} ` +
@@ -108,11 +110,13 @@ if (viewMode) {
     pixelRatio: number;
     bloomResolutionScale: number;
     bloomEnabled: boolean;
+    reflectCenterFigure: boolean;
     outputPassEnabled: boolean;
     drawCalls: number;
     pixelRatioChanged: boolean;
     bloomResolutionChanged: boolean;
     bloomEnabledChanged: boolean;
+    reflectCenterFigureChanged: boolean;
     effectiveChanged: boolean;
     applyFrameMs: number;
   }
@@ -136,11 +140,13 @@ if (viewMode) {
       pixelRatio: state.pixelRatio,
       bloomResolutionScale: state.bloom ? state.bloom.resolutionScale : -1,
       bloomEnabled: state.bloom ? state.bloom.enabled : false,
+      reflectCenterFigure: state.centerFigureReflected,
       outputPassEnabled: state.bloom ? state.bloom.outputPassEnabled : false,
       drawCalls: state.drawCalls,
       pixelRatioChanged: applied.pixelRatioChanged,
       bloomResolutionChanged: applied.bloomResolutionChanged,
       bloomEnabledChanged: applied.bloomEnabledChanged,
+      reflectCenterFigureChanged: applied.reflectCenterFigureChanged,
       effectiveChanged: applied.effectiveChanged,
       applyFrameMs,
     });

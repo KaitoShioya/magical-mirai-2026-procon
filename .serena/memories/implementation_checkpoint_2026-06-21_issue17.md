@@ -33,7 +33,7 @@
 Codex（読み取り専用）に4回レビューを委譲した。プラン段階の3回で、縦長画面でのビネット距離の正規化・色収差の向きと距離の分離・既定無効による既存診断の回帰防止・色管理の明示設定・診断の決定的検証と標本系統の分離・画素密度2の性能ゲート・uniform への非有限値防御などを反映し、実装後の1回で「コミット・PR化して問題なし」の判定を得た。指摘の非ブロッキング改善2点（シェーダの縦横比0除算防御を寸法の1以上丸めで対応、性能ゲートのブラウザ解放を try/finally で確実化）も反映済み。
 
 ## 提出状況
-ブランチ `worktree-issue-17-posteffect-vignette-chroma` にコミットして origin へ push。Pull Request（base: main、本文に Closes #17）を作成。
+ブランチ `worktree-issue-17-posteffect-vignette-chroma` にコミットして origin へ push 済み。Pull Request #153（base: main、本文に Closes #17）を作成済み。
 
 ## 次の作業
 #59（TAKEOVER 通しプレイ統合）で本機構を実楽曲へ結線する。強拍開始時刻配列を beats から position が1の拍で作り、createBeatScheduler と createBeatBurst を生成、createRenderRoot に postEffectEnabled を真で渡し、毎フレームの更新と描画の間で scheduler を進めて setChromaBurstIntensity をゲーム時刻基準で呼ぶ。

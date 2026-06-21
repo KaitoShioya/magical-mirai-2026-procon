@@ -106,9 +106,11 @@ describe("無和音区間の埋め方の既定規則と上書き（buildNcRanges
 });
 
 describe("暫定値の検出（後続 Issue での置換を促すための主張）", () => {
-  it("TAKEOVER の暫定カメラがキーフレーム2点だけの最小構成である", () => {
-    // 後続 Issue #32・#46 が実カメラ軌跡へ置換するとキーフレーム数が増え、この主張が落ちて置換を検知できる。
-    // 暫定値が無言で本番内容に居座るのを防ぐためである。
-    expect(takeoverInputs.camera.length).toBeLessThanOrEqual(2);
+  it("TAKEOVER の手動カメラが未指定で、生成プロファイルが自動の暫定2点軌跡を持つ", () => {
+    // 後続 Issue #32・#46 が takeoverInputs.camera に実カメラ軌跡を与えると camera が未指定でなくなり、
+    // この主張が落ちて置換を検知できる。暫定値が無言で本番内容に居座るのを防ぐためである。
+    expect(takeoverInputs.camera).toBeUndefined();
+    const { profile } = buildProfile({ songmap, manual: takeoverInputs, source });
+    expect(profile.camera).toHaveLength(2);
   });
 });

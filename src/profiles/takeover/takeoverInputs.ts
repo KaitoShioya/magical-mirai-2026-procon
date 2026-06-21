@@ -8,11 +8,6 @@
 
 import type { ManualProfileInputs } from "../generate/buildProfile";
 
-// TAKEOVER の曲長（ミリ秒）。docs/analysis/takeover.songmap.json の song.duration に一致する。
-// 暫定カメラの末尾キーフレームの時刻に使う。検証関数はカメラが曲頭0ミリ秒から曲長まで覆うことを要求するためである。
-// 音楽地図ダンプを取り直して曲長が変わった場合は、この値も更新する必要がある（暫定カメラは後続 Issue #32 で実軌跡に置換する）。
-const TAKEOVER_DURATION_MS = 237250;
-
 export const takeoverInputs: ManualProfileInputs = {
   // 確定値: TAKEOVER の調はファ短調。主音の音名クラスはファ＝5。出典 docs/research/07-feasibility-and-parameters.md §1.2。
   musicalKey: { tonicPitchClass: 5, mode: "minor" },
@@ -20,12 +15,8 @@ export const takeoverInputs: ManualProfileInputs = {
   // 確定値: クライマックス（最終見せ場）の代表時刻。出典 docs/decisions/app-overall-decisions.md §3.5（189秒地点の回帰）。
   climaxAnchorMs: 189000,
 
-  // 暫定値: カメラ軌跡。曲頭と曲尾の2点だけの直線的な軌跡で、検証（曲頭0・曲尾が曲長以上）とカメラ軌跡評価器
-  //   （2点以上・時刻が厳密増加）の要求を満たす最小構成である。実カメラ軌跡の設計は後続 Issue #32・#46 が行う。
-  camera: [
-    { timeMs: 0, position: { x: 0, y: 6, z: 14 }, target: { x: 0, y: 0, z: 0 } },
-    { timeMs: TAKEOVER_DURATION_MS, position: { x: 0, y: 6, z: 14 }, target: { x: 0, y: 0, z: 0 } },
-  ],
+  // カメラ軌跡は指定しない。buildProfile が曲長から暫定の2点直線軌跡を自動生成する（曲長を曲別入力へ重複して書かないため）。
+  //   実カメラ軌跡の設計は後続 Issue #32・#46 が行う。
 
   // 暫定値: X軸の色。先頭x=0・末尾x=1の2停止点で全X範囲を覆う最小構成である。実配色の確定は後続 Issue #46 が行う。
   colors: {
@@ -61,7 +52,7 @@ export const takeoverInputs: ManualProfileInputs = {
 };
 
 // ── プレースホルダ目録（後続 Issue で実内容へ置換する箇所） ──
-// 1. camera: 暫定の2点直線軌跡。実カメラ軌跡の設計は Issue #32（3Dカメラワーク文字演出）と Issue #46（TAKEOVER内容）。
+// 1. camera: 未指定（buildProfile が曲長から暫定の2点直線軌跡を自動生成）。実カメラ軌跡の設計は Issue #32（3Dカメラワーク文字演出）と Issue #46（TAKEOVER内容）。
 // 2. colors.xAxisStops: 暫定の橙→青の2停止点。実配色は Issue #46。
 // 3. sfx: 暫定の音色2種。実音色は Issue #46。
 // 4. diversityZones: 空。三部形式（theme=24秒・variation=中盤・reprise=189秒）の手動記述は Issue #46。

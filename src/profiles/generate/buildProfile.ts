@@ -61,8 +61,9 @@ export interface ManualProfileInputs {
   musicalKey: MusicalKey;
   /** クライマックス（最終見せ場）の代表時刻（ミリ秒）。見せ場生成と密度生成が使う。 */
   climaxAnchorMs: number;
-  /** カメラ軌跡のキーフレーム。ノーツの軌跡上位置の算出に使う。2点以上で時刻が厳密増加し、曲全体を覆う必要がある。 */
-  camera: CameraKeyframe[];
+  /** カメラ軌跡のキーフレーム。ノーツの軌跡上位置の算出に使う。2点以上で時刻が厳密増加し、曲全体を覆う必要がある。
+   *  省略した場合は曲長から暫定の2点直線軌跡を自動生成する（実カメラ軌跡の設計は後続 Issue #32 が行う）。 */
+  camera?: CameraKeyframe[];
   /** X軸の色。検証を通る停止点を持つ。 */
   colors: TapColors;
   /** 操作音の音色（通常時・投下時）。 */
@@ -73,6 +74,16 @@ export interface ManualProfileInputs {
    *  和音索引で指定する理由を先に述べる。songmap の時刻は浮動小数点で人が手で書いた時刻と厳密一致しないが、
    *  和音索引は整数で曖昧さが無いためである。 */
   ncTreatmentOverrides?: Record<number, NcTreatment>;
+}
+
+/** 手動カメラ軌跡が与えられないときの暫定カメラを作る。曲頭と曲尾の2点だけの直線的な軌跡で、検証関数（カメラは曲頭0ミリ秒から
+ *  曲長まで覆う）とカメラ軌跡評価器（2点以上・時刻が厳密増加）の要求を満たす最小構成である。末尾時刻を曲長から導くため、
+ *  曲長が変わっても曲尾に追従し、曲別入力に曲長を重複して書く必要が無い。実カメラ軌跡の設計は後続 Issue #32 が行う。 */
+function buildPlaceholderCamera(durationMs: number): CameraKeyframe[] {
+  return [
+    { timeMs: 0, position: { x: 0, y: 6, z: 14 }, target: { x: 0, y: 0, z: 0 } },
+    { timeMs: durationMs, position: { x: 0, y: 6, z: 14 }, target: { x: 0, y: 0, z: 0 } },
+  ];
 }
 
 /** 数値配列の中央値を返す。空配列は0を返す。 */
@@ -189,9 +200,11 @@ export function buildProfile(args: {
   const tapBudget = generateTapBudget(toTapBudgetInput(songmap));
 
   // 7. ノーツ（オンセット選択→パターン付与→軌跡上配置を識別子で突き合わせて最終 Note へ合成）。
+  //    手動カメラが無い場合は曲長から暫定カメラを自動生成する。
+  const camera = manual.camera ?? buildPlaceholderCamera(durationMs);
   const onsets = generateOnsetNotes(toOnsetInput(songmap));
   const patterned = applyNotePatterns({ notes: onsets, slots, loudness: loudnessCurve, emotion: emotionCurve });
-  const trajectory = createCameraTrajectory(manual.camera);
+  const trajectory = createCameraTrajectory(camera);
   const placements = placeNotesOnTrajectory(
     patterned.map((n) => ({ id: n.id, timeMs: n.timeMs })),
     trajectory,
@@ -243,7 +256,7 @@ export function buildProfile(args: {
     showcases,
     slots,
     notes,
-    camera: manual.camera,
+    camera,
     colors: manual.colors,
     sfx: manual.sfx,
     diversityZones: manual.diversityZones,

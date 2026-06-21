@@ -1,0 +1,19 @@
+{
+  // TypeScript 製コマンド（scripts/*.ts）向けの型設定。
+  // Node 環境で動くため types に node を入れ、src/ から間接的に取り込む three.js の型が
+  // ブラウザの型（HTMLCanvasElement 等）を参照するため lib に DOM を入れる。
+  // include で起点ファイルを指定し、tsc が import を辿って到達するファイルだけを検査する。
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["scripts/generate-profile.ts"]
+}

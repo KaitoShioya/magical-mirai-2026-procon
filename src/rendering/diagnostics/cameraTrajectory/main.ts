@@ -6,9 +6,9 @@
 import { createRenderRoot } from "../../renderRoot";
 import { createCameraTrajectory } from "../../../utils/cameraTrajectory";
 import {
-  PROVISIONAL_TAKEOVER_CAMERA,
+  takeoverCameraKeyframes,
   TAKEOVER_DURATION_MS,
-} from "./provisionalTakeoverCamera";
+} from "../../../profiles/takeover";
 
 function requireElement<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
@@ -34,7 +34,7 @@ const container = requireElement<HTMLElement>("app");
 const hud = requireElement<HTMLElement>("hud");
 
 const renderRoot = createRenderRoot(container);
-const trajectory = createCameraTrajectory(PROVISIONAL_TAKEOVER_CAMERA);
+const trajectory = createCameraTrajectory(takeoverCameraKeyframes);
 
 // 掃引刻み（ミリ秒）。採用理由を先に述べる。実機の毎秒60フレームの1フレームは約16ミリ秒であり、
 // 表示で起こりうる最小間隔に合わせて連続性を見るため16ミリ秒で掃引する。

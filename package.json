@@ -12,6 +12,7 @@
     "test": "vitest run",
     "build:font-subset": "node scripts/build-font-subset.mjs",
     "build:stage-model": "node scripts/build-stage-model.mjs",
+    "build:profile-takeover": "node scripts/build-takeover-profile.mjs",
     "prototype:fps": "node scripts/prototype-fps.mjs",
     "typography:fps": "node scripts/typography-fps.mjs",
     "typography:instances:fps": "node scripts/typography-instances-fps.mjs",

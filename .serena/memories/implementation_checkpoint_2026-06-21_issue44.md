@@ -27,16 +27,16 @@
 
 ## 実装した内容
 
-- 新規 `src/profiles/generate/tapBudget.ts`: 関数 `estimateFullPossibleTaps`・`calculateTapBudget`・`generateTapBudget`、型 `TapBudgetInput`・`TapBudgetOptions`、例外 `InvalidTapBudgetInputError`。import は `../../config/tuning`（比率定数）と `../schema/profileSchema`（`TapBudget` 型、`import type`）の2つだけ。
-- 新規 `src/profiles/generate/tapBudget.test.ts`: 単体テスト20件（密度計算・半開区間境界・区間重なり・並び順の乱れ・空サビ区間・各種例外・比率境界・二段丸めの境界逸脱）。
+- 新規 `src/profiles/generate/tapBudget.ts`: 関数 `estimateFullPossibleTaps`・`calculateTapBudget`・`generateTapBudget`、型 `TapBudgetInput`・`TapBudgetOptions`、例外 `InvalidTapBudgetInputError`。import は `../../config/tuning`（比率定数）と `../schema/profileSchema`（`TapBudget` 型、`import type`）の2つだけ。比率は範囲検査の前に `Number.isFinite` で有限数を確かめる（比較演算は非数に対し常に偽を返すため、有限数ガードがないと非数が範囲検査をすり抜けて上限が非数になる）。
+- 新規 `src/profiles/generate/tapBudget.test.ts`: 単体テスト21件（密度計算・半開区間境界・区間重なり・並び順の乱れ・空サビ区間・各種例外・比率境界・比率が非数や非有限の例外・二段丸めの境界逸脱）。
 - 新規 `src/profiles/generate/tapBudget.takeover.test.ts`: 実データ検証4件（母数434・`{434,260}`・上限<母数・`validateProfile` 合格）。
 - 更新 `src/profiles/generate/README.md`: Issue #44 節（責務・公開関数・密度モデルの範囲・入力契約・依存の向き）を追加し、冒頭の生成器一覧に #44 を加えた。
 
 ## レビューと検証（事実）
 
-- Codex に計画を2回レビュー依頼。1巡目の12指摘（拍の重複の契約化、サビ区間の重なりを各拍の真偽判定で一度だけ数える、二段丸めの比率境界の事後検証、密度を正の値に限る、母数の正整数検査、#43 との責務境界の明記、受け入れ基準の線引き、空サビ区間の許容、`import type` の利用、実データテストでの `src/tools` 不使用）をすべて反映した。2巡目で1〜12の解消を確認し、新規指摘（重複サビ区間の入力契約の明文化）を反映した。
+- Codex に計画を2回、実装を1回レビュー依頼。計画1巡目の12指摘（拍の重複の契約化、サビ区間の重なりを各拍の真偽判定で一度だけ数える、二段丸めの比率境界の事後検証、密度を正の値に限る、母数の正整数検査、#43 との責務境界の明記、受け入れ基準の線引き、空サビ区間の許容、`import type` の利用、実データテストでの `src/tools` 不使用）をすべて反映した。計画2巡目で1〜12の解消を確認し、新規指摘（重複サビ区間の入力契約の明文化）を反映した。実装レビューで1点（`calculateTapBudget` の比率に有限数ガードが無く、非数が範囲検査をすり抜けて上限が非数になる）の指摘を受け、有限数ガードと非数・非有限の例外テストを追加して解消した。
 - `npm run typecheck`（`tsconfig.json` と `tsconfig.node.json` の両方）: 型エラーなし。
-- `npm test`（vitest）: 60ファイル821テスト全通過（本Issueで24を新規追加。既存を破壊せず）。
+- `npm test`（vitest）: 60ファイル822テスト全通過（本Issueで25を新規追加。既存を破壊せず）。
 - 受け入れ基準の保証: `tapBudget.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を読み、母数434・上限260・上限が母数より小さいこと・算出 `tapBudget` がスキーマ検証に合格することを確認する。
 - 依存規則: 中核（engine・chart・scoring・input・audio）・profiles 以外・tools・rendering・three.js を import しない。
 

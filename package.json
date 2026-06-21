@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && tsc -p tsconfig.scripts.json",
     "build": "npm run typecheck && vite build",
     "build:app": "npm run typecheck && vite build --mode app",
     "preview": "vite preview",
     "test": "vitest run",
+    "profile:gen": "vite-node scripts/generate-profile.ts",
     "build:font-subset": "node scripts/build-font-subset.mjs",
     "build:stage-model": "node scripts/build-stage-model.mjs",
     "prototype:fps": "node scripts/prototype-fps.mjs",
@@ -56,6 +57,7 @@
     "subset-font": "^2.5.0",
     "typescript": "^5.6.0",
     "vite": "^5.4.0",
+    "vite-node": "^2.1.9",
     "vitest": "^2.1.9"
   }
 }

@@ -3,53 +3,30 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { generateDensityPlan, countTargetNotes, type DensityInput } from "./density";
 import { generateShowcases } from "./showcases";
-import { DEFAULT_SHOWCASE_OPTIONS, type ShowcaseInput } from "./types";
+import { DEFAULT_SHOWCASE_OPTIONS } from "./types";
+import {
+  toShowcaseInput,
+  toDensityBeats,
+  toChorusSegments,
+  toLyricCharOnsetsMs,
+  type RawSongmap,
+} from "./songmapAdapters";
 
 // 実データ（TAKEOVERの音楽地図ダンプ）を素のデータファイルとして読む。src/tools への import はしない。
+// songmap → 各入力への変換は共有アダプタ songmapAdapters を使い、生成本体（#45 の buildProfile）と同じ変換でテストする。
 const songmapPath = fileURLToPath(new URL("../../../docs/analysis/takeover.songmap.json", import.meta.url));
-const songmap = JSON.parse(readFileSync(songmapPath, "utf8")) as {
-  song: { duration: number };
-  amplitudeStep: number;
-  amplitudeCurve: number[];
-  segments: { startTime: number; endTime: number; isChorus: boolean }[];
-  beats: { startTime: number; endTime: number }[];
-  phrases: { words: { chars: { startTime: number }[] }[] }[];
-};
+const songmap = JSON.parse(readFileSync(songmapPath, "utf8")) as RawSongmap;
 
 const TOLERANCE_MS = 1;
 
-function lyricCharOnsetsMs(): number[] {
-  const out: number[] = [];
-  for (const phrase of songmap.phrases) {
-    for (const word of phrase.words) {
-      for (const char of word.chars) out.push(char.startTime);
-    }
-  }
-  return out;
-}
-
-function toShowcaseInput(): ShowcaseInput {
-  return {
-    durationMs: songmap.song.duration,
-    amplitudeCurve: songmap.amplitudeCurve,
-    amplitudeStepMs: songmap.amplitudeStep,
-    lyricCharOnsetsMs: lyricCharOnsetsMs(),
-    chorusSegments: songmap.segments
-      .filter((s) => s.isChorus)
-      .map((s) => ({ startMs: s.startTime, endMs: s.endTime })),
-    beatsMs: songmap.beats.map((b) => b.startTime),
-  };
-}
-
+// 密度入力は見せ場とクライマックス代表時刻を含むため共有アダプタ1つでは作れない。共有の各変換を組み合わせて作る。
 function toDensityInput(): DensityInput {
   return {
     durationMs: songmap.song.duration,
-    beats: songmap.beats.map((b, i) => ({ index: i, startMs: b.startTime, endMs: b.endTime })),
-    chorusSegments: songmap.segments
-      .filter((s) => s.isChorus)
-      .map((s) => ({ startMs: s.startTime, endMs: s.endTime })),
-    lyricCharOnsetsMs: lyricCharOnsetsMs(),
-    showcases: generateShowcases(toShowcaseInput()),
+    beats: toDensityBeats(songmap),
+    chorusSegments: toChorusSegments(songmap),
+    lyricCharOnsetsMs: toLyricCharOnsetsMs(songmap),
+    showcases: generateShowcases(toShowcaseInput(songmap)),
     climaxAnchorMs: DEFAULT_SHOWCASE_OPTIONS.climaxAnchorMs,
   };
 }

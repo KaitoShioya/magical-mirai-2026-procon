@@ -2,44 +2,17 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { generateShowcases, selectNonChorusPeaks } from "./showcases";
-import { DEFAULT_SHOWCASE_OPTIONS, type ShowcaseInput } from "./types";
+import { DEFAULT_SHOWCASE_OPTIONS } from "./types";
+import { toShowcaseInput, type RawSongmap } from "./songmapAdapters";
 import { validateProfile } from "../schema/validateProfile";
 import { minimalValidProfile } from "../schema/fixtures/minimalValidProfile";
 import type { SongProfile } from "../schema/profileSchema";
 
 // 実データ（TAKEOVERの音楽地図ダンプ）を素のデータファイルとして読む。src/tools/ への import は一切しない
-// （profiles から tools への依存禁止に抵触しない）。songmap → ShowcaseInput の変換はテスト側で行い、
-// 生成関数を songmap の形から切り離す。これは #45 の生成スクリプトが行う変換と同じである。
+// （profiles から tools への依存禁止に抵触しない）。songmap → 各入力への変換は共有アダプタ songmapAdapters を使い、
+// 生成本体（#45 の buildProfile）と同じ変換でテストする。
 const songmapPath = fileURLToPath(new URL("../../../docs/analysis/takeover.songmap.json", import.meta.url));
-const songmap = JSON.parse(readFileSync(songmapPath, "utf8")) as {
-  song: { duration: number };
-  amplitudeStep: number;
-  amplitudeCurve: number[];
-  segments: { startTime: number; endTime: number; isChorus: boolean }[];
-  beats: { startTime: number }[];
-  phrases: { words: { chars: { startTime: number }[] }[] }[];
-};
-
-function toShowcaseInput(): ShowcaseInput {
-  const lyricCharOnsetsMs: number[] = [];
-  for (const phrase of songmap.phrases) {
-    for (const word of phrase.words) {
-      for (const char of word.chars) {
-        lyricCharOnsetsMs.push(char.startTime);
-      }
-    }
-  }
-  return {
-    durationMs: songmap.song.duration,
-    amplitudeCurve: songmap.amplitudeCurve,
-    amplitudeStepMs: songmap.amplitudeStep,
-    lyricCharOnsetsMs,
-    chorusSegments: songmap.segments
-      .filter((s) => s.isChorus)
-      .map((s) => ({ startMs: s.startTime, endMs: s.endTime })),
-    beatsMs: songmap.beats.map((b) => b.startTime),
-  };
-}
+const songmap = JSON.parse(readFileSync(songmapPath, "utf8")) as RawSongmap;
 
 // 既定オプションの値を参照してマジックナンバー化を避ける（既定値が変わってもテストが追従する）。
 const CLIMAX_ANCHOR_MS = DEFAULT_SHOWCASE_OPTIONS.climaxAnchorMs;
@@ -56,7 +29,7 @@ function matchesChorusStart(startTimeMs: number): { startTime: number; endTime: 
 }
 
 describe("見せ場マップ自動生成 実データ検証（Issue #41 受け入れ基準）", () => {
-  const input = toShowcaseInput();
+  const input = toShowcaseInput(songmap);
   const showcases = generateShowcases(input);
 
   it("達成基準1: 見せ場がちょうど6個", () => {
@@ -137,6 +110,6 @@ describe("見せ場マップ自動生成 実データ検証（Issue #41 受け�
   });
 
   it("決定論: 同じ入力で同じ結果", () => {
-    expect(generateShowcases(toShowcaseInput())).toEqual(showcases);
+    expect(generateShowcases(toShowcaseInput(songmap))).toEqual(showcases);
   });
 });

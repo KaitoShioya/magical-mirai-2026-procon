@@ -18,6 +18,7 @@
 
 import {
   WebGLRenderer,
+  WebGLRenderTarget,
   Scene,
   Color,
   PerspectiveCamera,
@@ -42,6 +43,8 @@ import {
   srgbChannelToLinear,
   contrastRatio,
   resolveReadabilityStyle,
+  minWorldFontSize,
+  projectedPixelHeight,
   DEFAULT_READABILITY_OPTIONS,
 } from "../readability";
 import {
@@ -66,6 +69,39 @@ const FONT_URL = "/fonts/zen-kaku-gothic-new-subset.woff";
 const CAMERA_Z = 10;
 const FONT_SIZE = 6;
 const PASS_RATIO = 4.5;
+
+// 最小表示画素ゲート（Issue #98）の計測条件。
+// カメラの縦視野角（PerspectiveCamera の第1引数）と一致させる。
+const FOV_Y_DEGREES = 60;
+// 絶対下限（最小画面画素高、デバイス画素）。Issue #31 の初期値と一致させる。
+const MIN_PIXEL_HEIGHT = 18;
+// 不利条件の基準フォントサイズ。フロアを下回る小さい値にして、フロアが結ぶ（下限が効く）ようにする。
+const MIN_PIXEL_BASE_FONT_SIZE = 0.2;
+// 最小表示画素の計測に用いる固定の1文字。下に伸びる部分を持たず収録が確実な「A」に固定し、
+// 表示文字の差し替え引数（?char=）の影響を受けないようにする（計測の決定論のため）。
+const MIN_PIXEL_GLYPH = "A";
+// 縦方向の超過標本化の係数。最小表示画素は縦の広がりだけを測るため、超過標本化は縦方向にのみ行えば足りる。
+// 縦の画素密度を上げて描き、測ったインク縦画素を同じ係数で割って実画素へ戻す。?ss= で変えられる（較正用）。
+// 係数4を採る理由を先に述べる。フロアが結ぶ小さい寸法（インクの射影は約12.6画素）では、「塗られた行の整数個」
+// という量子化が相対差を支配する。係数1では量子化が±0.5画素（約4パーセント）で、別環境のアンチエイリアスの差と
+// 重なると許容0.15へ近づく恐れがある。係数4では量子化が±0.125画素（約1パーセント）に下がり、実測の相対差は
+// 約0.008（許容の約19分の1）と頑健になる。横方向は標本化しないため、描画対象は縦長で画素数は係数の二乗でなく
+// 係数倍に留まる（係数4で640×1920。一度だけ読み戻して解放する）。
+const MIN_PIXEL_VERTICAL_SUPERSAMPLE = numberKnob("ss", 4);
+// インク縦画素を測る二値化の閾値（相対輝度）。可視グリフの幾何輪郭は塗りの被覆が半分になる位置に対応するため、
+// 中点 0.5 を境にする。量の取り方と閾値は較正で実測確認する（?inkth= で変えられる）。
+const MIN_PIXEL_INK_THRESHOLD = numberKnob("inkth", 0.5);
+// 最小表示画素用の文字を描くフォントサイズ。フロア関数（本物）の出力と基準サイズの大きい方。
+// 診断は文字を原点に置きカメラからの距離を CAMERA_Z とするため、実引数の距離は CAMERA_Z とする。
+const MIN_PIXEL_FONT_SIZE = Math.max(
+  MIN_PIXEL_BASE_FONT_SIZE,
+  minWorldFontSize({
+    minPixelHeight: MIN_PIXEL_HEIGHT,
+    distance: CAMERA_Z,
+    fovYDegrees: FOV_Y_DEGREES,
+    viewportPixelHeight: HEIGHT,
+  })
+);
 
 type BackgroundKind = "dark" | "bright" | "gradient" | "bloom" | "highfreq";
 const BACKGROUNDS: readonly BackgroundKind[] = ["dark", "bright", "gradient", "bloom", "highfreq"];
@@ -221,6 +257,36 @@ maskText.position.set(0, 0, 0);
 maskText.color = 0xffffff;
 maskScene.add(maskText);
 
+// 最小表示画素ゲート用の分離描画（固定字「A」・白い塗り・縁取りなし・背景は黒）。
+// フロアが命じた寸法で描き、縦方向の超過標本化のため専用の画面外描画対象（横は等倍・縦は係数倍）へ描いて読み戻す。
+// 既定の描画対象（画面）やコントラスト計測の合成器には触れない。
+const minPixelScene = new Scene();
+minPixelScene.background = new Color(0x000000);
+const minPixelText = new Text();
+minPixelText.text = MIN_PIXEL_GLYPH;
+minPixelText.font = FONT_URL;
+minPixelText.fontSize = MIN_PIXEL_FONT_SIZE;
+minPixelText.anchorX = "center";
+minPixelText.anchorY = "middle";
+minPixelText.position.set(0, 0, 0);
+minPixelText.color = 0xffffff;
+minPixelScene.add(minPixelText);
+// 縦長の描画対象（横は画面と同じ画素数、縦は係数倍）。縦の計測精度を保ちつつ画素数を係数の二乗でなく係数倍に抑える。
+const MIN_PIXEL_RT_WIDTH = Math.max(1, Math.round(WIDTH));
+const MIN_PIXEL_RT_HEIGHT = Math.max(1, Math.round(HEIGHT * MIN_PIXEL_VERTICAL_SUPERSAMPLE));
+const minPixelTarget = new WebGLRenderTarget(MIN_PIXEL_RT_WIDTH, MIN_PIXEL_RT_HEIGHT);
+// 描画対象の縦横比に合わせた専用カメラ。縦長の描画対象を本シーンのカメラ（縦横比 横÷縦）で描くと縦に潰れて
+// 横に伸び、グリフが歪んで縦の計測を誤るため、描画対象の縦横比に一致させた別カメラで描く。縦視野角と距離・
+// 位置・注視点は本シーンのカメラと同じにし、縦方向の世界座標から画素への写像を本シーンと一致させる。
+const minPixelCamera = new PerspectiveCamera(
+  FOV_Y_DEGREES,
+  MIN_PIXEL_RT_WIDTH / MIN_PIXEL_RT_HEIGHT,
+  0.1,
+  500
+);
+minPixelCamera.position.set(0, 0, CAMERA_Z);
+minPixelCamera.lookAt(0, 0, 0);
+
 // 合成パイプライン（シーン描画→ブルーム→最終出力）。最終出力段でトーンマッピングと sRGB 変換を行う。
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -331,6 +397,111 @@ const BACKGROUND_MARGIN = 16;
 
 let maskFillCount = 0;
 
+interface MinPixelResult {
+  measuredInkHeightPx: number;
+  inkWorldHeight: number;
+  emWorldHeight: number;
+  emPixelHeightEquivalent: number;
+  emProjectedPixelHeight: number;
+  projectedInkPixelHeight: number;
+  viewportPixelHeight: number;
+  flooredFontSize: number;
+  distance: number;
+  fovYDegrees: number;
+  visibleBoundsValid: boolean;
+}
+
+let minPixelResult: MinPixelResult = {
+  measuredInkHeightPx: 0,
+  inkWorldHeight: 0,
+  emWorldHeight: MIN_PIXEL_FONT_SIZE,
+  emPixelHeightEquivalent: 0,
+  emProjectedPixelHeight: 0,
+  projectedInkPixelHeight: 0,
+  viewportPixelHeight: HEIGHT,
+  flooredFontSize: MIN_PIXEL_FONT_SIZE,
+  distance: CAMERA_Z,
+  fovYDegrees: FOV_Y_DEGREES,
+  visibleBoundsValid: false,
+};
+
+// 最小表示画素の計測。固定字「A」をフロア寸法で画面外描画対象（縦方向の超過標本化）へ専用カメラで描き、
+// 相対輝度の閾値で二値化した塗られた行の最小と最大の差から、実画素のインク縦画素を測る。あわせて可視範囲
+// （textRenderInfo）の射影と、意図寸法（フロア出力）の射影を算出する。合否判定は純粋関数
+// （scripts/harness/readability-metrics.mjs）へ委ねる。
+function measureMinPixel(): void {
+  const ss = MIN_PIXEL_VERTICAL_SUPERSAMPLE;
+  const rtW = minPixelTarget.width;
+  const rtH = minPixelTarget.height;
+  // 暖機: 初回描画は符号付き距離場のアトラスとマテリアルのGPU転送を伴うため、数フレーム描いてから読む。
+  for (let warm = 0; warm < 3; warm += 1) {
+    renderer.setRenderTarget(minPixelTarget);
+    renderer.render(minPixelScene, minPixelCamera);
+  }
+  const buf = new Uint8Array(rtW * rtH * 4);
+  renderer.readRenderTargetPixels(minPixelTarget, 0, 0, rtW, rtH, buf);
+  renderer.setRenderTarget(null);
+
+  // 塗られた行の最小と最大（相対輝度の閾値で二値化）。読み出しの上下の向きは縦の広がりに影響しない。
+  let minRow = -1;
+  let maxRow = -1;
+  for (let y = 0; y < rtH; y += 1) {
+    const base = y * rtW * 4;
+    let inked = false;
+    for (let x = 0; x < rtW; x += 1) {
+      if (luminanceAt(buf, base + x * 4) > MIN_PIXEL_INK_THRESHOLD) {
+        inked = true;
+        break;
+      }
+    }
+    if (inked) {
+      if (minRow < 0) minRow = y;
+      maxRow = y;
+    }
+  }
+  const measuredInkHeightPx = minRow < 0 ? 0 : (maxRow - minRow + 1) / ss;
+
+  // 可視範囲（troika の textRenderInfo）からインクの世界座標高さを取る。配置確定後に確定する。
+  const info = minPixelText.textRenderInfo;
+  const vb = info ? info.visibleBounds : null;
+  let inkWorldHeight = 0;
+  let hasBounds = false;
+  if (vb && vb.length === 4 && vb.every((n) => Number.isFinite(n))) {
+    inkWorldHeight = vb[3] - vb[1];
+    hasBounds = true;
+  }
+  const boundsValid = hasBounds && inkWorldHeight > 0;
+
+  const projArgs = {
+    distance: CAMERA_Z,
+    fovYDegrees: FOV_Y_DEGREES,
+    viewportPixelHeight: HEIGHT,
+  };
+  const projectedInkPixelHeight = projectedPixelHeight({ worldHeight: inkWorldHeight, ...projArgs });
+  const emProjectedPixelHeight = projectedPixelHeight({
+    worldHeight: MIN_PIXEL_FONT_SIZE,
+    ...projArgs,
+  });
+  const emPixelHeightEquivalent =
+    inkWorldHeight > 0 ? measuredInkHeightPx * (MIN_PIXEL_FONT_SIZE / inkWorldHeight) : 0;
+
+  minPixelResult = {
+    measuredInkHeightPx,
+    inkWorldHeight,
+    emWorldHeight: MIN_PIXEL_FONT_SIZE,
+    emPixelHeightEquivalent,
+    emProjectedPixelHeight,
+    projectedInkPixelHeight,
+    viewportPixelHeight: HEIGHT,
+    flooredFontSize: MIN_PIXEL_FONT_SIZE,
+    distance: CAMERA_Z,
+    fovYDegrees: FOV_Y_DEGREES,
+    visibleBoundsValid: boundsValid,
+  };
+  // 読み終えたら画面外描画対象を解放する（計測は一度きり）。
+  minPixelTarget.dispose();
+}
+
 function measureAll(): void {
   // まず文字被覆を分離描画から得る。初回の描画はSDFアトラスとマテリアルのGPUへの転送を伴うため、
   // 数フレーム暖めてから読む（最初の1回だけでは転送途中で空に読める場合がある）。
@@ -386,10 +557,12 @@ function measureAll(): void {
       borderVsBackground: contrastRatio(borderLum, bgLum),
     });
   }
+  // コントラスト計測の後に最小表示画素を計測する（専用の画面外描画対象に分け、合成器と既定描画対象に触れない）。
+  measureMinPixel();
   overallReady = true;
 }
 
-// window へ計測結果を公開する（scripts/readability-contrast.mjs が取得する）。型は src/types/globals.d.ts。
+// window へ計測結果を公開する（scripts/readability-quality.mjs が取得する）。型は src/types/globals.d.ts。
 window.__readabilityReady = (): boolean => overallReady;
 window.__readability = () => ({
   passRatio: PASS_RATIO,
@@ -401,12 +574,14 @@ window.__readability = () => ({
     ? Math.min(...results.map((r) => r.fillBorderContrast))
     : 0,
   backgrounds: results,
+  minPixel: minPixelResult,
 });
 
 // 文字の配置確定（sync）を待ってから計測する。被覆と本描画の双方が確定してから読む。
 // 計測前に、被覆マスク・読ませる文字本体・（あれば）可読性下地のすべての配置確定（sync）を待つ。
 // 下地の文字形の暗い複製は確定後に可視化されるため、待たずに計測すると下地が写らない。
-let pending = 2 + (backing ? 1 : 0);
+// 待つのは、被覆マスク・読ませる文字本体・最小表示画素用の文字・（あれば）可読性下地の配置確定。
+let pending = 3 + (backing ? 1 : 0);
 function onSynced(): void {
   pending -= 1;
   if (pending === 0) {
@@ -418,6 +593,7 @@ function onSynced(): void {
 }
 maskText.sync(onSynced);
 readableText.sync(onSynced);
+minPixelText.sync(onSynced);
 if (backing) {
   backing.sync(onSynced);
 }
@@ -436,6 +612,20 @@ function renderHud(): void {
         `参考: 内部対背景=${r.fillVsBackground.toFixed(2)} 縁取り対背景=${r.borderVsBackground.toFixed(2)}`
     );
   }
+  const mp = minPixelResult;
+  const relDiff =
+    mp.projectedInkPixelHeight > 0
+      ? Math.abs(mp.measuredInkHeightPx - mp.projectedInkPixelHeight) / mp.projectedInkPixelHeight
+      : NaN;
+  lines.push(
+    `最小表示画素: フォントサイズ=${mp.flooredFontSize.toFixed(4)} ` +
+      `絶対下限の射影 emProjected=${mp.emProjectedPixelHeight.toFixed(2)}（下限 ${MIN_PIXEL_HEIGHT}）`
+  );
+  lines.push(
+    `忠実度: インク実測=${mp.measuredInkHeightPx.toFixed(1)} 幾何射影=${mp.projectedInkPixelHeight.toFixed(1)} ` +
+      `相対差=${Number.isNaN(relDiff) ? "判定不能" : relDiff.toFixed(3)}（許容 0.15） ` +
+      `参考 em相当=${mp.emPixelHeightEquivalent.toFixed(2)} 可視範囲確定=${mp.visibleBoundsValid}`
+  );
   hud.textContent = lines.join("\n");
 }
 

@@ -39,6 +39,16 @@ describe("troika-three-text のエクスポート実体確認", () => {
     expect(text.gpuAccelerateSDF).toBe(true);
     text.dispose();
   });
+
+  // Issue #98: 最小表示画素ゲートが配置確定後の visibleBounds を読むため、textRenderInfo プロパティが
+  // 実体に存在することを確認する。配置確定前は null で、数値構造（visibleBounds）は実ブラウザの診断と
+  // ゲート本体で裏取りするため、ここでは存在のみを確認する（同テストの方針に合わせる）。
+  it("Text の実体に textRenderInfo が存在する（配置確定前は null、型宣言の裏取り）", () => {
+    const text = new troika.Text();
+    expect("textRenderInfo" in text).toBe(true);
+    expect(text.textRenderInfo).toBe(null);
+    text.dispose();
+  });
 });
 
 describe("troika-three-utils のエクスポート実体確認", () => {

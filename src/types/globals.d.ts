@@ -386,5 +386,42 @@ declare global {
      * scripts/screen-shake-smoke.mjs が減衰比と余白内拘束を時間非依存に検証するために取得する。
      */
     __screenShakeProbe?: (elapsedMs: number) => { scale: number; offsetX: number; offsetY: number };
+    /**
+     * 表示同期ゲート（Issue #99）の受け入れ診断ページ（display-sync.html）だけが取り付ける。
+     * __displaySyncReady は判定の完了後に真を返す。__displaySyncVerdict は判定結果（合否・理由・警告・各項目の成否・
+     * 各比率・最近傍距離の統計・件数）と、既定記録源の出所固有の整合検査の不整合を返す。
+     * scripts/display-sync-quality.mjs が読む。共有型が typography に依存しないよう素の構造で宣言する。
+     * 距離の統計は要素が無いとき null を返す。
+     */
+    __displaySyncReady?: () => boolean;
+    __displaySyncVerdict?: () => {
+      acceptable: boolean;
+      reasons: readonly string[];
+      warnings: readonly string[];
+      cues: {
+        switchValidity: boolean;
+        fireValidity: boolean;
+        switchNonEmpty: boolean;
+        fireNonEmpty: boolean;
+        switchCoverage: boolean;
+        fireCoverage: boolean;
+        switchGrounded: boolean;
+        fireGrounded: boolean;
+      };
+      ratios: {
+        granularityStructureSync: number;
+        fireBeatSync: number;
+        fireLoudnessPeakSync: number;
+        switchGroundedRatio: number;
+        fireGroundedRatio: number;
+      };
+      distances: {
+        switchToStructureOrBeat: { medianBeats: number | null; p95Beats: number | null; maxBeats: number | null };
+        fireToBeatOrPeak: { medianBeats: number | null; p95Beats: number | null; maxBeats: number | null };
+        fireToVocalOnset: { medianBeats: number | null; p95Beats: number | null; maxBeats: number | null };
+      };
+      counts: { switchCount: number; fireCount: number };
+      sourceIssues: readonly string[];
+    };
   }
 }

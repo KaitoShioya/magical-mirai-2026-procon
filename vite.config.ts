@@ -28,8 +28,9 @@ export default defineConfig(({ mode }) => {
   // 反射対象制御（#92）の受け入れ診断、screen-shake.html は画面拡大・減衰揺れ（#76）の
   // 受け入れ診断、posteffects.html は拍同期ポストエフェクト（#17）の受け入れ診断（周縁減光・色収差・性能計測）、
   // char-smash.html は1文字1拍スマッシュ（#23）の実描画プレビュー、effect-composition.html は演出合成エンジン（#131）の
-  // 重ね合成と複製の実描画プレビュー、audio.html は操作音エンジン（#52）の受け入れ診断（Y軸7スロットの発音・起動・
-  // 同時発音上限）の入口で、いずれも本番では配信しない。
+  // 重ね合成と複製の実描画プレビュー、display-sync.html は表示同期ゲート（#99）の受け入れ診断（粒度切替と発火の
+  // 楽曲構造・ビート・声量の山への同期の検査）、audio.html は操作音エンジン（#52）の受け入れ診断（Y軸7スロットの発音・
+  // 起動・同時発音上限）の入口で、いずれも本番では配信しない。
   const input: Record<string, string> = deployAppOnly
     ? { main: "index.html" }
     : {
@@ -52,6 +53,7 @@ export default defineConfig(({ mode }) => {
         charSmash: "char-smash.html",
         spatial: "spatial.html",
         effectComposition: "effect-composition.html",
+        displaySync: "display-sync.html",
         audio: "audio.html",
       };
 

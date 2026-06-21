@@ -36,6 +36,12 @@ declare module "troika-three-text" {
     material: Material;
     /** 基材から文字描画用の派生マテリアルを作る。サブクラスで上書きして変形層を重ねられる。 */
     createDerivedMaterial(baseMaterial: Material): Material;
+    /**
+     * 配置確定（sync）の完了後に得られる文字計測。配置確定前は null。
+     * 本体が使うのは visibleBounds（可視グリフに密着した範囲、[最小X, 最小Y, 最大X, 最大Y]、
+     * フォントサイズで尺度済みのローカル世界座標）のみのため、これだけを宣言する（未使用のメンバは宣言しない方針）。
+     */
+    textRenderInfo: { visibleBounds: readonly [number, number, number, number] } | null;
     /** 文字の配置を確定する。troika は非同期に文字を組むため呼び出しが必要。 */
     sync(callback?: () => void): void;
     /** ジオメトリ・マテリアル等のGPU資源を解放する。 */

@@ -33,11 +33,13 @@
     "smoke:typography": "node scripts/typography-deform-smoke.mjs",
     "smoke:screen-shake": "node scripts/screen-shake-smoke.mjs",
     "smoke:audio": "node scripts/audio-smoke.mjs",
+    "smoke:readability": "node scripts/readability-smoke.mjs",
     "quality": "node scripts/quality-harness.mjs --mode=local",
     "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud",
     "quality:spatial": "node scripts/spatial-quality.mjs",
     "quality:display-sync": "node scripts/display-sync-quality.mjs",
-    "quality:fps": "node scripts/performance-quality.mjs"
+    "quality:fps": "node scripts/performance-quality.mjs",
+    "quality:readability": "node scripts/readability-quality.mjs"
   },
   "dependencies": {
     "@pixiv/three-vrm": "3.5.4",

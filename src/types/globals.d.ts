@@ -350,11 +350,12 @@ declare global {
       chromaIntensity: number;
       vignetteStrength: number;
     };
-    /** 可読性診断（readability.html）の計測が終わったら真を返す。scripts/readability-contrast.mjs が待つ。 */
+    /** 可読性診断（readability.html）の計測が終わったら真を返す。scripts/readability-quality.mjs が待つ。 */
     __readabilityReady?: () => boolean;
     /**
      * 可読性診断（readability.html）の計測結果。発光・ブルーム後処理を通した最終描画画素から、文字内部と
-     * 縁取りのコントラスト比を背景種別ごとに返す。scripts/readability-contrast.mjs が 4.5:1 以上を判定する。
+     * 縁取りのコントラスト比を背景種別ごとに返し、あわせて最小表示画素の測定値（minPixel）を返す。
+     * scripts/readability-quality.mjs が判定する（コントラスト比 4.5:1 以上、絶対下限の明示確認、忠実度）。
      * 共有型が typography に依存しないよう素の構造で宣言する。
      */
     __readability?: () => {
@@ -371,6 +372,22 @@ declare global {
         fillVsBackground: number;
         borderVsBackground: number;
       }[];
+      // 最小表示画素の測定値（Issue #98）。合否は readability-quality.mjs の純粋関数が判定する。
+      // 合否に使うのは emProjectedPixelHeight（絶対下限の明示確認）と、measuredInkHeightPx と
+      // projectedInkPixelHeight の一致（忠実度）。emPixelHeightEquivalent は恒等量のため参考表示のみ。
+      minPixel: {
+        measuredInkHeightPx: number;
+        inkWorldHeight: number;
+        emWorldHeight: number;
+        emPixelHeightEquivalent: number;
+        emProjectedPixelHeight: number;
+        projectedInkPixelHeight: number;
+        viewportPixelHeight: number;
+        flooredFontSize: number;
+        distance: number;
+        fovYDegrees: number;
+        visibleBoundsValid: boolean;
+      };
     };
     /**
      * 画面拡大・減衰揺れの受け入れ診断アクセサ（Issue #76）。診断ページ（screen-shake.html）だけが取り付ける。

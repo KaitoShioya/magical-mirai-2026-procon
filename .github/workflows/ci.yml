@@ -48,7 +48,7 @@ jobs:
         # 診断ページは規約適合のため本番配信に含めてはならない（Issue #47、docs/decisions/architecture.md §7.2）。
         # 本番ビルド成果物に入力診断ページ input.html と層合成診断ページ layer-composite.html が無いことを、
         # 後続の検証用ビルドが全ページを出す前に確認する。
-        run: test ! -f dist/input.html && test ! -f dist/layer-composite.html && test ! -f dist/butterfly.html && test ! -f dist/spatial.html && test ! -f dist/center-figure.html && test ! -f dist/audio.html
+        run: test ! -f dist/input.html && test ! -f dist/layer-composite.html && test ! -f dist/butterfly.html && test ! -f dist/spatial.html && test ! -f dist/center-figure.html && test ! -f dist/audio.html && test ! -f dist/readability.html
       - name: Build verification bundle (all pages)
         # 既定ビルド。最終的な dist は本体に加え解析・性能・文字診断・雨診断・カメラ軌跡診断・発光点診断の
         # 各ページを含み、後続の preview の配信対象となる。この成果物を後続のスモークが配信するため、本番と同じトークンを注入する。
@@ -113,6 +113,23 @@ jobs:
         # 中心キャラクター常在配置・反射対象制御（Issue #92）の受け入れ検証。VRM が湖の中心へ配置され、
         # 反射既定が「含める」で、反射からの除外を切り替えられることを確認する。
         run: BASE=http://127.0.0.1:4173 npm run smoke:center-figure
+      - name: Run readability structural smoke test
+        # 文字可読性ゲート（Issue #98）の構造スモーク。診断ページが例外なく立ち上がり、診断グローバル
+        # window.__readability が整形された構造（5背景のコントラスト比と最小表示画素の測定値）を返すことを
+        # 確かめる。これは配線の確認であり可読性そのものの保証ではない（品質判定の本体は手元の実機で動かす）。
+        # 状態の読み取りはソフトウェア描画でも正しく得られる。
+        run: BASE=http://127.0.0.1:4173 npm run smoke:readability
+      - name: Assert the renamed readability gate has no stale references
+        # 文字可読性ゲート（Issue #98）は旧スクリプト（contrast 版）を scripts/readability-quality.mjs へ置き換えた。
+        # 能動的なコード・設定・運用文書に旧名が残っていないことを確認する。過去の状態を記録する履歴
+        # （.serena/memories/）は当時の事実を正しく残すため対象から除外する。検索語は連結で組み立て、本ステップ
+        # 自身が旧名の連続文字列を含まないようにして自己一致を防ぐ。
+        run: |
+          term='readability-''contrast'
+          if grep -rn --include='*.mjs' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.json' --include='*.yml' --include='*.md' "$term" scripts src docs/runbooks .github package.json; then
+            echo "旧名の残存参照を検出しました（上記）。新名 readability-quality へ更新してください。"
+            exit 1
+          fi
       - name: Quality harness (cloud schema checks only)
         # GPUの無いCIでは描画・撮影・フレーム計測を行わず、登録済みのファイル存在とJSONスキーマ
         # だけを検査する（docs/research/08 の1節）。Issue #95時点は検査の登録が無いため登録0件で合格し、

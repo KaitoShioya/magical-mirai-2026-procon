@@ -108,9 +108,54 @@ declare global {
         frustumTop: number;
         frustumBottom: number;
       } | null;
+      stageTerrainStatus: "none" | "loaded" | "error";
+      stageTerrainError: string | null;
+      waterSource: "placeholder-plane" | "stage-mesh";
+      waterRegion: {
+        width: number;
+        depth: number;
+        centerX: number;
+        centerZ: number;
+        y: number;
+      } | null;
+      originalWaterBoundsWorld: {
+        minX: number;
+        maxX: number;
+        minZ: number;
+        maxZ: number;
+        y: number;
+      } | null;
       screenTransform: { scale: number; offsetX: number; offsetY: number };
       outputColorSpace: string;
       toneMapping: number;
+    };
+    /**
+     * 検証用の舞台土台診断アクセサ。舞台土台の受け入れ診断ページ（stage.html）だけが取り付ける。
+     * 地形を読み込んだ描画基盤の状態と、地形メッシュ数を返す。scripts/rendering-stage-smoke.mjs が取得する。
+     * 反射面に渡した水面領域（waterRegion）と、水面マーカーの元範囲（originalWaterBoundsWorld）は別物のため
+     * 別項目で返す。共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __stageState?: () => {
+      webglAvailable: boolean;
+      stageTerrainStatus: "none" | "loaded" | "error";
+      stageTerrainError: string | null;
+      waterSource: "placeholder-plane" | "stage-mesh";
+      reflectionEnabled: boolean;
+      overlayObjectCount: number | null;
+      waterRegion: {
+        width: number;
+        depth: number;
+        centerX: number;
+        centerZ: number;
+        y: number;
+      } | null;
+      originalWaterBoundsWorld: {
+        minX: number;
+        maxX: number;
+        minZ: number;
+        maxZ: number;
+        y: number;
+      } | null;
     };
     /**
      * 自動劣化制御（Issue #18）の受け入れ診断 perf-budget.html が公開する、各劣化段階の適用結果。
@@ -158,6 +203,22 @@ declare global {
     __glowState?: () => {
       drawCalls: number;
       triangles: number;
+    };
+    /**
+     * 検証用の蝶造形診断アクセサ。蝶診断ページ（butterfly.html）だけが取り付ける。
+     * 蝶のみのシーンを描いた直後の描画命令の回数（drawCalls）と三角形の数（triangles）、描画個体数
+     * （instanceCount）、個体あたり三角形数（trianglesPerInstance）、活動個体数（activeCount）、
+     * 代表個体の大きさ・輝度の標本を同一スナップショットで返す。scripts/rendering-butterfly-smoke.mjs が取得する。
+     * 共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __butterflyState?: () => {
+      drawCalls: number;
+      triangles: number;
+      instanceCount: number;
+      trianglesPerInstance: number;
+      activeCount: number;
+      sampleScales: readonly number[];
+      sampleBrightnesses: readonly number[];
     };
     /**
      * 検証用の層合成診断アクセサ。層合成の受け入れ診断ページ（layer-composite.html）だけが取り付ける。

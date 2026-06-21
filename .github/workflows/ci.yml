@@ -48,7 +48,7 @@ jobs:
         # 診断ページは規約適合のため本番配信に含めてはならない（Issue #47、docs/decisions/architecture.md §7.2）。
         # 本番ビルド成果物に入力診断ページ input.html と層合成診断ページ layer-composite.html が無いことを、
         # 後続の検証用ビルドが全ページを出す前に確認する。
-        run: test ! -f dist/input.html && test ! -f dist/layer-composite.html
+        run: test ! -f dist/input.html && test ! -f dist/layer-composite.html && test ! -f dist/butterfly.html
       - name: Build verification bundle (all pages)
         # 既定ビルド。最終的な dist は本体に加え解析・性能・文字診断・雨診断・カメラ軌跡診断・発光点診断の
         # 各ページを含み、後続の preview の配信対象となる。この成果物を後続のスモークが配信するため、本番と同じトークンを注入する。
@@ -78,6 +78,10 @@ jobs:
         # 発光点（Issue #10）の受け入れ基準「300個で描画命令が5未満」の実機検証。描画命令の回数は
         # three.js が JavaScript 側で計数するため、GPUの無いソフトウェア描画でも正確に得られる。
         run: BASE=http://127.0.0.1:4173 npm run smoke:glow
+      - name: Run butterfly smoke test
+        # 蝶造形（Issue #61）の受け入れ検証。派生シェーダが実機でコンパイルされ、単一の InstancedMesh が
+        # 1回の描画命令にまとまり、三角形数がジオメトリと描画個体数の積に一致し、活動個体が描かれることを確かめる。
+        run: BASE=http://127.0.0.1:4173 npm run smoke:butterfly
       - name: Run layer-composite smoke test
         # 描画層合成（Issue #15）の受け入れ基準「2D層が確実に最前面・z-fightなし」の実機検証。本番と同じ
         # 合成手順で描いた画面の画素を読み戻し、2次元層が最前面（中央が赤）で3次元の色を保持する（外側が緑）

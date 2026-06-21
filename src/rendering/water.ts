@@ -7,13 +7,15 @@
 // docs/poc/src/prototype/main.js）は名前空間取り込みを用いるが、検証用ツールであり本番の取り込み方針の
 // 対象外であるため、本編の本ファイルでは名前付き取り込みへ揃える。
 //
-// 水面のジオメトリは現状この内部で平面として生成する。将来の舞台土台モデル（Issue #105）の導入時は、
-// この生成箇所をモデル内の約束した名前のメッシュ（名前を water とする）のジオメトリへ差し替える。
-// Reflector は任意のジオメトリを受け取るため差し替えは局所で済む。
+// 水面の寸法と位置は、舞台土台モデル（Issue #105）が読み込めたとき options.waterRegion で渡される。
+// 平面反射（Reflector）の反射面の向きは対象オブジェクトの向きで決まるため、土台モデルのジオメトリを直接
+// 受け取らず、平面を作り x軸まわりに-90度回して水平化するこの実績経路に固定する。土台モデルの water は
+// 領域の識別用マーカーであり、その境界箱から得た寸法・中心・高さ（waterRegion）でここが平面を作り直す。
 
 import { Mesh, MeshBasicMaterial, Object3D, PlaneGeometry } from "three";
 import { Reflector } from "three/examples/jsm/objects/Reflector.js";
 import { WATER_COLOR, WATER_PLANE_SIZE } from "./constants";
+import type { WaterRegion } from "../types/stage";
 
 /**
  * 反射水面の外部契約。呼び出し側を three.js の具象型（Reflector）に依存させないための抽象。
@@ -32,14 +34,31 @@ export interface Water {
 /**
  * 反射水面を生成する。
  * reflectionResolution が0より大きいとき平面反射（Reflector）、0のとき不透明な面（Mesh）を作る。
- * いずれも水平面にし、高さ（y座標）は0に置く（位置を移動しない）。採用理由を先に述べる。試作が水面を
- * 高さ0に置いて狙いの見えを確認しており、反射面の基準面を高さ0に固定する。将来の舞台土台モデル（#105）の
- * 高さ規約はそちらへ引き継ぐ。
+ * いずれも平面を作り x軸まわりに-90度回して水平にする。平面のローカル法線は+Z で、この回転で法線が上向き
+ * （+Y）になり水平な水面になる。平面反射の反射面の向きは対象オブジェクトの向きで決まるため、向きの作り方を
+ * この経路に固定して反射面が水平になることを保証する。
+ * options.waterRegion を与えたとき、その幅・奥行きの平面を作り、中心と高さ（waterRegion.y）へ置く
+ * （舞台土台モデルの水面領域、Issue #105）。与えないとき、原点・高さ0で WATER_PLANE_SIZE 四方の平面を作る
+ * （暫定の水面、Issue #9）。いずれの場合も生成した平面のジオメトリは本関数が所有し、dispose で解放する。
  * @param options.reflectionResolution 反射解像度（0は無効、256または512は有効解像度）
+ * @param options.waterRegion 水面領域（幅・奥行き・中心・高さ）。省略時は暫定の原点・高さ0の平面。
  */
-export function createWater(options: { reflectionResolution: number }): Water {
-  const { reflectionResolution } = options;
-  const geometry = new PlaneGeometry(WATER_PLANE_SIZE, WATER_PLANE_SIZE);
+export function createWater(options: {
+  reflectionResolution: number;
+  waterRegion?: WaterRegion;
+}): Water {
+  const { reflectionResolution, waterRegion } = options;
+  const width = waterRegion ? waterRegion.width : WATER_PLANE_SIZE;
+  const depth = waterRegion ? waterRegion.depth : WATER_PLANE_SIZE;
+  const geometry = new PlaneGeometry(width, depth);
+
+  // 水平化と配置。x軸まわりに-90度回して水平にし、水面領域があれば中心と高さへ置く（なければ原点・高さ0）。
+  function place(object: Object3D): void {
+    object.rotateX(-Math.PI / 2);
+    if (waterRegion) {
+      object.position.set(waterRegion.centerX, waterRegion.y, waterRegion.centerZ);
+    }
+  }
 
   if (reflectionResolution > 0) {
     const reflector = new Reflector(geometry, {
@@ -47,8 +66,7 @@ export function createWater(options: { reflectionResolution: number }): Water {
       textureHeight: reflectionResolution,
       color: WATER_COLOR,
     });
-    // 平面のローカル法線は+Z。x軸まわりに-90度回すと法線が上向き（+Y）になり、水平な水面になる。
-    reflector.rotateX(-Math.PI / 2);
+    place(reflector);
     return {
       object3d: reflector,
       reflective: true,
@@ -64,7 +82,7 @@ export function createWater(options: { reflectionResolution: number }): Water {
 
   const material = new MeshBasicMaterial({ color: WATER_COLOR });
   const mesh = new Mesh(geometry, material);
-  mesh.rotateX(-Math.PI / 2);
+  place(mesh);
   return {
     object3d: mesh,
     reflective: false,

@@ -137,9 +137,14 @@ function makeRule(
 }
 
 /**
- * 判定理由から主演出への既定規則表。判定理由ごとの粒度（granularity.ts が確定）と第9節「発声属性→演出文法」を
- * 厳密に揃える。既定の適用粒度はその判定理由の粒度に一致させる（後でコントローラが任意粒度へ上書き可能）。
- * middle は第9節が中間の単語粒度に固有の文法を割り当てないため主演出を持たず、空配列とする（常時重ね層だけを受ける）。
+ * 判定理由から主演出への既定規則表。第9節「発声属性→演出文法」の各行を、granularity.ts が確定した判定理由へ
+ * 割り当てる。対応の根拠を述べる。短音（shortDense・shortSparse）は第9節の「強い口調・短い音→スマッシュ」、
+ * 連発（repeat）は「同一フレーズの連発→円状回転増殖」、ロングトーン（longTone）は「ロングトーン・シャウト→
+ * 縦伸ばしと渦」、曲の切れ目（boundary）は「曲の切れ目→暗転」に対応する。長尺（longDense・longSparse）は
+ * 第9節の「流れる連続フレーズ→フレーズ一括表示と字間拡大」を、granularity.ts の長尺2分類（高密度の流し込みと
+ * 低密度のチャンク分割）へ割り当てたものである。既定の適用粒度はその判定理由の粒度に一致させる（後でコントローラが
+ * 任意粒度へ上書き可能）。middle は第9節が中間の単語粒度に固有の文法を割り当てないため主演出を持たず、
+ * 空配列とする（常時重ね層だけを受ける）。
  */
 const REASON_RULES: Readonly<Record<GranularityReason, readonly DefaultEffectRule[]>> = {
   shortDense: [makeRule("smash", "char", EFFECT_PRIORITY_SHORT_DENSE_RUSH_ADJUST)],
@@ -154,7 +159,11 @@ const REASON_RULES: Readonly<Record<GranularityReason, readonly DefaultEffectRul
 
 /**
  * 常時重ね層（画面全体以外の全セグメントへ重ねる演出）の既定規則。主演出の写像とは別に持つ。
- * 感情声量・残像・カメラの3つ（docs/idea/concept-final.md 第11節の常時重ねうる層）。すべて既定適用粒度は文字。
+ * 感情声量・残像・カメラの3つで、すべて既定適用粒度は文字。出典と選定の根拠を述べる。感情声量は
+ * docs/research/01-kinetic-typography.md 第9節・docs/idea/concept-final.md 第11節の「声量を太さと大きさ、
+ * 感情を色と動きへ写像する」に直接対応する。残像とカメラは、第11節の「粒度で複数の要素を重ねて組み合わせる」
+ * 重ね合わせ方針に基づき、本作で常時重ねる層として選定した設計判断である（第11節がこの3演出を常時重ね層として
+ * 列挙しているわけではない）。曲非依存の静的既定であり、曲固有の決定は持たない。
  */
 export const DEFAULT_OVERLAY_RULES: readonly DefaultEffectRule[] = [
   makeRule("emotionLoudness", "char", 0),
@@ -290,6 +299,35 @@ function effectBeatCadenceOf(element: EffectElement): number | null {
   return cadence === undefined || cadence === null ? null : cadence;
 }
 
+/** 演出の実在と必要信号から、状態・宣言対象単位・発火間隔を導く。割付の生成と検査が同じ規則を共有するため切り出す。 */
+interface ElementState {
+  readonly status: EffectAssignmentStatus;
+  readonly declaredTargetUnit: EffectTargetUnit;
+  readonly effectBeatCadenceBeats: number | null;
+}
+
+function resolveElementState(
+  rule: DefaultEffectRule,
+  element: EffectElement | undefined,
+  signals: SignalAvailability
+): ElementState {
+  if (element === undefined) {
+    // 未実装演出は信号に関わらず実装待ち状態。宣言対象単位は規則の想定値、発火間隔は取れないため null。
+    return {
+      status: "pendingImplementation",
+      declaredTargetUnit: rule.expectedTargetUnit,
+      effectBeatCadenceBeats: null,
+    };
+  }
+  return {
+    status: signalsSatisfied(element.startCondition.requiredSignals, signals)
+      ? "active"
+      : "signalUnavailable",
+    declaredTargetUnit: element.targetUnit,
+    effectBeatCadenceBeats: effectBeatCadenceOf(element),
+  };
+}
+
 /** 1つの規則を1つの割付へ解決する。 */
 function toAssignment(
   rule: DefaultEffectRule,
@@ -298,35 +336,17 @@ function toAssignment(
   signals: SignalAvailability,
   overrides: GranularityOverrides | undefined
 ): EffectAssignment {
-  const element = lookup.get(rule.effectId);
-  const applyGranularity = overrides?.[rule.grammar] ?? rule.defaultApplyGranularity;
-
-  let status: EffectAssignmentStatus;
-  let declaredTargetUnit: EffectTargetUnit;
-  let effectBeatCadenceBeats: number | null;
-
-  if (element === undefined) {
-    status = "pendingImplementation";
-    declaredTargetUnit = rule.expectedTargetUnit;
-    effectBeatCadenceBeats = null;
-  } else {
-    declaredTargetUnit = element.targetUnit;
-    effectBeatCadenceBeats = effectBeatCadenceOf(element);
-    status = signalsSatisfied(element.startCondition.requiredSignals, signals)
-      ? "active"
-      : "signalUnavailable";
-  }
-
+  const state = resolveElementState(rule, lookup.get(rule.effectId), signals);
   return {
     effectId: rule.effectId,
     grammar: rule.grammar,
-    declaredTargetUnit,
-    applyGranularity,
+    declaredTargetUnit: state.declaredTargetUnit,
+    applyGranularity: overrides?.[rule.grammar] ?? rule.defaultApplyGranularity,
     priorityAdjustment: rule.priorityAdjustment,
     // 元セグメントの charCadenceBeats を演出によらず一律に入れる（文字粒度のときのみ非null）。
     segmentCharCadenceBeats: segment.charCadenceBeats,
-    effectBeatCadenceBeats,
-    status,
+    effectBeatCadenceBeats: state.effectBeatCadenceBeats,
+    status: state.status,
   };
 }
 
@@ -530,11 +550,23 @@ export function findAssignmentPlanIssues(
       issues.push({ path, message: "判定理由が定義済みの値のいずれでもない" });
     }
 
+    // このセグメントの期待規則（主演出と、画面全体以外なら常時重ね層）を識別名で引ける表にする。
+    const expectedRulesById = new Map<string, DefaultEffectRule>();
+    for (const rule of defaultRulesFor(segment.reason)) {
+      expectedRulesById.set(rule.effectId, rule);
+    }
+    if (segment.granularity !== "fullscreen") {
+      for (const rule of DEFAULT_OVERLAY_RULES) {
+        expectedRulesById.set(rule.effectId, rule);
+      }
+    }
+
     // 割付ごとの検査。
     for (let j = 0; j < segment.assignments.length; j++) {
       const assignment = segment.assignments[j];
       const apath = `${path}.assignments[${j}]`;
 
+      // 語彙と形の検査（規則表外の識別名にも適用する基礎検査）。
       if (!GRAMMAR_VALUES.has(assignment.grammar)) {
         issues.push({ path: apath, message: "文法が定義済みの値でない" });
       }
@@ -544,45 +576,38 @@ export function findAssignmentPlanIssues(
       if (!Number.isFinite(assignment.priorityAdjustment)) {
         issues.push({ path: apath, message: "優先度補正が有限数でない" });
       }
-
-      // segmentCharCadenceBeats: 元セグメントが文字粒度なら正の整数、文字粒度でなければ null。
-      if (segment.granularity === "char") {
-        if (!isPositiveInteger(assignment.segmentCharCadenceBeats)) {
-          issues.push({ path: apath, message: "文字粒度セグメントで segmentCharCadenceBeats が正の整数でない" });
-        }
-      } else if (assignment.segmentCharCadenceBeats !== null) {
-        issues.push({ path: apath, message: "文字粒度でないセグメントで segmentCharCadenceBeats が null でない" });
-      }
-
-      // effectBeatCadenceBeats: 正の整数または null。
       if (assignment.effectBeatCadenceBeats !== null && !isPositiveInteger(assignment.effectBeatCadenceBeats)) {
         issues.push({ path: apath, message: "effectBeatCadenceBeats が正の整数または null でない" });
       }
-
       if (!STATUS_VALUES.has(assignment.status)) {
         issues.push({ path: apath, message: "状態が定義済みの値でない" });
       }
 
-      const element = lookup.get(assignment.effectId);
-      // active は実在し必要信号を満たす。
-      if (assignment.status === "active") {
-        if (element === undefined) {
-          issues.push({ path: apath, message: "active だが演出がレジストリに実在しない" });
-        } else if (!signalsSatisfied(element.startCondition.requiredSignals, input.signals)) {
-          issues.push({ path: apath, message: "active だが必要信号を満たさない" });
-        }
+      // segmentCharCadenceBeats は元セグメントの charCadenceBeats と値まで一致する（形だけでなく値を照合する）。
+      if (assignment.segmentCharCadenceBeats !== source.charCadenceBeats) {
+        issues.push({ path: apath, message: "segmentCharCadenceBeats が元セグメントの charCadenceBeats と一致しない" });
       }
-      // effectBeatCadenceBeats の実体一致。未実装は null、登録演出は実体の beatCadence と一致。
-      if (element === undefined) {
-        if (assignment.effectBeatCadenceBeats !== null) {
-          issues.push({ path: apath, message: "未実装演出の effectBeatCadenceBeats が null でない" });
+
+      // 規則に対応する割付は、優先度補正・適用粒度・状態・宣言対象単位・発火間隔が規則と実体から導かれる値と一致する。
+      // 規則表外の識別名（後段の集合一致が別に検出する）は規則を引けないため、この詳細検査の対象から外す。
+      const rule = expectedRulesById.get(assignment.effectId);
+      if (rule !== undefined) {
+        if (assignment.priorityAdjustment !== rule.priorityAdjustment) {
+          issues.push({ path: apath, message: "優先度補正が既定規則の値と一致しない" });
         }
-      } else {
-        if (assignment.effectBeatCadenceBeats !== effectBeatCadenceOf(element)) {
-          issues.push({ path: apath, message: "effectBeatCadenceBeats が登録演出の beatCadence と一致しない" });
+        const expectedApplyGranularity = input.granularityOverrides?.[assignment.grammar] ?? rule.defaultApplyGranularity;
+        if (assignment.applyGranularity !== expectedApplyGranularity) {
+          issues.push({ path: apath, message: "適用粒度が規則の既定値または上書き値と一致しない" });
         }
-        if (assignment.declaredTargetUnit !== element.targetUnit) {
-          issues.push({ path: apath, message: "declaredTargetUnit が登録演出の targetUnit と一致しない" });
+        const expected = resolveElementState(rule, lookup.get(assignment.effectId), input.signals);
+        if (assignment.status !== expected.status) {
+          issues.push({ path: apath, message: "状態が演出の実在と必要信号から導かれる状態と一致しない" });
+        }
+        if (assignment.declaredTargetUnit !== expected.declaredTargetUnit) {
+          issues.push({ path: apath, message: "declaredTargetUnit が期待値（登録実体または規則の想定）と一致しない" });
+        }
+        if (assignment.effectBeatCadenceBeats !== expected.effectBeatCadenceBeats) {
+          issues.push({ path: apath, message: "effectBeatCadenceBeats が期待値（登録演出の beatCadence または null）と一致しない" });
         }
       }
     }

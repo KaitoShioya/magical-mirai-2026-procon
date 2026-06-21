@@ -258,6 +258,14 @@ describe("受け入れ基準1: 単位と条件から既定の演出群を返す"
     expect(segment.granularity).toBe("phrase");
   });
 
+  it("repeat の円状回転増殖は宣言対象単位（単語）と適用粒度（フレーズ）の不一致を併存する", () => {
+    const segment = assignmentSegmentByReason(takeoverInput(), fullRegistry(), ALL_SIGNALS, "repeat");
+    const circular = assignmentOf(segment, EFFECT_ID.circularMultiply);
+    expect(circular.status).toBe("active");
+    expect(circular.declaredTargetUnit).toBe("word"); // 登録実体の targetUnit
+    expect(circular.applyGranularity).toBe("phrase"); // 規則の既定適用粒度
+  });
+
   it("各判定理由に第9節の主演出が割り付く（repeat→円状回転増殖、longDense/longSparse→字間拡大、boundary→暗転）", () => {
     const repeat = assignmentSegmentByReason(takeoverInput(), fullRegistry(), ALL_SIGNALS, "repeat");
     expect(effectIds(repeat)).toContain(EFFECT_ID.circularMultiply);
@@ -379,6 +387,23 @@ describe("受け入れ基準3: 曲固有の決定や上書きを持たない", (
     expect(assignmentOf(withoutLoud, EFFECT_ID.verticalStretchSwirl).status).toBe("signalUnavailable");
   });
 
+  it("区間境界を偽にすると boundary の fadeBlackout が signalUnavailable になる", () => {
+    const withBoundary = assignmentSegmentByReason(
+      twoPhraseWithGapInput(),
+      fullRegistry(),
+      ALL_SIGNALS,
+      "boundary"
+    );
+    const withoutBoundary = assignmentSegmentByReason(
+      twoPhraseWithGapInput(),
+      fullRegistry(),
+      { loudness: true, emotion: true, sectionBoundary: false },
+      "boundary"
+    );
+    expect(assignmentOf(withBoundary, EFFECT_ID.fadeBlackout).status).toBe("active");
+    expect(assignmentOf(withoutBoundary, EFFECT_ID.fadeBlackout).status).toBe("signalUnavailable");
+  });
+
   it("必要信号を持たない演出（円状回転増殖・残像・カメラ）は3信号すべてを偽にしても active のまま", () => {
     const repeat = assignmentSegmentByReason(takeoverInput(), fullRegistry(), NO_SIGNALS, "repeat");
     expect(assignmentOf(repeat, EFFECT_ID.circularMultiply).status).toBe("active");
@@ -489,6 +514,58 @@ describe("構造検査と単位参照の保持", () => {
                 i === 0 ? { ...a, segmentCharCadenceBeats: 1 } : a
               ),
             }
+          : s
+      ),
+    };
+    expect(findAssignmentPlanIssues(broken, planInput).length).toBeGreaterThan(0);
+  });
+
+  it("優先度補正を規則と異なる値へ書き換えると不整合を返す", () => {
+    const planInput = planInputFor(takeoverInput(), fullRegistry());
+    const plan = buildAssignmentPlan(planInput);
+    const target = plan.segments.find((s) => s.assignments.length > 0) as SegmentAssignment;
+    const broken: AssignmentPlan = {
+      segments: plan.segments.map((s) =>
+        s === target
+          ? { ...s, assignments: s.assignments.map((a, i) => (i === 0 ? { ...a, priorityAdjustment: a.priorityAdjustment + 7 } : a)) }
+          : s
+      ),
+    };
+    expect(findAssignmentPlanIssues(broken, planInput).length).toBeGreaterThan(0);
+  });
+
+  it("状態を実体と信号から導かれる値と異なる値へ書き換えると不整合を返す", () => {
+    const planInput = planInputFor(takeoverInput(), realRegistry());
+    const plan = buildAssignmentPlan(planInput);
+    // 実レジストリでは charSmash 以外は pendingImplementation。これを active へ偽ると不整合になる。
+    const target = plan.segments.find((s) =>
+      s.assignments.some((a) => a.status === "pendingImplementation")
+    ) as SegmentAssignment;
+    const broken: AssignmentPlan = {
+      segments: plan.segments.map((s) =>
+        s === target
+          ? {
+              ...s,
+              assignments: s.assignments.map((a) =>
+                a.status === "pendingImplementation" ? { ...a, status: "active" as const } : a
+              ),
+            }
+          : s
+      ),
+    };
+    expect(findAssignmentPlanIssues(broken, planInput).length).toBeGreaterThan(0);
+  });
+
+  it("segmentCharCadenceBeats を元セグメントと異なる値へ書き換えると不整合を返す", () => {
+    const planInput = planInputFor(takeoverInput(), fullRegistry());
+    const plan = buildAssignmentPlan(planInput);
+    // 文字粒度セグメント（shortDense=2 / shortSparse=1）の値を別の正の整数へ偽る。
+    const target = plan.segments.find((s) => s.granularity === "char") as SegmentAssignment;
+    const wrong = target.charCadenceBeats === 1 ? 2 : 1;
+    const broken: AssignmentPlan = {
+      segments: plan.segments.map((s) =>
+        s === target
+          ? { ...s, assignments: s.assignments.map((a, i) => (i === 0 ? { ...a, segmentCharCadenceBeats: wrong } : a)) }
           : s
       ),
     };

@@ -14,6 +14,8 @@ import {
   SONG_END_STOP_TOLERANCE_MS,
   type Playback,
 } from "./playback";
+import { createPlayerMusicMapSource, type MusicMapSource, type TextAlivePlayerLike } from "./musicMap";
+import type { LyricSourceVideo } from "./lyricsTimeline";
 
 /** 音声配置先要素の識別子。index.html で #app の外（body 直下）に置く。 */
 const MEDIA_ELEMENT_ID = "audio-media";
@@ -68,6 +70,15 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
       hasEnded: () => false,
       retry() {},
       primeAudioPermission() {},
+      // 設定エラーでは音楽地図を供給できない。準備完了を常に偽とし、空の値を返す（呼び出し側は isReady で弾く）。
+      musicMap: (): MusicMapSource => ({
+        isReady: () => false,
+        lyricsVideo: () => ({ phrases: [] } as unknown as LyricSourceVideo),
+        beatStartTimesMs: () => [],
+        chorusRanges: () => [],
+        vocalAmplitudeAt: () => 0,
+        songEndMs: () => 0,
+      }),
       dispose() {},
     };
   }
@@ -232,6 +243,10 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
         // 許可の確立に失敗しても「触れて再生」表示が再生開始を担うため、ここでは握りつぶす。
       }
     },
+    // 音楽地図ソースは TextAlive の Player を裏側に持つ。準備完了（onTimerReady 後）は isReady で判定する。
+    // Player の構造は TextAlivePlayerLike を満たすが、外部ライブラリの型との照合を避けるため明示的に写す。
+    musicMap: (): MusicMapSource =>
+      createPlayerMusicMapSource(player as unknown as TextAlivePlayerLike, isReady),
     dispose() {
       player.removeListener(listener);
       player.dispose();

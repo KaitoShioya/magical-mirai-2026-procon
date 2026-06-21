@@ -10,6 +10,8 @@ import {
   type Playback,
   type PlaybackState,
 } from "./playback";
+import { createFakeMusicMapSource, type MusicMapSource } from "./musicMap";
+import type { LyricSourceVideo } from "./lyricsTimeline";
 
 /**
  * 擬似再生の楽曲長（ミリ秒）。
@@ -20,9 +22,53 @@ import {
  */
 const FAKE_DURATION_MS = 800;
 
+/**
+ * 擬似再生の音楽地図ソースを作る。被覆・分割・同期の検証が意味を持つ最小データを、擬似再生の楽曲長
+ * （FAKE_DURATION_MS = 800ミリ秒）の中に収める。短いフレーズ・1行に収まらない長いフレーズ・英数字混在フレーズの
+ * 3つを順に置き、それらを覆うビート列とコーラス区間1つ、一定の声量を返す。
+ */
+function createFakeMusicMap(): MusicMapSource {
+  // フレーズ0（短、0〜200）、フレーズ1（長、200〜520）、フレーズ2（英数字混在、520〜800）。
+  function phrase(text: string, startTime: number, perChar: number) {
+    const chars = Array.from(text);
+    return {
+      startTime,
+      endTime: startTime + chars.length * perChar,
+      text,
+      children: [
+        {
+          startTime,
+          endTime: startTime + chars.length * perChar,
+          text,
+          children: chars.map((ch, i) => ({
+            startTime: startTime + i * perChar,
+            endTime: startTime + (i + 1) * perChar,
+            text: ch,
+          })),
+        },
+      ],
+    };
+  }
+  const lyricsVideo = {
+    phrases: [phrase("てすと", 0, 60), phrase("ながいフレーズのれい", 200, 32), phrase("Clap to Beat", 520, 23)],
+  } as unknown as LyricSourceVideo;
+  const beatStartTimesMs: number[] = [];
+  for (let t = 0; t < FAKE_DURATION_MS; t += 100) {
+    beatStartTimesMs.push(t);
+  }
+  return createFakeMusicMapSource({
+    lyricsVideo,
+    beatStartTimesMs,
+    chorusRanges: [{ startTimeMs: 0, endTimeMs: 200 }],
+    constantVocalAmplitude: 50,
+    songEndMs: FAKE_DURATION_MS,
+  });
+}
+
 /** 擬似再生を作る。状態は常に確定（読み込み待ちは無い）。 */
 export function createFakePlayback(): Playback {
   const readyState: PlaybackState = { status: "ready" };
+  const fakeMusicMap = createFakeMusicMap();
 
   let started = false;
   let playing = false;
@@ -93,6 +139,7 @@ export function createFakePlayback(): Playback {
     primeAudioPermission() {
       // 擬似再生は実際の音声を持たないため、許可の確立は不要。
     },
+    musicMap: () => fakeMusicMap,
     dispose() {
       playing = false;
     },

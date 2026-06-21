@@ -4,6 +4,7 @@
 // 依存規則の出典: docs/decisions/architecture.md §5、src/textalive/README.md。
 
 import type { TimeSource } from "../engine";
+import type { MusicMapSource } from "./musicMap";
 
 /**
  * 再生の読み込み状態。
@@ -39,6 +40,12 @@ export interface Playback {
   retry(): void;
   /** 音声再生の許可を確立する最善努力（題名の操作の最中に呼ぶ）。 */
   primeAudioPermission(): void;
+  /**
+   * 表示粒度の組み立てに使う音楽地図ソース（Issue #33）。歌詞・ビート・コーラス区間・声量・曲長を読む窓口。
+   * 準備完了（getState が ready）の前は有効な値を返さないため、呼び出し側は音楽地図ソースの isReady を
+   * 確認してから読む。再生位置と状態を担う本抽象とは別の読取窓口として持つ。
+   */
+  musicMap(): MusicMapSource;
   /** 後始末。購読解除と実体の破棄を行う。 */
   dispose(): void;
 }

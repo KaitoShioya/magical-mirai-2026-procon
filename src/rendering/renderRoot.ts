@@ -164,6 +164,12 @@ export interface RenderRoot {
   addOverlayObject(object: Object3D): void;
   /** 2次元層（Issue #15）から表示物を外す。WebGL が無く2次元層が無い端末では何もしない。 */
   removeOverlayObject(object: Object3D): void;
+  /** 3次元表示ツリーの場面を返す（Issue #33・#59）。キネティック文字エンジン等が3D空間へ表示物を載せるための
+   *  接合で、既存の中心キャラ・舞台土台が内部で場面へ加える設計と同じ系統。WebGL の有無に依らず場面物体は存在する。 */
+  getWorldScene(): Scene;
+  /** 3次元表示ツリーの透視投影カメラを返す（Issue #33・#59）。文字エンジンのカメラ正対と、読ませる役の配置の
+   *  デバイス画素とワールド座標の変換に使う。WebGL の有無に依らずカメラ物体は存在する。 */
+  getWorldCamera(): PerspectiveCamera;
   /** 表示寸法の変更を反映する（カメラ縦横比とレンダラ寸法・画素密度、2次元層の視錐台）。 */
   resize(width: number, height: number): void;
   /** 自動劣化制御（Issue #18）の劣化段階を適用する。段階に応じて画素密度倍率の上限とブルーム（解像度倍率・
@@ -650,6 +656,12 @@ export function createRenderRoot(
     },
     removeOverlayObject(object: Object3D): void {
       overlay?.removeObject(object);
+    },
+    getWorldScene(): Scene {
+      return scene;
+    },
+    getWorldCamera(): PerspectiveCamera {
+      return camera;
     },
     setCameraPose,
     setScreenTransform,

@@ -232,10 +232,12 @@ export function createKineticTextEngine(
   }
 
   // 未収録文字とフォント読込失敗の振り分け。収録の無い文字や失敗フォントの文字は代替フォントへ回す。
+  // char は1文字とは限らず、読ませる役の行のように文字列全体のこともある。文字列のときはその全ての文字が
+  // 収録（暖め済み）であれば主フォントで描けるとみなす。1文字でも未収録なら代替フォントへ回す。
   function chooseFont(fontName: string, char: string): { url: string | null; fallbackUsed: boolean } {
     const entry = fonts.resolve(fontName);
     // 暖めが行われていない（集合が空）ときは、主フォントが全文字を収録するとみなす（誤った全件回送を避ける）。
-    const covered = warmedChars.size === 0 || warmedChars.has(char);
+    const covered = warmedChars.size === 0 || [...char].every((c) => warmedChars.has(c));
     const failed = failedFonts.has(entry.name);
     if (covered && !failed) {
       return { url: entry.url, fallbackUsed: false };

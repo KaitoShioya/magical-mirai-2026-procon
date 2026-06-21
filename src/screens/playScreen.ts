@@ -1,33 +1,209 @@
-// プレイ画面。本Issueでは最小プレースホルダに留める（本編の判定・描画は後続Issue）。
-// プレイ→結果は統括（src/app）が楽曲終了を検知して起こす。本画面は遷移を要求しない。
+// プレイ画面（Issue #33）。本編表示（キネティックタイポ）を駆動する。
+// 文脈のプレイ結線（ScreenContext.play）から描画基盤の場面・カメラ、音楽地図、ゲーム時刻、タイポ譜面を受け取り、
+// 文字エンジンと駆動部（指揮者）を組み立てて毎フレーム動かす。読ませる役（可読な歌詞）と演出役（1文字1拍スマッシュ）を
+// 表示し、歌詞が読めて再生位置へ同期する状態を成立させる。
+//
+// タップ入力・採点・状態表示・視点移動の演出・演出文法②〜⑥は本Issueの範囲外（Issue #59）。
+// WebGL が無い端末・プレイ結線が無い場合は文字エンジンを組み立てず、画面遷移だけを成立させる（スモーク検証のため）。
+// プレイ→結果の遷移は統括（src/app）が楽曲終了を検知して起こすため、本画面は遷移を要求しない。
 
-import type { Screen, ScreenFactory } from "./types";
+import type { PlayWiring, Screen, ScreenContext, ScreenFactory } from "./types";
+import { buildLyricsTimeline } from "../textalive";
+import {
+  createKineticTextEngine,
+  createFontRegistry,
+  ZEN_KAKU_GOTHIC_NEW_CREDIT,
+  createEffectRegistry,
+  charSmash,
+  isPlaceholderHandle,
+  createConductor,
+  prepareConductorContent,
+  createCameraPlacement,
+  findUnknownChartEffectIds,
+  DEFAULT_READABILITY_OPTIONS,
+  type KineticTextEngine,
+  type Conductor,
+  type ReadabilityOptions,
+} from "../typography/kineticText";
 
-export const createPlayScreen: ScreenFactory = (): Screen => {
+/** 主フォントの論理名と所在（診断ページ diagnostics/main.ts と同じ資産）。 */
+const FONT_NAME = "main";
+const FONT_URL = "/fonts/zen-kaku-gothic-new-subset.woff";
+
+/** 読ませる役・演出役を置くカメラ前方の正対面までの距離（世界座標、採用理由を先に述べる）。
+ * 深夜の湖の舞台でカメラ前方に文字を置くため、近すぎて切れず遠すぎて霧（指数フォグ）に沈まない中間として
+ * 8世界単位を初期値とする。実機調整で確定する暫定値。 */
+const READING_PLANE_DISTANCE = 8;
+
+/** 文字の基底塗り色（明るい白。可読性処理が発光を抑え縁取りで背景から分離する）。 */
+const BASE_COLOR = 0xffffff;
+
+/** 読ませる役の塗りの明るさの上限（線形相対輝度、採用理由を先に述べる）。
+ * 画面のブルーム（発光）は相対輝度が閾値（src/rendering/constants.ts の BLOOM_THRESHOLD、0.5）を超える画素を
+ * 光らせる。塗りを閾値ちょうどにすると、ブルームの滑らかな立ち上がり（knee）で部分的に発光して「輝く」見え方になる。
+ * マット（光らない）にするため、閾値より明確に低い0.4へ抑える。0.4は、暗い湖の背景に対し十分に明るい灰白色で
+ * 読める一方、ブルームに拾われない上限である。実機調整で確定する暫定値。 */
+const READING_MATTE_MAX_LUMINANCE = 0.4;
+
+/** 同時表示文字数の余裕（採用理由を先に述べる）。駆動部は同時に読ませる役1単位（最大でフレーズ全文字）を出すため、
+ * 最大フレーズ文字数に余裕16を足した値を層の上限とすれば出現破棄が起きない。
+ * 性能に基づく上限の精緻化は Issue #59 で行う。 */
+const LAYER_LIMIT_MARGIN = 16;
+
+/** タイポ譜面に配置指定が無いフレーズの可読性属性を、想定表示寸法を反映して作る。
+ * 塗りの明るさの上限（maxBrightLuminance）を高く指定する理由を先に述べる。可読性処理は塗りの輝度を
+ * ブルーム閾値以下へ収めるため min(指定値, ブルーム閾値) を採る。深夜の湖の暗い背景では塗りが暗いと読みにくく
+ * 濁点などの細部が埋もれるため、ブルーム閾値まで明るくしたい。指定値を1にしておけば常にブルーム閾値が選ばれ、
+ * にじみを避けつつ可能な限り明るい塗りになる。 */
+function readabilityFor(pixelHeight: number): ReadabilityOptions {
+  // 採用理由を先に述べる。塗りはマットにする（READING_MATTE_MAX_LUMINANCE の注記参照）。可読性処理は塗りの輝度を
+  // min(maxBrightLuminance, エンジンのブルーム閾値) に収めるため、エンジン側のブルーム閾値を0.4にしたうえで
+  // maxBrightLuminance を高く指定すれば、塗りは0.4のマットな灰白色になる。
+  // 縁取りは細く（0.5%）する。太い縁は文字を潰し、暗い縁のぼかしは暗い景色へ溶けて文字を同化させるため、
+  // 細い縁にとどめ、影のぼかしは0にする。
+  return {
+    ...DEFAULT_READABILITY_OPTIONS,
+    minPixelHeight: pixelHeight,
+    maxBrightLuminance: 1,
+    borderWidth: "0.5%",
+    shadowBlur: "0%",
+  };
+}
+
+/** プレイ結線から文字エンジンと駆動部を組み立てる。準備未完了・WebGL無しのときは null を返す。 */
+function buildPlayback(play: PlayWiring): { engine: KineticTextEngine; conductor: Conductor } | null {
+  const source = play.musicMapSource();
+  if (!play.webglAvailable() || !source.isReady()) {
+    return null;
+  }
+
+  // 歌詞から、暖める文字集合と層の上限の基準（最大フレーズ文字数）を求める。
+  const timeline = buildLyricsTimeline(source.lyricsVideo());
+  const uniqueChars = new Set<string>();
+  let maxPhraseChars = 0;
+  for (const phrase of timeline.phrases) {
+    let phraseChars = 0;
+    for (const word of phrase.words) {
+      for (const ch of word.chars) {
+        for (const cp of ch.text) {
+          uniqueChars.add(cp);
+        }
+        phraseChars += Array.from(ch.text).length;
+      }
+    }
+    if (phraseChars > maxPhraseChars) {
+      maxPhraseChars = phraseChars;
+    }
+  }
+  // 読ませる役は英語の単語境界に空白を挿入するため、空白も暖め対象に含める（暖め未収録だと代替フォントへ回り
+  // 文字が描かれなくなるのを防ぐ）。+1 は空白ぶんの同時表示文字数の余裕。
+  uniqueChars.add(" ");
+  const layerLimit = maxPhraseChars + LAYER_LIMIT_MARGIN + 1;
+
+  const fonts = createFontRegistry();
+  fonts.register({ name: FONT_NAME, url: FONT_URL, weight: 700, credit: ZEN_KAKU_GOTHIC_NEW_CREDIT });
+
+  const camera = play.getWorldCamera();
+  const engine = createKineticTextEngine({
+    scene: play.getWorldScene(),
+    camera,
+    fonts,
+    limits: { single: layerLimit, batched: layerLimit },
+    viewportPixelHeight: play.viewportPixelHeight,
+    // 可読性処理の塗りの明るさの上限を画面ブルーム閾値より低くして、塗りがブルームに拾われずマットになるようにする。
+    bloomThreshold: READING_MATTE_MAX_LUMINANCE,
+  });
+  // 距離場の事前生成は非同期。待たずに進める（未生成の文字は描画時に生成され、初回だけ僅かに遅れる）。
+  void engine.warmUp(Array.from(uniqueChars).join(""));
+
+  // 譜面の記述ミス（未知の演出識別名）は適用時に黙って無視されるため、組み立て時に警告で気づけるようにする。
+  // 警告（console.warn）であり、スモーク検証が失敗とみなすのは console.error のため、検証は妨げない。
+  const unknownEffectIds = findUnknownChartEffectIds(play.typographyChart);
+  if (unknownEffectIds.length > 0) {
+    console.warn(`タイポ譜面に未知の演出識別名があります（無視されます）: ${unknownEffectIds.join(", ")}`);
+  }
+
+  const registry = createEffectRegistry();
+  registry.register(charSmash);
+
+  const content = prepareConductorContent({
+    source,
+    registry,
+    chart: play.typographyChart,
+    emotionAvailable: false,
+    viewportPixelWidth: play.viewportPixelWidth(),
+    viewportPixelHeight: play.viewportPixelHeight(),
+    defaultReadingUnit: play.defaultReadingUnit,
+    defaultReadingPixelHeight: play.defaultReadingPixelHeight,
+    defaultReadingRegion: play.defaultReadingRegion,
+  });
+
+  const placement = createCameraPlacement(camera, play.viewportPixelHeight, {
+    planeDistance: READING_PLANE_DISTANCE,
+  });
+
+  const conductor = createConductor({
+    engine,
+    placement,
+    content,
+    fontName: FONT_NAME,
+    readabilityFor,
+    baseColor: BASE_COLOR,
+    isPlaceholder: isPlaceholderHandle,
+  });
+
+  return { engine, conductor };
+}
+
+export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen => {
   const element = document.createElement("section");
   element.className = "screen screen--play";
   element.dataset.screen = "play";
 
-  const heading = document.createElement("h1");
-  heading.className = "screen__title";
-  heading.textContent = "プレイ";
+  const play = context.play;
+  let engine: KineticTextEngine | null = null;
+  let conductor: Conductor | null = null;
+  // 組み立てを試みたか（音楽地図の準備完了を待って一度だけ組み立てる）。
+  let built = false;
 
-  const note = document.createElement("p");
-  note.className = "screen__text";
-  note.textContent = "本編の演出・操作・採点は後続の実装で追加します。";
-
-  element.append(heading, note);
+  function tryBuild(): void {
+    if (built || play === undefined) {
+      return;
+    }
+    const result = buildPlayback(play);
+    if (result !== null) {
+      engine = result.engine;
+      conductor = result.conductor;
+      built = true;
+    }
+  }
 
   return {
     element,
     onEnter(): void {
-      // 本Issueのプレイ画面は固有の操作を持たない（楽曲再生と終了検知は統括が担う）。
+      // 準備完了していれば組み立てる。未完了なら onUpdate で準備完了を待って組み立てる。
+      tryBuild();
     },
-    onUpdate(): void {
-      // 本Issueのプレイ画面は時間進行を持たない。
+    onUpdate(deltaMs: number): void {
+      if (play === undefined) {
+        return;
+      }
+      if (!built) {
+        tryBuild();
+      }
+      if (conductor !== null && engine !== null) {
+        const gameTimeMs = play.currentGameTimeMs();
+        conductor.update(gameTimeMs);
+        // 文字の寿命処理・カメラ正対・変形の時間進行を進める（描画は統括の renderRoot.render が行う）。
+        engine.update({ gameTimeMs, frameDeltaMs: deltaMs });
+      }
     },
     onExit(): void {
-      // 固有の後始末はない。
+      conductor?.dispose();
+      conductor = null;
+      engine?.dispose();
+      engine = null;
+      built = false;
     },
   };
 };

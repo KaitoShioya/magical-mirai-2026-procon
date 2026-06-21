@@ -1,6 +1,10 @@
 // 画面状態の有限状態機械が扱う型の定義。
 // ここには型だけを置き、DOMの生成・遷移の論理は持たない（責務の出典 src/screens/README.md）。
 
+import type { Scene, PerspectiveCamera } from "three";
+import type { MusicMapSource } from "../textalive/musicMap";
+import type { TypographyChart, TypographyDisplayRegion, ReadingDisplayUnit } from "../types/typography";
+
 /** 5つの画面状態を表すキー。題名・ウォームアップ・プレイ・結果・再挑戦。 */
 export type ScreenKey = "title" | "warmup" | "play" | "result" | "retry";
 
@@ -34,6 +38,36 @@ export interface SongChoice {
 }
 
 /**
+ * プレイ画面が本編表示（キネティックタイポ）を駆動するための結線（Issue #33）。
+ * 統括（src/app）が描画基盤・再生・ゲーム時刻・タイポ譜面を解決して渡す。プレイ画面はこれを用いて
+ * 文字エンジンと駆動部を組み立てる。WebGL が無い端末では描画を組み立てず、画面遷移だけを成立させる。
+ */
+export interface PlayWiring {
+  /** 3次元表示ツリーの場面（文字エンジンの表示先）。 */
+  getWorldScene(): Scene;
+  /** 3次元表示ツリーの透視投影カメラ（正対と配置の画素↔ワールド変換に使う）。 */
+  getWorldCamera(): PerspectiveCamera;
+  /** WebGL が使えるか。偽のときプレイ画面は文字エンジンを組み立てない。 */
+  webglAvailable(): boolean;
+  /** 音楽データの読取窓口（歌詞・ビート・コーラス区間・声量・曲長）。 */
+  musicMapSource(): MusicMapSource;
+  /** ゲーム時刻（再生位置の平滑化値、ミリ秒）を読む。同期の基準。 */
+  currentGameTimeMs(): number;
+  /** 曲固有のタイポ譜面。 */
+  readonly typographyChart: TypographyChart;
+  /** 配置指定の無いフレーズの既定の読ませる役の表示単位。 */
+  readonly defaultReadingUnit: ReadingDisplayUnit;
+  /** 配置指定の無いフレーズの既定の想定表示寸法（デバイス画素）。 */
+  readonly defaultReadingPixelHeight: number;
+  /** 配置指定の無いフレーズの既定の表示領域。 */
+  readonly defaultReadingRegion: TypographyDisplayRegion;
+  /** 画面の横デバイス画素数（読ませる役の収まり判定に使う）。 */
+  viewportPixelWidth(): number;
+  /** 画面の縦デバイス画素数（最小表示寸法の下限計算に使う）。 */
+  viewportPixelHeight(): number;
+}
+
+/**
  * 各画面へ渡す文脈。
  * 画面は遷移先のキーを要求するだけで、他の画面や機械の内部実装を知らない。
  */
@@ -42,6 +76,8 @@ export interface ScreenContext {
   readonly songs: readonly SongChoice[];
   /** 遷移を要求する。許可遷移表に無い遷移は機械が例外で拒否する。 */
   requestTransition(to: ScreenKey): void;
+  /** プレイ画面の本編表示の結線（Issue #33）。診断・本番の双方で統括が渡す。 */
+  readonly play?: PlayWiring;
 }
 
 /** 状態へ進入するたびに新しい画面を生成する関数。 */

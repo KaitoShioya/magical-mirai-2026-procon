@@ -707,6 +707,106 @@ export function validateProfile(value: unknown): ValidationResult {
     }
   }
 
+  // --- typographyChart（任意項目。存在するときのみ検査する。Issue #33） ---
+  // 演出識別名が「既知の EFFECT_ID か」「実行時に登録済みか」の検査はここで行わない。理由を先に述べる。
+  // これらの判定は演出割付規則（src/typography/kineticText）の知識を要し、profiles から typography を
+  // 取り込むと依存の向きが逆転するためである。これらは駆動部の解決時とスモーク検証で確かめる。
+  // 想定表示寸法が最小表示寸法以上かの判定もここでは行わない。最小表示寸法は可読性処理（typography）が持つ
+  // 値であり、駆動部の配置時に確かめる。ここでは構造・型・値域（正であること、割合が範囲内であること）に限る。
+  if (p["typographyChart"] !== undefined) {
+    const tc = asObject(errors, p["typographyChart"], "typographyChart");
+    if (tc) {
+      const overrides = asArray(errors, tc["effectOverrides"], "typographyChart.effectOverrides");
+      if (overrides) {
+        overrides.forEach((ov, i) => {
+          const base = `typographyChart.effectOverrides[${i}]`;
+          const o = asObject(errors, ov, base);
+          if (!o) return;
+          asNonNegInt(errors, o["phraseIndex"], `${base}.phraseIndex`);
+          const decision = o["decision"];
+          const decisionOk =
+            decision === "adoptDefault" || decision === "disableDefault" || decision === "addSongSpecific";
+          if (!decisionOk) {
+            errors.push({ path: `${base}.decision`, message: "adoptDefault・disableDefault・addSongSpecific のいずれかである必要がある" });
+          }
+          // 演出識別名は disableDefault・addSongSpecific のとき必須。adoptDefault のときは省略可。
+          if (decision === "disableDefault" || decision === "addSongSpecific") {
+            const eid = asString(errors, o["effectId"], `${base}.effectId`);
+            if (eid !== undefined && eid.length === 0) {
+              errors.push({ path: `${base}.effectId`, message: "空であってはならない" });
+            }
+          } else if (o["effectId"] !== undefined) {
+            asString(errors, o["effectId"], `${base}.effectId`);
+          }
+          if (o["range"] !== undefined) {
+            const r = asObject(errors, o["range"], `${base}.range`);
+            if (r) {
+              const sw = asNonNegInt(errors, r["startWordIndex"], `${base}.range.startWordIndex`);
+              const sc = asNonNegInt(errors, r["startCharIndex"], `${base}.range.startCharIndex`);
+              const ew = asNonNegInt(errors, r["endWordIndex"], `${base}.range.endWordIndex`);
+              const ec = asNonNegInt(errors, r["endCharIndex"], `${base}.range.endCharIndex`);
+              if (sw !== undefined && sc !== undefined && ew !== undefined && ec !== undefined) {
+                if (ew < sw || (ew === sw && ec < sc)) {
+                  errors.push({ path: `${base}.range`, message: "終了位置が開始位置より前になっている" });
+                }
+              }
+            }
+          }
+          if (o["startCondition"] !== undefined) {
+            const scObj = asObject(errors, o["startCondition"], `${base}.startCondition`);
+            if (scObj && scObj["beatCadence"] !== undefined && scObj["beatCadence"] !== null) {
+              const bc = asNumber(errors, scObj["beatCadence"], `${base}.startCondition.beatCadence`);
+              if (bc !== undefined && (!Number.isInteger(bc) || bc <= 0)) {
+                errors.push({ path: `${base}.startCondition.beatCadence`, message: "正の整数である必要がある" });
+              }
+            }
+          }
+          if (o["finalPriority"] !== undefined) {
+            asNumber(errors, o["finalPriority"], `${base}.finalPriority`);
+          }
+        });
+      }
+
+      const placements = asArray(errors, tc["readingPlacements"], "typographyChart.readingPlacements");
+      if (placements) {
+        const seenPhrase = new Set<number>();
+        placements.forEach((pl, i) => {
+          const base = `typographyChart.readingPlacements[${i}]`;
+          const o = asObject(errors, pl, base);
+          if (!o) return;
+          const pi = asNonNegInt(errors, o["phraseIndex"], `${base}.phraseIndex`);
+          if (pi !== undefined) {
+            if (seenPhrase.has(pi)) {
+              errors.push({ path: `${base}.phraseIndex`, message: "フレーズ番号が重複している（読ませる役の配置は1フレーズに1つ）" });
+            }
+            seenPhrase.add(pi);
+          }
+          const unit = o["unit"];
+          if (unit !== "phrase" && unit !== "word" && unit !== "chunk") {
+            errors.push({ path: `${base}.unit`, message: "phrase・word・chunk のいずれかである必要がある" });
+          }
+          const tph = asNumber(errors, o["targetPixelHeight"], `${base}.targetPixelHeight`);
+          if (tph !== undefined && tph <= 0) {
+            errors.push({ path: `${base}.targetPixelHeight`, message: "正である必要がある" });
+          }
+          const region = asObject(errors, o["region"], `${base}.region`);
+          if (region) {
+            checkInRange(errors, asNumber(errors, region["centerXRatio"], `${base}.region.centerXRatio`), 0, 1, `${base}.region.centerXRatio`);
+            checkInRange(errors, asNumber(errors, region["centerYRatio"], `${base}.region.centerYRatio`), 0, 1, `${base}.region.centerYRatio`);
+            const w = asNumber(errors, region["widthRatio"], `${base}.region.widthRatio`);
+            if (w !== undefined && (w <= 0 || w > 1)) {
+              errors.push({ path: `${base}.region.widthRatio`, message: "0より大きく1以下である必要がある" });
+            }
+            const h = asNumber(errors, region["heightRatio"], `${base}.region.heightRatio`);
+            if (h !== undefined && (h <= 0 || h > 1)) {
+              errors.push({ path: `${base}.region.heightRatio`, message: "0より大きく1以下である必要がある" });
+            }
+          }
+        });
+      }
+    }
+  }
+
   if (errors.length > 0) return { ok: false, errors };
   return { ok: true, profile: value as unknown as SongProfile };
 }

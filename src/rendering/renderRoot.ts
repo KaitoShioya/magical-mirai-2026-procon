@@ -13,6 +13,7 @@ import {
   MAX_PIXEL_RATIO,
   NIGHT_COLOR,
   NIGHT_COLOR_HEX,
+  PERF_LEVELS,
 } from "./constants";
 import { createPlaceholderGlow, type PlaceholderGlow } from "./placeholderGlow";
 import { clampPixelRatio, computeAspect } from "./viewport";
@@ -46,6 +47,10 @@ export interface RenderState {
   /** 描画バッファの画素幅・画素高（表示寸法×画素密度倍率を three.js が切り捨てた値）。 */
   drawingBufferWidth: number;
   drawingBufferHeight: number;
+  /** 自動劣化制御（Issue #18）が最後に適用した劣化段階。0が最高画質、上がるほど軽い設定。 */
+  degradationLevel: number;
+  /** 直前フレームの描画命令の回数（3次元の合成と2次元層の合算、Issue #18 の指標「描画命令<100」）。 */
+  drawCalls: number;
   /** 設定したクリアカラーの16進表現。深夜色 NIGHT_COLOR と一致する。 */
   clearColorHex: string;
   /** 透視投影カメラの縦横比。 */
@@ -78,6 +83,18 @@ export interface RenderState {
   } | null;
 }
 
+/** applyPerformanceLevel の戻り値。段階適用で描画上の何が実際に変わったかを示す（Issue #18）。 */
+export interface PerformanceLevelApplyResult {
+  /** 実効画素密度倍率が変わったなら真。 */
+  pixelRatioChanged: boolean;
+  /** ブルーム解像度倍率が変わったなら真。 */
+  bloomResolutionChanged: boolean;
+  /** ブルームの有効状態が変わったなら真。 */
+  bloomEnabledChanged: boolean;
+  /** 上記いずれかが変わったなら真。端末画素密度倍率が1以下で段階0→1が無変化になる場合の判定に使う。 */
+  effectiveChanged: boolean;
+}
+
 /** 描画基盤の外部契約。 */
 export interface RenderRoot {
   /** 1フレーム描く。WebGL が無い端末では何もしない。 */
@@ -96,6 +113,10 @@ export interface RenderRoot {
   removeOverlayObject(object: Object3D): void;
   /** 表示寸法の変更を反映する（カメラ縦横比とレンダラ寸法・画素密度、2次元層の視錐台）。 */
   resize(width: number, height: number): void;
+  /** 自動劣化制御（Issue #18）の劣化段階を適用する。段階に応じて画素密度倍率の上限とブルーム（解像度倍率・
+   *  有効）を変える。要求段階が現在と同じなら何もしない。描画上の何が変わったかを返す。WebGL が無い端末では
+   *  何もせず全て偽を返す。 */
+  applyPerformanceLevel(level: number): PerformanceLevelApplyResult;
   /** カメラの位置と注視点（ワールド座標）を設定する。適用できたら true、位置と注視点が同一または
    *  非有限値で適用しなかったら false を返す。演出カメラ軌跡（#13）が毎フレーム駆動する。戻り値で
    *  下流（#59）が適用失敗を検知でき、無音の不具合を避ける。WebGL無効時もカメラ物体は存在するため反映する。 */
@@ -154,10 +175,26 @@ export function createRenderRoot(
     CAMERA_FAR
   );
 
+  // 自動劣化制御（Issue #18）の動的な画素密度倍率の上限。採用理由を先に述べる。実効倍率を固定上限
+  // MAX_PIXEL_RATIO と端末倍率に加えてこの動的上限でも抑え、性能が不足したとき段階的に下げる。既定は固定上限と
+  // 同じで、劣化制御が働くまでは現状どおり振る舞う。
+  let dynamicPixelRatioCap = MAX_PIXEL_RATIO;
+  // 自動劣化制御が最後に適用した劣化段階（診断・検証で読む）。
+  let degradationLevel = 0;
+  // 現在の表示寸法。採用理由を先に述べる。劣化段階の適用は画素密度倍率を変えるためにレンダラ寸法の再設定を
+  // 要するが、リサイズ事象なしに起こるため、最後に確定した表示寸法を保持して再設定に用いる。
+  let currentDisplayWidth = window.innerWidth;
+  let currentDisplayHeight = window.innerHeight;
+
+  // 実効画素密度倍率を求める。端末倍率を、固定上限と動的上限の小さい方で抑える。
+  function effectivePixelRatio(): number {
+    return clampPixelRatio(window.devicePixelRatio, Math.min(MAX_PIXEL_RATIO, dynamicPixelRatioCap));
+  }
+
   // 画素密度の倍率を保持する。採用理由を先に述べる。three.js の setPixelRatio は内部で setSize を呼ぶため、
   // リサイズのたびに setPixelRatio を呼ぶと描画バッファの再確保が二重に走る。倍率が変わったときだけ
   // setPixelRatio を呼ぶよう、現在値を保持して比較する。
-  let currentPixelRatio = clampPixelRatio(window.devicePixelRatio, MAX_PIXEL_RATIO);
+  let currentPixelRatio = effectivePixelRatio();
 
   let renderer: WebGLRenderer | null = null;
   if (isWebGL2Available()) {
@@ -174,6 +211,10 @@ export function createRenderRoot(
       // autoClear に依らず自前で色と深度を消すため通常経路は影響を受けず、防御経路（合成器が無い縮退）では
       // render() の先頭で自前に renderer.clear() を呼ぶ。
       created.autoClear = false;
+      // 描画命令数の自動初期化を切る（Issue #18 の指標）。採用理由を先に述べる。three.js は描画呼び出しごとに
+      // info を初期化するため、ブルーム合成（複数パス）と2次元層を経た後に読むと最後のパスぶんしか数えられない。
+      // 自動初期化を切り、render の先頭で一度だけ手動初期化することで、1フレームの全描画命令数を合算して読める。
+      created.info.autoReset = false;
       created.setPixelRatio(currentPixelRatio);
       created.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(created.domElement);
@@ -250,10 +291,15 @@ export function createRenderRoot(
   let centerFigureError: string | null = null;
 
   function resize(width: number, height: number): void {
+    // 劣化段階の適用がリサイズ事象なしに寸法を要するため、最後の表示寸法を保持する。
+    currentDisplayWidth = width;
+    currentDisplayHeight = height;
     camera.aspect = computeAspect(width, height);
     camera.updateProjectionMatrix();
     if (renderer) {
-      const nextPixelRatio = clampPixelRatio(window.devicePixelRatio, MAX_PIXEL_RATIO);
+      // 実効倍率は固定上限・端末倍率に加え、劣化段階が定める動的上限でも抑える。劣化中のリサイズでも段階が
+      // 保たれるよう、動的上限を含めて再計算する。
+      const nextPixelRatio = effectivePixelRatio();
       // 画素密度が変わったときだけ setPixelRatio を呼ぶ。理由を先に述べる。setPixelRatio は内部で setSize を
       // 呼ぶため、毎回呼ぶと続く setSize と合わせて描画バッファの再確保が二重に走る。変化時のみに限って避ける。
       if (nextPixelRatio !== currentPixelRatio) {
@@ -296,6 +342,53 @@ export function createRenderRoot(
     return true;
   }
 
+  function applyPerformanceLevel(level: number): PerformanceLevelApplyResult {
+    const result: PerformanceLevelApplyResult = {
+      pixelRatioChanged: false,
+      bloomResolutionChanged: false,
+      bloomEnabledChanged: false,
+      effectiveChanged: false,
+    };
+    if (!renderer || disposed) {
+      return result;
+    }
+    // 段階を範囲内へ丸め、現在と同じなら無駄な再適用をしない（同設定の再適用禁止）。
+    const clampedLevel = Math.max(0, Math.min(Math.trunc(level), PERF_LEVELS.length - 1));
+    if (clampedLevel === degradationLevel) {
+      return result;
+    }
+    degradationLevel = clampedLevel;
+    const setting = PERF_LEVELS[clampedLevel];
+
+    // 1. 画素密度倍率の上限。動的上限を更新し、実効倍率が変わったときだけ既存のリサイズ経路を実行して
+    //    全不変条件（倍率変化時のみ setPixelRatio、合成器の往復バッファ整合、2次元層の視錐台）を保つ。
+    dynamicPixelRatioCap = setting.pixelRatioCap;
+    const nextPixelRatio = effectivePixelRatio();
+    if (nextPixelRatio !== currentPixelRatio) {
+      currentPixelRatio = nextPixelRatio;
+      renderer.setPixelRatio(nextPixelRatio);
+      renderer.setSize(currentDisplayWidth, currentDisplayHeight);
+      bloomComposer?.setSize(currentDisplayWidth, currentDisplayHeight);
+      overlay?.resize(currentDisplayWidth, currentDisplayHeight);
+      result.pixelRatioChanged = true;
+    }
+
+    // 2. ブルーム解像度倍率。画素密度の再適用（上の setSize）が倍率を既定へ戻すため、その後に倍率を再適用する。
+    // 3. ブルームの有効。最終出力パスは常に有効のまま保たれ、無効でも色管理が働く。
+    if (bloomComposer) {
+      if (bloomComposer.setResolutionScale(setting.bloomResolutionScale)) {
+        result.bloomResolutionChanged = true;
+      }
+      if (bloomComposer.setEnabled(setting.bloomEnabled)) {
+        result.bloomEnabledChanged = true;
+      }
+    }
+
+    result.effectiveChanged =
+      result.pixelRatioChanged || result.bloomResolutionChanged || result.bloomEnabledChanged;
+    return result;
+  }
+
   function update(deltaSeconds: number): void {
     if (disposed) {
       return;
@@ -333,6 +426,9 @@ export function createRenderRoot(
     if (!renderer || disposed) {
       return;
     }
+    // 描画命令数を1フレームに一度だけ初期化する（info.autoReset を切ってあるため、ここで初期化しないと累積する）。
+    // この後の合成器の各パスと2次元層の描画が積み上がり、フレーム全体の描画命令数を state() で読める。
+    renderer.info.reset();
     // 常に合成パイプライン経由で3次元世界を描く。理由を先に述べる。ブルームの有効・無効で色管理の経路を
     // 分けないため、最終出力パスを含む合成器に一本化する。レンダラがあるとき合成器も必ず存在するが、型の
     // 縮約のため存在を確かめ、万一無ければ素のシーン描画へ倒す。
@@ -363,6 +459,7 @@ export function createRenderRoot(
     },
     setCameraPose,
     resize,
+    applyPerformanceLevel,
     state(): RenderState {
       // 採用理由を先に述べる。three.js の色管理は16進数をsRGBとして取り込み、getHexString(sRGB既定)で
       // sRGBへ戻すため、setClearColor で設定した値と読み戻し値が一致する。これにより設定が実際に
@@ -380,6 +477,9 @@ export function createRenderRoot(
         pixelRatio: renderer ? renderer.getPixelRatio() : 0,
         drawingBufferWidth: bufferSize ? bufferSize.x : 0,
         drawingBufferHeight: bufferSize ? bufferSize.y : 0,
+        // 自動劣化制御（Issue #18）。最後に適用した段階と、直前フレームの描画命令数を返す。
+        degradationLevel,
+        drawCalls: renderer ? renderer.info.render.calls : 0,
         clearColorHex,
         cameraAspect: camera.aspect,
         cameraPosition: { x: camera.position.x, y: camera.position.y, z: camera.position.z },

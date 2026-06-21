@@ -70,3 +70,72 @@ export const BLOOM_THRESHOLD = 0.5;
 // フレームの目標に資する。試作（src/tools/perf/main.ts）も同じ倍率0.5で計測済みのため、本編もこの値を採り
 // 計測値を引き継ぐ（docs/research/03-rendering-ui.md §3）。
 export const BLOOM_RESOLUTION_SCALE = 0.5;
+
+// ここから下は性能バジェットの自動劣化制御（Issue #18）の定数。所有の出典を先に述べる。
+// src/config/tuning.ts は「性能閾値は rendering の #18 が所有する」と定めるため、FPS閾値と段階ラダーの値を
+// ここ（rendering の constants）へ集約する。閾値は判定（src/rendering/performanceBudget.ts）が、段階ラダーの
+// 描画設定は適用（src/rendering/renderRoot.ts）が参照する。設計と段階順序の出典は
+// docs/decisions/architecture.md §3.8（縮退順序は画素密度→後処理、ヒステリシスと時間窓で判断）。
+
+// 制御器が維持を狙う目標の毎秒フレーム数。採用理由を先に述べる。ユーザー決定により目標を60とし、定常で
+// 下側閾値55に余裕を持たせる（docs/research/03-rendering-ui.md §3 の目標も60）。
+export const PERF_TARGET_FPS = 60;
+
+// 劣化を発火する下側の毎秒フレーム数。採用理由を先に述べる。受け入れ基準の下限が平均55以上であり、時間窓の
+// 平均がちょうど55へ沈んだ時点で劣化を発火すると、下限を割る前に守りに動くため55を不変条件にできる。
+export const PERF_DOWNSHIFT_FPS = 55;
+
+// 復帰を発火する上側の毎秒フレーム数。採用理由を先に述べる。復帰の閾値は60未満に置く必要がある（垂直同期の
+// 揺れで平均がちょうど60に届くことは稀で、60以上を要求すると永久に劣化のままになる）。同時に下側55より上に
+// 置き不感帯を作る。58は下側との差を3フレーム毎秒確保しつつ、十分目標近くまで回復してから戻す値である。
+export const PERF_UPSHIFT_FPS = 58;
+
+// 平均と最低を求める時間窓（ミリ秒）。採用理由を先に述べる。§3.8は一定時間の傾向で判断せよと定める。2秒は
+// 60フレーム毎秒で約120フレームに相当し、数回のごみ集め停止が平均を支配しない程度に長く、約2秒で低下を
+// 捉える程度に短く、ゲートの定常区間（10秒以上）より十分短い。
+export const PERF_WINDOW_MS = 2000;
+
+// 下降の滞留時間（ミリ秒）。採用理由を先に述べる。各段階変更は描画バッファ再確保の一度きりの負荷を伴う。
+// 時間窓（2秒）より長い3秒にすると、次の判定までに窓が変更後のデータで満ち、変更前の古い標本で連鎖的に
+// 変更しない。下降を最短3秒間隔に抑える。
+export const PERF_DOWNSHIFT_DWELL_MS = 3000;
+
+// 復帰の滞留時間（ミリ秒）。採用理由を先に述べる。復帰は重い設定へ戻すため、戻した直後に維持できないと劣化と
+// 復帰の往復になる。下降の滞留より十分長い8秒にして、端末に余裕があると確かめてから戻す。8秒は時間窓2秒の
+// 4倍で、復帰後も窓が新データで満ちる余地が十分ある。
+export const PERF_RECOVERY_DWELL_MS = 8000;
+
+// 1フレームの経過時間の頭打ち（ミリ秒）。採用理由を先に述べる。100ミリ秒は1フレームあたり10フレーム毎秒相当で、
+// 本当に遅い1フレームとして記録するに十分大きく、2秒窓の平均を1フレームで55未満へ落とさない程度に小さい。
+// タブ復帰直後や起動直後の極端な経過が窓を壊すのを防ぐ。
+export const PERF_FRAME_DELTA_CLAMP_MS = 100;
+
+/** 劣化段階1つぶんの描画設定。段階が上がるほど負荷の軽い設定になる。 */
+export interface PerfLevelSetting {
+  /** この段階で用いる画素密度倍率の動的上限。実効倍率は min(端末倍率, MAX_PIXEL_RATIO, この値) になる。 */
+  pixelRatioCap: number;
+  /** この段階で用いるブルーム解像度倍率。 */
+  bloomResolutionScale: number;
+  /** この段階でブルームを有効にするか。 */
+  bloomEnabled: boolean;
+}
+
+// 劣化段階のラダー（段階0が最高画質、段階が上がるほど軽い）。採用理由を先に述べる。§3.8の縮退順序
+// 「画素密度→後処理」を本Issueの対象（画素密度とブルーム）で各操作を一度ずつ訪れる最小の構成にする。
+// 段階間の差を一つの操作だけにして、各遷移の描画バッファ再確保を最小化する:
+//   段階0→1 は画素密度上限だけを2から1へ下げる（§3.8で最も効く第一手段）。
+//   段階1→2 はブルーム解像度倍率だけを0.5から0.25へ下げる（面積を4分の1にする）。
+//   段階2→3 はブルームの有効だけを偽にする（パスの無効化で再確保を伴わない最も軽い操作）。
+// 段階3のブルーム解像度倍率を段階2と同じ0.25に保つのは、段階2→3で倍率を変えず有効だけを切り替え、無駄な
+// 再確保を避けるためである。画素密度上限の下限を1にするのは、等倍未満が画面より粗い拡大になり文字やUIが
+// 破綻するためである。
+export const PERF_LEVELS: readonly PerfLevelSetting[] = [
+  { pixelRatioCap: MAX_PIXEL_RATIO, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true },
+  { pixelRatioCap: 1, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true },
+  { pixelRatioCap: 1, bloomResolutionScale: 0.25, bloomEnabled: true },
+  { pixelRatioCap: 1, bloomResolutionScale: 0.25, bloomEnabled: false },
+];
+
+// 最大の段階番号（段階総数から1を引いた値）。判定（performanceBudget.ts）は描画設定を知らずにこの整数だけを
+// 参照して下降の上限を判断する。
+export const PERF_MAX_LEVEL = PERF_LEVELS.length - 1;

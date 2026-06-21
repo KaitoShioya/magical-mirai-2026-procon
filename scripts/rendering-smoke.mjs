@@ -26,6 +26,12 @@ const BLOOM_RESOLUTION_SCALE = 0.5;
 const EXPECTED_BLOOM_STRENGTH = 1.2;
 const EXPECTED_BLOOM_RADIUS = 0.6;
 const EXPECTED_BLOOM_THRESHOLD = 0.5;
+// 描画命令の回数の上限（Issue #18 の指標「描画命令<100」）。採用理由を先に述べる。
+// docs/research/03-rendering-ui.md §3 が描画命令を100回未満に保つことを目安とするため、本編アプリの現行シーンが
+// この目安を満たすことを確かめる。ここで確認するのは本編アプリ経路で drawCalls 指標が実際に配線され、現行シーン
+// （ミクVRMは診断モードでは読み込まないため含まない）で100未満であることまでであり、VRM常在を含む実機計測は
+// Issue #97 の描画性能ゲートが担う。
+const DRAW_CALL_LIMIT = 100;
 
 const errors = [];
 let failed = false;
@@ -194,6 +200,21 @@ try {
       } else {
         console.log("確認: 2次元層の視錐台の左右が±縦横比");
       }
+    }
+
+    // 自動劣化制御（Issue #18）。本編アプリ経路で描画命令数の指標と劣化段階が配線され、現行シーンの描画命令数が
+    // 100未満であることを確認する。drawCalls は直前フレームの値で、本体は毎フレーム描くため正の値が出る。
+    if (typeof state.degradationLevel !== "number" || state.degradationLevel < 0) {
+      fail(`劣化段階が不正です（degradationLevel=${state.degradationLevel}）`);
+    } else {
+      console.log(`確認: 劣化段階が配線されている（degradationLevel=${state.degradationLevel}）`);
+    }
+    if (typeof state.drawCalls !== "number" || !(state.drawCalls > 0)) {
+      fail(`描画命令の回数が取得できません（drawCalls=${state.drawCalls}）`);
+    } else if (!(state.drawCalls < DRAW_CALL_LIMIT)) {
+      fail(`描画命令の回数が上限${DRAW_CALL_LIMIT}以上です（drawCalls=${state.drawCalls}）`);
+    } else {
+      console.log(`確認: 本編アプリの描画命令の回数が100未満（drawCalls=${state.drawCalls}）`);
     }
   }
 

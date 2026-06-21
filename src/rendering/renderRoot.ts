@@ -94,6 +94,10 @@ export interface RenderState {
   centerFigureStatus: CenterFigureStatus;
   /** 中心オブジェクトのVRM読み込みが失敗したときの短い理由（無ければ null）。無音の不具合を診断・検証で検出する。 */
   centerFigureError: string | null;
+  /** 中心オブジェクト（常在ミク）を湖面反射に含める意図の値（Issue #92）。既定は真（concept-final §10）。
+   *  反射そのものの有無は reflectionEnabled（実効値）で別に表す。両者は別概念であり混同しないこと。
+   *  WebGL が無く中心オブジェクト・水面を作らない端末でも、診断の値としては意図の値を返す。 */
+  centerFigureReflected: boolean;
   /** 2次元層（Issue #15）の状態。載っている表示物の数と正射影カメラの視錐台（左・右・上・下）を返す。
    *  WebGL が無く2次元層を作らない端末では null。 */
   overlay: {
@@ -133,6 +137,9 @@ export interface PerformanceLevelApplyResult {
   bloomResolutionChanged: boolean;
   /** ブルームの有効状態が変わったなら真。 */
   bloomEnabledChanged: boolean;
+  /** 中心オブジェクト（常在ミク）を反射に含めるかが変わり、かつ反射が有効で実際に描画へ影響したなら真（Issue #92）。
+   *  反射が無効な端末では、意図の値が変わっても描画は変わらないため偽にする。 */
+  reflectCenterFigureChanged: boolean;
   /** 上記いずれかが変わったなら真。端末画素密度倍率が1以下で段階0→1が無変化になる場合の判定に使う。 */
   effectiveChanged: boolean;
 }
@@ -163,6 +170,9 @@ export interface RenderRoot {
    *  有効）を変える。要求段階が現在と同じなら何もしない。描画上の何が変わったかを返す。WebGL が無い端末では
    *  何もせず全て偽を返す。 */
   applyPerformanceLevel(level: number): PerformanceLevelApplyResult;
+  /** 中心オブジェクト（常在ミク）を湖面反射に含めるかを切り替える（Issue #92）。reflected が真で含める（既定）、
+   *  偽で反射から外す。意図の値を保持し、現在の水面へ反映する。WebGL が無い・水面が無い端末でも意図の値は保つ。 */
+  setCenterFigureReflected(reflected: boolean): void;
   /** カメラの位置と注視点（ワールド座標）を設定する。適用できたら true、位置と注視点が同一または
    *  非有限値で適用しなかったら false を返す。演出カメラ軌跡（#13）が毎フレーム駆動する。戻り値で
    *  下流（#59）が適用失敗を検知でき、無音の不具合を避ける。WebGL無効時もカメラ物体は存在するため反映する。 */
@@ -369,6 +379,19 @@ export function createRenderRoot(
   let currentWaterRegion: WaterRegion | null = null;
   let currentWaterBounds: OriginalWaterBoundsWorld | null = null;
 
+  // 中心オブジェクト（常在ミク）を湖面反射に含めるかの意図値（Issue #92）。既定は含める（concept-final §10）。
+  // 既定が含めるため、起動時は反射の除外集合が空で意図と一致し、構築時の追加適用は不要である。
+  let centerFigureReflected = true;
+
+  // 現在の意図値を、現在の水面の反射除外設定へ反映する。戻り値は反射が実際に描画へ影響するか（反射が有効なら真）。
+  // 水面は舞台土台の読み込みで作り直されるため（mountStageTerrain）、再生成のたびに本関数で再適用する。
+  function applyCenterFigureReflection(): boolean {
+    if (!water || !centerFigure) {
+      return false;
+    }
+    return water.setReflectionExcluded(centerFigure.object3d, !centerFigureReflected);
+  }
+
   function resize(width: number, height: number): void {
     // 劣化段階の適用がリサイズ事象なしに寸法を要するため、最後の表示寸法を保持する。
     currentDisplayWidth = width;
@@ -429,6 +452,7 @@ export function createRenderRoot(
       pixelRatioChanged: false,
       bloomResolutionChanged: false,
       bloomEnabledChanged: false,
+      reflectCenterFigureChanged: false,
       effectiveChanged: false,
     };
     if (!renderer || disposed) {
@@ -441,6 +465,15 @@ export function createRenderRoot(
     }
     degradationLevel = clampedLevel;
     const setting = PERF_LEVELS[clampedLevel];
+
+    // 0. 中心オブジェクト（常在ミク）の反射への含有（Issue #92）。研究 §6 の縮退順序で、反射からのVRM除外を
+    //    画素密度を下げる前の第一手とする。意図の値が変わったときだけ現在の水面へ反映する。反射が無効な端末では
+    //    描画が変わらないため、実効変化（reflectCenterFigureChanged）は偽のままにする（applyCenterFigureReflection
+    //    の戻り値で判定する）。
+    if (setting.reflectCenterFigure !== centerFigureReflected) {
+      centerFigureReflected = setting.reflectCenterFigure;
+      result.reflectCenterFigureChanged = applyCenterFigureReflection();
+    }
 
     // 1. 画素密度倍率の上限。動的上限を更新し、実効倍率が変わったときだけ既存のリサイズ経路を実行して
     //    全不変条件（倍率変化時のみ setPixelRatio、合成器の往復バッファ整合、2次元層の視錐台）を保つ。
@@ -467,7 +500,10 @@ export function createRenderRoot(
     }
 
     result.effectiveChanged =
-      result.pixelRatioChanged || result.bloomResolutionChanged || result.bloomEnabledChanged;
+      result.pixelRatioChanged ||
+      result.bloomResolutionChanged ||
+      result.bloomEnabledChanged ||
+      result.reflectCenterFigureChanged;
     return result;
   }
 
@@ -559,6 +595,9 @@ export function createRenderRoot(
       }
       scene.remove(previousWater.object3d);
       previousWater.dispose();
+      // 水面を作り直したため、中心オブジェクトの反射への含有設定を新しい水面へ再適用する（Issue #92）。
+      // これを行わないと、舞台土台の読み込み後に反射からの除外設定が失われる。
+      applyCenterFigureReflection();
       // 診断状態を更新する。反射面に渡した水面領域と、水面マーカーの元範囲を別々に保持する。
       currentWaterRegion = loaded.waterRegion;
       currentWaterBounds = loaded.waterBounds;
@@ -620,6 +659,11 @@ export function createRenderRoot(
     },
     resize,
     applyPerformanceLevel,
+    setCenterFigureReflected(reflected: boolean): void {
+      // 意図の値を更新し、現在の水面へ反映する（Issue #92）。水面が無い・WebGL が無い端末でも意図の値は保つ。
+      centerFigureReflected = reflected;
+      applyCenterFigureReflection();
+    },
     state(): RenderState {
       // 採用理由を先に述べる。three.js の色管理は16進数をsRGBとして取り込み、getHexString(sRGB既定)で
       // sRGBへ戻すため、setClearColor で設定した値と読み戻し値が一致する。これにより設定が実際に
@@ -652,6 +696,8 @@ export function createRenderRoot(
         // 中心オブジェクトの表示状態。作っていない（WebGL 不可）なら fallback を返す。
         centerFigureStatus: centerFigure ? centerFigure.status() : "fallback",
         centerFigureError,
+        // 中心オブジェクトを反射に含める意図の値（Issue #92）。実効値 reflectionEnabled とは別概念。
+        centerFigureReflected,
         // 2次元層（Issue #15）。作っていない（WebGL 不可）なら null。視錐台と載っている表示物の数を返す。
         overlay: overlay
           ? {

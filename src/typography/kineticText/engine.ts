@@ -82,12 +82,22 @@ const NOOP_HANDLE: GlyphHandle = {
   setPosition(): void {},
   setRotation(): void {},
   setScale(): void {},
+  setScale3(): void {},
   setColor(): void {},
   setOpacity(): void {},
+  setLetterSpacing(): void {},
   applyReadability(): void {},
   setOrientation(): void {},
   release(): void {},
 };
+
+/**
+ * 取っ手が同時上限超過で出現を破棄したプレースホルダ（NOOP_HANDLE）かを判定する。
+ * 複製の写しの確保失敗を合成適用層（#131）が検出するために使う。
+ */
+export function isPlaceholderHandle(handle: GlyphHandle): boolean {
+  return handle === NOOP_HANDLE;
+}
 
 interface SingleEntry {
   lease: GlyphLease<Text>;
@@ -420,6 +430,16 @@ export function createKineticTextEngine(
     }
   }
 
+  // エントリの大きさを縦横独立で設定する。可読性下地は一律倍率しか持てないため、各軸の最大値を渡す。
+  // 理由を先に述べる。下地は文字の最大外形を背面から覆えばよく、各軸の最大値を一律倍率にすれば縦伸ばし時も
+  // 文字を覆える。読ませる役へは合成器（#131）が一律倍率（3成分が等しい値）しか渡さないため、通常は max が一律倍率に一致する。
+  function setEntryScale3(entry: SingleEntry, x: number, y: number, z: number): void {
+    entry.text.scale.set(x, y, z);
+    if (entry.backing) {
+      entry.backing.setScale(Math.max(x, y, z));
+    }
+  }
+
   // エントリの不透明度を設定する。読ませる役のときは、縁取り・影・下地の不透明度にも同じ実効不透明度を掛ける。
   // 理由を先に述べる。塗りだけを薄くすると、フェードアウト時に暗い縁取り・影・下地が残って黒い形だけが見える。
   // 読ませる役は単位ごとにフェード制御される前提のため、可読性の各要素を同じ実効不透明度で薄くする。
@@ -461,8 +481,11 @@ export function createKineticTextEngine(
       },
       setRotation: (x, y, z): void => setEntryRotation(entry, x, y, z),
       setScale: (scale): void => setEntryScale(entry, scale),
+      setScale3: (x, y, z): void => setEntryScale3(entry, x, y, z),
       setColor: (color): void => setEntryColor(entry, color),
       setOpacity: (opacity): void => setEntryOpacity(entry, opacity),
+      // 単一文字は字間の概念が無いため無操作（字間はフレーズ・単語のみ）。
+      setLetterSpacing: (): void => {},
       applyReadability: (style): void => reapplyReadability(entry, style),
       setOrientation: (policy): void => {
         entry.orientation = policy;
@@ -533,15 +556,28 @@ export function createKineticTextEngine(
       }
       entries.push(entry);
     }
+    // 字間と基準位置を可変変数で保持し、setPosition と setLetterSpacing が同じ変数を参照して再配置する。
+    // 理由を先に述べる。位置の計算は基準位置と字間の両方に依存するため、片方を更新したらもう片方の現在値で
+    // 全文字を再配置しないと、字間を変えた後に setPosition が出現時の字間へ戻す不整合が起きる。
+    let spacing = request.letterSpacing;
+    let baseX = request.position.x;
+    let baseY = request.position.y;
+    let baseZ = request.position.z;
+    const placeAll = (): void => {
+      entries.forEach((entry, index) => {
+        const cx = baseX + index * spacing;
+        entry.text.position.set(cx, baseY, baseZ);
+        if (entry.backing) {
+          entry.backing.setTransform({ x: cx, y: baseY, z: baseZ, fontSize: entry.text.fontSize });
+        }
+      });
+    };
     return {
       setPosition: (x, y, z): void => {
-        entries.forEach((entry, index) => {
-          const cx = x + index * request.letterSpacing;
-          entry.text.position.set(cx, y, z);
-          if (entry.backing) {
-            entry.backing.setTransform({ x: cx, y, z, fontSize: entry.text.fontSize });
-          }
-        });
+        baseX = x;
+        baseY = y;
+        baseZ = z;
+        placeAll();
       },
       setRotation: (x, y, z): void => {
         for (const entry of entries) {
@@ -553,6 +589,11 @@ export function createKineticTextEngine(
           setEntryScale(entry, scale);
         }
       },
+      setScale3: (x, y, z): void => {
+        for (const entry of entries) {
+          setEntryScale3(entry, x, y, z);
+        }
+      },
       setColor: (color): void => {
         for (const entry of entries) {
           setEntryColor(entry, color);
@@ -562,6 +603,10 @@ export function createKineticTextEngine(
         for (const entry of entries) {
           setEntryOpacity(entry, opacity);
         }
+      },
+      setLetterSpacing: (value): void => {
+        spacing = value;
+        placeAll();
       },
       applyReadability: (style): void => {
         for (const entry of entries) {
@@ -648,6 +693,11 @@ export function createKineticTextEngine(
           member.scale.setScalar(scale);
         }
       },
+      setScale3: (x, y, z): void => {
+        for (const member of members) {
+          member.scale.set(x, y, z);
+        }
+      },
       setColor: (color): void => {
         for (const member of members) {
           member.color = color;
@@ -657,6 +707,18 @@ export function createKineticTextEngine(
         for (const member of members) {
           member.fillOpacity = opacity;
         }
+      },
+      setLetterSpacing: (value): void => {
+        // 字間（ワールド単位）を更新し、基準位置から各文字を再配置する。offsets は群正対の再計算でも使うため
+        // 同じ配列を書き換える。
+        chars.forEach((_char, index) => {
+          offsets[index].x = index * value;
+          members[index].position.set(
+            entry.basePosition.x + offsets[index].x,
+            entry.basePosition.y + offsets[index].y,
+            entry.basePosition.z + offsets[index].z
+          );
+        });
       },
       // 演出役のフレーズは可読性補正を行わない（読ませる役のみ）。
       applyReadability: (): void => {},
@@ -761,11 +823,19 @@ export function createKineticTextEngine(
       setScale: (scale): void => {
         text.scale.setScalar(scale);
       },
+      setScale3: (x, y, z): void => {
+        text.scale.set(x, y, z);
+      },
       setColor: (color): void => {
         text.color = color;
       },
       setOpacity: (opacity): void => {
         text.fillOpacity = opacity;
+      },
+      // 字間は em単位（DeformingTextSpawnRequest.letterSpacing と同じ）。1枚の Text のため再配置確定を呼ぶ。
+      setLetterSpacing: (value): void => {
+        text.letterSpacing = value;
+        text.sync();
       },
       setOrientation: (policy): void => {
         entry.orientation = policy;

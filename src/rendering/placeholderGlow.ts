@@ -19,7 +19,10 @@ interface PlaceholderGlowPoint {
 
 // 決定的・左右非対称・高さ違いの固定配置。ひまわりは水面付近（高さ0.25）、蝶は空中（高さ1以上）。
 // 水面（高さ0・平面400四方）の上に収まり、暫定カメラ視点（renderRoot）から湖面とともに見える範囲に置く。
-const PLACEHOLDER_GLOW_POSITIONS: readonly PlaceholderGlowPoint[] = [
+// 読み取り専用で公開する理由を先に述べる。空間品質診断（spatial.html、Issue #100）が視差の幾何的な射影で、
+// 描画する情景と同一の特徴点を取り込むために用いる。これは発光点本実装（Issue #10）で置換される暫定物への
+// 依存であり、置換時には診断側の視差判定の特徴点も合わせて見直す（Issue #100 の未確定事項・Issue #104）。
+export const PLACEHOLDER_GLOW_POSITIONS: readonly PlaceholderGlowPoint[] = [
   { x: -8, y: 4.0, z: -6, kind: "butterfly" },
   { x: 6, y: 2.5, z: -10, kind: "butterfly" },
   { x: -3, y: 5.5, z: 4, kind: "butterfly" },

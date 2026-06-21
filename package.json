@@ -12,6 +12,7 @@
     "test": "vitest run",
     "build:font-subset": "node scripts/build-font-subset.mjs",
     "build:stage-model": "node scripts/build-stage-model.mjs",
+    "prototype:fps": "node scripts/prototype-fps.mjs",
     "typography:fps": "node scripts/typography-fps.mjs",
     "typography:instances:fps": "node scripts/typography-instances-fps.mjs",
     "reflection:fps": "node scripts/reflection-fps.mjs",
@@ -21,6 +22,8 @@
     "smoke:butterfly": "node scripts/rendering-butterfly-smoke.mjs",
     "smoke:layer": "node scripts/rendering-layer-smoke.mjs",
     "smoke:stage": "node scripts/rendering-stage-smoke.mjs",
+    "smoke:spatial": "node scripts/rendering-spatial-smoke.mjs",
+    "smoke:center-figure": "node scripts/rendering-center-figure-smoke.mjs",
     "smoke:perf": "node scripts/rendering-perf-smoke.mjs",
     "smoke:posteffects": "node scripts/rendering-posteffects-smoke.mjs",
     "posteffects:fps": "node scripts/rendering-posteffects-fps.mjs",
@@ -30,7 +33,8 @@
     "smoke:screen-shake": "node scripts/screen-shake-smoke.mjs",
     "smoke:audio": "node scripts/audio-smoke.mjs",
     "quality": "node scripts/quality-harness.mjs --mode=local",
-    "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud"
+    "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud",
+    "quality:spatial": "node scripts/spatial-quality.mjs"
   },
   "dependencies": {
     "@pixiv/three-vrm": "3.5.4",

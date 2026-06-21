@@ -15,6 +15,7 @@
 import { Mesh, MeshBasicMaterial, Object3D, PlaneGeometry } from "three";
 import { Reflector } from "three/examples/jsm/objects/Reflector.js";
 import { WATER_COLOR, WATER_PLANE_SIZE } from "./constants";
+import { withReflectionHidden } from "./reflectionExclusion";
 import type { WaterRegion } from "../types/stage";
 
 /**
@@ -27,6 +28,14 @@ export interface Water {
   readonly reflective: boolean;
   /** 反射が有効なときの一辺の画素数。無効時は0。診断・検証用。 */
   readonly reflectionResolution: number;
+  /**
+   * 物体を反射に映すかどうかを切り替える（Issue #92）。excluded が真のとき、その物体を反射テクスチャの
+   * 描画から外す（visible 制御による。本描画には残る）。excluded が偽のとき、反射へ含める（既定）。
+   * 戻り値は「この呼び出しが実際の反射描画に影響するか」であり、反射が有効なら真、無効なら偽を返す。
+   * 戻り値を設ける理由を先に述べる。反射が無効な水面では除外しても描画が変わらないため、呼び出し側が
+   * 性能判定器へ実効変化の有無を正しく伝えられるようにするためである。
+   */
+  setReflectionExcluded(object: Object3D, excluded: boolean): boolean;
   /** 後始末。ジオメトリ・マテリアル・反射の描画ターゲットを解放する。 */
   dispose(): void;
 }
@@ -67,10 +76,38 @@ export function createWater(options: {
       color: WATER_COLOR,
     });
     place(reflector);
+
+    // 反射から外す物体の集合（Issue #92）。中心オブジェクト固有の方針は持たず、「反射に映さない物体の集合」
+    // という一般的な機構である。いつ何を外すかという方針は renderRoot と PERF_LEVELS が持つ。
+    const excludedFromReflection = new Set<Object3D>();
+
+    // 反射テクスチャの描画を1回だけ囲むラップを、生成時に1回だけ仕込む（Issue #92）。
+    // 生成時1回に限る理由を先に述べる。setReflectionExcluded を呼ぶたびにラップを重ねると反射描画が多重に
+    // 走るため、ラップは生成時だけにして集合の中身で除外対象を制御する。
+    // 原関数を reflector に束ねて呼ぶ理由を先に述べる。three.js 0.184 の Reflector.onBeforeRender 本体は
+    // this._getReflectionCamera と this.forceUpdate を参照するため、this を反射オブジェクトに保たないと
+    // 反射カメラの取得で例外になる。可変長引数で委譲して将来の引数追加にも委ねる。
+    const originalOnBeforeRender = reflector.onBeforeRender;
+    reflector.onBeforeRender = function (
+      ...args: Parameters<typeof originalOnBeforeRender>
+    ): void {
+      withReflectionHidden(excludedFromReflection, () =>
+        originalOnBeforeRender.apply(reflector, args)
+      );
+    };
+
     return {
       object3d: reflector,
       reflective: true,
       reflectionResolution,
+      setReflectionExcluded(object: Object3D, excluded: boolean): boolean {
+        if (excluded) {
+          excludedFromReflection.add(object);
+        } else {
+          excludedFromReflection.delete(object);
+        }
+        return true;
+      },
       dispose(): void {
         // Reflector.dispose は描画ターゲットとマテリアルのみ解放しジオメトリを解放しないため、
         // ジオメトリは別途解放する。
@@ -87,6 +124,10 @@ export function createWater(options: {
     object3d: mesh,
     reflective: false,
     reflectionResolution: 0,
+    // 反射が無効な水面では反射パスが無いため、除外しても描画は変わらない。何もせず偽を返す（Issue #92）。
+    setReflectionExcluded(): boolean {
+      return false;
+    },
     dispose(): void {
       geometry.dispose();
       material.dispose();

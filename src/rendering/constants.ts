@@ -184,6 +184,8 @@ export const PERF_FRAME_DELTA_CLAMP_MS = 100;
 
 /** 劣化段階1つぶんの描画設定。段階が上がるほど負荷の軽い設定になる。 */
 export interface PerfLevelSetting {
+  /** この段階で中心オブジェクト（常在ミク）を湖面反射に含めるか（Issue #92）。偽のとき反射から外す。 */
+  reflectCenterFigure: boolean;
   /** この段階で用いる画素密度倍率の動的上限。実効倍率は min(端末倍率, MAX_PIXEL_RATIO, この値) になる。 */
   pixelRatioCap: number;
   /** この段階で用いるブルーム解像度倍率。 */
@@ -192,20 +194,23 @@ export interface PerfLevelSetting {
   bloomEnabled: boolean;
 }
 
-// 劣化段階のラダー（段階0が最高画質、段階が上がるほど軽い）。採用理由を先に述べる。§3.8の縮退順序
-// 「画素密度→後処理」を本Issueの対象（画素密度とブルーム）で各操作を一度ずつ訪れる最小の構成にする。
-// 段階間の差を一つの操作だけにして、各遷移の描画バッファ再確保を最小化する:
-//   段階0→1 は画素密度上限だけを2から1へ下げる（§3.8で最も効く第一手段）。
-//   段階1→2 はブルーム解像度倍率だけを0.5から0.25へ下げる（面積を4分の1にする）。
-//   段階2→3 はブルームの有効だけを偽にする（パスの無効化で再確保を伴わない最も軽い操作）。
-// 段階3のブルーム解像度倍率を段階2と同じ0.25に保つのは、段階2→3で倍率を変えず有効だけを切り替え、無駄な
+// 劣化段階のラダー（段階0が最高画質、段階が上がるほど軽い）。採用理由を先に述べる。各遷移の差を一つの操作だけに
+// して、各遷移の描画バッファ再確保や演出上の損失を最小化する:
+//   段階0→1 は中心オブジェクト（常在ミク）を反射から外すだけにする。反射は世界全体を鏡像カメラで再描画する
+//     ため描画コストが最も大きく、かつ湖面に映るミクの像は情報量が小さい（docs/research/03-rendering-ui.md §6）。
+//     よって画素密度を下げる前の第一手として反射からミクを外す。段階0では concept-final §10 の既定どおり含める。
+//   段階1→2 は画素密度上限だけを2から1へ下げる（§3.8で画素密度を後処理より先に下げる順序）。
+//   段階2→3 はブルーム解像度倍率だけを0.5から0.25へ下げる（面積を4分の1にする）。
+//   段階3→4 はブルームの有効だけを偽にする（パスの無効化で再確保を伴わない最も軽い操作）。
+// 段階4のブルーム解像度倍率を段階3と同じ0.25に保つのは、段階3→4で倍率を変えず有効だけを切り替え、無駄な
 // 再確保を避けるためである。画素密度上限の下限を1にするのは、等倍未満が画面より粗い拡大になり文字やUIが
 // 破綻するためである。
 export const PERF_LEVELS: readonly PerfLevelSetting[] = [
-  { pixelRatioCap: MAX_PIXEL_RATIO, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true },
-  { pixelRatioCap: 1, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true },
-  { pixelRatioCap: 1, bloomResolutionScale: 0.25, bloomEnabled: true },
-  { pixelRatioCap: 1, bloomResolutionScale: 0.25, bloomEnabled: false },
+  { reflectCenterFigure: true, pixelRatioCap: MAX_PIXEL_RATIO, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true },
+  { reflectCenterFigure: false, pixelRatioCap: MAX_PIXEL_RATIO, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true },
+  { reflectCenterFigure: false, pixelRatioCap: 1, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true },
+  { reflectCenterFigure: false, pixelRatioCap: 1, bloomResolutionScale: 0.25, bloomEnabled: true },
+  { reflectCenterFigure: false, pixelRatioCap: 1, bloomResolutionScale: 0.25, bloomEnabled: false },
 ];
 
 // 最大の段階番号（段階総数から1を引いた値）。判定（performanceBudget.ts）は描画設定を知らずにこの整数だけを

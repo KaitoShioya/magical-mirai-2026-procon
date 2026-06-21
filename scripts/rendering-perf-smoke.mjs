@@ -1,9 +1,10 @@
 // 性能バジェット自動劣化制御（Issue #18）の受け入れ検証。描画器が劣化段階を実際に適用することを、実FPSに
 // 依存せず決定的に確かめる。Playwright で受け入れ診断ページ（perf-budget.html）を開き、診断グローバル
-// window.__perfApplied を読み、段階0から3の各段階で次を確かめる。
-//   段階1: 画素密度倍率が下がる（端末画素密度倍率を2に設定して計測するため、上限1.0で半分になる）。
-//   段階2: ブルーム解像度倍率が0.25へ下がる。
-//   段階3: ブルームが無効になり、最終出力パスは有効のまま（色管理が保たれる）。
+// window.__perfApplied を読み、段階0から4の各段階で次を確かめる。
+//   段階1: 中心オブジェクト（常在ミク）が反射から外れる（reflectCenterFigure が偽になり、実効変化が立つ）。
+//   段階2: 画素密度倍率が下がる（端末画素密度倍率を2に設定して計測するため、上限1.0で半分になる）。
+//   段階3: ブルーム解像度倍率が0.25へ下がる。
+//   段階4: ブルームが無効になり、最終出力パスは有効のまま（色管理が保たれる）。
 //   全段階: 適用後の段階が要求段階と一致し、描画命令の回数が1以上100未満である。
 // 段階適用直後のフレーム時間は記録して表示する（端末依存のため合否には用いない）。
 // 実機での平均55以上・滑らかさの確認と正式な性能ゲートは Issue #19・#97 が担う。
@@ -23,8 +24,8 @@ const DRAW_CALL_LIMIT = 100;
 // として、実測最大の数十倍にあたる200ミリ秒を上限とする。これは性能の合否（実機の平均フレーム率）ではなく、
 // 段階適用が過度に重い処理になっていないことの回帰検出であり、正式な性能ゲートは Issue #97 が担う。
 const APPLY_FRAME_LIMIT_MS = 200;
-// 端末画素密度倍率を2に設定して計測する。採用理由を先に述べる。段階1の上限1.0による画素密度の低下を観測する
-// には、端末倍率が上限2より大きい（または等しい）必要がある。倍率1の端末では段階1の画素密度は変わらないため、
+// 端末画素密度倍率を2に設定して計測する。採用理由を先に述べる。段階2の上限1.0による画素密度の低下を観測する
+// には、端末倍率が上限2より大きい（または等しい）必要がある。倍率1の端末では段階2の画素密度は変わらないため、
 // 観測のために倍率2を与える。
 const DEVICE_SCALE_FACTOR = 2;
 
@@ -77,14 +78,15 @@ try {
     fail("WebGL を利用できませんでした（webglAvailable が偽）");
   } else {
     const levels = result.levels;
-    if (!Array.isArray(levels) || levels.length !== 4) {
-      fail(`段階の数が4ではありません（${levels ? levels.length : "なし"}）`);
+    if (!Array.isArray(levels) || levels.length !== 5) {
+      fail(`段階の数が5ではありません（${levels ? levels.length : "なし"}）`);
     } else {
       const byLevel = (n) => levels.find((entry) => entry.requestedLevel === n);
       const l0 = byLevel(0);
       const l1 = byLevel(1);
       const l2 = byLevel(2);
       const l3 = byLevel(3);
+      const l4 = byLevel(4);
 
       // 全段階共通: 適用後の段階が要求段階と一致し、描画命令の回数が1以上100未満。
       for (const entry of levels) {
@@ -103,40 +105,62 @@ try {
         }
       }
 
-      // 段階1: 画素密度倍率が段階0より下がる（端末倍率2・上限1.0で1へ）。
-      if (l0 && l1) {
-        if (l1.pixelRatio < l0.pixelRatio && l1.pixelRatioChanged && l1.effectiveChanged) {
+      // 段階0: 中心オブジェクト（常在ミク）を反射に含める（既定。concept-final §10）。
+      if (l0) {
+        if (l0.reflectCenterFigure) {
+          console.log("確認: 段階0で中心オブジェクトを反射に含める（既定）");
+        } else {
+          fail(`段階0で中心オブジェクトが反射に含まれません（reflectCenterFigure=${l0.reflectCenterFigure}）`);
+        }
+      }
+
+      // 段階1: 中心オブジェクト（常在ミク）が反射から外れる（reflectCenterFigure が偽になり実効変化が立つ）。
+      // 受入スモークは反射解像度の既定値512で動くため反射は有効であり、段階1の遷移で実効変化が立つ。
+      if (l1) {
+        if (!l1.reflectCenterFigure && l1.reflectCenterFigureChanged && l1.effectiveChanged) {
+          console.log("確認: 段階1で中心オブジェクトを反射から除外（reflectCenterFigure が偽へ）");
+        } else {
+          fail(
+            `段階1で中心オブジェクトが反射から外れません（reflectCenterFigure=${l1.reflectCenterFigure} ` +
+              `changed=${l1.reflectCenterFigureChanged}）`
+          );
+        }
+      }
+
+      // 段階2: 画素密度倍率が段階1より下がる（端末倍率2・上限1.0で1へ）。
+      if (l1 && l2) {
+        if (l2.pixelRatio < l1.pixelRatio && l2.pixelRatioChanged && l2.effectiveChanged) {
           console.log(
-            `確認: 段階1で画素密度倍率が低下（${l0.pixelRatio} → ${l1.pixelRatio}）`
+            `確認: 段階2で画素密度倍率が低下（${l1.pixelRatio} → ${l2.pixelRatio}）`
           );
         } else {
           fail(
-            `段階1で画素密度倍率が低下しません（段階0=${l0.pixelRatio} 段階1=${l1.pixelRatio} ` +
-              `pixelRatioChanged=${l1.pixelRatioChanged}）`
+            `段階2で画素密度倍率が低下しません（段階1=${l1.pixelRatio} 段階2=${l2.pixelRatio} ` +
+              `pixelRatioChanged=${l2.pixelRatioChanged}）`
           );
         }
       }
 
-      // 段階2: ブルーム解像度倍率が0.25へ下がる。
-      if (l2) {
-        if (l2.bloomResolutionScale === 0.25 && l2.bloomResolutionChanged && l2.bloomEnabled) {
-          console.log("確認: 段階2でブルーム解像度倍率が0.25へ低下（ブルームは有効のまま）");
-        } else {
-          fail(
-            `段階2でブルーム解像度倍率が0.25へ下がりません（scale=${l2.bloomResolutionScale} ` +
-              `changed=${l2.bloomResolutionChanged} enabled=${l2.bloomEnabled}）`
-          );
-        }
-      }
-
-      // 段階3: ブルームが無効・最終出力パスは有効（色管理が保たれる）。
+      // 段階3: ブルーム解像度倍率が0.25へ下がる。
       if (l3) {
-        if (!l3.bloomEnabled && l3.outputPassEnabled && l3.bloomEnabledChanged) {
-          console.log("確認: 段階3でブルームが無効・最終出力パスは有効（色管理を保持）");
+        if (l3.bloomResolutionScale === 0.25 && l3.bloomResolutionChanged && l3.bloomEnabled) {
+          console.log("確認: 段階3でブルーム解像度倍率が0.25へ低下（ブルームは有効のまま）");
         } else {
           fail(
-            `段階3でブルーム無効・最終出力パス維持になりません（enabled=${l3.bloomEnabled} ` +
-              `outputPass=${l3.outputPassEnabled} changed=${l3.bloomEnabledChanged}）`
+            `段階3でブルーム解像度倍率が0.25へ下がりません（scale=${l3.bloomResolutionScale} ` +
+              `changed=${l3.bloomResolutionChanged} enabled=${l3.bloomEnabled}）`
+          );
+        }
+      }
+
+      // 段階4: ブルームが無効・最終出力パスは有効（色管理が保たれる）。
+      if (l4) {
+        if (!l4.bloomEnabled && l4.outputPassEnabled && l4.bloomEnabledChanged) {
+          console.log("確認: 段階4でブルームが無効・最終出力パスは有効（色管理を保持）");
+        } else {
+          fail(
+            `段階4でブルーム無効・最終出力パス維持になりません（enabled=${l4.bloomEnabled} ` +
+              `outputPass=${l4.outputPassEnabled} changed=${l4.bloomEnabledChanged}）`
           );
         }
       }
@@ -147,14 +171,15 @@ try {
       // バッファ再確保を伴う操作を1つに限ることと、振動せず切替を稀に保つこと（後者は判定器の単体テストで検証
       // 済み）である。前者をここで決定的に検証する。
       const leverChangeCount = (entry) =>
+        (entry.reflectCenterFigureChanged ? 1 : 0) +
         (entry.pixelRatioChanged ? 1 : 0) +
         (entry.bloomResolutionChanged ? 1 : 0) +
         (entry.bloomEnabledChanged ? 1 : 0);
-      const transitions = [l1, l2, l3].filter((entry) => entry !== undefined);
+      const transitions = [l1, l2, l3, l4].filter((entry) => entry !== undefined);
       const multiLever = transitions.filter((entry) => leverChangeCount(entry) !== 1);
       if (multiLever.length === 0) {
         console.log(
-          "確認: 段階1→2→3の各遷移でちょうど1つのレバーだけが変わる（再確保を最小化）"
+          "確認: 段階1→2→3→4の各遷移でちょうど1つのレバーだけが変わる（再確保を最小化）"
         );
       } else {
         fail(
@@ -162,8 +187,8 @@ try {
             multiLever
               .map(
                 (e) =>
-                  `L${e.requestedLevel}(dpr=${e.pixelRatioChanged} scale=${e.bloomResolutionChanged} ` +
-                  `enabled=${e.bloomEnabledChanged}）`
+                  `L${e.requestedLevel}(reflect=${e.reflectCenterFigureChanged} dpr=${e.pixelRatioChanged} ` +
+                  `scale=${e.bloomResolutionChanged} enabled=${e.bloomEnabledChanged}）`
               )
               .join(" ")
         );

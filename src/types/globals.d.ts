@@ -101,6 +101,7 @@ declare global {
       } | null;
       centerFigureStatus: "fallback" | "loaded" | "error";
       centerFigureError: string | null;
+      centerFigureReflected: boolean;
       overlay: {
         objectCount: number;
         frustumLeft: number;
@@ -158,6 +159,21 @@ declare global {
       } | null;
     };
     /**
+     * 検証用の中心キャラクター診断アクセサ（Issue #92）。中心キャラクターの受け入れ診断ページ
+     * （center-figure.html）だけが取り付ける。中心オブジェクト（常在ミク）が湖の中心へ配置され、
+     * 反射への含有を切り替えられることを確かめる。scripts/rendering-center-figure-smoke.mjs が取得する。
+     * centerFigureReflected は反射に含める意図の値、reflectionEnabled は反射そのものの実効値で別概念である。
+     * 共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __centerFigureState?: () => {
+      webglAvailable: boolean;
+      centerFigureStatus: "fallback" | "loaded" | "error";
+      centerFigureError: string | null;
+      reflectionEnabled: boolean;
+      centerFigureReflected: boolean;
+      cameraPosition: { x: number; y: number; z: number };
+    };
+    /**
      * 自動劣化制御（Issue #18）の受け入れ診断 perf-budget.html が公開する、各劣化段階の適用結果。
      * scripts/rendering-perf-smoke.mjs が取得し、段階ごとに画素密度倍率・ブルーム解像度倍率・ブルーム有効・
      * 最終出力パスの維持・描画命令数・段階適用直後のフレーム時間を確かめる。共有型が rendering に依存しないよう
@@ -172,11 +188,13 @@ declare global {
         pixelRatio: number;
         bloomResolutionScale: number;
         bloomEnabled: boolean;
+        reflectCenterFigure: boolean;
         outputPassEnabled: boolean;
         drawCalls: number;
         pixelRatioChanged: boolean;
         bloomResolutionChanged: boolean;
         bloomEnabledChanged: boolean;
+        reflectCenterFigureChanged: boolean;
         effectiveChanged: boolean;
         applyFrameMs: number;
       }[];

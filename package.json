@@ -21,6 +21,7 @@
     "smoke:butterfly": "node scripts/rendering-butterfly-smoke.mjs",
     "smoke:layer": "node scripts/rendering-layer-smoke.mjs",
     "smoke:stage": "node scripts/rendering-stage-smoke.mjs",
+    "smoke:center-figure": "node scripts/rendering-center-figure-smoke.mjs",
     "smoke:perf": "node scripts/rendering-perf-smoke.mjs",
     "smoke:posteffects": "node scripts/rendering-posteffects-smoke.mjs",
     "posteffects:fps": "node scripts/rendering-posteffects-fps.mjs",

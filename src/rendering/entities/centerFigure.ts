@@ -16,6 +16,7 @@ import {
 } from "three";
 import type { CharacterModelConfig } from "../../types/character";
 import type { LoadedVrm } from "../loaders/vrmLoader";
+import { createFixedPoseMotion, type VrmMotion, type VrmMotionFactory } from "./vrmMotion";
 
 /** 中心オブジェクトの表示状態。fallback=光柱、loaded=VRM、error=読み込み失敗で光柱を継続。 */
 export type CenterFigureStatus = "fallback" | "loaded" | "error";
@@ -44,11 +45,16 @@ export interface CenterFigure {
   update(deltaSeconds: number): void;
   /** 現在の表示状態。 */
   status(): CenterFigureStatus;
-  /** 読み込んだVRMへ差し替える。光柱を取り外して解放し、設定の配置・スケール・向きをVRMへ適用する。 */
+  /** 読み込んだVRMへ差し替える。光柱を取り外して解放し、設定の配置・スケール・向きをVRMへ適用する。
+   *  差し替え後の既定のモーション層は固定ポーズ。 */
   swapToVrm(loaded: LoadedVrm, config: CharacterModelConfig): void;
+  /** モーション層を差し替える（Issue #93）。生成関数へ現在の読み込み済みVRMを渡してモーションを作り、
+   *  直前のモーションを解放して置き換える。生成関数が例外を投げた場合は直前のモーションを保持したまま例外を
+   *  呼び出し元へ伝播する。VRM未読み込み時・後始末済み時は何もしない。 */
+  setMotion(create: VrmMotionFactory): void;
   /** 読み込み失敗を記録する。光柱の表示は続けつつ、状態を error にする。 */
   markLoadFailed(): void;
-  /** 後始末。光柱と（あれば）VRMを解放する。冪等。 */
+  /** 後始末。光柱と（あれば）VRMとモーションを解放する。冪等。 */
   dispose(): void;
 }
 
@@ -83,6 +89,8 @@ export function createCenterFigure(): CenterFigure {
   group.add(pillar);
 
   let loadedVrm: LoadedVrm | null = null;
+  // ミクのモーション層（Issue #93）。VRM読み込み後に保持し、毎フレーム vrm.update の前に進める。
+  let motion: VrmMotion | null = null;
   let status: CenterFigureStatus = "fallback";
   let pulseElapsedSeconds = 0;
   let disposed = false;
@@ -96,6 +104,23 @@ export function createCenterFigure(): CenterFigure {
     }
   }
 
+  // 読み込み済みVRMとモーション層を解放する。後始末と再差し替えで共用する。
+  // 解放の前に内部の参照を局所変数へ退避してから null を代入する理由を先に述べる。解放の途中で例外が生じても、
+  // 内部状態が解放済みの古い資源を指したまま残らないようにするためである。
+  // 解放の順序（モーション → VRMをシーンから除去 → VRM解放）の理由を先に述べる。後続の再生型モーションは
+  // vrm.scene や再生制御を参照するため、VRMのシーンを先に解放するとモーションが解放済みの対象を参照しうるためである。
+  function releaseLoaded(): void {
+    const oldMotion = motion;
+    const oldLoaded = loadedVrm;
+    motion = null;
+    loadedVrm = null;
+    oldMotion?.dispose();
+    if (oldLoaded) {
+      group.remove(oldLoaded.object3d);
+      oldLoaded.dispose();
+    }
+  }
+
   return {
     object3d: group,
     update(deltaSeconds: number): void {
@@ -103,6 +128,8 @@ export function createCenterFigure(): CenterFigure {
         return;
       }
       if (loadedVrm) {
+        // モーション層を vrm.update の前に進める（Issue #93）。順序の理由は vrmMotion.ts の update を参照。
+        motion?.update(deltaSeconds);
         loadedVrm.update(deltaSeconds);
         return;
       }
@@ -122,13 +149,33 @@ export function createCenterFigure(): CenterFigure {
         loaded.dispose();
         return;
       }
-      disposePillar();
+      // 新しいVRMを先に取り込んでから旧資源を解放する理由を先に述べる。差し替えの間に中心表示が一瞬も
+      // 空にならないようにするためである。releaseLoaded・disposePillar は例外を投げない契約のため
+      // （vrmMotion.ts と本ファイルの dispose 系を参照）、旧資源解放・光柱解放・状態確定は例外なく完走し、
+      // 新VRMが取り込まれたのに内部参照が未設定という中間状態は生じない。
       loaded.object3d.position.set(config.position.x, config.position.y, config.position.z);
       loaded.object3d.scale.setScalar(config.scale);
       loaded.object3d.rotation.y = config.rotationY;
       group.add(loaded.object3d);
+      // 旧VRM・旧モーションがあれば解放し、光柱も外す。
+      releaseLoaded();
+      disposePillar();
+      // 新しい状態を確定する。差し替え後の既定のモーション層は固定ポーズ（Issue #93）。
       loadedVrm = loaded;
       status = "loaded";
+      motion = createFixedPoseMotion();
+    },
+    setMotion(create: VrmMotionFactory): void {
+      // 後始末済み、またはVRM未読み込みのときは差し替える対象が無いため何もしない。
+      if (disposed || !loadedVrm) {
+        return;
+      }
+      // 新しいモーションを先に生成する。生成が例外を投げた場合は、直前のモーションを保持したまま例外を伝える。
+      // 生成成功後に直前のモーションを解放して置き換える。motion?.dispose() は例外を投げない契約のため、
+      // 生成成功後の置換は確実に完了する。
+      const next = create(loadedVrm);
+      motion?.dispose();
+      motion = next;
     },
     markLoadFailed(): void {
       // 読み込み失敗。光柱の表示は続け、状態だけ error にする。既に loaded のときは上書きしない。
@@ -142,11 +189,8 @@ export function createCenterFigure(): CenterFigure {
       }
       disposed = true;
       disposePillar();
-      if (loadedVrm) {
-        group.remove(loadedVrm.object3d);
-        loadedVrm.dispose();
-        loadedVrm = null;
-      }
+      // モーション → VRMをシーンから除去 → VRM解放の順で解放する（releaseLoaded に集約）。
+      releaseLoaded();
     },
   };
 }

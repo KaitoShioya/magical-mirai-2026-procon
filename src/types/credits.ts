@@ -39,12 +39,12 @@ export interface SongCredit {
 /**
  * 舞台土台の地形素材の出典情報（Issue #105）。地形は静的な3Dモデルとして用意し、素材源を明示する。
  * source は素材源の名称（配布元）、sourceUrl はその配布元のアドレス、note は素材の扱い（形式変換のみで
- * AI生成物でない旨など）を表す。最終的な文言と規約適合の確認は Issue #106 で行う。
+ * AI生成物でない旨など）を表す。最終的な文言と規約適合は Issue #106 で確定した。
  */
 export interface TerrainSourceCredit {
   /** 地形素材の説明（例: 舞台土台の地形）。 */
   readonly label: string;
-  /** 素材源の名称（配布元。例: 国土地理院 地理院地図）。 */
+  /** 素材源の名称（配布元。例: 国土地理院 地理院地図（3D機能の数値標高データ））。 */
   readonly source: string;
   /** 素材源のアドレス（絶対アドレス）。 */
   readonly sourceUrl: string;

@@ -11,7 +11,7 @@
 - 本体入口 `index.html` + `src/main.ts`（Issue #1 ではプレースホルダ表示のみ）。
 - 楽曲データ解析ツール `analysis.html` + `src/tools/analysis/main.ts`（`?song=key`）。描画性能検証ツール `prototype.html` + `src/tools/perf/main.ts`。
 - `scripts/dump-songmap.mjs`: Playwright(導入済み)でsongmap JSONを自動取得。devサーバを5173で起動後 `node scripts/dump-songmap.mjs`（接続先は5173固定）。
-- `scripts/prototype-fps.mjs`: 描画性能を計測。既定接続先が5174のため `BASE=http://localhost:5173` を明示して実行する。
+- `scripts/prototype-fps.mjs`: 描画性能の予算表を出す計測ツール（Issue #19）。既定接続先は `scripts/harness/config.mjs` の `BASE`（5173）に統一済み。`npm run prototype:fps`、または devサーバが別ポートのときだけ `BASE=http://localhost:ポート番号 node scripts/prototype-fps.mjs` を明示して実行する。
 - 既存スクリプトの契約（解析ツールの `window.__songMap`・`DUMP_READY`・`#status`、性能検証ツールの `window.__fps` 系とクエリ値）は移行後も維持。
 
 ## 既知のバグと修正済み事項（重要）

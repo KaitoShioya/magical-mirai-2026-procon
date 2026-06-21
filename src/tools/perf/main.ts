@@ -2,8 +2,10 @@
 // 深夜・雨・暗い湖面の平面反射・発光のブルーム・3次元カメラ移動・文字スマッシュを
 // 単一の three.js 描画領域で最小実装し、毎秒フレーム数を計測する。
 //
-// クエリノブと window.__fps / __avgFps / __resetFps は scripts/prototype-fps.mjs が依存する
-// 実行時契約であり、名前・形を変えない。
+// クエリノブと window.__fps / __avgFps / __fpsSamples / __resetFps / __drawCalls / __pixelRatio は
+// scripts/prototype-fps.mjs が依存する実行時契約であり、名前・形を変えない。
+// __drawCalls は直前フレームの描画命令数（反射・ブルームを合算した1フレーム分）、
+// __pixelRatio は実際に適用された画素密度倍率を返す。
 //
 // ノブ（URLクエリで切替）:
 //   dpr        画素密度上限（既定2）
@@ -43,6 +45,10 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, PIXEL_CAP));
 renderer.setSize(window.innerWidth, window.innerHeight);
+// 描画命令数の自動初期化を切る。理由を先に述べる。反射（Reflector）とブルーム（合成器）で
+// 1フレーム内に複数回描画が走るため、各描画ごとに初期化される既定のままだと最後の描画分しか
+// 残らない。自動初期化を切り、描画関数の冒頭で1回だけ初期化して、合算した1フレーム分を読む。
+renderer.info.autoReset = false;
 container.appendChild(renderer.domElement);
 
 // ---- シーンとカメラ ----
@@ -179,6 +185,9 @@ let frames = 0;
 let last = performance.now();
 let fps = 0;
 const samples: number[] = [];
+// 直前フレームの描画命令数。初期値は空値にする。理由を先に述べる。最初の描画が完了する前に
+// 読まれた場合に0を返すと、計測側が「取得不能」と「実測0」を区別できなくなるため、描画前は空値にする。
+let lastFrameDrawCalls: number | null = null;
 window.__fps = () => fps;
 window.__avgFps = () =>
   samples.length ? samples.reduce((acc, val) => acc + val, 0) / samples.length : 0;
@@ -192,6 +201,10 @@ window.__resetFps = () => {
   fps = 0;
   last = performance.now();
 };
+// 直前フレームの描画命令数（反射・ブルームを合算した1フレーム分）。最初の描画完了前は空値。
+window.__drawCalls = () => lastFrameDrawCalls;
+// 実際に適用された画素密度倍率。setPixelRatio で設定した Math.min(window.devicePixelRatio, 上限) を返す。
+window.__pixelRatio = () => renderer.getPixelRatio();
 
 const beatMs = 60000 / BPM;
 const clock = new THREE.Clock();
@@ -222,7 +235,11 @@ function animate(): void {
     t.quaternion.copy(camera.quaternion); // 常にカメラへ正対
   }
 
+  // 描画命令数を1フレームに一度だけ初期化する（autoReset を切ってあるため、ここで初期化しないと累積する）。
+  renderer.info.reset();
   composer.render();
+  // 合成描画の後に、反射・ブルームを合算した1フレーム分の描画命令数を保存する。フックはこの保存値を返す。
+  lastFrameDrawCalls = renderer.info.render.calls;
 
   // 毎秒フレーム数
   frames++;

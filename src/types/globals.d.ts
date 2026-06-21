@@ -22,8 +22,13 @@ declare global {
     /** 初回表示遅延（暖め後の最初の出現要求から最初の描画完了まで、ミリ秒）を返す（kineticText 診断が公開する） */
     __initLatencyMs?: () => number;
     /** 直近フレームの描画命令の回数を返す（kineticText 診断 typography.html の変形シナリオと、本編アプリの
-     *  自動劣化制御 Issue #18 が診断モードで公開する）。 */
-    __drawCalls?: () => number;
+     *  自動劣化制御 Issue #18 が診断モードで公開し、描画性能検証ツール prototype.html も公開する。
+     *  scripts/prototype-fps.mjs が取得する）。prototype.html では最初の描画完了前は空値（null）を返す
+     *  （取得不能と実測0を区別するため）。 */
+    __drawCalls?: () => number | null;
+    /** 実際に適用された画素密度倍率を返す（描画性能検証ツール prototype.html が公開し、
+     *  scripts/prototype-fps.mjs が取得する）。 */
+    __pixelRatio?: () => number;
     /** 現在の自動劣化制御（Issue #18）の劣化段階を返す。本編アプリが診断モード（?smoke=1）で公開する。 */
     __perfLevel?: () => number;
     /** 劣化段階が変化した履歴（変化時の累積時刻ミリ秒と変化後の段階）を返す。本編アプリが診断モードで公開する。

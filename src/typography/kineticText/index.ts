@@ -89,6 +89,9 @@ export type {
   EffectElementIssue,
   EffectRegistry,
 } from "./effectElement";
+// 個別演出（#130 の基盤の上に登録する実演出）。Issue #23 1文字1拍スマッシュ。
+// 本番レジストリへの登録は割付（#132）・譜面（#33）が行うため、ここでは演出要素を公開するにとどめる。
+export { charSmash } from "./effects/charSmash";
 export type {
   FontCredit,
   FontEntry,

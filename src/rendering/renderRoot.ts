@@ -2,7 +2,17 @@
 // 状態を読んで描く「ビュー」であり、判定・得点・時刻の論理を持たない（依存規則 docs/decisions/architecture.md §5）。
 // profiles・tools は import しない。後続の反射(#9)・発光点(#10)・層合成(#15)はこの土台へ積み上げる。
 
-import { Color, FogExp2, PerspectiveCamera, Scene, Vector2, Vector3, WebGLRenderer } from "three";
+import {
+  Color,
+  FogExp2,
+  NoToneMapping,
+  PerspectiveCamera,
+  Scene,
+  SRGBColorSpace,
+  Vector2,
+  Vector3,
+  WebGLRenderer,
+} from "three";
 import type { Vec3Like } from "../utils/cameraTrajectory";
 import {
   CAMERA_FAR,
@@ -79,6 +89,12 @@ export interface RenderState {
   /** 現在 canvas に適用している画面拡大・減衰揺れの変換（Issue #76）。倍率1・移動0は恒等（拡大していない）。
    *  診断・検証と、入力の逆変換契約（#59）のために読む。 */
   screenTransform: { scale: number; offsetX: number; offsetY: number };
+  /** レンダラの出力色空間。後処理を線形空間で作用させる前提（最終段の色管理は OutputPass）の明示設定を検証する。
+   *  レンダラが無い端末では既定の "srgb" を返す。 */
+  outputColorSpace: string;
+  /** レンダラのトーンマッピング方式の数値。現状はトーンマッピング無し（NoToneMapping）を明示設定し検証する。
+   *  レンダラが無い端末では NoToneMapping の値を返す。 */
+  toneMapping: number;
 }
 
 /** 描画基盤の外部契約。 */
@@ -108,6 +124,10 @@ export interface RenderRoot {
    *  演出評価器（src/utils/screenShake）が算出する。前回適用値と一致すれば書き換えない。破棄後・canvas が
    *  無い（WebGL 不可）ときは何もしない。 */
   setScreenTransform(scale: number, offsetXPx: number, offsetYPx: number): void;
+  /** 拍同期ポストエフェクト（Issue #17）の色収差バースト強度を注入する。intensity は0から1で、強拍直後に1、
+   *  減衰で0へ向かう。値を橋渡しするだけで時刻ロジックは持たない。後処理パスが無効（既定）の端末では効果は出ない。
+   *  本編での有効化は #59 が createRenderRoot({ postEffectEnabled: true }) で行う。WebGL が無い端末では何もしない。 */
+  setChromaBurstIntensity(intensity: number): void;
   /** 診断・検証用の現在状態を返す。 */
   state(): RenderState;
   /** 後始末。リサイズ待ち受けの解除・GPU資源の解放・canvas の取り外しを行う。冪等。 */
@@ -143,13 +163,20 @@ function isWebGL2Available(): boolean {
  * options.reflectionResolution は反射解像度（0で無効、256または512で有効）。採用理由を先に述べる。
  * 省略可・既定512にすることで、引数1個の既存の呼び出しとの互換を保つ。
  * options.bloomEnabled が偽のときはブルームを無効にして起動する（既定は有効。?bloom=0 から渡る）。
+ * options.postEffectEnabled が真のときは拍同期ポストエフェクト（Issue #17、周縁減光＋色収差）を有効にして起動する
+ * （既定は無効。本編での有効化は #59 がこの引数で行い、既定無効により既存の見えを変えない）。
  */
 export function createRenderRoot(
   container: HTMLElement,
-  options: { reflectionResolution?: number; bloomEnabled?: boolean } = {}
+  options: {
+    reflectionResolution?: number;
+    bloomEnabled?: boolean;
+    postEffectEnabled?: boolean;
+  } = {}
 ): RenderRoot {
   const reflectionResolution = options.reflectionResolution ?? DEFAULT_REFLECTION_RESOLUTION;
   const bloomEnabled = options.bloomEnabled ?? true;
+  const postEffectEnabled = options.postEffectEnabled ?? false;
 
   const scene = new Scene();
   scene.background = new Color(NIGHT_COLOR);
@@ -177,6 +204,12 @@ export function createRenderRoot(
     try {
       created = new WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
       created.setClearColor(NIGHT_COLOR, 1);
+      // 色管理を明示設定する（現状はトーンマッピング無しのためsRGB変換のみ。将来トーンマッピングを変えても
+      // 最終段の色管理は OutputPass に集約する）。明示設定する理由を先に述べる。拍同期ポストエフェクト（#17）は
+      // ブルームと最終出力の間で線形空間に作用させる前提であり、この前提が three.js の既定変更で崩れる事故を避ける
+      // ため、現在の既定と同値（出力sRGB・トーンマッピング無し、見えは不変）を明示して固定する。
+      created.outputColorSpace = SRGBColorSpace;
+      created.toneMapping = NoToneMapping;
       // 自動消去を無効にする（Issue #15 層合成）。採用理由を先に述べる。3次元の合成の後に深度のみ消して
       // 2次元層を最前面へ重ねるため、描画のたびに色を自動で消されては困る。合成器の内部パス（RenderPass）は
       // autoClear に依らず自前で色と深度を消すため通常経路は影響を受けず、防御経路（合成器が無い縮退）では
@@ -242,6 +275,7 @@ export function createRenderRoot(
       enabled: bloomEnabled,
       displayWidth: window.innerWidth,
       displayHeight: window.innerHeight,
+      postEffectEnabled,
     });
     // 2次元層（Issue #15）。3次元の合成の後に最前面へ重ねる。初回の構築時描画より前に生成する。
     overlay = createOverlayLayer({
@@ -395,6 +429,10 @@ export function createRenderRoot(
     },
     setCameraPose,
     setScreenTransform,
+    setChromaBurstIntensity(intensity: number): void {
+      // 値を橋渡しするだけ（時刻ロジックは持たない）。WebGL が無く合成器が無い端末では何もしない。
+      bloomComposer?.setChromaBurstIntensity(intensity);
+    },
     resize,
     state(): RenderState {
       // 採用理由を先に述べる。three.js の色管理は16進数をsRGBとして取り込み、getHexString(sRGB既定)で
@@ -437,6 +475,9 @@ export function createRenderRoot(
           : null,
         // 現在 canvas に当てている画面拡大・減衰揺れの変換（Issue #76）。複製して外部からの変更を防ぐ。
         screenTransform: { ...currentScreenTransform },
+        // 色管理の明示設定（レンダラが無い端末では既定値を返す）。後処理を線形空間で作用させる前提を診断で確かめる。
+        outputColorSpace: renderer ? renderer.outputColorSpace : SRGBColorSpace,
+        toneMapping: renderer ? renderer.toneMapping : NoToneMapping,
       };
     },
     dispose(): void {

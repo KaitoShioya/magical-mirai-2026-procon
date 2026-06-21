@@ -18,6 +18,8 @@
     "smoke": "node scripts/screens-smoke.mjs",
     "smoke:glow": "node scripts/rendering-glow-smoke.mjs",
     "smoke:layer": "node scripts/rendering-layer-smoke.mjs",
+    "smoke:posteffects": "node scripts/rendering-posteffects-smoke.mjs",
+    "posteffects:fps": "node scripts/rendering-posteffects-fps.mjs",
     "smoke:input": "node scripts/input-smoke.mjs",
     "smoke:credits": "node scripts/credits-smoke.mjs",
     "smoke:typography": "node scripts/typography-deform-smoke.mjs",

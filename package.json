@@ -38,6 +38,7 @@
     "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud",
     "quality:spatial": "node scripts/spatial-quality.mjs",
     "quality:display-sync": "node scripts/display-sync-quality.mjs",
+    "quality:fps": "node scripts/performance-quality.mjs",
     "quality:readability": "node scripts/readability-quality.mjs"
   },
   "dependencies": {

@@ -89,6 +89,26 @@ export type {
   EffectElementIssue,
   EffectRegistry,
 } from "./effectElement";
+// 演出合成エンジン（#131）。複数演出の属性寄与を固定順序で1つの最終文字状態へ畳む合成器、
+// 費用合算と縮退指示、合成結果を取っ手へ1回反映する適用層。本編ループへの結線は #33・#59 が行う。
+export { composeGlyphState } from "./effectCompositor";
+export type { ComposeInput, ContributionEntry, DegradeDirective } from "./effectCompositor";
+export type { ComposedGlyphState } from "./composedGlyphState";
+export { accountBudget, planDegrade } from "./effectBudget";
+export type {
+  EffectMeasure,
+  BudgetUnit,
+  BudgetCaps,
+  BudgetTotals,
+  CostDifference,
+  BudgetReport,
+  UnitDirective,
+} from "./effectBudget";
+export { createCompositionTarget } from "./effectCompositionApplier";
+export type { CompositionTarget, CompositionTargetDeps } from "./effectCompositionApplier";
+// プール枯渇の検出。複製の写しの確保失敗を駆動・診断側が判定するために使う（#131 の適用層へ null で渡す）。
+export { isPlaceholderHandle } from "./engine";
+
 // 個別演出（#130 の基盤の上に登録する実演出）。Issue #23 1文字1拍スマッシュ。
 // 本番レジストリへの登録は割付（#132）・譜面（#33）が行うため、ここでは演出要素を公開するにとどめる。
 export { charSmash } from "./effects/charSmash";

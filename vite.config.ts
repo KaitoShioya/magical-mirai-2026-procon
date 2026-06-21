@@ -22,8 +22,10 @@ export default defineConfig(({ mode }) => {
   // typography.html は kineticText エンジンの受け入れ診断（性能計測）、readability.html は可読性処理（#31）の
   // 受け入れ診断（コントラスト比計測）、rain.html は雨パーティクルの単独診断、camera-trajectory.html はカメラ
   // 軌跡システムの受け入れ診断、rendering.html は発光点（#10）の描画命令数の受け入れ診断、input.html は入力
-  // アーキテクチャ（#47）の受け入れ診断、layer-composite.html は描画層合成（#15）の受け入れ診断、posteffects.html は
-  // 拍同期ポストエフェクト（#17）の受け入れ診断（周縁減光・色収差・性能計測）の入口で、いずれも本番では配信しない。
+  // アーキテクチャ（#47）の受け入れ診断、layer-composite.html は描画層合成（#15）の受け入れ診断、
+  // butterfly.html は蝶造形（#61）の受け入れ診断、perf-budget.html は性能バジェット自動劣化制御（#18）の
+  // 受け入れ診断、screen-shake.html は画面拡大・減衰揺れ（#76）の受け入れ診断、posteffects.html は拍同期
+  // ポストエフェクト（#17）の受け入れ診断（周縁減光・色収差・性能計測）の入口で、いずれも本番では配信しない。
   const input: Record<string, string> = deployAppOnly
     ? { main: "index.html" }
     : {
@@ -37,6 +39,9 @@ export default defineConfig(({ mode }) => {
         rendering: "rendering.html",
         input: "input.html",
         layerComposite: "layer-composite.html",
+        butterfly: "butterfly.html",
+        perfBudget: "perf-budget.html",
+        screenShake: "screen-shake.html",
         postEffects: "posteffects.html",
       };
 

@@ -38,6 +38,8 @@ export interface BloomState {
    */
   bloomInputWidth: number;
   bloomInputHeight: number;
+  /** 現在のブルーム解像度倍率（自動劣化制御 Issue #18 が実行時に下げる値。既定 BLOOM_RESOLUTION_SCALE）。 */
+  resolutionScale: number;
   /** 最終出力パス（線形→sRGB変換とトーンマッピング）が有効なら真。色管理が働くための必要条件。 */
   outputPassEnabled: boolean;
   /** 拍同期ポストエフェクト（Issue #17）のパスが有効なら真。ShaderPass の enabled をそのまま返す（uniform値とは別）。 */
@@ -54,6 +56,17 @@ export interface BloomComposer {
   render(): void;
   /** 表示寸法の変更を反映する。往復バッファを描画バッファ全解像度へ合わせ、ブルーム入力解像度を半分へ再適用する。 */
   setSize(displayWidth: number, displayHeight: number): void;
+  /**
+   * ブルーム解像度倍率を実行時に変える（自動劣化制御 Issue #18）。記憶している最後の表示寸法に対して
+   * 入力解像度を再適用する。有限かつ0超1以下でなければ無視する。倍率が実際に変わったら true を返す。
+   * 画素密度倍率には触れない（端末画素密度は変わらないため）。
+   */
+  setResolutionScale(scale: number): boolean;
+  /**
+   * ブルームの有効・無効を実行時に切り替える（自動劣化制御 Issue #18）。無効でも合成器の経路を通し、
+   * 最終出力パスが画面へ出るため色管理は保たれる。有効状態が実際に変わったら true を返す。
+   */
+  setEnabled(enabled: boolean): boolean;
   /**
    * 拍同期ポストエフェクト（Issue #17）の色収差バースト強度を注入する。intensity は0から1で、強拍直後に1、
    * 減衰で0へ向かう。実装は非有限値を0に、範囲外を0から1へ丸めてから最大ずれ量を掛けて uniform へ渡す。
@@ -130,18 +143,28 @@ export function createBloomComposer(
   let bloomInputWidth = 1;
   let bloomInputHeight = 1;
 
-  // ブルーム入力解像度（表示寸法×倍率の半分）を bloomPass へ適用する。
+  // 現在のブルーム解像度倍率。採用理由を先に述べる。自動劣化制御（Issue #18）が実行時に倍率を下げてブルームの
+  // 負荷を減らすため、構築時のモジュール定数ではなく可変の閉包変数で持つ。既定は半解像度。
+  let currentBloomScale = BLOOM_RESOLUTION_SCALE;
+  // 最後に適用した表示寸法。採用理由を先に述べる。実行時の倍率変更はリサイズの合間に起こり、最後に確定した
+  // 表示寸法に対して入力解像度を再適用する必要があるため記憶する。
+  let lastDisplayWidth = options.displayWidth;
+  let lastDisplayHeight = options.displayHeight;
+
+  // ブルーム入力解像度（表示寸法×倍率）を bloomPass へ適用する。
   // 採用理由を先に述べる。EffectComposer.addPass と EffectComposer.setSize は対象パスへ描画バッファ全解像度を
-  // 設定するため、構築時の解像度引数だけでは半解像度が上書きされる。よって addPass の後とリサイズの後に
-  // 明示的に呼び、ブルームのぼかしだけを半解像度に保つ。
+  // 設定するため、構築時の解像度引数だけでは縮小が上書きされる。よって addPass の後とリサイズの後と倍率変更の
+  // 後に明示的に呼び、ブルームのぼかしだけを縮小解像度に保つ。
   function applyBloomResolution(displayWidth: number, displayHeight: number): void {
-    const resolution = computeBloomResolution(displayWidth, displayHeight, BLOOM_RESOLUTION_SCALE);
+    lastDisplayWidth = displayWidth;
+    lastDisplayHeight = displayHeight;
+    const resolution = computeBloomResolution(displayWidth, displayHeight, currentBloomScale);
     bloomInputWidth = resolution.x;
     bloomInputHeight = resolution.y;
     bloomPass.setSize(resolution.x, resolution.y);
   }
 
-  // 全パス追加後に半解像度を確定し、初回フレームから半解像度にする。
+  // 全パス追加後に縮小解像度を確定し、初回フレームから縮小解像度にする。
   applyBloomResolution(options.displayWidth, options.displayHeight);
 
   return {
@@ -174,6 +197,30 @@ export function createBloomComposer(
       const safe = Number.isFinite(intensity) ? Math.min(1, Math.max(0, intensity)) : 0;
       postEffectPass.uniforms.chromaOffset.value = safe * POST_CHROMA_MAX_OFFSET;
     },
+    setResolutionScale(scale: number): boolean {
+      // 不正な倍率（非有限・0以下・1超）は無視する。1超を弾くのは、ブルームのぼかしは表示寸法以下で行う後処理で
+      // あり、表示寸法を超える入力解像度は意味が無く負荷だけ増えるためである。
+      if (!Number.isFinite(scale) || scale <= 0 || scale > 1) {
+        return false;
+      }
+      if (scale === currentBloomScale) {
+        return false;
+      }
+      currentBloomScale = scale;
+      // 記憶している最後の表示寸法で入力解像度を再適用する。composer.setSize は呼ばない（倍率変更は描画バッファ
+      // 全解像度も画素密度倍率も変えないため、bloomPass の入力解像度だけを更新すればよい）。
+      applyBloomResolution(lastDisplayWidth, lastDisplayHeight);
+      return true;
+    },
+    setEnabled(enabled: boolean): boolean {
+      if (bloomPass.enabled === enabled) {
+        return false;
+      }
+      // ブルームのパスだけを有効・無効にする。合成器は最終の有効パス（最終出力パス）を画面へ出すため、無効でも
+      // シーン描画と色管理は保たれる。描画バッファの再確保は伴わない。
+      bloomPass.enabled = enabled;
+      return true;
+    },
     state(): BloomState {
       return {
         enabled: bloomPass.enabled,
@@ -182,6 +229,7 @@ export function createBloomComposer(
         threshold: bloomPass.threshold,
         bloomInputWidth,
         bloomInputHeight,
+        resolutionScale: currentBloomScale,
         outputPassEnabled: outputPass.enabled,
         postEffectEnabled: postEffectPass.enabled,
         vignetteStrength: postEffectPass.uniforms.vignetteStrength.value,

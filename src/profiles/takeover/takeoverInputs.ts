@@ -73,13 +73,14 @@ export const takeoverInputs: ManualProfileInputs = {
     },
   },
 
-  // 多様性逓減の三部形式の区間。境界は反復区間（サビ）に揃え、時刻順に主題・変奏・回帰を割り当てる。
-  // 設計判断の正典 docs/decisions/app-overall-decisions.md §3.5 が「進化の刻みは反復区間に同期させる」と定めるため。
-  // 第1サビと第3サビは歌詞「Clap to the Beat」を主題と回帰として含み、第2サビは中盤の見せ場（変奏）に当たる。
-  diversityZones: [
-    { startTimeMs: 1114.6, endTimeMs: 23314.6, role: "theme", label: "第1サビ Clap to the Beat（主題）" },
-    { startTimeMs: 88800.2, endTimeMs: 111000.2, role: "variation", label: "第2サビ（変奏）" },
-    { startTimeMs: 165674.6, endTimeMs: 187874.6, role: "reprise", label: "第3サビ Clap to the Beat（回帰）" },
+  // 多様性逓減区間のラベルの曲別上書き。境界と役割は songmap のサビ区間から自動抽出する（Issue #42）。
+  // 設計判断の正典 docs/decisions/app-overall-decisions.md §3.5 が「進化の刻みは反復区間に同期させる」と定めるため、
+  // 時刻順に主題・変奏・回帰が割り当たる。第1サビと第3サビは歌詞「Clap to the Beat」を主題と回帰として含み、
+  // 第2サビは中盤の見せ場（変奏）に当たる。曲固有の文言だけをここで与える。
+  diversityZoneLabels: [
+    "第1サビ Clap to the Beat（主題）",
+    "第2サビ（変奏）",
+    "第3サビ Clap to the Beat（回帰）",
   ],
 
   // 無和音区間の埋め方の上書き。和音索引24（歌唱中の実質的な無和音）を docs/research/07-feasibility-and-parameters.md §1.2 に

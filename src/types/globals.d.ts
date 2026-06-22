@@ -289,6 +289,26 @@ declare global {
       sampleBrightnesses: readonly number[];
     };
     /**
+     * 検証用のひまわり造形診断アクセサ（Issue #60）。ひまわり診断ページ（sunflower.html）だけが取り付ける。
+     * ひまわりのみのシーンを描いた直後の描画命令の回数（drawCalls）と三角形の数（triangles）、描画個体数
+     * （instanceCount）、個体あたり三角形数（trianglesPerInstance）、代表個体の大きさ・輝度の標本、
+     * 幾何メトリクス（花盤半径・全体半径・中心花弁比率・種数・花弁数）を同一スナップショットで返す。
+     * scripts/rendering-sunflower-smoke.mjs が取得する。共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __sunflowerState?: () => {
+      drawCalls: number;
+      triangles: number;
+      instanceCount: number;
+      trianglesPerInstance: number;
+      sampleScales: readonly number[];
+      sampleBrightnesses: readonly number[];
+      discRadius: number;
+      overallRadius: number;
+      centerPetalRatio: number;
+      seedCount: number;
+      petalCount: number;
+    };
+    /**
      * 検証用の層合成診断アクセサ。層合成の受け入れ診断ページ（layer-composite.html）だけが取り付ける。
      * 本番と同じ合成手順（3次元の合成→深度のみ消去→正射影で2次元層を最前面）で数フレーム描いた直後に、
      * 画面の画素を読み戻したスナップショットを返す。scripts/rendering-layer-smoke.mjs が取得する。

@@ -34,3 +34,40 @@ export {
   type GaugeConfig,
   type DeployResult,
 } from "./gauge";
+
+// --- スコアリング合成・ランク（Issue #55） ---
+export { tapBaseScore, TAP_SCORE_WEIGHTS, type TapBaseScoreWeights } from "./tapBaseScore";
+export {
+  isComboHit,
+  nextComboRun,
+  comboPoint,
+  DEFAULT_COMBO_CONFIG,
+  COMBO_SHARE_MAX,
+  type ComboConfig,
+} from "./combo";
+export {
+  reduceScore,
+  finalizeScore,
+  INITIAL_SCORE_STATE,
+  DEFAULT_SCORE_CONFIG,
+  type ScoreState,
+  type ScoreTapInput,
+  type ScoreConfig,
+  type ScoreSummary,
+} from "./scoreAccumulator";
+export {
+  simplePercentile,
+  PERCENTILE_ESTIMATE_DISCLAIMER,
+  type ScoreBounds,
+  type PercentileBasis,
+} from "./percentile";
+export { theoreticalScoreBounds, type ScoreBoundsInput } from "./scoreBounds";
+export {
+  RANKS_ASCENDING,
+  rankOrdinal,
+  RANK_PERCENTILE_THRESHOLDS,
+  rankFromPercentile,
+  rankFromScore,
+  type Rank,
+} from "./rank";
+export { summarizeScore, type ScoreResult } from "./scoreResult";

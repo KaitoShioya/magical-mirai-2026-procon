@@ -2,7 +2,7 @@
 
 - **責務**: 判定窓、目的関数（精度×多様性係数×投下倍率＋コンボ）、ランクの百分位変換、自己最高記録（localStorage）。
 - **禁止依存**: `profiles` を import しない（判定窓やJUSTのパターンは値として外から受け取る）。`rendering`・`tools` を import しない。
-- **担当Issue**: #48 / #42 / #51 / #55 / #56
+- **担当Issue**: #48 / #42 / #50 / #51 / #55 / #56
 - 多様性係数 D の発火判定（`diversityCoefficient.ts`、Issue #42）は本層が提供し、目的関数への結線と本番の逓減量の確定は #56 が行う。
 - 詳細は `docs/decisions/architecture.md` を参照する。
 
@@ -16,7 +16,7 @@
 - **信頼性フラグ**: `TapSample.reliableMusicTime` は `timeSource.isReady()` かつ `timeSource.isPlaying()` かつ当該フレームが再同期でない（`FrameOutcome.didResync` が偽）ときだけ真にする。偽のとき `judgeTap` は床のタップを返す。
 - **可視下限は描画層が与え、#51 は0以上1以下の反応強度を与える**: `judgeTap` は全タップに結果を返すこと（床保証）だけを担う。床のタップ（`isFloor` が真）でも、呼び出し側が元の `Reaction` を対にして渡せば下流（音 #52・光点）が発音と光点を生成できる。光点が完全消失しない可視下限は描画層の写像が与え、その具体的な数値は描画層の定数が所有元であるため本ファイルには書かない。
 - **音程精度の0と0.2は別物**: 床のタップ（対応ノーツ無し、または信頼できないフレーム）の `pitchAccuracy` は0であり、これは「比較する正解スロットが存在しない」ことを表す。対応ノーツが有って音程スロットを外したタップの `pitchAccuracy` は床値0.2（`PITCH_MISS_FLOOR`）であり、これは「正解スロットは存在するが一致しなかった」ことを表す。#51 反応強度はこの2値をそのまま区別して明るさへ写す。
-- **較正の補正値は #50 が所有**: `JudgeOptions.calibrationOffsetMs` に較正値（既定0）を渡す。
+- **較正の補正値は #50 が所有**: `JudgeOptions.calibrationOffsetMs` に較正値（既定0）を渡す。較正値の測定・保存・読み出しは #50 の `calibrationStore.ts`（`loadCalibrationOffsetMs` で読み出し、`saveCalibrationOffsetMs` で保存）。本編プレイの結線 #59 はプレイ開始時に `loadCalibrationOffsetMs()` を1回呼び、戻り値を `JudgeOptions.calibrationOffsetMs` へ渡す。プレイ中に較正値は変わらないため動的な再読み込みは不要。
 
 ## 反応強度（Issue #51）の契約
 

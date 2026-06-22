@@ -256,6 +256,21 @@ export function createOperationSoundEngine(): OperationSoundEngine {
       return context.state as EngineContextState;
     },
 
+    get outputLatencyMs(): number | null {
+      // 起動前・停止後は測定できないため null を返す。較正UIは null のとき参考値の提示をやめ、既定0を初期つまみ位置にする。
+      if (!context || context.state !== "running") {
+        return null;
+      }
+      // outputLatency は未対応のブラウザで undefined になるため 0 に倒す。baseLatency も同様。単位は秒なので
+      // 作品全体のミリ秒統一に合わせて 1000 倍する。
+      const output =
+        typeof context.outputLatency === "number" ? context.outputLatency : 0;
+      const base =
+        typeof context.baseLatency === "number" ? context.baseLatency : 0;
+      const milliseconds = (output + base) * 1000;
+      return Number.isFinite(milliseconds) ? milliseconds : null;
+    },
+
     dispose(): void {
       if (disposed) {
         return;

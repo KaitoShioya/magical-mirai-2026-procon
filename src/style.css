@@ -388,3 +388,155 @@ body {
   color: var(--accent);
   word-break: break-all;
 }
+
+/* レイテンシ較正（Issue #50）。クレジットは右上のため、較正のトグルは左上に置いて重ならないようにする。 */
+.calibration-toggle {
+  position: fixed;
+  top: max(env(safe-area-inset-top), 8px);
+  left: max(env(safe-area-inset-left), 8px);
+  z-index: 1100;
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: clamp(11px, 2vw, 13px);
+  color: var(--text-dim);
+  background: rgba(5, 6, 10, 0.7);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.calibration-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding:
+    max(env(safe-area-inset-top), 24px)
+    max(env(safe-area-inset-right), 24px)
+    max(env(safe-area-inset-bottom), 24px)
+    max(env(safe-area-inset-left), 24px);
+  overflow-y: auto;
+  background: rgba(8, 9, 14, 0.96);
+  color: var(--text);
+}
+
+/* hidden 属性で出し入れする。display 指定があると hidden が効かないため、明示的に分岐する。 */
+.calibration-panel[hidden] {
+  display: none;
+}
+
+.calibration-panel__close {
+  align-self: flex-end;
+  min-height: 40px;
+  padding: 8px 20px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  color: var(--text);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.calibration-panel__heading {
+  margin: 4px 0;
+  font-size: clamp(14px, 2.6vw, 18px);
+  color: var(--accent);
+}
+
+.calibration-panel__text {
+  max-width: 520px;
+  font-size: clamp(12px, 2vw, 15px);
+  line-height: 1.5;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.calibration-panel__note {
+  max-width: 520px;
+  font-size: clamp(12px, 2vw, 15px);
+  line-height: 1.5;
+  text-align: center;
+  color: var(--accent);
+}
+
+/* タップを受ける領域。片手の親指の精度を保つため十分な大きさを確保する。 */
+.calibration-taparea {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(80vw, 320px);
+  height: min(40vh, 240px);
+  border: 1px solid var(--text-dim);
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+/* 点滅の丸。点灯時に明るくする。 */
+.calibration-blink {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: rgba(120, 130, 150, 0.25);
+  transition: background 60ms linear, box-shadow 60ms linear;
+}
+
+.calibration-blink--on {
+  background: var(--accent);
+  box-shadow: 0 0 32px var(--accent);
+}
+
+/* 偏差メーター。中央が残差0で、針が左右にずれて補正の過不足を示す。 */
+.calibration-meter {
+  position: relative;
+  width: min(80vw, 320px);
+  height: 16px;
+  background: rgba(120, 130, 150, 0.2);
+  border-radius: 8px;
+}
+
+/* 中央の目盛。 */
+.calibration-meter::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 50%;
+  width: 2px;
+  background: var(--text-dim);
+  transform: translateX(-1px);
+}
+
+.calibration-meter__needle {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 50%;
+  width: 4px;
+  background: var(--accent);
+  border-radius: 2px;
+  transform: translateX(-2px);
+  transition: left 80ms linear;
+}
+
+.calibration-slider {
+  width: min(80vw, 320px);
+}
+
+.calibration-panel__button {
+  min-height: 40px;
+  padding: 8px 20px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  color: var(--text);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.calibration-panel__button[hidden] {
+  display: none;
+}

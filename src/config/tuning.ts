@@ -196,3 +196,33 @@ export const EFFECT_MAX_GLOW_GLYPHS = 64;
  * 更新数の上限であり、#97 が実機計測で確定する。★暫定。
  */
 export const EFFECT_MAX_UPDATE_TARGETS_PER_FRAME = 320;
+
+// --- レイテンシ較正（#50 レイテンシ較正UI） ---
+// 入力の遅れを判定窓の中心移動で吸収する補正値。楽曲非依存である（端末と人間の遅れであり曲に依らない）。
+// scoring の永続化（calibrationStore）と app の較正UI（calibrationView）が参照し、判定（timingAccuracy）が
+// JudgeOptions.calibrationOffsetMs として消費する。符号は正が「入力が一貫して遅れる量」であり、判定窓の中心を
+// 遅れ側へ移動させる（出典 src/scoring/timingAccuracy.ts の centeredDiff = tap - note - offset）。
+// 出典: docs/research/04-ux-and-chart-design.md §1「レイテンシの補正」「判定窓」。
+// 消費Issue: #50（較正UI）、#59（読み出し値を判定へ注入）。
+
+/** 較正補正値の既定値（ミリ秒）。未較正時は補正なし。☆確定。 */
+export const CALIBRATION_OFFSET_DEFAULT_MS = 0;
+
+/**
+ * 較正補正値の調整下限（ミリ秒）。負＝入力が一貫して早い側。採用理由を先に述べる。
+ * 入力検出の遅れと音声出力の遅れはともに遅れ側（正方向）に偏るため範囲を非対称にする。早い側は実機で稀だが
+ * 安全のため確保する。満点窓の前後40ミリ秒・外端の前後90ミリ秒を十分に包む。★暫定。
+ */
+export const CALIBRATION_OFFSET_MIN_MS = -150;
+
+/**
+ * 較正補正値の調整上限（ミリ秒）。正＝入力が一貫して遅い側。採用理由を先に述べる。
+ * 無線接続の音声出力の遅延は100から200ミリ秒に達するため、これを吸収できるよう上限を200ミリ秒とする。★暫定。
+ */
+export const CALIBRATION_OFFSET_MAX_MS = 200;
+
+/**
+ * 較正のつまみの刻み幅（ミリ秒）。採用理由を先に述べる。満点窓の前後40ミリ秒に対し5ミリ秒刻みなら窓内に
+ * 16段階あり、つまみで体感的に合わせるのに十分細かい。1ミリ秒刻みはつまみ操作には細かすぎる。★暫定。
+ */
+export const CALIBRATION_OFFSET_STEP_MS = 5;

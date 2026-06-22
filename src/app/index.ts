@@ -24,6 +24,11 @@ import { createAttributionBadge, type AttributionBadge } from "./attribution";
 import { buildCreditRegistry } from "./credits/registry";
 import { createCreditsView, type CreditsView } from "./credits/creditsView";
 import { createOperationSoundEngine } from "../audio";
+import {
+  takeoverTypographyChart,
+  TAKEOVER_DEFAULT_READING_PIXEL_HEIGHT,
+  TAKEOVER_DEFAULT_READING_REGION,
+} from "../profiles/takeover/typographyChart";
 
 /** 統括の外部契約。後始末のみを公開する。 */
 export interface App {
@@ -148,6 +153,12 @@ export function createApp(
   const screenShake = createScreenShake();
   const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
+  // エンジンの固定時間刻みの時計・走査器・世界状態。プレイ画面の本編表示（Issue #33）が同期の基準として
+  // world.gameTimeMs を読むため、画面文脈より前に生成する。ループ（下）も同じ実体を使う。
+  const world = createWorld();
+  const clock = createClock();
+  const scheduler = createScheduler();
+
   // プレイ進行中だけ、タブ離脱時の楽曲停止・再開と、楽曲終了・再生開始の観測を行う。
   let inPlayPhase = false;
   // 再生開始の成立を待つ累積時間と、「触れて再生」表示中かどうか。
@@ -188,6 +199,24 @@ export function createApp(
       if (to === "play") {
         enterPlay();
       }
+    },
+    // プレイ画面の本編表示の結線（Issue #33）。描画基盤の3D場面・カメラ、音楽地図、ゲーム時刻、TAKEOVERの
+    // タイポ譜面と読ませる役の既定を渡す。診断・本番の双方で渡し、診断は擬似再生の音楽地図で動く。
+    play: {
+      getWorldScene: () => renderRoot.getWorldScene(),
+      getWorldCamera: () => renderRoot.getWorldCamera(),
+      webglAvailable: () => renderRoot.state().webglAvailable,
+      musicMapSource: () => playback.musicMap(),
+      currentGameTimeMs: () => world.gameTimeMs,
+      typographyChart: takeoverTypographyChart,
+      defaultReadingUnit: "phrase",
+      defaultReadingPixelHeight: TAKEOVER_DEFAULT_READING_PIXEL_HEIGHT,
+      defaultReadingRegion: TAKEOVER_DEFAULT_READING_REGION,
+      // 読ませる役の収まり判定と最小表示寸法はデバイス画素で扱うため、表示寸法に画素密度倍率を掛ける。
+      viewportPixelWidth: () =>
+        Math.round(options.stageRoot.clientWidth * (window.devicePixelRatio || 1)),
+      viewportPixelHeight: () =>
+        Math.round(options.stageRoot.clientHeight * (window.devicePixelRatio || 1)),
     },
   };
 
@@ -230,9 +259,7 @@ export function createApp(
   }
 
   // エンジンの固定時間刻みループ。判定・得点は再生位置由来のゲームの時計で進め、UIは実経過ミリ秒で進める。
-  const world = createWorld();
-  const clock = createClock();
-  const scheduler = createScheduler();
+  // 時計・走査器・世界状態は上で生成済み（プレイ画面が world を参照するため文脈より前に置いた）。
   const loop = createLoop({
     timeSource: playback.timeSource,
     clock,

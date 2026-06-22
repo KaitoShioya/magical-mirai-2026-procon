@@ -16,6 +16,7 @@
 //   見せ場・密度・上限・多様性逓減区間 = #41〜#44 / 生成 = #45・#46。
 
 import type { SongVideo } from "../../config/songs";
+import type { TypographyChart } from "../../types/typography";
 
 /** 3次元座標（湖面を基準とする水平面と高さ。座標の尺度は描画側 #40・M2 が定める）。 */
 export interface Vec3 {
@@ -266,4 +267,11 @@ export interface SongProfile {
   sfx: Sfx;
   diversityZones: DiversityZone[];
   tapBudget: TapBudget;
+  /**
+   * タイポ・コンポジション譜面（Issue #33）。任意項目。曲固有の演出割付の上書きと読ませる役の配置を持つ。
+   * 型は共有の型置き場 src/types/typography.ts に定義する（依存規則のため。詳細は同ファイルの冒頭）。
+   * 任意項目とする理由は、解析データを束ねた完全な曲プロファイルの生成（Issue #46）が未了でも、この項目を
+   * 持たない曲プロファイルが型として成立するようにするためである。
+   */
+  typographyChart?: TypographyChart;
 }

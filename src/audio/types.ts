@@ -34,6 +34,12 @@ export interface OperationSoundEngine {
   readonly activeVoiceCount: number;
   /** AudioContext の状態。 */
   readonly contextState: EngineContextState;
+  /**
+   * 音声出力の遅れの推定値（ミリ秒）。較正UI #50 が初期つまみ位置の参考値に使う。最終補正値へは自動採用しない。
+   * 計算式は (context.outputLatency + context.baseLatency) * 1000。AudioContext が未生成または running でないとき、
+   * および値が非有限のときは null（推定不能）。
+   */
+  readonly outputLatencyMs: number | null;
   /** 後始末。全音停止・接続切断・AudioContext の破棄。 */
   dispose(): void;
 }

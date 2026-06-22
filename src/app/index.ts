@@ -23,7 +23,9 @@ import { LAKE_STAGE } from "../config/stage";
 import { createAttributionBadge, type AttributionBadge } from "./attribution";
 import { buildCreditRegistry } from "./credits/registry";
 import { createCreditsView, type CreditsView } from "./credits/creditsView";
+import { createCalibrationView, type CalibrationView } from "./calibration/calibrationView";
 import { createOperationSoundEngine } from "../audio";
+import { loadCalibrationOffsetMs, saveCalibrationOffsetMs } from "../scoring";
 import {
   takeoverTypographyChart,
   TAKEOVER_DEFAULT_READING_PIXEL_HEIGHT,
@@ -143,6 +145,17 @@ export function createApp(
   // 持たないため画面遷移スモークの検証を妨げず、両モードで生成して warmup で unlock を呼ぶことで、画面遷移スモーク
   //（?smoke=1 で warmup を含む全状態を走破する）が起動結線で未捕捉例外が出ないことを自動検査できる。
   const operationSound = createOperationSoundEngine();
+
+  // レイテンシ較正（Issue #50）。題名画面から開く常設トグルのオーバーレイとして、入力の遅れの補正値を測り・保存する。
+  // 副作用を持つ音エンジンと端末内保存は注入で渡す。基準音は明瞭に聞こえる高めの固定音高1つを用いる
+  //（音高番号81＝880ヘルツ。会話帯域より高く、点滅の合図として聞き取りやすい）。生きた判定への結線は #59 が担う。
+  const calibrationView: CalibrationView = createCalibrationView({
+    getOutputLatencyMs: () => operationSound.outputLatencyMs,
+    playReferenceTone: () => operationSound.playNote(81),
+    unlockAudio: () => operationSound.unlock(),
+    loadOffsetMs: () => loadCalibrationOffsetMs(),
+    saveOffsetMs: (offsetMs: number) => saveCalibrationOffsetMs(offsetMs),
+  });
 
   // 画面拡大・減衰揺れ（Issue #76）。拍に同期して画面を一瞬拡大し減衰させる演出を防御的に結線する。
   // 現状の曲設定は拍時刻配列を持たないため拍は空で、演出は恒等変換のまま無作用である。拍時刻の供給は
@@ -374,6 +387,7 @@ export function createApp(
       overlays.dispose();
       attribution?.dispose();
       creditsView.dispose();
+      calibrationView.dispose();
       operationSound.dispose();
       playback.dispose();
       renderRoot.dispose();

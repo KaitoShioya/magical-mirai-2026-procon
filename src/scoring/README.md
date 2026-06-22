@@ -15,4 +15,4 @@
 - **信頼性フラグ**: `TapSample.reliableMusicTime` は `timeSource.isReady()` かつ `timeSource.isPlaying()` かつ当該フレームが再同期でない（`FrameOutcome.didResync` が偽）ときだけ真にする。偽のとき `judgeTap` は床のタップを返す。
 - **最小光点の下限値は #51 が与える**: `judgeTap` は全タップに結果を返すこと（床保証）だけを担う。床のタップ（`isFloor` が真）でも、呼び出し側が元の `Reaction` を対にして渡せば下流（音 #52・光点 #51）が発音と最小光点を生成できる。
 - **音程精度の0と0.2は別物**: 床のタップ（対応ノーツ無し、または信頼できないフレーム）の `pitchAccuracy` は0であり、これは「比較する正解スロットが存在しない」ことを表す。対応ノーツが有って音程スロットを外したタップの `pitchAccuracy` は床値0.2（`PITCH_MISS_FLOOR`）であり、これは「正解スロットは存在するが一致しなかった」ことを表す。#51 反応強度がこの2値を区別して光点の輝度へ写すかは #51 側で定める。
-- **較正の補正値は #50 が所有**: `JudgeOptions.calibrationOffsetMs` に較正値（既定0）を渡す。
+- **較正の補正値は #50 が所有**: `JudgeOptions.calibrationOffsetMs` に較正値（既定0）を渡す。較正値の測定・保存・読み出しは #50 の `calibrationStore.ts`（`loadCalibrationOffsetMs` で読み出し、`saveCalibrationOffsetMs` で保存）。本編プレイの結線 #59 はプレイ開始時に `loadCalibrationOffsetMs()` を1回呼び、戻り値を `JudgeOptions.calibrationOffsetMs` へ渡す。プレイ中に較正値は変わらないため動的な再読み込みは不要。

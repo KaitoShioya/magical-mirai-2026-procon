@@ -10,3 +10,5 @@ export { createPerfBudget } from "./performanceBudget";
 export type { PerfBudget, PerfBudgetDecision, PerfBudgetState } from "./performanceBudget";
 export type { GlowPoints, GlowInstance, GlowPointsOptions } from "./entities/glowPoints";
 export { createGlowPoints } from "./entities/glowPoints";
+export type { FallingLane, FallingLaneProbeNote } from "./fallingLane";
+export { createFallingLane } from "./fallingLane";

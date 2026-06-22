@@ -442,5 +442,19 @@ declare global {
       counts: { switchCount: number; fireCount: number };
       sourceIssues: readonly string[];
     };
+    /**
+     * 判定UI 落下式レーン（Issue #57）の受け入れ診断ページ（falling-lane.html）だけが取り付ける。
+     * 指定したゲーム時刻における可視ノーツの計算値（識別子・音程番号・表示する数字・2次元層上の縦位置）と、
+     * 目標線y・上端y・横位置・縦横比・2次元層に載る表示物数を、描画状態を変えずに返す。
+     * scripts/rendering-falling-lane-smoke.mjs が取得する。共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __fallingLaneProbe?: (gameTimeMs: number) => {
+      notes: readonly { id: string; slotIndex: number; digit: number | null; y: number }[];
+      topY: number;
+      targetY: number;
+      groupX: number;
+      aspect: number;
+      overlayObjectCount: number;
+    };
   }
 }

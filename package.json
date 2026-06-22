@@ -32,6 +32,7 @@
     "smoke:credits": "node scripts/credits-smoke.mjs",
     "smoke:typography": "node scripts/typography-deform-smoke.mjs",
     "smoke:screen-shake": "node scripts/screen-shake-smoke.mjs",
+    "smoke:falling-lane": "node scripts/rendering-falling-lane-smoke.mjs",
     "smoke:audio": "node scripts/audio-smoke.mjs",
     "smoke:readability": "node scripts/readability-smoke.mjs",
     "quality": "node scripts/quality-harness.mjs --mode=local",

@@ -9,6 +9,8 @@
 
 import type { PlayWiring, Screen, ScreenContext, ScreenFactory } from "./types";
 import { buildLyricsTimeline } from "../textalive";
+import { createFallingLane, type FallingLane } from "../rendering";
+import { computeOverlayFrustum } from "../rendering/viewport";
 import {
   createKineticTextEngine,
   createFontRegistry,
@@ -168,6 +170,8 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
   const play = context.play;
   let engine: KineticTextEngine | null = null;
   let conductor: Conductor | null = null;
+  // 落下式レーン（判定UI #57）。組み立て成功時に一度だけ生成し2次元層へ載せ、保持する。
+  let lane: FallingLane | null = null;
   // 組み立てを試みたか（音楽地図の準備完了を待って一度だけ組み立てる）。
   let built = false;
 
@@ -179,6 +183,10 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
     if (result !== null) {
       engine = result.engine;
       conductor = result.conductor;
+      // 落下式レーンを生成して2次元層へ載せる。準備待ちの再試行で重複生成しないよう、この一度きりの
+      // 組み立ての中（built が偽の間のみ到達）で生成する。
+      lane = createFallingLane({ notes: play.laneNotes });
+      play.addOverlayObject(lane.object);
       built = true;
     }
   }
@@ -198,11 +206,17 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
       if (!built) {
         tryBuild();
       }
+      const gameTimeMs = play.currentGameTimeMs();
       if (conductor !== null && engine !== null) {
-        const gameTimeMs = play.currentGameTimeMs();
         conductor.update(gameTimeMs);
         // 文字の寿命処理・カメラ正対・変形の時間進行を進める（描画は統括の renderRoot.render が行う）。
         engine.update({ gameTimeMs, frameDeltaMs: deltaMs });
+      }
+      if (lane !== null) {
+        // 縦横比は2次元層と同じ純粋関数で表示寸法から求める。数字の最小読み取りサイズの計算に縦デバイス画素数も渡す。
+        const viewportPixelHeight = play.viewportPixelHeight();
+        const aspect = computeOverlayFrustum(play.viewportPixelWidth(), viewportPixelHeight).right;
+        lane.update({ gameTimeMs, aspect, viewportPixelHeight });
       }
     },
     onExit(): void {
@@ -212,6 +226,12 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
       conductor = null;
       engine?.dispose();
       engine = null;
+      // 落下式レーンを2次元層から外して資源解放し、保持変数を空に戻す（重複生成の防止のため built も偽へ戻す）。
+      if (lane !== null) {
+        play?.removeOverlayObject(lane.object);
+        lane.dispose();
+        lane = null;
+      }
       built = false;
     },
   };

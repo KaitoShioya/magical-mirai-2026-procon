@@ -1,9 +1,10 @@
 // 画面状態の有限状態機械が扱う型の定義。
 // ここには型だけを置き、DOMの生成・遷移の論理は持たない（責務の出典 src/screens/README.md）。
 
-import type { Scene, PerspectiveCamera } from "three";
+import type { Scene, PerspectiveCamera, Object3D } from "three";
 import type { MusicMapSource } from "../textalive/musicMap";
 import type { TypographyChart, TypographyDisplayRegion, ReadingDisplayUnit } from "../types/typography";
+import type { LaneNote } from "../types/judgmentLane";
 
 /** 5つの画面状態を表すキー。題名・ウォームアップ・プレイ・結果・再挑戦。 */
 export type ScreenKey = "title" | "warmup" | "play" | "result" | "retry";
@@ -65,6 +66,12 @@ export interface PlayWiring {
   viewportPixelWidth(): number;
   /** 画面の縦デバイス画素数（最小表示寸法の下限計算に使う）。 */
   viewportPixelHeight(): number;
+  /** 2次元層へ表示物を足す（落下式レーン #57 を最前面へ載せる。統括が renderRoot へ委譲する）。 */
+  addOverlayObject(object: Object3D): void;
+  /** 2次元層から表示物を外す。 */
+  removeOverlayObject(object: Object3D): void;
+  /** 落下式レーン（判定UI #57）が描画するノーツ列（時刻と音程番号と識別子）。曲プロファイルの notes を渡す。 */
+  readonly laneNotes: readonly LaneNote[];
   /** Y軸音程ガイド（Issue #58）を表示する。プレイ画面の表示中だけ出す。音程スロット数は統括（src/app）が注入し、
    *  画面層は楽曲非依存の設定を知らない。WebGL が無い端末では統括の結線先が何もしない。 */
   showPitchAxisGuide(): void;

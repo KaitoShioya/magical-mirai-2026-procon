@@ -57,6 +57,7 @@ export default defineConfig(({ mode }) => {
         displaySync: "display-sync.html",
         audio: "audio.html",
         performance: "performance.html",
+        fallingLane: "falling-lane.html",
       };
 
   return {

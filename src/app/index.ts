@@ -29,6 +29,7 @@ import {
   TAKEOVER_DEFAULT_READING_PIXEL_HEIGHT,
   TAKEOVER_DEFAULT_READING_REGION,
 } from "../profiles/takeover/typographyChart";
+import { takeoverProfile } from "../profiles/takeover/profile";
 
 /** 統括の外部契約。後始末のみを公開する。 */
 export interface App {
@@ -217,6 +218,11 @@ export function createApp(
         Math.round(options.stageRoot.clientWidth * (window.devicePixelRatio || 1)),
       viewportPixelHeight: () =>
         Math.round(options.stageRoot.clientHeight * (window.devicePixelRatio || 1)),
+      // 落下式レーン（判定UI #57）を2次元層へ載せる口と、レーンが描画するノーツ列（TAKEOVER曲プロファイルの
+      // notes）。2次元層への追加・削除は描画基盤へ委譲する。
+      addOverlayObject: (object) => renderRoot.addOverlayObject(object),
+      removeOverlayObject: (object) => renderRoot.removeOverlayObject(object),
+      laneNotes: takeoverProfile.notes,
     },
   };
 

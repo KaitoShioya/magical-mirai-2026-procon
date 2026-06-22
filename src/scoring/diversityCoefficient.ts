@@ -14,6 +14,12 @@
 // 対応する前回（previousJustSlot・previousOperationSlot）の選び方（三部形式のどの区間を「前」とするか）は、
 // 多様性逓減区間（diversityZones、Issue #42 が自動抽出）を参照する呼び出し側 #56 の責務であり、本関数は
 // 前回値を引数として受け取るだけで選定は行わない。
+//
+// 呼び出し側 #56 が守る結線契約を先に述べる（詳細は src/scoring/README.md）。第1に、多様性逓減を発火させる
+// 対象タップを反復区間の内側に限ることは #56 が行う。本関数は1タップ分の係数だけを返し、そのタップが
+// diversityZones の内側かどうかは判定しない。第2に、4つのスロットは判定エンジン（src/scoring/tapJudgment.ts）
+// と同じく0始まりへ統一して渡す。正解スロットは曲プロファイルの Note.slotIndex（1始まり）を 1 引いて0始まりへ、
+// 操作スロットはプレイヤー入力の Reaction.slotIndex（0始まり）をそのまま渡す。
 
 /** 多様性係数の計算入力。スロットは音程スロットの索引（0始まり）。 */
 export interface DiversityCoefficientInput {

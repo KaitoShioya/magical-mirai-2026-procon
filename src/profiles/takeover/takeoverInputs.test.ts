@@ -31,7 +31,7 @@ describe("TAKEOVER 曲別手動入力（Issue #46 受け入れ基準）", () => 
     expect(validation.ok).toBe(true);
   });
 
-  it("達成基準2の手動逓減区間: diversityZones が3件・役割が主題変奏回帰の順・境界が3サビ区間に一致", () => {
+  it("達成基準2の自動抽出された逓減区間: diversityZones が3件・役割が主題変奏回帰の順・境界が3サビ区間に一致", () => {
     const chorus = songmap.segments
       .filter((s) => s.isChorus)
       .slice()
@@ -47,6 +47,14 @@ describe("TAKEOVER 曲別手動入力（Issue #46 受け入れ基準）", () => 
         TIME_TOLERANCE_MS,
       );
     }
+  });
+
+  it("達成基準2のラベル: diversityZones のラベルが曲固有文言で保持される", () => {
+    expect(profile.diversityZones.map((z) => z.label)).toEqual([
+      "第1サビ Clap to the Beat（主題）",
+      "第2サビ（変奏）",
+      "第3サビ Clap to the Beat（回帰）",
+    ]);
   });
 
   it("無和音区間の埋め方の上書き: 和音索引24の無和音区間が調の主和音 Fm に解決する", () => {

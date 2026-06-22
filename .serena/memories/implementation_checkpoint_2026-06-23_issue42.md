@@ -1,6 +1,6 @@
 # 実装チェックポイント（2026-06-23・Issue #42）
 
-**状態: Issue #42（多様性逓減・反復区間の自動抽出）の実装を完了。ブランチ `worktree-worktree-issue-42-diversity-zone-auto-extraction` で5コミット作成済み。PR未作成・マージ前。**
+**状態: Issue #42（多様性逓減・反復区間の自動抽出）の実装を完了。ブランチ `worktree-issue-42-diversity-zone-auto-extraction` を push し、main 宛の PR #182 を作成済み。マージ前。**
 **用途**: セッション喪失時の復帰点（実装フェーズ）。手動逓減区間を与えた先行Issueは [[implementation_checkpoint_2026-06-22_issue46]]、入力のサビ区間導出は曲プロファイル生成 [[implementation_checkpoint_2026-06-21_issue40]] と同じ生成層、係数の消費（目的関数結線）は後続 #56。設計正典は `docs/decisions/app-overall-decisions.md` §3.4・§3.5。開発基盤の現状は [[dev_infrastructure_notes]]。
 
 ## 位置づけ
@@ -13,7 +13,8 @@
 - **`src/profiles/generate/buildProfile.ts`（変更）**: `diversityZones` の素通しを `deriveDiversityZones(chorusSegments, manual.diversityZoneLabels)` へ置換。`ManualProfileInputs.diversityZones: DiversityZone[]` を `diversityZoneLabels?: ReadonlyArray<string | undefined>` へ置換。未使用になった `DiversityZone` 型 import を除去。
 - **`src/profiles/takeover/takeoverInputs.ts`（変更）**: `diversityZones` 配列を削除し `diversityZoneLabels`（曲固有3文言）へ移行。
 - **`src/profiles/takeover/takeover.profile.json`（再生成）**: `npm run profile:gen` で再生成。差分は `diversityZones` の区間1・区間2 境界が手丸め値からsongmap生値へ変わるのみ（区間0境界・全役割・全ラベル・他フィールド不変）。§3.5「境界の時刻は反復区間そのものとする」に整合。
-- **`src/scoring/diversityCoefficient.ts`（新規）**: `computeDiversityCoefficient(input, options)` を追加。`input` は `currentJustSlot`・`previousJustSlot`・`currentOperationSlot`・`previousOperationSlot`。`options.reductionFactor` は有効範囲 0以上1未満。JUST が変化したのに前と同じ操作（音程スロット）を繰り返したときだけ `reductionFactor`、それ以外は 1.0。前回がない初回は 1.0。`scoring/index.ts` で再輸出、`scoring/README.md` に1行追記。
+- **`src/scoring/diversityCoefficient.ts`（新規）**: `computeDiversityCoefficient(input, options)` を追加。`input` は `currentJustSlot`・`previousJustSlot`・`currentOperationSlot`・`previousOperationSlot`。`options.reductionFactor` は有効範囲 0以上1未満。JUST が変化したのに前と同じ操作（音程スロット）を繰り返したときだけ `reductionFactor`、それ以外は 1.0。前回がない初回は 1.0。`scoring/index.ts` で再輸出。
+- **`src/scoring/README.md`（変更）**: 多様性係数の責務と #56 向け結線契約を追記。結線契約は、発火対象を反復区間内に限るのは #56、前回として比較する区間は #56 が diversityZones の役割順から選ぶ、4つのスロットは判定エンジンと同じく0始まり（正解は Note.slotIndex を1引く、操作は Reaction.slotIndex をそのまま）、逓減量の本番値は #56 が確定する、の4点。同契約は diversityCoefficient.ts のコメントにも明記。
 
 ## 最重要の意思決定（すべて理由を先に述べる）
 

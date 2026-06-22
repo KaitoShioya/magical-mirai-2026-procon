@@ -82,4 +82,17 @@ describe("voicePool", () => {
     pool.add(9, 0.2);
     expect(pool.ids()).toEqual([5, 7, 9]);
   });
+
+  it("clear はすべての音を取り除き、発音中の数も接続中の数も0にする（消音中も含めて空にする）", () => {
+    const pool = createVoicePool();
+    pool.add(1, 0);
+    pool.add(2, 0.1);
+    pool.markMuting(1);
+    expect(pool.activeCount).toBe(2);
+    pool.clear();
+    expect(pool.soundingCount).toBe(0);
+    expect(pool.activeCount).toBe(0);
+    expect(pool.ids()).toEqual([]);
+    expect(pool.oldestSoundingId()).toBeNull();
+  });
 });

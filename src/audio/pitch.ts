@@ -1,6 +1,8 @@
 // 音高から周波数への変換と、スロット番号から音高を引く補助。AudioContext に依存しない純粋ロジック。
 // どのオクターブに置くか（音域配置）の規則は本サブシステムの責務外（Issue #36）であり、ここには持たない。
 
+import { SYNTH_OVERTONE_RATIO } from "./synthConstants";
+
 /**
  * 音高番号（標準のMIDI音高番号）から周波数（ヘルツ）へ変換する。
  * 採用理由を先に述べる。市販の楽曲はA音（音高番号69）を440ヘルツに合わせて作られるため、
@@ -12,6 +14,18 @@ export function midiToFrequency(midiNote: number): number | null {
     return null;
   }
   return 440 * Math.pow(2, (midiNote - 69) / 12);
+}
+
+/**
+ * 投下中に重ねる倍音の周波数（ヘルツ）を、基本周波数から求める。
+ * 基本周波数 × SYNTH_OVERTONE_RATIO（整数倍）を返す。整数倍にすることで倍音は基本周波数と協和し、基本周波数自体は
+ * 変えない。非有限値は変換できないため null を返す（呼び出し側は倍音を足さない）。
+ */
+export function overtoneFrequency(fundamentalHz: number): number | null {
+  if (!Number.isFinite(fundamentalHz)) {
+    return null;
+  }
+  return fundamentalHz * SYNTH_OVERTONE_RATIO;
 }
 
 /**

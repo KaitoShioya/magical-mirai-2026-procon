@@ -24,6 +24,8 @@ export interface VoicePool {
   remove(id: number): void;
   /** すべての音の識別子を、加えた順で返す（破棄の走査に使う）。 */
   ids(): number[];
+  /** すべての音をプールから取り除いて空にする（破棄で使う）。これにより発音中の数も接続中の数も0になる。 */
+  clear(): void;
   /** 発音中の音の数。 */
   readonly soundingCount: number;
   /** 接続中（発音中と消音中の合計）の音の数。 */
@@ -62,6 +64,9 @@ export function createVoicePool(): VoicePool {
     },
     ids() {
       return records.map((record) => record.id);
+    },
+    clear() {
+      records.length = 0;
     },
     get soundingCount() {
       return records.reduce((count, record) => count + (record.state === "sounding" ? 1 : 0), 0);

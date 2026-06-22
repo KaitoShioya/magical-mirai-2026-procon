@@ -118,6 +118,32 @@ try {
   fail("30音同時の検査で上限維持または収束が確認できない");
 }
 
+// 5. 投下時に明るく聞こえる（投下時の周波数重心が通常時より高い）。倍音を1層重ねることで重心が上がることを、
+//    共有出力グラフを通したオフライン描画で測って確認する。基準1.05は、見積もり上昇率約9パーセントより十分低く、
+//    測定・数値計算の誤差より十分高い余裕として採る。
+try {
+  const brightness = await page.evaluate(() => window.__audioBrightness());
+  if (
+    !brightness ||
+    brightness.normalCentroid === null ||
+    brightness.deployCentroid === null
+  ) {
+    fail("明るさ測定に失敗: " + (brightness && brightness.error ? brightness.error : "結果なし"));
+  } else if (!(brightness.deployCentroid > brightness.normalCentroid * 1.05)) {
+    fail(
+      `投下時の周波数重心が通常時の1.05倍を超えない: 通常${brightness.normalCentroid.toFixed(1)}Hz ` +
+        `投下${brightness.deployCentroid.toFixed(1)}Hz`
+    );
+  } else {
+    ok(
+      `投下時の周波数重心が通常時より高い: 通常${brightness.normalCentroid.toFixed(1)}Hz ` +
+        `投下${brightness.deployCentroid.toFixed(1)}Hz`
+    );
+  }
+} catch (error) {
+  fail("明るさ測定の呼び出しで例外: " + error.message);
+}
+
 await browser.close();
 
 if (failed) {

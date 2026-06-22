@@ -2,7 +2,8 @@
 
 - **責務**: 判定窓、目的関数（精度×多様性係数×投下倍率＋コンボ）、ランクの百分位変換、自己最高記録（localStorage）。
 - **禁止依存**: `profiles` を import しない（判定窓やJUSTのパターンは値として外から受け取る）。`rendering`・`tools` を import しない。
-- **担当Issue**: #48 / #55 / #56
+- **担当Issue**: #48 / #55 / #56 / #42
+- 多様性係数 D の発火判定（`diversityCoefficient.ts`、Issue #42）は本層が提供し、目的関数への結線と本番の逓減量の確定は #56 が行う。
 - 詳細は `docs/decisions/architecture.md` を参照する。
 
 ## タップ判定エンジン（Issue #48）の結線契約

@@ -65,6 +65,11 @@ export interface PlayWiring {
   viewportPixelWidth(): number;
   /** 画面の縦デバイス画素数（最小表示寸法の下限計算に使う）。 */
   viewportPixelHeight(): number;
+  /** Y軸音程ガイド（Issue #58）を表示する。プレイ画面の表示中だけ出す。音程スロット数は統括（src/app）が注入し、
+   *  画面層は楽曲非依存の設定を知らない。WebGL が無い端末では統括の結線先が何もしない。 */
+  showPitchAxisGuide(): void;
+  /** Y軸音程ガイド（Issue #58）を非表示にする。プレイ画面から抜けるときに呼ぶ。 */
+  hidePitchAxisGuide(): void;
 }
 
 /**

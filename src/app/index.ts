@@ -20,6 +20,7 @@ import { createBeatScheduler } from "../utils/beatScheduler";
 import { createScreenShake, resolveBeatAmplitudes } from "../utils/screenShake";
 import { MIKU_CHARACTER } from "../config/character";
 import { LAKE_STAGE } from "../config/stage";
+import { PITCH_SLOT_COUNT_DEFAULT } from "../config/tuning";
 import { createAttributionBadge, type AttributionBadge } from "./attribution";
 import { buildCreditRegistry } from "./credits/registry";
 import { createCreditsView, type CreditsView } from "./credits/creditsView";
@@ -217,6 +218,10 @@ export function createApp(
         Math.round(options.stageRoot.clientWidth * (window.devicePixelRatio || 1)),
       viewportPixelHeight: () =>
         Math.round(options.stageRoot.clientHeight * (window.devicePixelRatio || 1)),
+      // Y軸音程ガイド（Issue #58）。音程スロット数は楽曲非依存の既定値を統括が注入する。WebGL が無い端末では
+      // 描画基盤側が何もしない。将来の曲別スロット数対応はこの注入箇所だけで変わる。
+      showPitchAxisGuide: () => renderRoot.showPitchAxisGuide(PITCH_SLOT_COUNT_DEFAULT),
+      hidePitchAxisGuide: () => renderRoot.hidePitchAxisGuide(),
     },
   };
 

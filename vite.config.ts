@@ -30,7 +30,8 @@ export default defineConfig(({ mode }) => {
   // char-smash.html は1文字1拍スマッシュ（#23）の実描画プレビュー、effect-composition.html は演出合成エンジン（#131）の
   // 重ね合成と複製の実描画プレビュー、display-sync.html は表示同期ゲート（#99）の受け入れ診断（粒度切替と発火の
   // 楽曲構造・ビート・声量の山への同期の検査）、audio.html は操作音エンジン（#52）の受け入れ診断（Y軸7スロットの発音・
-  // 起動・同時発音上限）、performance.html は描画性能ゲート（#97）の計測ページ（VRM常在シーンの毎秒フレーム数計測）の
+  // 起動・同時発音上限）、performance.html は描画性能ゲート（#97）の計測ページ（VRM常在シーンの毎秒フレーム数計測）、
+  // pitch-axis.html は本編左端のY軸音程ガイド（#58）の受け入れ診断（左端の番号と境界マークの表示・寸法変更追従）の
   // 入口で、いずれも本番では配信しない。
   const input: Record<string, string> = deployAppOnly
     ? { main: "index.html" }
@@ -57,6 +58,7 @@ export default defineConfig(({ mode }) => {
         displaySync: "display-sync.html",
         audio: "audio.html",
         performance: "performance.html",
+        pitchAxis: "pitch-axis.html",
       };
 
   return {

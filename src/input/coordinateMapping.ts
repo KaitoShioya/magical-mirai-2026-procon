@@ -3,6 +3,14 @@
 // 副作用を持たず、非有限値（非数・無限大）に対する丸めを定義する。
 // 依存規則（docs/decisions/architecture.md §5）に従い、profiles・tools・rendering・three.js を import しない。
 // 設計の出典: docs/decisions/app-overall-decisions.md §3.3、docs/idea/concept-final.md §4。
+//
+// 音程スロットの縦方向の規約（帯中央の正規化Y・正規化Yからスロット番号への写像）は、入力と描画（音程ガイド）の
+// 双方が共有するため、その正典を src/utils/pitchSlotAxis.ts に置く。ここでは正典を取り込み、入力の取得経路（この
+// モジュール）を変えずに同名で再エクスポートする。スロット番号0が画面最上部・増えるほど下側、帯は半開区間
+// [i/slotCount, (i+1)/slotCount) という規約の説明は正典側に記す。
+import { slotIndexFromNormalizedY, slotCenterNormalizedY } from "../utils/pitchSlotAxis";
+
+export { slotIndexFromNormalizedY, slotCenterNormalizedY };
 
 /** 入力面要素の矩形。位置（左上）と大きさを持つ。 */
 export interface RectLike {
@@ -60,36 +68,6 @@ export function normalizePointerPosition(
     x: clamp01((clientX - left) / width, 0.5),
     y: clamp01((clientY - top) / height, 0.5),
   };
-}
-
-/**
- * 正規化Yを音程スロット番号へ写す。番号0が画面最上部の帯、増えるほど画面下側の帯になる。
- * 番号 i の帯は正規化Yの区間 [i / slotCount, (i + 1) / slotCount) を占める半開区間とする。
- * すなわち小さい方の正規化Y（画面で上側の境界）を含み、大きい方（画面で下側の境界）を含まない。
- * よって2つの帯が共有する境界の座標は、番号が大きい方の帯（画面で下側の帯）に属する。
- * 非有限値は帯0（最上部）へ丸める。
- */
-export function slotIndexFromNormalizedY(normalizedY: number, slotCount: number): number {
-  if (!Number.isFinite(normalizedY)) {
-    return 0;
-  }
-  const index = Math.floor(normalizedY * slotCount);
-  if (index < 0) {
-    return 0;
-  }
-  if (index > slotCount - 1) {
-    return slotCount - 1;
-  }
-  return index;
-}
-
-/**
- * スロット番号の帯の中央にあたる正規化Yを返す。
- * キーボードが指定スロットの中央を押下相当へ変換するために用いる。
- * slotIndexFromNormalizedY(slotCenterNormalizedY(i, n), n) === i が常に成り立つ。
- */
-export function slotCenterNormalizedY(slotIndex: number, slotCount: number): number {
-  return (slotIndex + 0.5) / slotCount;
 }
 
 /**

@@ -188,6 +188,8 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
     onEnter(): void {
       // 準備完了していれば組み立てる。未完了なら onUpdate で準備完了を待って組み立てる。
       tryBuild();
+      // Y軸音程ガイド（Issue #58）をプレイ画面の表示中だけ出す。WebGL が無い端末では結線先が何もしない。
+      play?.showPitchAxisGuide();
     },
     onUpdate(deltaMs: number): void {
       if (play === undefined) {
@@ -204,6 +206,8 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
       }
     },
     onExit(): void {
+      // Y軸音程ガイド（Issue #58）を非表示にし、その表示物の資源を解放する。
+      play?.hidePitchAxisGuide();
       conductor?.dispose();
       conductor = null;
       engine?.dispose();

@@ -17,6 +17,21 @@ const OVERLAY_CAMERA_Z = 1000;
 const OVERLAY_NEAR = 0;
 const OVERLAY_FAR = 2000;
 
+/**
+ * 2次元層の描画順序の帯。採用理由を先に述べる。2次元層に載る物体は深度判定・深度書込を無効化して描くため、
+ * 前後は描画順序の指定（three.js の renderOrder。値が大きいほど後に描かれ前面に出る）だけで決まる。値を物体ごとに
+ * 場当たりで決めると後続の追加物と衝突するため、用途別の帯を一点で予約する。各物体は自分の用途の帯の値を自身の
+ * renderOrder へ設定する（親のまとめ物体に設定しても子へは伝播しないため、子の各々に設定する）。
+ */
+export const OVERLAY_RENDER_ORDER = {
+  /** 背景の補助表示。最背面。音程ガイド（Issue #58）の境界マークと番号がこの帯を使う。 */
+  backgroundReference: 0,
+  /** 通常の操作情報。中間。落下式レーン（Issue #57）の軌道・目標線・音程番号がこの帯を使う。 */
+  standardInformation: 10,
+  /** 操作の即時反応。最前面。タップ反応の光点など即時の手応え表示がこの帯を使う。 */
+  interactiveFeedback: 20,
+} as const;
+
 /** 2次元層の外部契約。 */
 export interface OverlayLayer {
   /** 2次元層のシーン。最前面に描く表示物を載せる。 */

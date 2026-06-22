@@ -38,6 +38,7 @@ import {
 import { loadVrm } from "./loaders/vrmLoader";
 import type { CharacterModelConfig } from "../types/character";
 import { createOverlayLayer, type OverlayLayer } from "./overlay";
+import { createPitchAxisGuide, type PitchAxisGuide } from "./pitchAxisGuide";
 import { createStageTerrain, type StageTerrain } from "./entities/stageTerrain";
 import { loadStageTerrain } from "./loaders/stageTerrainLoader";
 import type {
@@ -164,6 +165,12 @@ export interface RenderRoot {
   addOverlayObject(object: Object3D): void;
   /** 2次元層（Issue #15）から表示物を外す。WebGL が無く2次元層が無い端末では何もしない。 */
   removeOverlayObject(object: Object3D): void;
+  /** 本編左端のY軸音程ガイド（Issue #58）を2次元層へ表示する。slotCount は音程スロット数。既に表示中なら
+   *  何もしない。WebGL が無く2次元層が無い端末では何もしない。寸法・画素密度の変更には内部で追従する。 */
+  showPitchAxisGuide(slotCount: number): void;
+  /** Y軸音程ガイド（Issue #58）を非表示にし、その表示物の資源を解放する。表示していないとき・WebGL が無い
+   *  端末では何もしない。 */
+  hidePitchAxisGuide(): void;
   /** 3次元表示ツリーの場面を返す（Issue #33・#59）。キネティック文字エンジン等が3D空間へ表示物を載せるための
    *  接合で、既存の中心キャラ・舞台土台が内部で場面へ加える設計と同じ系統。WebGL の有無に依らず場面物体は存在する。 */
   getWorldScene(): Scene;
@@ -368,6 +375,15 @@ export function createRenderRoot(
     });
   }
 
+  // 本編左端のY軸音程ガイド（Issue #58）。プレイ画面の表示中だけ載せ、それ以外では空に保つ。
+  // 視錐台・表示寸法・画素密度の変更追従は本モジュールが所有する（画面層は表示可否のみ指示する）。
+  let pitchAxisGuide: PitchAxisGuide | null = null;
+
+  // 現在の表示縦画素数（表示寸法に画素密度倍率を掛けた実描画画素数）。Y軸音程ガイドの番号画像の解像度に使う。
+  function currentDevicePixelHeight(): number {
+    return currentDisplayHeight * (renderer ? renderer.getPixelRatio() : 1);
+  }
+
   let disposed = false;
 
   // 中心オブジェクトのVRM読み込みの世代番号と、最後の失敗理由（Issue #64）。
@@ -419,6 +435,10 @@ export function createRenderRoot(
       bloomComposer?.setSize(width, height);
       // 2次元層の正射影カメラの視錐台を新しい縦横比で組み直す（Issue #15）。
       overlay?.resize(width, height);
+      // Y軸音程ガイド（Issue #58）を新しい視錐台と表示画素数へ追従させる。
+      if (overlay && pitchAxisGuide) {
+        pitchAxisGuide.layout(overlay.frustum(), currentDevicePixelHeight());
+      }
     }
   }
 
@@ -491,6 +511,10 @@ export function createRenderRoot(
       renderer.setSize(currentDisplayWidth, currentDisplayHeight);
       bloomComposer?.setSize(currentDisplayWidth, currentDisplayHeight);
       overlay?.resize(currentDisplayWidth, currentDisplayHeight);
+      // 画素密度倍率が変わると番号画像の目標画素数が変わりうるため、Y軸音程ガイド（Issue #58）も追従させる。
+      if (overlay && pitchAxisGuide) {
+        pitchAxisGuide.layout(overlay.frustum(), currentDevicePixelHeight());
+      }
       result.pixelRatioChanged = true;
     }
 
@@ -657,6 +681,25 @@ export function createRenderRoot(
     removeOverlayObject(object: Object3D): void {
       overlay?.removeObject(object);
     },
+    showPitchAxisGuide(slotCount: number): void {
+      // 既に表示中（保持参照が空でない）か、2次元層が無いときは何もしない。状態は空・生成済みの2値に保つ。
+      if (!overlay || pitchAxisGuide) {
+        return;
+      }
+      const guide = createPitchAxisGuide({ slotCount });
+      overlay.addObject(guide.object3d);
+      // 生成直後に現在の視錐台と表示画素数で初回配置する（位置と番号画像はこの時点で確定する）。
+      guide.layout(overlay.frustum(), currentDevicePixelHeight());
+      pitchAxisGuide = guide;
+    },
+    hidePitchAxisGuide(): void {
+      if (!overlay || !pitchAxisGuide) {
+        return;
+      }
+      overlay.removeObject(pitchAxisGuide.object3d);
+      pitchAxisGuide.dispose();
+      pitchAxisGuide = null;
+    },
     getWorldScene(): Scene {
       return scene;
     },
@@ -774,6 +817,15 @@ export function createRenderRoot(
       if (bloomComposer) {
         bloomComposer.dispose();
         bloomComposer = null;
+      }
+      // Y軸音程ガイド（Issue #58）が残っていれば、表示停止と同じ手順で解放する（外す・資源解放・空へ戻す）。
+      // 2次元層の解放より前に行い、ガイドの表示物を確実に外してからGPU資源を解放する。
+      if (pitchAxisGuide) {
+        if (overlay) {
+          overlay.removeObject(pitchAxisGuide.object3d);
+        }
+        pitchAxisGuide.dispose();
+        pitchAxisGuide = null;
       }
       // 2次元層を解放する（Issue #15）。シーンから表示物を外すのみで、表示物のGPU資源は載せた側が解放する。
       if (overlay) {

@@ -58,7 +58,11 @@ const SPEED_RATIO_STRESS = 4;
 // docs/research/08-quality-assurance.md 2節「品質の指標は楽曲・舞台に依存しない指標とする」に従い、ゲートのコアに焼き込まず
 // 合否条件にもしない。比率の参考記述は docs/runbooks/quality-harness.md の操作判定ゲートの節に置く。
 
-/** 合成スタブの軌跡上距離を端点へ寄せる（クランプする）。実評価器 distanceAt の範囲外挙動に揃える。 */
+// 合成スタブの軌跡上距離を端点へ寄せる（クランプする）。採用理由を先に述べる。src/input/timingTranslation.ts の
+// TrajectoryTimingSource.distanceAt の契約は「時刻が軌跡の時刻範囲の外のときは端点へ寄せた累積距離を返す」であり、
+// スタブをこの契約に忠実に保つために同じクランプを施す。これにより、もし将来この契約が変わってもスタブが実装と
+// 食い違ったまま無音で通ることを避ける。なお本ファイルの検査は入力時刻をすべて時刻範囲の内側に収めるため、
+// このクランプが実際に端点へ寄せる経路は通らない（クランプは契約への忠実さを保つための防御であり、検査対象ではない）。
 function clampTime(timeMs: number, startTimeMs: number, endTimeMs: number): number {
   return Math.min(Math.max(timeMs, startTimeMs), endTimeMs);
 }
@@ -161,6 +165,9 @@ describe("操作判定ゲート（scoring と input の統合: 判定窓と軌�
     // 構成は src/input/timingTranslation.test.ts の fastSlowKeyframes と同種で、x軸上を区間ごとに等間隔の制御点で動かし、
     // 各窓（最大90ミリ秒）の前後で速さがほぼ一定に保たれるようにする。遅い区間は2000ミリ秒あたり2単位、
     // 速い区間は2000ミリ秒あたり20単位で速さの比は約10倍である。
+    // 全制御点で y と z を固定し x だけを動かすのは意図的である。理由を先に述べる。本検査が確かめたいのは
+    // 「時間窓に速さを掛けて距離窓へ翻訳する」比例性と時刻ズレであり、軌跡を1つの軸に沿わせると軌跡上距離が x の変位に一致して
+    // 期待値の見積もりが単純になり、検査対象の性質（速さ比と時刻復元）だけを切り出せるためである。
     const fastSlowKeyframes: CameraTrajectoryKeyframe[] = [
       { timeMs: 0, position: { x: 0, y: 2, z: 0 }, target: { x: 0, y: 2, z: -10 } },
       { timeMs: 2000, position: { x: 2, y: 2, z: 0 }, target: { x: 2, y: 2, z: -10 } },
@@ -263,6 +270,9 @@ describe("操作判定ゲート（scoring と input の統合: 判定窓と軌�
     it("中心化差が外端ちょうどのとき対応はするがタイミング精度は0（境界）", () => {
       // 採用理由を先に述べる。judgeTap は中心化差の絶対値が外端を超えるノーツを対応の候補から外すが、外端ちょうど（90ミリ秒）は
       // 超えていないため対応する。一方で timingAccuracy は外端で0になる。対応はするが精度0という境界の挙動を固定する。
+      // centeredDiffMs は judgeTap の内部の中間値だが、本検査では意図して直接固定する。理由を先に述べる。外端という対応付けの
+      // 境界が中心化差の定義（タップ時刻 − ノーツ時刻 − 補正値）どおりの値で働いていることを確かめるためであり、これは操作判定の
+      // 成立要件に直結する。中間値の算出方法を変える改修があれば本検査も同時に見直す前提とする。
       const frame: FrameTimeSample = {
         musicPositionMs: 1000 + JUDGE_DECAY_OUTER_WINDOW_MS,
         frameWallTimeMs: 5000,

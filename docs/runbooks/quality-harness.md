@@ -191,7 +191,9 @@ npm run quality:operation-judgment
 不合格があると終了コード1で理由を表示する。本ゲートは格下げ不可のため警告退避は設けない。
 
 ### 実行順への明示
-本ゲートは格下げ不可のため、提出前の確認手順と継続的インテグレーションの実行順に `npm run quality:operation-judgment` を必須手順として並べ、呼び忘れを防ぐ。全体の品質ハーネス（`npm run quality`）はブラウザ実行の別経路であり本ゲートを含まないため、本ゲートを独立した必須手順として明示する。なお本ゲートは純粋ロジックの単体テストのため `npm run test`（vitest 全件）にも含まれて回る。
+本ゲートは格下げ不可のため、提出前の確認手順と継続的インテグレーションの実行順に `npm run quality:operation-judgment` を必須手順として並べ、呼び忘れを防ぐ。全体の品質ハーネス（`npm run quality`）はブラウザ実行の別経路であり本ゲートを含まないため、本ゲートを独立した必須手順として明示する。
+
+継続的インテグレーションでの担保を先に述べる。本ゲートの実体は `src/scoring/operationJudgmentGate.test.ts` を含む vitest の単体テストであり、継続的インテグレーション（`.github/workflows/ci.yml` の `npm run test` の段）が全 vitest テストを実行するため、本ゲートの検査は提出経路で必ず回る。`npm run quality:operation-judgment` は、操作判定の正しさだけを手元で素早く確認するための部分集合の起動口であり、継続的インテグレーションでの実行は全件実行の `npm run test` が担う。
 
 ### 合格閾値（定義どおり、Issue #104 で確定）
 - 判定窓: 満点40・外端90・点推定60ミリ秒（`src/config/tuning.ts` の `JUDGE_PERFECT_WINDOW_MS`・`JUDGE_DECAY_OUTER_WINDOW_MS`・`JUDGE_POINT_ESTIMATE_WINDOW_MS`）。タイミング精度は満点窓内で1.0、外端で0.0、その間は線形。

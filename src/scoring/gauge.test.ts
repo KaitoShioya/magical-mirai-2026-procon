@@ -83,8 +83,8 @@ describe("deploymentMultiplier 倍率（受け入れ基準2、§3.4）", () => {
     expect(deploymentMultiplier(1.0, 1.0)).toBe(2.0);
     // 半分消費（0.5）× climax 重み1.0 で1.5。
     expect(deploymentMultiplier(0.5, 1.0)).toBe(1.5);
-    // 満タン消費 × 非climax 重み0.4 で1.4。
-    expect(deploymentMultiplier(1.0, 0.4)).toBeCloseTo(1.4, 10);
+    // 満タン消費 × 非climax 重み0.4 で1.4。実装と同じ演算式で比較し、許容誤差に依存せず厳密一致を検証する。
+    expect(deploymentMultiplier(1.0, 0.4)).toBe(1 + 1.0 * 0.4);
   });
 });
 
@@ -173,5 +173,42 @@ describe("異常値・境界の扱い（既存scoring慣行の踏襲）", () => 
     expect(deploymentMultiplier(-1, 1.0)).toBe(1.0);
     expect(deploymentMultiplier(1.0, 5)).toBe(2.0);
     expect(deploymentMultiplier(Number.NaN, 1.0)).toBe(1.0);
+  });
+
+  it("非有限の fullCapacity（無限大）で accumulateGauge と deploy が無操作になる", () => {
+    // finiteCapacity が無限大を0へ退避し、容量0以下の分岐で無操作になる。
+    const infinite = { fullCapacity: Number.POSITIVE_INFINITY, baseAmount: 1, bothJustMultiplier: 2 };
+    expect(accumulateGauge(10, PARTIAL_JUST, infinite)).toBe(0);
+    const r = deploy(10, 1.0, infinite);
+    expect(r.consumedAmount).toBe(0);
+    expect(r.consumedRatio).toBe(0);
+    expect(r.multiplier).toBe(1.0);
+  });
+
+  it("負の fullCapacity で accumulateGauge と deploy が無操作になる", () => {
+    // 容量0以下の分岐を通り、蓄積も投下もゲージへ作用しない。
+    const negative = { fullCapacity: -10, baseAmount: 1, bothJustMultiplier: 2 };
+    expect(accumulateGauge(5, PARTIAL_JUST, negative)).toBe(0);
+    const r = deploy(5, 1.0, negative);
+    expect(r.consumedAmount).toBe(0);
+    expect(r.multiplier).toBe(1.0);
+  });
+
+  it("deploy に非有限の currentValue を渡すと消費0・倍率1.0になる", () => {
+    // current が0へ読み替えられ、消費割合0で倍率は基準値1.0。
+    for (const nonFinite of [Number.NaN, Number.POSITIVE_INFINITY]) {
+      const r = deploy(nonFinite, 1.0);
+      expect(r.consumedAmount).toBe(0);
+      expect(r.consumedRatio).toBe(0);
+      expect(r.multiplier).toBe(1.0);
+    }
+  });
+
+  it("deploy に満タン超過の currentValue を渡すと満タン容量で切り詰める", () => {
+    // 消費量は満タンへ切り詰められ、消費割合は1.0で倍率は最大の2.0になる。
+    const r = deploy(DEFAULT_GAUGE_CONFIG.fullCapacity + 100, 1.0);
+    expect(r.consumedAmount).toBe(DEFAULT_GAUGE_CONFIG.fullCapacity);
+    expect(r.consumedRatio).toBe(1.0);
+    expect(r.multiplier).toBe(2.0);
   });
 });

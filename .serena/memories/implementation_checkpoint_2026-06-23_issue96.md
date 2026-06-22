@@ -1,6 +1,6 @@
 # 実装チェックポイント（2026-06-23・Issue #96）
 
-**状態: Issue #96（解析先行スキーマ検証ゲート）の実装を完了。ブランチ `worktree-issue-96-analysis-first-schema-gate`。型検査・全1347テスト・クラウドゲート・本番ビルドすべて緑。コミット・PR前。**
+**状態: Issue #96（解析先行スキーマ検証ゲート）の実装を完了。ブランチ `worktree-issue-96-analysis-first-schema-gate` で PR #183（Closes #96、base main）を作成・push 済み。型検査・全1347テスト・クラウドゲート・本番ビルドすべて緑。Codex の未push実装レビューで「重大・中程度の指摘なし・push/PR 可」判定済み。マージ前。**
 **用途**: セッション喪失時の復帰点（実装フェーズ）。本ゲートはマイルストーンM1「譜面・曲プロファイルパイプライン」の最上流・格下げ不可のゲートで、検査対象は #46 が生成したコミット済み成果物 [[implementation_checkpoint_2026-06-22_issue46]]。スキーマ機構は #95 が用意した登録簿（`scripts/harness/schema-check.mjs`）、深い検証関数は #34 の `validateProfile`。
 
 ## 位置づけ

@@ -1,6 +1,6 @@
 # 実装チェックポイント（2026-06-23・Issue #54）
 
-**状態: Issue #54（ゲージ・投下システム）の実装を完了。ブランチ `worktree-issue-54-gauge` にコミット1件（`a8c6ecf`）。push 済み、PR #185 作成済み（Closes #54）。**
+**状態: Issue #54（ゲージ・投下システム）の実装を完了。ブランチ `worktree-issue-54-gauge` にコミット3件（`a8c6ecf` 実装、`4f89a1c` 本チェックポイント、`43796b0` 境界テスト補強）。push 済み、PR #185 作成済み（Closes #54）。**
 **用途**: セッション喪失時の復帰点（実装フェーズ）。入力契約のタップ判定は [[implementation_checkpoint_issue48]]、見せ場重みの供給は #41、倍率の消費先は後続 #55・#56。
 
 ## 位置づけ
@@ -30,9 +30,9 @@
 ## 検証結果
 
 - `npm run typecheck`: 合格（tsconfig 3種・strict）
-- `npm run test`: 全1353テスト合格（106ファイル。新規 gauge.test.ts 17件、依存境界 importBoundary.test.ts が gauge.ts の profiles・rendering・tools・three 非依存を自動検査）
+- `npm run test`: 全1357テスト合格（106ファイル。新規 gauge.test.ts 21件、依存境界 importBoundary.test.ts が gauge.ts の profiles・rendering・tools・three 非依存を自動検査）
 - `npm run build`: 成功
 
 ## レビュー経緯
 
-Codex（codex:codex-rescue）に0ベース設計・二重チェックレビュー・着手判定を4回委譲。指摘を反映し最終的に「修正必須点なし・go」を得た。主な反映: deploy と deploymentMultiplier の単一計算経路、`isFloor` と両JUST偽のテスト分離、合成シナリオ（10回蓄積→1投下を5サイクル）、「50タップ満タン＝片JUST50回」の明示、設定値異常値の責務分界。
+Codex（codex:codex-rescue）にプラン段階で0ベース設計・二重チェックレビュー・着手判定を4回委譲し、最終的に「修正必須点なし・go」を得て着手した。実装後にもう1度、実装コードの妥当性レビューを委譲し「致命的問題なし・仕様適合」を得た。プラン段階の主な反映は、deploy と deploymentMultiplier の単一計算経路、`isFloor` と両JUST偽のテスト分離、合成シナリオ（10回蓄積→1投下を5サイクル）、「50タップ満タン＝片JUST50回」の明示、設定値異常値の責務分界。実装後レビューの軽微指摘2点（コミット `43796b0`）は、境界テストの追加（fullCapacity が無限大・負値、deploy への非有限・満タン超過入力）と、浮動小数比較を `toBeCloseTo` から実装同一演算式 `toBe(1 + 1.0 * 0.4)` への厳密化である。

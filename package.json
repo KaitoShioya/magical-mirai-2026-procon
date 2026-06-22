@@ -39,7 +39,8 @@
     "quality:spatial": "node scripts/spatial-quality.mjs",
     "quality:display-sync": "node scripts/display-sync-quality.mjs",
     "quality:fps": "node scripts/performance-quality.mjs",
-    "quality:readability": "node scripts/readability-quality.mjs"
+    "quality:readability": "node scripts/readability-quality.mjs",
+    "quality:operation-judgment": "vitest run src/scoring/operationJudgmentGate.test.ts src/scoring/timingAccuracy.test.ts src/scoring/pitchAccuracy.test.ts src/scoring/tapJudgment.test.ts src/scoring/tapMusicTime.test.ts src/input/timingTranslation.test.ts src/utils/cameraTrajectory.test.ts"
   },
   "dependencies": {
     "@pixiv/three-vrm": "3.5.4",

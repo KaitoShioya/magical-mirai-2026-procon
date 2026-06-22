@@ -1,4 +1,4 @@
-// scoring の公開窓口。タップ判定エンジン（Issue #48）の型と関数をまとめて再輸出する。
+// scoring の公開窓口。タップ判定エンジン（Issue #48）とゲージ・投下システム（Issue #54）の型と関数をまとめて再輸出する。
 // 得点合成・ランク（#55・#56）は本Issueの対象外であり、追加時に本ファイルへ再輸出を足す。
 
 export type {
@@ -13,3 +13,12 @@ export { centeredDiffMs, timingAccuracy, isTimingJust } from "./timingAccuracy";
 export { pitchAccuracy, isPitchJust, PITCH_MISS_FLOOR } from "./pitchAccuracy";
 export { tapMusicTimeMs } from "./tapMusicTime";
 export { judgeTap, type JudgeOptions } from "./tapJudgment";
+export {
+  DEFAULT_GAUGE_CONFIG,
+  gaugeGain,
+  accumulateGauge,
+  deploymentMultiplier,
+  deploy,
+  type GaugeConfig,
+  type DeployResult,
+} from "./gauge";

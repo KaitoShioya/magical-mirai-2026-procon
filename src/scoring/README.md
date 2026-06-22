@@ -36,3 +36,14 @@
 - **前回の選び方は #56 が行う**: `previousJustSlot`・`previousOperationSlot` にどの前回区間の値を渡すか（三部形式のどの区間を「前」とするか）は #56 が `diversityZones` の役割順から決める。前回が無い初回は両者に `undefined` を渡し、本関数は 1.0 を返す。
 - **スロットは0始まりへ統一**: 4つのスロットは判定エンジンと同じ基数で渡す。正解スロットは `Note.slotIndex`（1始まり）を `note.slotIndex - 1` で0始まりへ変換し、操作スロットは `Reaction.slotIndex`（0始まり）をそのまま渡す。
 - **逓減量は #56 が与える**: `reductionFactor`（有効範囲 0以上1未満）の本番値は #56 が確定する。
+
+## 得点合成・ランク（Issue #55）の結線契約
+
+タップ1回の得点 `a × D × M + combo` の合成、総合得点 S、固定閾値ランク C/B/A/S、簡易百分位を担う。公開窓口は `index.ts`。呼び出し側（#56・#59）は次の契約を守ること。
+
+- **素点 a は本層が合成する**: `tapBaseScore(judgment)` がタイミング精度と音程精度から素点 a（0以上1以下）を作る。重みは等重み（各0.5）で本層が所有し tuning.ts に置かない。
+- **多様性係数 D と投下倍率 M は呼び出し側が渡す**: `reduceScore` の入力 `{ a, diversity, multiplier, result }` の diversity（D）は `computeDiversityCoefficient`（#42）、multiplier（M）は `deploymentMultiplier`（#54）の戻り値を呼び出し側が算出して渡す。本層は合成式と集計だけを担い、D の発火区間（diversityZones）と M の投下タイミングは #56 が決める。D は0以上1以下で、0は最大逓減の有効値として得点を0にする。M は1以上2以下で、1未満は1へ倒れる。
+- **combo は両JUSTで継続・全体で再正規化**: combo は両JUST（タイミングと音程の両方が満点窓）のタップだけ連続走長を伸ばす。`finalizeScore` が combo 総和を `baseTotal × (p ÷ (1 − p))`（既定では上限割合 p は0.10のため `baseTotal × (0.10 ÷ 0.90)`）で頭打ちにし、combo が総得点に占める割合を上限割合以下に厳密に抑える。上限割合 p は `COMBO_SHARE_MAX`（既定0.10）として本層が所有する（tuning.ts に置かない）。
+- **ランク帯は百分位で切る**: `rankFromPercentile` が百分位を等幅四分位（25・50・75）で C/B/A/S に分ける（§3.4 の百分位経由に従う）。#66 が累積分布と帯を磨いてもランク帯の関数の形は変えない。
+- **百分位は推定**: `simplePercentile` は理論端 [Smin,Smax] 上の一様分布の簡易版で、`percentileBasis` は "fixed-uniform"。実際のオンライン順位ではない旨（`PERCENTILE_ESTIMATE_DISCLAIMER`）の Result 画面・README への表示は #66 が行う。
+- **曲非依存**: `theoreticalScoreBounds` は曲固有の絶対値（タップ総数上限 N）を引数 `tapBudget` で受ける。#59 が曲プロファイル（#46）の値を渡す。本層に260・434・見せ場数をハードコードしない。理論最小 Smin は0固定（§3.4「タップしないこと自体は減点しない」より達成可能な最小は0）。

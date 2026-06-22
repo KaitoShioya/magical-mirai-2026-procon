@@ -1,5 +1,5 @@
-// scoring の公開窓口。タップ判定エンジン（Issue #48）の型と関数に加え、反応強度（Issue #51）と多様性係数（Issue #42）の
-// 型と関数をまとめて再輸出する。得点合成・ランク（#55・#56）は追加時に本ファイルへ再輸出を足す。
+// scoring の公開窓口。タップ判定エンジン（Issue #48）の型と関数に加え、反応強度（Issue #51）・多様性係数（Issue #42）・
+// ゲージと投下（Issue #54）の型と関数をまとめて再輸出する。得点合成・ランク（#55・#56）は追加時に本ファイルへ再輸出を足す。
 
 export type {
   JudgmentWindows,
@@ -19,3 +19,12 @@ export {
   type DiversityCoefficientInput,
   type DiversityCoefficientOptions,
 } from "./diversityCoefficient";
+export {
+  DEFAULT_GAUGE_CONFIG,
+  gaugeGain,
+  accumulateGauge,
+  deploymentMultiplier,
+  deploy,
+  type GaugeConfig,
+  type DeployResult,
+} from "./gauge";

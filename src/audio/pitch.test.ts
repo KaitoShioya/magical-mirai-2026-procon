@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { midiToFrequency, slotToMidi, sanitizeSlotPitches } from "./pitch";
+import { midiToFrequency, overtoneFrequency, slotToMidi, sanitizeSlotPitches } from "./pitch";
+import { SYNTH_LOWPASS_HZ } from "./synthConstants";
 
 describe("midiToFrequency", () => {
   it("基準: 音高番号69（A音）が440ヘルツになる", () => {
@@ -27,6 +28,34 @@ describe("midiToFrequency", () => {
   it("非有限値は null を返す", () => {
     expect(midiToFrequency(Number.NaN)).toBeNull();
     expect(midiToFrequency(Number.POSITIVE_INFINITY)).toBeNull();
+  });
+});
+
+describe("overtoneFrequency", () => {
+  it("協和のため基本周波数のちょうど2倍を返す", () => {
+    expect(overtoneFrequency(440)).toBe(880);
+    expect(overtoneFrequency(523.25)).toBe(523.25 * 2);
+  });
+
+  it("倍音を基本周波数で割ると正確に整数の2になる", () => {
+    const fundamental = 333.3;
+    const overtone = overtoneFrequency(fundamental) as number;
+    expect(overtone / fundamental).toBe(2);
+  });
+
+  it("診断の2和音の全音高で、倍音周波数が低域通過フィルターの遮断周波数未満になる", () => {
+    // diagnostics/main.ts の2和音 [65,68,72,75,77,80,84] と [68,72,75,79,80,84,87] の全ユニーク音高。
+    const allPitches = [65, 68, 72, 75, 77, 79, 80, 84, 87];
+    for (const midiNote of allPitches) {
+      const fundamental = midiToFrequency(midiNote) as number;
+      const overtone = overtoneFrequency(fundamental) as number;
+      expect(overtone).toBeLessThan(SYNTH_LOWPASS_HZ);
+    }
+  });
+
+  it("非有限値は null を返す", () => {
+    expect(overtoneFrequency(Number.NaN)).toBeNull();
+    expect(overtoneFrequency(Number.POSITIVE_INFINITY)).toBeNull();
   });
 });
 

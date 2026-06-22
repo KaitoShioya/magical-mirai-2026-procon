@@ -22,6 +22,12 @@ export interface OperationSoundEngine {
   unlock(): Promise<EngineContextState>;
   /** 操作音の有効・無効を切り替える。無効のあいだ playSlot・playNote は無音。既定は有効。 */
   setEnabled(enabled: boolean): void;
+  /**
+   * 投下中かどうかを切り替える。真のあいだ playSlot・playNote は明るい倍音層を重ねて発音する。既定は偽（通常）。
+   * 破棄後は発音そのものが無音のため無作用。鳴っている音は再調整しない（以後の発音へ適用する）。
+   * 呼び出し側（Issue #59）は投下の開始で真、投下窓の終了で偽へ必ず同期させる（状態の消し忘れによる音色の残留を防ぐ）。
+   */
+  setDeployTimbre(active: boolean): void;
   /** 各Y軸スロットの音高（音高番号、低い順）を設定する。未設定や非有限値は無効化する。鳴っている音は再調整しない。 */
   setSlotPitches(midiNotes: readonly number[] | null | undefined): void;
   /** スロット番号を発音する（0が最下、増えるほど高い）。即座に鳴らす。未起動・無効・範囲外・該当音高なしは無音。 */

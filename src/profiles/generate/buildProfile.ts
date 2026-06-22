@@ -5,9 +5,10 @@
 // 正しい入力形へ結線して1本のプロファイルにまとめる入口が無い。本関数はその結線を行い、songmap を SongProfile へ
 // 変換し、検証関数 validateProfile（#34）に通した結果まで返す。ファイル入出力は行わず、コマンド本体（scripts）が担う。
 //
-// 半自動である理由を先に述べる。テンポ・拍・和音・スロット・見せ場・密度・タップ上限・ノーツは songmap から自動で
-// 導出できるが、調（musicalKey）・カメラ軌跡（camera）・色（colors）・操作音（sfx）・多様性逓減区間（diversityZones）は
-// songmap から導出できない設計判断であり、曲別の手動入力として受け取る。これらの実内容の確定は後続 Issue の責務である。
+// 半自動である理由を先に述べる。テンポ・拍・和音・スロット・見せ場・密度・タップ上限・ノーツ・多様性逓減区間は
+// songmap から自動で導出できるが、調（musicalKey）・カメラ軌跡（camera）・色（colors）・操作音（sfx）は songmap から
+// 導出できない設計判断であり、曲別の手動入力として受け取る。多様性逓減区間（diversityZones）は songmap のサビ区間から
+// 自動生成し（Issue #42）、曲固有のラベルだけを曲別入力（diversityZoneLabels）で任意に上書きする。
 //
 // 依存方針: スキーマと生成層と utils（カメラ軌跡評価器）だけを取り込み、中核（engine 等）・rendering・tools は
 // 取り込まない（docs/decisions/architecture.md §5 の依存規則）。カメラ軌跡評価器は src/utils 配下であり rendering ではない。
@@ -24,7 +25,6 @@ import type {
   CameraKeyframe,
   TapColors,
   Sfx,
-  DiversityZone,
   LyricDensity,
 } from "../schema/profileSchema";
 import { validateProfile, type ValidationResult } from "../schema/validateProfile";
@@ -53,9 +53,11 @@ import {
   toTapBudgetInput,
   toShowcaseInput,
 } from "./songmapAdapters";
+import { deriveDiversityZones } from "./diversityZones";
 
 /** 曲別の手動入力。songmap から導出できないフィールドを受け取る。
- *  実内容の確定は後続 Issue の責務であり、#45 では検証を通る暫定値で足りる（camera・colors・sfx）か空（diversityZones）でよい。 */
+ *  実内容の確定は後続 Issue の責務であり、#45 では検証を通る暫定値で足りる（camera・colors・sfx）。
+ *  diversityZoneLabels は省略可能で、省略時は多様性逓減区間に汎用ラベルが付く。 */
 export interface ManualProfileInputs {
   /** 楽曲の調。無和音区間を調の音階へ解決するときに使う。 */
   musicalKey: MusicalKey;
@@ -68,8 +70,10 @@ export interface ManualProfileInputs {
   colors: TapColors;
   /** 操作音の音色（通常時・投下時）。 */
   sfx: Sfx;
-  /** 多様性逓減の三部形式の区間。空配列でよい（後続 Issue #46 が記述する）。 */
-  diversityZones: DiversityZone[];
+  /** 多様性逓減区間のラベルの曲別上書き。索引 i = 自動抽出された i 番目の区間のラベル。
+   *  境界と役割は songmap のサビ区間から自動決定する（Issue #42）。要素が undefined・空文字、または
+   *  配列自体が未指定の区間は汎用ラベル（第N反復区間（役割））を自動生成する。 */
+  diversityZoneLabels?: ReadonlyArray<string | undefined>;
   /** 無和音区間の埋め方の曲別上書き。和音索引（整数）で指定する。指定が無い区間は既定規則で決める。
    *  和音索引で指定する理由を先に述べる。songmap の時刻は浮動小数点で人が手で書いた時刻と厳密一致しないが、
    *  和音索引は整数で曖昧さが無いためである。 */
@@ -259,7 +263,7 @@ export function buildProfile(args: {
     camera,
     colors: manual.colors,
     sfx: manual.sfx,
-    diversityZones: manual.diversityZones,
+    diversityZones: deriveDiversityZones(chorusSegments, manual.diversityZoneLabels),
     tapBudget,
   };
 

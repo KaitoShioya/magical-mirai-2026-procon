@@ -72,6 +72,11 @@ export interface PlayWiring {
   removeOverlayObject(object: Object3D): void;
   /** 落下式レーン（判定UI #57）が描画するノーツ列（時刻と音程番号と識別子）。曲プロファイルの notes を渡す。 */
   readonly laneNotes: readonly LaneNote[];
+  /** Y軸音程ガイド（Issue #58）を表示する。プレイ画面の表示中だけ出す。音程スロット数は統括（src/app）が注入し、
+   *  画面層は楽曲非依存の設定を知らない。WebGL が無い端末では統括の結線先が何もしない。 */
+  showPitchAxisGuide(): void;
+  /** Y軸音程ガイド（Issue #58）を非表示にする。プレイ画面から抜けるときに呼ぶ。 */
+  hidePitchAxisGuide(): void;
 }
 
 /**

@@ -169,3 +169,35 @@ BASE=http://localhost:5173 npm run quality:readability
 
 ### 閾値（初期値、Issue #104 で確定）
 閾値は `scripts/harness/readability-metrics.mjs` の `DEFAULT_THRESHOLDS` にあり、各値の採用理由を併記する。コントラストの合否は 4.5（ウェブ内容アクセシビリティ指針 2.1 の通常文字の適合水準）。絶対下限の明示確認は 18（Issue #31 の最小画面画素高初期値、`DEFAULT_READABILITY_OPTIONS.minPixelHeight` と一致）。忠実度の許容相対差は 0.15（アンチエイリアスと二値化の残差を吸収する余裕。較正で実測し、許容を小さくするほどグリフの縮み・崩れを細かく捕捉できる）。
+
+## 12. 操作判定ゲート（Issue #103）
+
+軌跡上距離と時間とミリ秒の換算式（Issue #49、`src/input/timingTranslation.ts`）と、タップ判定窓（Issue #48、`src/scoring/timingAccuracy.ts`・`pitchAccuracy.ts`・`tapJudgment.ts`）が定義どおりであることを、単体テストで検査するゲート。仕様の正典は `docs/research/08-quality-assurance.md` の3節（表の「操作判定」の行）と6節。失敗時の扱いは「不合格（格下げ不可）」で、提出までに必ず合格させる（退避手段は設けない）。
+
+本ゲートがブラウザと GPU を要しない理由を先に述べる。検査の対象は画素を1つも描かない純粋ロジック（換算式・判定窓・入力時刻と音楽時刻の関係）であり、描画系統の有無に結果が依存しない。`docs/research/08-quality-assurance.md` の3節が検査の内容を「単体テスト」と明記し、本 runbook 6節が「純粋ロジックの正しさは `npm run test`（vitest）の単体テストで担保する」前例（ajv スキーマ検査機構）を確立している。よって描画ゲート（9節〜11節）が持つブラウザ実行スクリプトと専用診断ページは設けない。
+
+### 構成
+- 本体 `src/scoring/operationJudgmentGate.test.ts`（判定窓の定数値の固定、既定判定窓が公開定数から導出される束縛、換算が公開定数で定義どおりであること、入力時刻から音楽時刻への変換を経た判定の床保証と境界）。
+- 検査対象の既存テスト群。換算式の単体テストは `src/input/timingTranslation.test.ts`（時間窓から距離窓・符号付き距離差）と、その土台の `src/utils/cameraTrajectory.test.ts`（距離・速さ・距離から時刻への逆変換）。判定窓の単体テストは `src/scoring/timingAccuracy.test.ts`・`pitchAccuracy.test.ts`・`tapJudgment.test.ts`・`tapMusicTime.test.ts`。
+- 起動コマンド `npm run quality:operation-judgment`（上記の本体と既存テスト群を vitest で実行する）。
+
+### 実行手順
+開発サーバとブラウザを必要とせず、そのまま実行する。
+
+```sh
+npm run quality:operation-judgment
+```
+
+不合格があると終了コード1で理由を表示する。本ゲートは格下げ不可のため警告退避は設けない。
+
+### 実行順への明示
+本ゲートは格下げ不可のため、提出前の確認手順と継続的インテグレーションの実行順に `npm run quality:operation-judgment` を必須手順として並べ、呼び忘れを防ぐ。全体の品質ハーネス（`npm run quality`）はブラウザ実行の別経路であり本ゲートを含まないため、本ゲートを独立した必須手順として明示する。なお本ゲートは純粋ロジックの単体テストのため `npm run test`（vitest 全件）にも含まれて回る。
+
+### 合格閾値（定義どおり、Issue #104 で確定）
+- 判定窓: 満点40・外端90・点推定60ミリ秒（`src/config/tuning.ts` の `JUDGE_PERFECT_WINDOW_MS`・`JUDGE_DECAY_OUTER_WINDOW_MS`・`JUDGE_POINT_ESTIMATE_WINDOW_MS`）。タイミング精度は満点窓内で1.0、外端で0.0、その間は線形。
+- 換算: 距離窓は速さと時間窓の積であり、距離から時刻へ戻したときのズレが前後両方向とも1フレーム（1000ミリ秒 ÷ 60 = 16.67ミリ秒）以内。
+- 音程: 完全一致で満点、不一致でも正の床（失敗のない床）。床の大きさは `src/scoring/pitchAccuracy.ts` の `PITCH_MISS_FLOOR` が所有する★暫定でプレイ検証で調整するため、ゲートは大きさを固定せず構造（完全一致が満点・不一致が正の床・完全一致が厳密に高い）のみを固定する。
+
+### 先行依存と参考記述
+- 先行依存は解析先行スキーマ検証（Issue #96）。同文書5節により他ゲートは実装開始を止めず並走するため、本ゲートの実装開始は止めない。
+- 参考記述（採用理由）: 判定窓のミリ秒の値は、TAKEOVER の1拍342.9ミリ秒（毎分175拍）に対し満点が約12パーセント・外端が約26パーセント・点推定が約17パーセントになるよう選んだ。1拍342.9ミリ秒は TAKEOVER に固有の楽曲依存値のため、同文書2節「品質の指標は楽曲・舞台に依存しない指標とする」に従い、この比率は単体テストの合否条件にはしない。

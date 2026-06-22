@@ -23587,14 +23587,14 @@
       "label": "第1サビ Clap to the Beat（主題）"
     },
     {
-      "startTimeMs": 88800.2,
-      "endTimeMs": 111000.2,
+      "startTimeMs": 88800.20000000001,
+      "endTimeMs": 111000.20000000001,
       "role": "variation",
       "label": "第2サビ（変奏）"
     },
     {
-      "startTimeMs": 165674.6,
-      "endTimeMs": 187874.6,
+      "startTimeMs": 165674.59999999998,
+      "endTimeMs": 187874.59999999998,
       "role": "reprise",
       "label": "第3サビ Clap to the Beat（回帰）"
     }

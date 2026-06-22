@@ -13,3 +13,8 @@ export { centeredDiffMs, timingAccuracy, isTimingJust } from "./timingAccuracy";
 export { pitchAccuracy, isPitchJust, PITCH_MISS_FLOOR } from "./pitchAccuracy";
 export { tapMusicTimeMs } from "./tapMusicTime";
 export { judgeTap, type JudgeOptions } from "./tapJudgment";
+export {
+  computeDiversityCoefficient,
+  type DiversityCoefficientInput,
+  type DiversityCoefficientOptions,
+} from "./diversityCoefficient";

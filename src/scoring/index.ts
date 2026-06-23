@@ -1,5 +1,6 @@
 // scoring の公開窓口。タップ判定エンジン（Issue #48）の型と関数に加え、反応強度（Issue #51）・多様性係数（Issue #42）・
-// ゲージと投下（Issue #54）・較正の保存（Issue #50）の型と関数をまとめて再輸出する。得点合成・ランク（#55・#56）は追加時に本ファイルへ再輸出を足す。
+// ゲージと投下（Issue #54）・較正の保存（Issue #50）・得点合成とランク（Issue #55）・目的関数統合（Issue #56）の型と関数を
+// まとめて再輸出する。
 
 export type {
   JudgmentWindows,
@@ -71,3 +72,28 @@ export {
   type Rank,
 } from "./rank";
 export { summarizeScore, type ScoreResult } from "./scoreResult";
+
+// --- 目的関数統合（Issue #56） ---
+export {
+  buildDiversityIndex,
+  type DiversityNoteInput,
+  type DiversityZoneInput,
+  type NotePosition,
+  type DiversityIndex,
+} from "./diversityIndex";
+export {
+  DEFAULT_REDUCTION_FACTOR,
+  DEFAULT_TOGGLES,
+  DEFAULT_OBJECTIVE_CONFIG,
+  createObjectiveState,
+  applyTap,
+  applyDeploy,
+  summarizeObjective,
+  type ObjectiveToggles,
+  type ObjectiveConfig,
+  type ShowcaseWindow,
+  type ObjectiveContext,
+  type ActiveDeploy,
+  type ObjectiveState,
+  type TapEvent,
+} from "./objectiveFunction";

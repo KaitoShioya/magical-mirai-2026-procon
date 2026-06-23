@@ -122,6 +122,32 @@
 - **オプション既定値（`DEFAULT_NOTE_PATTERN_OPTIONS`）**: `loudnessWeight=0.5`・`emotionWeight=0.5`（声量と感情を等価に混ぜる初期値。見せ場生成の前例に揃える）/ `flatEpsilon=0.02`（同音連打とみなす勢い値差の不感帯。全幅の2パーセント）。実データの事実として、TAKEOVERは arousal の変動幅が狭く勢い値の方向はほぼ声量曲線が決める。重みは曲非依存の既定値であり、arousal の変動幅が大きい他の課題曲では感情成分が方向に寄与する。
 - **担当Issue**: #39。後続の #40（`trajectoryPosition` 付与）・#45（生成スクリプト）・#46（TAKEOVERプロファイル生成）が本関数の出力を入力に使う。
 
+## 灯し緩和配置（Issue #62、`lanternPlacement.ts`）
+
+- **責務**: カメラ軌跡上のノーツ素案位置（各ノーツの `trajectoryPosition`）にボロノイ緩和（格子離散化による近似Lloyd）を少数回かけ、灯し分布の近すぎる点の塊と空きすぎた局所を均す。`docs/idea/concept-final.md` §5 の配置理論にあたる。曲プロファイルJSONには保存しない（緩和は実行時にしか確定しない水面領域に依存するため、本編前の読み込み時に1回計算する）。
+- **水平面のみ・高さ不変**: 緩和は水平面（x と z）だけで行い、高さ（y）は素案のまま返す（§5・§6。ひまわりは真下湖面、蝶は空間上で、水平位置を共有し高さだけを各灯しが持つ）。
+- **領域は同型の平の数値で受ける**: 描画層の `WaterRegion` 型を import せず、同じ4項目（width・depth・centerX・centerZ）を持つ `LakeRegion` を受ける（依存規則 §5）。
+- **公開関数**:
+  - `relaxLanternPlacement(seeds, region, options?) => LanternPlacement[]` — 緩和後の `{ id, position }` を入力順で返す。本Issueの主たる成果物。
+  - `computeLanternMeasurementSpec(seeds, region, options?) => LanternMeasurementSpec` — 被覆領域・実効格子刻み・活性格子点を緩和前の入力点から1回求める。緩和の格子割当と緩和前後の被覆距離測定で共用する。
+  - `measureLanternDistribution(points, spec) => LanternDistributionMetrics` — 最近傍距離（最小・中央値・最大・変動係数）と被覆距離（95パーセンタイル・最大）を返す。
+  - `representativeLakeRadius(region) => number` — 湖の代表半径（水面矩形の内接円半径＝短辺の半分。`docs/research/04` §77 の初期定義）。
+  - `isCentroidWithinLakeAllowance(points, region, fraction?) => boolean` — 重心が領域中心から代表半径の指定割合（既定0.2）以内かを判定する。
+  - `findNearestLanternIndex(points, query) => number` — 空間分割の最近傍探索の正しさを単体検証するために公開する。
+- **受入条件の検査（曲非依存）**: 受入条件1（空白も塊も無い）は、緩和前後で最近傍距離の変動係数と被覆距離の95パーセンタイルが「緩和後 <= 緩和前 + `METRIC_TOLERANCE`（1e-9）」を満たすことで判定する。最近傍距離の最大値と被覆距離の最大値は外縁の孤立点に支配される診断値で合否に用いない。受入条件2（重心）は、緩和が重心を保存すること（基準量＝最近傍距離の中央値以内）と `isCentroidWithinLakeAllowance` が真であることで判定する。重心の絶対距離の最終ゲートは実行時に本物の水面領域を用いる #101 が担う。
+- **作業領域と活性格子点**: 作業領域は点群の外接矩形を基準量の半分だけ広げ湖面矩形で切った範囲。格子は各灯しの活性半径（基準量の `ACTIVE_RADIUS_FACTOR`＝3倍）以内の格子点（活性格子点）だけを用いる。これにより、曲線状に密集した灯しの大半が空である外接矩形の遠方を割当・測定の対象から外し、緩和は局所の塊と空きだけを均す（大域の構造的な空き＝個性を埋めない）。各格子点の最近傍の灯しは一様空間分割で近傍の区画だけを走査して求め（リング探索の上限は構築時に求めた灯しの区画範囲で一定時間で与える）、処理量は活性格子点数とその近傍の灯し数に比例する。読み込み時に1回だけ実行する。
+- **拘束の優先順位**: 緩和の各点には「湖面矩形内」を最優先、次に「総移動量上限（素案位置からの総移動量、既定は基準量）」、最後に「重心保存」の順で拘束を適用する。最終に重心を緩和前へ戻す平行移動を行い、総移動量上限・湖面矩形内を再適用する。
+- **退化・異常入力**: 0個は空配列、1個は不変。2点以上で同一水平位置の組が1組でもあれば例外（格子割当では完全同一点を分離できないため）。各 seed の水平位置が湖面矩形内であることを必須とする（湖面の外の素案は拘束を両立できず、ひまわりが湖面に浮かぶ仕様にも反するため）。
+- **緩和回数の範囲**: 緩和回数は2回以上4回以下の整数に限る（`RELAX_ITERATIONS_MIN`〜`RELAX_ITERATIONS_MAX`）。理由は concept-final §5 が、完全収束で個性が消えることを避けるため少数回（2回から4回）で止めると定めるためで、範囲外（1回や5回以上）は公開オプションでも例外で拒否する。
+- **依存の向き**: `engine` 等の中核から import されない。`tools`・`rendering`・three.js を import しない。`../schema/profileSchema`（`Vec3` 型）だけを取り込む。
+- **後続Issueへの引き継ぎ契約**:
+  - 呼び出し主体は統括層（`src/app` または `src/screens`）とする。`src/rendering` から本モジュールを直接 import しない（rendering は状態を読むだけで論理を持たない）。統括層が緩和後位置を作り描画へはデータとして渡す。
+  - 呼び出しは `relaxLanternPlacement(profile.notes.map(n => ({ id: n.id, position: n.trajectoryPosition })), waterRegion)` を読み込み時または楽曲終了時に1回。
+  - ひまわり（#60）は緩和後の水平座標に水面高さ `waterRegion.y` を合成して `SunflowerSetInput.position` を作る。蝶（#61）は緩和後の3次元位置をそのまま使う。現状の蝶描画は演奏中の寿命付き発生用で持続配置を持たないため、楽曲終了後の持続配置用の蝶描画は #63・#71 が新たに用意する。
+  - 反応強度（大きさ・輝度）は演奏結果（#51・#55）から識別子で結合する。位置（#62）と強度は識別子で対応付ける。
+  - 品質ゲート #101 は、緩和前の入力点から `computeLanternMeasurementSpec` で測定設定を求め、その設定で緩和後位置を `measureLanternDistribution` と `isCentroidWithinLakeAllowance` で検査する。
+- **担当Issue**: #62。
+
 ## テスト手順（実行環境 Node 22、`.nvmrc` 準拠）
 
 ```sh
@@ -129,4 +155,4 @@ npm run typecheck
 npm test
 ```
 
-`showcases.takeover.test.ts`・`chordToneSlots.takeover.test.ts`・`tapBudget.takeover.test.ts`・`onsetNotes.takeover.test.ts`・`density.takeover.test.ts`・`notePatterns.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を素読みして各Issueの達成基準を実データで表明する（`src/tools/` を import しない）。各機能の単体テストは同居の `*.test.ts`。
+`showcases.takeover.test.ts`・`chordToneSlots.takeover.test.ts`・`tapBudget.takeover.test.ts`・`onsetNotes.takeover.test.ts`・`density.takeover.test.ts`・`notePatterns.takeover.test.ts` が `docs/analysis/takeover.songmap.json` を素読みして各Issueの達成基準を実データで表明する（`src/tools/` を import しない）。`lanternPlacement.takeover.test.ts` はコミット済み `../takeover/takeover.profile.json` の各ノーツの `trajectoryPosition`（434件）を素読みし、緩和の受入条件を実データで表明する（代理の水面寸法400はテスト内に明記し `src/rendering/constants.ts` を import しない）。各機能の単体テストは同居の `*.test.ts`。

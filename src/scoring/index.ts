@@ -61,6 +61,14 @@ export {
   type ScoreBounds,
   type PercentileBasis,
 } from "./percentile";
+// --- 内蔵水準カーブ・百分位（Issue #66） ---
+// isValidLevelCurve は本番経路の防御で外部から呼ばないため再輸出しない（単体テストは levelCurve.ts から直接取り込む）。
+export {
+  percentileFromLevelCurve,
+  topPercentFromPercentile,
+  BUILTIN_LEVEL_CURVE,
+  type LevelCurveAnchor,
+} from "./levelCurve";
 export { theoreticalScoreBounds, type ScoreBoundsInput } from "./scoreBounds";
 export {
   RANKS_ASCENDING,

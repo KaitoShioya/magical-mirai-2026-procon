@@ -25,7 +25,7 @@ describe("summarizeScore 通しの結果要約（受け入れ基準: 固定閾�
     expect(result.percentile).toBeGreaterThanOrEqual(0);
     expect(result.percentile).toBeLessThanOrEqual(100);
     expect(["C", "B", "A", "S"]).toContain(result.rank);
-    expect(result.percentileBasis).toBe("fixed-uniform");
+    expect(result.percentileBasis).toBe("builtin-level-curve");
   });
   it("得点0なら百分位0・ランクC", () => {
     const result = summarizeScore(INITIAL_SCORE_STATE, BOUNDS_INPUT);

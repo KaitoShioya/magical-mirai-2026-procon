@@ -131,6 +131,21 @@ try {
   await waitForScreen(page, "result");
   await assertScreen(page, "result");
 
+  // 4.5 百分位の注意文言が結果画面に明記されている（Issue #66 受け入れ基準）。
+  //     文言は scoring が所有する PERCENTILE_ESTIMATE_DISCLAIMER で、結果画面が data-role="percentile-disclaimer" の段落で表示する。
+  const disclaimer = await page.evaluate(() => {
+    const root = document.querySelector('[data-screen="result"]');
+    const element = root ? root.querySelector('[data-role="percentile-disclaimer"]') : null;
+    return element ? element.textContent : null;
+  });
+  if (disclaimer === null) {
+    fail('結果画面に百分位の注意文言（data-role="percentile-disclaimer"）がありません');
+  } else if (!disclaimer.includes("実際のオンライン順位ではありません")) {
+    fail(`百分位の注意文言が期待と異なります: ${disclaimer}`);
+  } else {
+    console.log("確認: 結果画面に百分位の注意文言が明記されている");
+  }
+
   // 5. 「タイトルに戻る」で再挑戦を経て題名へ戻る。
   await page.click('[data-action="return-title"]');
   await waitForScreen(page, "title");

@@ -44,6 +44,7 @@
 - **素点 a は本層が合成する**: `tapBaseScore(judgment)` がタイミング精度と音程精度から素点 a（0以上1以下）を作る。重みは等重み（各0.5）で本層が所有し tuning.ts に置かない。
 - **多様性係数 D と投下倍率 M は呼び出し側が渡す**: `reduceScore` の入力 `{ a, diversity, multiplier, result }` の diversity（D）は `computeDiversityCoefficient`（#42）、multiplier（M）は `deploymentMultiplier`（#54）の戻り値を呼び出し側が算出して渡す。本層は合成式と集計だけを担い、D の発火区間（diversityZones）と M の投下タイミングは #56 が決める。D は0以上1以下で、0は最大逓減の有効値として得点を0にする。M は1以上2以下で、1未満は1へ倒れる。
 - **combo は両JUSTで継続・全体で再正規化**: combo は両JUST（タイミングと音程の両方が満点窓）のタップだけ連続走長を伸ばす。`finalizeScore` が combo 総和を `baseTotal × (p ÷ (1 − p))`（既定では上限割合 p は0.10のため `baseTotal × (0.10 ÷ 0.90)`）で頭打ちにし、combo が総得点に占める割合を上限割合以下に厳密に抑える。上限割合 p は `COMBO_SHARE_MAX`（既定0.10）として本層が所有する（tuning.ts に置かない）。
-- **ランク帯は百分位で切る**: `rankFromPercentile` が百分位を等幅四分位（25・50・75）で C/B/A/S に分ける（§3.4 の百分位経由に従う）。#66 が累積分布と帯を磨いてもランク帯の関数の形は変えない。
-- **百分位は推定**: `simplePercentile` は理論端 [Smin,Smax] 上の一様分布の簡易版で、`percentileBasis` は "fixed-uniform"。実際のオンライン順位ではない旨（`PERCENTILE_ESTIMATE_DISCLAIMER`）の Result 画面・README への表示は #66 が行う。
+- **ランク帯は百分位で切る**: `rankFromPercentile` が百分位を等幅四分位（25・50・75）で C/B/A/S に分ける（§3.4 の百分位経由に従う）。#66 は百分位を内蔵水準カーブ（累積分布関数）で磨いたが、`rankFromPercentile` の閾値と帯分けの関数の形は変えていない。百分位空間で等幅の帯は、水準カーブが非線形のため得点空間では非等幅になる。
+- **百分位は推定（#66 で内蔵水準カーブへ磨き済み）**: 表示する百分位は `percentileFromLevelCurve`（`levelCurve.ts`、内蔵水準カーブによる累積分布関数）で算出し、`percentileBasis` は "builtin-level-curve"。`summarizeScore` と `rankFromScore` はこの関数を使う。`simplePercentile`（"fixed-uniform"）は #55 の参照実装かつ縮退の参照として残す。実際のオンライン順位ではない旨（`PERCENTILE_ESTIMATE_DISCLAIMER`）の Result 画面・README への表示は #66 で実施済み。内蔵カーブの内部アンカーは理論由来の★暫定で、#59 完成後のプレイ検証の実測で差し替える（端点は理論固定）。
+- **表示語は上位率に統一**: 内部の百分位は高得点ほど大きい。「上位何パーセント相当」を表示するときは `topPercentFromPercentile`（上位率＝100−百分位）を使い、百分位の値をそのまま「上位◯パーセント」と表記しない（意味の反転を防ぐ）。後続の Result 画面（#74）・成果物PNG（#69）はこの関数を使う。
 - **曲非依存**: `theoreticalScoreBounds` は曲固有の絶対値（タップ総数上限 N）を引数 `tapBudget` で受ける。#59 が曲プロファイル（#46）の値を渡す。本層に260・434・見せ場数をハードコードしない。理論最小 Smin は0固定（§3.4「タップしないこと自体は減点しない」より達成可能な最小は0）。

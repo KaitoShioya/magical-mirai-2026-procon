@@ -4,7 +4,8 @@
 
 import { finalizeScore, DEFAULT_SCORE_CONFIG, type ScoreConfig, type ScoreState } from "./scoreAccumulator";
 import { theoreticalScoreBounds, type ScoreBoundsInput } from "./scoreBounds";
-import { simplePercentile, type ScoreBounds, type PercentileBasis } from "./percentile";
+import { type ScoreBounds, type PercentileBasis } from "./percentile";
+import { percentileFromLevelCurve } from "./levelCurve";
 import { rankFromPercentile, type Rank } from "./rank";
 
 // プレイ結果の得点要約。
@@ -13,7 +14,7 @@ export interface ScoreResult {
   percentile: number;               // 百分位 [0,100]
   rank: Rank;                       // C/B/A/S
   bounds: ScoreBounds;              // 算出に使った理論端（再現性・デバッグ用）
-  percentileBasis: PercentileBasis; // "fixed-uniform"（#55 の簡易版）
+  percentileBasis: PercentileBasis; // "builtin-level-curve"（#66 の内蔵水準カーブによる累積分布関数）
 }
 
 // スコア累積状態と理論端の素材から、総合得点・百分位・ランクを1つにまとめて返す。
@@ -31,13 +32,15 @@ export function summarizeScore(
     ...boundsInput,
     comboShareCap: boundsInput.comboShareCap ?? config.comboShareMax,
   });
-  const percentile = simplePercentile(summary.total, bounds);
+  // 百分位は内蔵水準カーブ（累積分布関数、Issue #66）で算出する。ランクは同じ百分位を rankFromPercentile で帯分けして
+  // 表示百分位とランクの意味を1つに揃える。rankFromPercentile の閾値（25・50・75）は変えない（src/scoring/README.md §47）。
+  const percentile = percentileFromLevelCurve(summary.total, bounds);
   const rank = rankFromPercentile(percentile);
   return {
     totalScore: summary.total,
     percentile,
     rank,
     bounds,
-    percentileBasis: "fixed-uniform",
+    percentileBasis: "builtin-level-curve",
   };
 }

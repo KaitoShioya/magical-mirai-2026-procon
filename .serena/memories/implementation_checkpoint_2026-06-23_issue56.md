@@ -1,6 +1,6 @@
 # 実装チェックポイント（2026-06-23・Issue #56）
 
-**状態: Issue #56「目的関数統合」の実装を完了。ワークツリー `worktree-issue-56-objective-function`（ブランチ `worktree-worktree-issue-56-objective-function`）で作業。コミット・PRは未作成（ユーザー指示待ち）。**
+**状態: Issue #56「目的関数統合」の実装を完了。ブランチ `worktree-issue-56-objective-function` にコミットしpush済み、main 宛の PR #193 を作成（Closes #56）。マージ可否のレビュー段階。**
 **用途**: セッション喪失時の復帰点（実装フェーズ）。前段の純粋関数群は得点合成 [[implementation_checkpoint_2026-06-22_issue48]]・多様性係数 [[implementation_checkpoint_2026-06-23_issue42]]・ゲージ投下 [[implementation_checkpoint_2026-06-23_issue54]]。下流の実機結線は後続 #59。設計正典は `docs/decisions/app-overall-decisions.md` §3.4・§3.5・§3.6、`docs/idea/concept-final.md` §8。
 
 ## 位置づけ

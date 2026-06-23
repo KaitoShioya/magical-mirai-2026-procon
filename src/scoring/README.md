@@ -48,6 +48,22 @@
 - **百分位は推定**: `simplePercentile` は理論端 [Smin,Smax] 上の一様分布の簡易版で、`percentileBasis` は "fixed-uniform"。実際のオンライン順位ではない旨（`PERCENTILE_ESTIMATE_DISCLAIMER`）の Result 画面・README への表示は #66 が行う。
 - **曲非依存**: `theoreticalScoreBounds` は曲固有の絶対値（タップ総数上限 N）を引数 `tapBudget` で受ける。#59 が曲プロファイル（#46）の値を渡す。本層に260・434・見せ場数をハードコードしない。理論最小 Smin は0固定（§3.4「タップしないこと自体は減点しない」より達成可能な最小は0）。
 
+## 目的関数統合（Issue #56）の #59 向け結線契約
+
+1タップごとに多様性係数 D と投下倍率 M を決めて合成式へ渡し、一回性（タップ総数上限 N）を適用する状態保持層。公開窓口は `index.ts`（`buildDiversityIndex`・`createObjectiveState`・`applyTap`・`applyDeploy`・`summarizeObjective`）。本層は曲非依存であり、曲固有の値は最小の値の形で受け取る。呼び出し側（#59）は次の契約を守ること。
+
+- **曲プロファイルから最小入力への写し方**: 正解スロットは `Note.slotIndex`（1始まり）を1引いて0始まりへ、`beatIndex` はそのまま、操作スロットは `Reaction.slotIndex`（0始まり）をそのまま、反復区間は境界 `startTimeMs`・`endTimeMs` だけを渡し役割や区間名は渡さない、見せ場は区間と重みをそのまま渡す。
+- **操作スロットは必須**: `TapEvent.operationSlot0` には `Reaction.slotIndex`（0始まり）をそのまま渡す。`Reaction.slotIndex` はタップ縦位置から常に定まるため、対応ノーツの無い床タップでも値がある。
+- **呼び出し順**: `buildDiversityIndex(notes, zones)` で索引を作り、`createObjectiveState(context)` で初期状態を作る（区間数は `context.diversityIndex.zoneCorrectSlots.length` から内部導出する）。各タップで `applyTap`、プレイヤーが投下したとき `applyDeploy`、プレイ終了時に `summarizeObjective` を呼ぶ。`summarizeObjective` の `boundsInput`（タップ総数上限 N など）は曲プロファイル（#46）の値を渡す。
+- **区間索引は整列後の順序で統一**: `buildDiversityIndex` は反復区間を `startTimeMs` 昇順へ整列し、`NotePosition.zoneIndex`・`zoneCorrectSlots`・`previousZoneIndex`・`ObjectiveState.zoneOperations` の区間索引はすべて整列後の順序を基準とする。
+- **拍オフセットの基準**: 同じリズム位置の対応付けは「区間内で最初に現れるノーツの `beatIndex` を0とした相対拍位置」で行う。反復区間の先頭ノーツが各区間で同じリズム位置に揃っている前提に立つ。
+- **反復区間は単一の同リズム系列**: `diversityZones` は単一の同リズム反復系列を時刻順に渡すこと。前回区間は整列後の直前区間とする。区間どうしが同リズムであることの保証はプロファイル生成（#42・#46）の責務であり、`buildDiversityIndex` は同リズムかを検証しない。
+- **逓減量は #56 が所有**: 発火時の逓減量 `reductionFactor` の本番初期値は `DEFAULT_REDUCTION_FACTOR`（0.7、★暫定）。前回値が無い場合は `computeDiversityCoefficient` が 1.0 を返すため別途のガードは置かない。
+- **一回性は全入力を計上**: `applyTap` に渡した全入力（床タップを含む）が上限 N を1消費する。上限超の入力は得点・ゲージ・計上のいずれにも算入しない。タップ総数上限が0以下のとき一回性が有効なら全タップが不算入になり、非有限値は0として扱う。
+- **投下倍率の適用窓**: 投下は発動時刻から見せ場終了時刻までの半開区間 `[startedAtMusicTimeMs, endTimeMs)` のタップに掛かる。終了時刻ちょうどのタップは倍率1.0。投下後のゲージ量は `deploy` の戻り値 `remaining` を使う。適用中の投下があるときに倍率が1より大きい再投下が起きれば、倍率・発動時刻・終了時刻を上書きする。
+- **適用中の投下は得点が上がる投下だけ**: `ActiveDeploy` は倍率が1より大きいときだけ設定される（倍率1.0になる投下は成立せずゲージも消費しない）。ただし期限切れの消去は `applyTap` の実行時にのみ起きるため、下流が投下演出の合図に使う場合は状態の `activeDeploy` をそのまま信頼せず、現在の音楽時刻で半開区間（`startedAtMusicTimeMs` 以上、`endTimeMs` 未満）を判定して有効性を確かめること。
+- **状態は破壊しない**: `applyTap`・`applyDeploy` は入力状態とその内部の写像・配列を直接書き換えず、変更箇所だけを複製した新しい状態を返す。
+
 ## 自己ベスト履歴（Issue #67）の結線契約
 
 得点履歴を端末内（localStorage）へ曲ごとに保存し、自己ベストを更新する。公開窓口は `index.ts`（`scoreHistoryStore.ts`）。保存キーは `mm2026.scoreHistory.<曲キー>` で版番号を持つ。呼び出し側（#74 結果画面・#59 通しプレイ結線）は次の契約を守ること。

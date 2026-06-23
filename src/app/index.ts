@@ -241,6 +241,11 @@ export function createApp(
       // 描画基盤側が何もしない。将来の曲別スロット数対応はこの注入箇所だけで変わる。
       showPitchAxisGuide: () => renderRoot.showPitchAxisGuide(PITCH_SLOT_COUNT_DEFAULT),
       hidePitchAxisGuide: () => renderRoot.hidePitchAxisGuide(),
+      // ランク専用ゲージ（Issue #65）の現在入力。実スコアの累積から百分位・ランク添字を供給する結線は
+      // Issue #59（本編プレイ成立）の責務のため、本Issueでは null を返す。null の間プレイ画面は
+      // 百分位0・ランク添字0（空・ランクC）でゲージを更新する。#59 はここを scoring の rankFromPercentile・
+      // rankOrdinal を用いた実装へ差し替える。
+      currentRankGaugeState: () => null,
     },
   };
 

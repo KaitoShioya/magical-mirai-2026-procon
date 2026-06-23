@@ -477,6 +477,47 @@ declare global {
       overlayObjectCount: number;
     };
     /**
+     * ランク専用ゲージ（Issue #65）の受け入れ診断ページ（rank-gauge.html）だけが取り付ける。
+     * __rankGaugeProbe は副作用なしに、指定百分位の満ち量 t・算出色（材質へ設定する sRGB、各チャンネル0..1）・
+     * ランク添字（rankFromPercentile・rankOrdinal 由来、0=C..3=S）を返す。
+     * __rankGaugeState は直近に描いた表示事実（横位置・幅・トラック縦範囲・満ち量・満ち上端・ランク添字・
+     * 文字中心・視錐台の横半幅 aspect）を返す。
+     * __rankGaugeSampleAt は指定百分位でゲージを描き、満ちバー中心の描画画素（sRGB、各チャンネル0..1。WebGL 不可で null）と
+     * 算出色・表示事実を返す。scripts/rendering-rank-gauge-smoke.mjs が取得する。
+     * 共有型が rendering・scoring に依存しないよう素の構造で宣言する。
+     */
+    __rankGaugeProbe?: (percentile: number) => {
+      t: number;
+      color: number[];
+      rankIndex: number;
+    };
+    __rankGaugeState?: () => {
+      groupX: number;
+      width: number;
+      trackBottomY: number;
+      trackTopY: number;
+      fillFraction: number;
+      fillTopY: number;
+      rankIndex: number;
+      letterCenterY: number;
+      aspect: number;
+    };
+    __rankGaugeSampleAt?: (percentile: number) => {
+      percentile: number;
+      t: number;
+      rankIndex: number;
+      color: [number, number, number];
+      pixel: [number, number, number] | null;
+      fillFraction: number;
+      groupX: number;
+      width: number;
+      trackBottomY: number;
+      trackTopY: number;
+      fillTopY: number;
+      letterCenterY: number;
+      aspect: number;
+    };
+    /**
      * 自己ベスト履歴（Issue #67）の受け入れ診断ページ（score-history.html）だけが取り付ける。
      * 描画した文書要素から導く構造的事実（記録なし表示の有無・自己ベストの総合得点・直近の棒の本数・
      * 強調された棒の本数）を、保存・判定の状態を変えずに返す。scripts/score-history-smoke.mjs が取得する。

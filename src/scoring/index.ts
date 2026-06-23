@@ -71,3 +71,18 @@ export {
   type Rank,
 } from "./rank";
 export { summarizeScore, type ScoreResult } from "./scoreResult";
+
+// --- 自己ベスト履歴（Issue #67） ---
+export {
+  recordPlay,
+  loadBestScore,
+  loadScoreHistory,
+  clearScoreHistory,
+  scoreHistoryKey,
+  SCORE_HISTORY_KEY_PREFIX,
+  SCORE_HISTORY_VERSION,
+  SCORE_HISTORY_RECENT_MAX,
+  type PlayRecord,
+  type ScoreHistory,
+  type RecordPlayOutcome,
+} from "./scoreHistoryStore";

@@ -9,7 +9,7 @@
 
 import type { PlayWiring, Screen, ScreenContext, ScreenFactory } from "./types";
 import { buildLyricsTimeline } from "../textalive";
-import { createFallingLane, type FallingLane } from "../rendering";
+import { createFallingLane, type FallingLane, createRankGauge, type RankGauge } from "../rendering";
 import { computeOverlayFrustum } from "../rendering/viewport";
 import {
   createKineticTextEngine,
@@ -172,6 +172,8 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
   let conductor: Conductor | null = null;
   // 落下式レーン（判定UI #57）。組み立て成功時に一度だけ生成し2次元層へ載せ、保持する。
   let lane: FallingLane | null = null;
+  // ランク専用ゲージ（Issue #65）。レーンと同じ生命周期で生成・更新・破棄する。
+  let rankGauge: RankGauge | null = null;
   // 組み立てを試みたか（音楽地図の準備完了を待って一度だけ組み立てる）。
   let built = false;
 
@@ -187,6 +189,9 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
       // 組み立ての中（built が偽の間のみ到達）で生成する。
       lane = createFallingLane({ notes: play.laneNotes });
       play.addOverlayObject(lane.object);
+      // ランク専用ゲージ（Issue #65）を生成して2次元層へ載せる。レーンと同じく組み立ての一度きりで生成する。
+      rankGauge = createRankGauge();
+      play.addOverlayObject(rankGauge.object);
       built = true;
     }
   }
@@ -212,11 +217,23 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
         // 文字の寿命処理・カメラ正対・変形の時間進行を進める（描画は統括の renderRoot.render が行う）。
         engine.update({ gameTimeMs, frameDeltaMs: deltaMs });
       }
-      if (lane !== null) {
-        // 縦横比は2次元層と同じ純粋関数で表示寸法から求める。数字の最小読み取りサイズの計算に縦デバイス画素数も渡す。
+      if (lane !== null || rankGauge !== null) {
+        // 縦横比は2次元層と同じ純粋関数で表示寸法から求める。最小読み取りサイズの計算に縦デバイス画素数も渡す。
         const viewportPixelHeight = play.viewportPixelHeight();
         const aspect = computeOverlayFrustum(play.viewportPixelWidth(), viewportPixelHeight).right;
-        lane.update({ gameTimeMs, aspect, viewportPixelHeight });
+        if (lane !== null) {
+          lane.update({ gameTimeMs, aspect, viewportPixelHeight });
+        }
+        if (rankGauge !== null) {
+          // 実スコア未供給（Issue #59 の結線前）の間は null。そのときは百分位0・ランク添字0（空・ランクC）で更新する。
+          const gaugeInput = play.currentRankGaugeState() ?? { percentile: 0, rankIndex: 0 };
+          rankGauge.update({
+            percentile: gaugeInput.percentile,
+            rankIndex: gaugeInput.rankIndex,
+            aspect,
+            viewportPixelHeight,
+          });
+        }
       }
     },
     onExit(): void {
@@ -231,6 +248,12 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
         play?.removeOverlayObject(lane.object);
         lane.dispose();
         lane = null;
+      }
+      // ランク専用ゲージ（Issue #65）も同様に外して資源解放する。
+      if (rankGauge !== null) {
+        play?.removeOverlayObject(rankGauge.object);
+        rankGauge.dispose();
+        rankGauge = null;
       }
       built = false;
     },

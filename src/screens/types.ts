@@ -39,6 +39,17 @@ export interface SongChoice {
 }
 
 /**
+ * ランク専用ゲージ（Issue #65）の現在入力。百分位（0〜100）と表示ランクの添字（0=C, 1=B, 2=A, 3=S）。
+ * 百分位→ランクの帯分けは統括（src/app）が scoring で行い、レンダリング層へはこの確定値を渡す（依存規則 §5）。
+ */
+export interface RankGaugeInput {
+  /** スコア蓄積の百分位（0〜100）。 */
+  readonly percentile: number;
+  /** 表示するランクの添字（rankOrdinal の値、0=C, 1=B, 2=A, 3=S）。 */
+  readonly rankIndex: number;
+}
+
+/**
  * プレイ画面が本編表示（キネティックタイポ）を駆動するための結線（Issue #33）。
  * 統括（src/app）が描画基盤・再生・ゲーム時刻・タイポ譜面を解決して渡す。プレイ画面はこれを用いて
  * 文字エンジンと駆動部を組み立てる。WebGL が無い端末では描画を組み立てず、画面遷移だけを成立させる。
@@ -77,6 +88,9 @@ export interface PlayWiring {
   showPitchAxisGuide(): void;
   /** Y軸音程ガイド（Issue #58）を非表示にする。プレイ画面から抜けるときに呼ぶ。 */
   hidePitchAxisGuide(): void;
+  /** ランク専用ゲージ（Issue #65）の現在入力を読む。実スコア未供給（Issue #59 の結線前）の間は null を返す。
+   *  null のときプレイ画面は百分位0・ランク添字0（空・ランクC）でゲージを更新する。 */
+  currentRankGaugeState(): RankGaugeInput | null;
 }
 
 /**

@@ -16,3 +16,5 @@ export type { SunflowerFigures, SunflowerSetInput, SunflowerMetrics } from "./en
 export { createSunflowerFigures } from "./entities/sunflowerFigures";
 export type { FallingLane, FallingLaneProbeNote } from "./fallingLane";
 export { createFallingLane } from "./fallingLane";
+export type { RankGauge, RankGaugeState, RankGaugeProbe } from "./rankGauge";
+export { createRankGauge } from "./rankGauge";

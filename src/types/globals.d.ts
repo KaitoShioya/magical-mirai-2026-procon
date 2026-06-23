@@ -517,5 +517,26 @@ declare global {
       letterCenterY: number;
       aspect: number;
     };
+    /**
+     * 自己ベスト履歴（Issue #67）の受け入れ診断ページ（score-history.html）だけが取り付ける。
+     * 描画した文書要素から導く構造的事実（記録なし表示の有無・自己ベストの総合得点・直近の棒の本数・
+     * 強調された棒の本数）を、保存・判定の状態を変えずに返す。scripts/score-history-smoke.mjs が取得する。
+     * 共有型が ui・scoring に依存しないよう素の構造で宣言する。
+     */
+    __scoreHistoryProbe?: () => {
+      hasEmpty: boolean;
+      bestScore: number | null;
+      barCount: number;
+      bestBarCount: number;
+    };
+    /**
+     * 自己ベスト履歴の診断ページ（score-history.html）だけが取り付ける操作フック。スモークが決定的な得点列を
+     * 投入できるよう、初期化と1件記録を公開する。reset は診断専用キーの履歴を消し、record は指定の得点と時刻で
+     * 記録して再描画する。
+     */
+    __scoreHistoryControl?: {
+      reset(): void;
+      record(totalScore: number, recordedAtMs: number): void;
+    };
   }
 }

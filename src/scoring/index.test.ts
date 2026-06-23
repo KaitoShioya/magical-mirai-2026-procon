@@ -13,4 +13,9 @@ describe("index 再輸出（Issue #55）", () => {
     expect(scoring.COMBO_SHARE_MAX).toBe(0.1);
     expect(scoring.RANKS_ASCENDING).toEqual(["C", "B", "A", "S"]);
   });
+  it("#66 の公開要素を窓口から参照できる", () => {
+    expect(typeof scoring.percentileFromLevelCurve).toBe("function");
+    expect(typeof scoring.topPercentFromPercentile).toBe("function");
+    expect(Array.isArray(scoring.BUILTIN_LEVEL_CURVE)).toBe(true);
+  });
 });

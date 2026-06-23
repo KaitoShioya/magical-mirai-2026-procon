@@ -1,5 +1,7 @@
 // 簡易百分位（Issue #55）。総合得点 S を、内蔵の水準分布に照らした百分位へ写す。本モジュールは理論端の一様分布の累積分布（線形写像）で
-// 簡易版を実装し、累積分布関数による磨きは #66 が担う。曲固有の絶対値は持たず理論端を引数で受け取り曲非依存を保つ。
+// 簡易版を実装する。累積分布関数による磨きは Issue #66 が levelCurve.ts の percentileFromLevelCurve で実装した。
+// simplePercentile は Issue #55 の参照実装かつ縮退（非有限・区間幅0以下）の参照として残す。
+// 曲固有の絶対値は持たず理論端を引数で受け取り曲非依存を保つ。
 // 依存規則に従い profiles・rendering・tools・three.js を取り込まない。
 
 export interface ScoreBounds {
@@ -7,8 +9,9 @@ export interface ScoreBounds {
   max: number; // 理論最大 Smax
 }
 
-// 百分位の推定種別。#55 は固定の一様分布、#66 が理論分布の合成と少数実測の補正へ拡張する。
-export type PercentileBasis = "fixed-uniform";
+// 百分位の推定種別。"fixed-uniform" は Issue #55 の固定の一様分布（simplePercentile）、
+// "builtin-level-curve" は Issue #66 の内蔵水準カーブによる累積分布関数（levelCurve.ts の percentileFromLevelCurve）を表す。
+export type PercentileBasis = "fixed-uniform" | "builtin-level-curve";
 
 // 百分位が作品内蔵の固定分布による推定であり、実際のオンライン順位ではないことを示す文言。
 // Issue #66 が Result 画面と README に明記する際に参照する。静的アプリ規約上オンライン順位は持てない（docs/decisions/app-overall-decisions.md 規約節）。

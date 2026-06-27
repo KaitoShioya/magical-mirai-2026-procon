@@ -30,6 +30,15 @@ const MEDIA_ELEMENT_ID = "audio-media";
  */
 const VOLUME_RESTORE_MAX_POSITION_MS = 1000;
 
+/**
+ * 楽曲（背景音楽）の再生音量の目標値（TextAlive の IPlayer.volume、範囲0から100の線形振幅）。
+ * 採用理由を先に述べる。楽曲の音量が大きすぎてタップ操作音とのバランスが悪いとの実機所見を踏まえ、楽曲を約3デシベル下げる。
+ * デシベル差dの線形振幅倍率は10^(d/20)で、マイナス3デシベルは10^(-3/20)≒0.708。既定の100に対し100×0.708≒70.8を整数で71とする。
+ * マイナス3デシベルを採るのは、楽曲を主役に保ちながら大きすぎる音量を確実に下げる控えめな低下で、操作音側の+3デシベルと合わせて
+ * 操作音を楽曲に対して約6デシベル前に出すためである。
+ */
+const BGM_PLAYBACK_VOLUME = 71;
+
 export interface TextAlivePlaybackOptions {
   song: Song;
   /**
@@ -99,12 +108,12 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
     ...(mediaElement ? { mediaElement } : {}),
   });
 
-  // 再生用の音量をプレイヤー生成の直後に一度だけ捕捉する。採用理由を先に述べる。
-  // 自動再生制限の解除（primeAudioPermission）では音量を0にして無音にするため、その0を後から取り込んで
-  // 復元すると再生が無音のままになる。これを防ぐため、消音前のこの時点で一度だけ取り込み、以後は更新しない。
-  // TextAlive の IPlayer.volume は0〜100の値で既定は100。数値でないか0以下のときは既定の100を用いる。
-  const playbackVolume =
-    typeof player.volume === "number" && player.volume > 0 ? player.volume : 100;
+  // 再生用の音量を目標値 BGM_PLAYBACK_VOLUME に定める。採用理由を先に述べる。
+  // TextAlive の IPlayer.volume は0〜100の線形振幅で既定は100だが、その既定値は楽曲が大きすぎてタップ操作音との
+  // バランスが悪い。本アプリはホスト管理ではなく自前で楽曲を読み込むため、再生音量を明示的に目標値へ定めるのが正しい。
+  // プレイヤーの現在値（既定の100）を読むのではなく目標値を用いることで楽曲音量を確実に下げる。
+  // この値は、許可確立（primeAudioPermission）とプレイ開始時に0へ無音化したあと、再生開始の観測時に戻す復元処理が用いる。
+  const playbackVolume = BGM_PLAYBACK_VOLUME;
 
   const isReady = (): boolean => machine.getState().status === "ready";
 

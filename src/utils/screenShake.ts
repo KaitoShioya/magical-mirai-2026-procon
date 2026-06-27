@@ -25,8 +25,9 @@ export interface ScreenTransform {
 }
 
 /** 小節頭の拍の拡大量。倍率は 1 + 拡大量。
- *  採用理由: Issue #76 の範囲「1.05〜1.15倍」（拡大量0.05〜0.15）の内側に収め、小節頭を強くする。★暫定。 */
-export const BEAT_AMPLITUDE_DOWNBEAT = 0.12;
+ *  採用理由: Issue #76 の範囲「1.05〜1.15倍」（拡大量0.05〜0.15）の内側に収める。表示が揺れて見づらいとの実機所見を
+ *  踏まえ、小節頭の拡大を控えめにして倍率1.09（拡大量0.09）とする。範囲下限0.05より大きく小節頭を弱拍より強く保つ。★暫定。 */
+export const BEAT_AMPLITUDE_DOWNBEAT = 0.09;
 
 /** 小節頭以外の拍の拡大量。
  *  採用理由: 同じ帯の内側で小節頭より弱くし、単調さを避ける（研究 docs/research/02-non-text-expression.md §1）。★暫定。 */
@@ -43,9 +44,9 @@ export const DECAY_ZOOM_TAU_MS = 250;
 export const DECAY_SHAKE_TAU_MS = 50;
 
 /** 揺れ係数（揺れの移動量が画面外余白に占める割合の上限、0以上1未満）。
- *  採用理由: 1未満なら移動量が余白未満になり画面端に隙間が出ない。0.6は揺れを感じる大きさを保ちつつ、
- *  画素の丸めでも1画素の隙間が出ないよう4割の余裕を残す値である。★暫定。 */
-export const SHAKE_MARGIN_FRACTION = 0.6;
+ *  採用理由: 1未満なら移動量が余白未満になり画面端に隙間が出ない。横方向のずれが表示の読みづらさの主因のため、
+ *  実機所見を踏まえ0.3まで下げて横ずれの最大量を半減させる。余白の7割の余裕を残すため画素の丸めでも隙間が出ない。★暫定。 */
+export const SHAKE_MARGIN_FRACTION = 0.3;
 
 /** 揺れの振動周期（ミリ秒）。
  *  採用理由: 二条件で50を採る。条件1（揺れに見える）: 包絡が約10パーセントへ下がる時刻は 50×ln(10)≒115
@@ -60,7 +61,7 @@ export const GOLDEN_ANGLE_RAD = Math.PI * (3 - Math.sqrt(5));
 /** 拡大強度がこの値以下なら恒等へ吸着する閾値（拡大量）。
  *  採用理由: 0.0005（倍率で0.05パーセント）は視認できない拡大であり、ここで恒等へ丸めると、拡大していない
  *  大半のフレームで変換が恒等で一定になり、描画基盤側の「前回値と一致なら書き換えない」省略が効く。
- *  この拡大では揺れの移動量も余白の0.6倍＝0.15画素未満であり、移動も視認できないため同時に恒等とできる。 */
+ *  この拡大では揺れの移動量も余白の0.3倍＝0.075画素未満であり、移動も視認できないため同時に恒等とできる。 */
 const ZOOM_IDENTITY_EPSILON = 0.0005;
 
 /** 倍率の丸めの小数桁数（4桁＝0.01パーセント、視認できない精度）。微小なちらつきを止め、前回値一致の判定を有効にする。 */
@@ -109,6 +110,28 @@ export function resolveBeatAmplitudes(beats: readonly BeatPositionLike[]): numbe
     amplitudes.push(isDownbeat ? BEAT_AMPLITUDE_DOWNBEAT : BEAT_AMPLITUDE_OFFBEAT);
   }
   return amplitudes;
+}
+
+/** 時間範囲の最小情報（開始時刻と終了時刻、ミリ秒）。profiles を import せず構造的に受ける。 */
+interface TimeRangeLike {
+  startTimeMs: number;
+  endTimeMs: number;
+}
+
+/**
+ * 時刻がいずれかの時間範囲の内側にあるかを返す。判定は半開区間（開始時刻は含み、終了時刻は含まない）とする。
+ * 採用理由を先に述べる。半開区間にするのは、曲プロファイルの区間表現（見せ場・繰り返し区間）が半開区間で
+ * 統一されており、隣り合う区間の境界時刻が二つの区間に二重で該当しないようにするためである。
+ * 用途を先に述べる。画面振動をサビ区間（コーラス区間）に限定するため、統括（src/app）が曲プロファイルの
+ * 繰り返し区間から作った配列を渡し、各拍の時刻がサビ区間の内側にあるかを判定する。
+ */
+export function isWithinAnyRange(ranges: readonly TimeRangeLike[], timeMs: number): boolean {
+  for (const range of ranges) {
+    if (range.startTimeMs <= timeMs && timeMs < range.endTimeMs) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -208,7 +231,7 @@ export function createScreenShake(options?: {
         return IDENTITY;
       }
       const zoom = zoomIntensityAt(currentTimeMs);
-      // 拡大がほぼ消えた領域は恒等へ吸着する（揺れの移動量も余白の0.6倍未満で視認できない）。
+      // 拡大がほぼ消えた領域は恒等へ吸着する（揺れの移動量も余白の0.3倍未満で視認できない）。
       if (zoom <= ZOOM_IDENTITY_EPSILON) {
         lastTransform = IDENTITY;
         return IDENTITY;
@@ -231,7 +254,7 @@ export function createScreenShake(options?: {
         const envelope = Math.exp(-shakeElapsed / shakeTauMs);
         const osc = Math.sin((2 * Math.PI * shakeElapsed) / shakePeriodMs);
         const factor = shakeMarginFraction * shakeStrength * envelope * osc;
-        // |factor| ≤ 0.6 < 1 のため |offset| ≤ margin が常に成り立ち、画面端に隙間が出ない。
+        // |factor| ≤ 0.3 < 1 のため |offset| ≤ margin が常に成り立ち、画面端に隙間が出ない。
         offsetX = factor * marginX * shakeDirX;
         offsetY = factor * marginY * shakeDirY;
       }

@@ -17,7 +17,7 @@ import { createFakePlayback, createTextAlivePlayback, type Playback } from "../t
 import { createOverlays } from "./overlay";
 import { createRenderRoot, createPerfBudget } from "../rendering";
 import { createBeatScheduler } from "../utils/beatScheduler";
-import { createScreenShake, resolveBeatAmplitudes } from "../utils/screenShake";
+import { createScreenShake, resolveBeatAmplitudes, isWithinAnyRange } from "../utils/screenShake";
 import { MIKU_CHARACTER } from "../config/character";
 import { LAKE_STAGE } from "../config/stage";
 import { PITCH_SLOT_COUNT_DEFAULT } from "../config/tuning";
@@ -174,6 +174,12 @@ export function createApp(
   const beatScheduler = createBeatScheduler(screenShakeBeats.map((b) => b.startTimeMs));
   const screenShake = createScreenShake();
   const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  // 画面振動をサビ区間（コーラス区間）に限定する区間配列を前計算する（Issue #198）。
+  // 曲プロファイルの繰り返し区間のうちコーラス区間（isChorus が真）だけを写す。画面振動も拍と同じく曲プロファイル駆動のため、
+  // 同じプロファイルのデータを再利用する。サビ区間内の拍だけ振動を発火させ、それ以外の拍では発火させない。
+  const screenShakeChorusRanges = takeoverProfile.repetitiveSegments
+    .filter((segment) => segment.isChorus)
+    .map((segment) => ({ startTimeMs: segment.startTimeMs, endTimeMs: segment.endTimeMs }));
 
   // エンジンの固定時間刻みの時計・走査器・世界状態。プレイ画面の本編表示（Issue #33）が同期の基準として
   // world.gameTimeMs を読むため、画面文脈より前に生成する。ループ（下）も同じ実体を使う。
@@ -399,7 +405,11 @@ export function createApp(
       if (inPlayPhase) {
         const gameTimeMs = world.gameTimeMs;
         beatScheduler.advance(gameTimeMs, (event): void => {
-          screenShake.trigger(event.timeMs, screenShakeAmplitudes[event.index], event.index);
+          // サビ区間（コーラス区間）内の拍だけ振動を発火させる（Issue #198）。サビ区間外では発火しないため、
+          // 既存の減衰と恒等吸着により、サビ区間の最後の拍の余韻が消えたあとは変換が恒等に戻る。
+          if (isWithinAnyRange(screenShakeChorusRanges, event.timeMs)) {
+            screenShake.trigger(event.timeMs, screenShakeAmplitudes[event.index], event.index);
+          }
         });
         const transform = screenShake.evaluate(
           gameTimeMs,

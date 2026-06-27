@@ -83,12 +83,26 @@ function renderHud(d: DisplaySyncDiagnostic): void {
   hud.textContent = lines.join("\n");
 }
 
+/** 実行先サーバの誤りを示す共通の誘導文。プレビュー・本番ビルドは docs/ を配信しないため、本診断は開発サーバへ向ける。 */
+const SERVER_HINT =
+  `本診断は開発サーバ（npm run dev、既定 http://localhost:5173）に対して実行してください。` +
+  `プレビュー（vite preview）や本番ビルドは ${SONGMAP_URL} を含む docs/ を配信しないため、未知パスへ index.html（HTML）が返ります。`;
+
 async function run(): Promise<void> {
   const response = await fetch(SONGMAP_URL);
   if (!response.ok) {
-    throw new Error(`楽曲データの取得に失敗しました（${response.status}）`);
+    throw new Error(`楽曲データ（${SONGMAP_URL}）の取得に失敗しました（HTTP ${response.status}）。${SERVER_HINT}`);
   }
-  const songmap = (await response.json()) as SongmapLike;
+  // 本文を文字列で受けてから JSON 解析する。理由を先に述べる。プレビューや本番ビルドは docs/ を配信せず、未知パスへ
+  // HTTP 200 で index.html（HTML）を返すため、response.ok だけでは JSON でない本文を弾けない。HTML を直接 response.json()
+  // に通すと「Unexpected token '<'」という原因の分からない例外になるため、解析失敗時に実行先サーバの誤りを示す誘導へ翻訳する。
+  const body = await response.text();
+  let songmap: SongmapLike;
+  try {
+    songmap = JSON.parse(body) as SongmapLike;
+  } catch {
+    throw new Error(`楽曲データ（${SONGMAP_URL}）をJSONとして解析できません。${SERVER_HINT}`);
+  }
   diagnostic = runDefaultDisplaySyncGate(songmap, resolveThresholds());
   renderHud(diagnostic);
   ready = true;

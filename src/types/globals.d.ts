@@ -67,6 +67,19 @@ declare global {
      */
     __screenHistory?: () => readonly string[];
     /**
+     * プレイ進行セッション（Issue #59）の読み取り専用診断。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
+     * 採点・投下・発音の進行を通しスモーク（scripts/play-smoke.mjs）が確かめる。
+     * 共有型が app・scoring に依存しないよう素の構造で宣言する。
+     */
+    __playSession?: () => {
+      tapCount: number;
+      gaugeValue: number;
+      percentile: number;
+      rankIndex: number;
+      deployActive: boolean;
+      playSlotCallCount: number;
+    };
+    /**
      * 検証用のエンジン状態アクセサ。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
      * ゲーム時刻・固定刻み回数・再同期回数・超過回数・時間源確定・時計初期化を返す。
      * scripts/engine-loop-smoke.mjs が取得する。共有型が engine に依存しないよう素の構造で宣言する。
@@ -141,6 +154,7 @@ declare global {
       screenTransform: { scale: number; offsetX: number; offsetY: number };
       outputColorSpace: string;
       toneMapping: number;
+      reactionButterflyActiveCount: number;
     };
     /**
      * 検証用の舞台土台診断アクセサ。舞台土台の受け入れ診断ページ（stage.html）だけが取り付ける。

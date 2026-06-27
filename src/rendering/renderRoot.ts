@@ -38,6 +38,8 @@ import {
 import { createButterflyFigures, type ButterflyFigures } from "./entities/butterflyFigures";
 import { reactionToScale, reactionToBrightness } from "./entities/butterflyReactionMapping";
 import { loadVrm } from "./loaders/vrmLoader";
+import { loadVrmAnimation } from "./loaders/vrmAnimationLoader";
+import { createPosedMotion } from "./entities/vrmMotion";
 import type { CharacterModelConfig } from "../types/character";
 import { createOverlayLayer, type OverlayLayer } from "./overlay";
 import { createPitchAxisGuide, type PitchAxisGuide } from "./pitchAxisGuide";
@@ -103,6 +105,12 @@ export interface RenderState {
   centerFigureStatus: CenterFigureStatus;
   /** 中心オブジェクトのVRM読み込みが失敗したときの短い理由（無ければ null）。無音の不具合を診断・検証で検出する。 */
   centerFigureError: string | null;
+  /** 中心オブジェクトのモーション層の種別。fixed=既定の固定（バインド）ポーズ、posed=VRMアニメーションの固定ポーズが
+   *  適用済み。VRMアニメーションを指定しない、または読み込み・適用に失敗した縮退時は fixed のまま。 */
+  centerFigureMotionMode: "fixed" | "posed";
+  /** 診断専用。全ての正規化した人体ボーンの回転角のうち最大の角（度。読み込み済みVRMが無ければ null）。
+   *  固定ポーズがバインドポーズ（最大角0度）から明確に回転したかをスモークが直接確かめるために用いる。 */
+  centerFigurePoseMaxAngleDeg: number | null;
   /** 中心オブジェクト（常在ミク）を湖面反射に含める意図の値（Issue #92）。既定は真（concept-final §10）。
    *  反射そのものの有無は reflectionEnabled（実効値）で別に表す。両者は別概念であり混同しないこと。
    *  WebGL が無く中心オブジェクト・水面を作らない端末でも、診断の値としては意図の値を返す。 */
@@ -423,6 +431,9 @@ export function createRenderRoot(
   // 世代番号は mountCenterCharacter を呼ぶたびに増やし、読み込み完了時に最新の世代だけを採る。
   let centerMountGeneration = 0;
   let centerFigureError: string | null = null;
+  // 中心オブジェクトのモーション層の種別（Issue #93・本タスク）。VRMアニメーションの固定ポーズを適用できたとき posed、
+  // それ以外（指定なし・読み込み失敗・適用失敗の縮退）は fixed。診断・スモークが姿勢適用の成立を確かめるために読む。
+  let centerFigureMotionMode: "fixed" | "posed" = "fixed";
 
   // 舞台土台（Issue #105）の状態。読み込みの世代番号は mountStageTerrain を呼ぶたびに増やし、読み込み完了時に
   // 最新の世代だけを採る。水面の供給元・読み込み状態・失敗理由・水面領域・水面の元範囲を保持する。
@@ -613,8 +624,42 @@ export function createRenderRoot(
         loaded.dispose();
         return false;
       }
+      // 固定ポーズのVRMアニメーションを先に読み終えてから差し替えと姿勢適用を連続実行する。先に読む理由を述べる。
+      // 差し替えと姿勢適用の間に非同期待ちが入ると、その間の描画フレームでバインドポーズが一瞬見えるためである。
+      // 読み込み・適用の失敗は捕捉し、姿勢無し（バインドポーズへ縮退）として続行する。確定まで光柱が中心に立つため
+      // 中心が空になる瞬間も生じない。
+      let posed: Awaited<ReturnType<typeof loadVrmAnimation>> | null = null;
+      if (config.poseAnimationUrl) {
+        try {
+          posed = await loadVrmAnimation(config.poseAnimationUrl);
+        } catch {
+          // 姿勢の読み込み失敗は致命ではない。既定の固定（バインド）ポーズを保つ。
+          posed = null;
+        }
+        // 第2の待ちの後にも競合の再確認を行う。追い越しなら、読み込んだVRMとVRMアニメーションの両方を解放して終わる。
+        if (disposed || generation !== centerMountGeneration || !centerFigure) {
+          posed?.dispose();
+          loaded.dispose();
+          return false;
+        }
+      }
+      // ここから差し替えと姿勢適用を非同期待ちを挟まず連続実行する（最初の描画の前に姿勢を確定するため）。
       centerFigure.swapToVrm(loaded, config);
       centerFigureError = null;
+      centerFigureMotionMode = "fixed";
+      if (posed) {
+        const vrmAnimation = posed.vrmAnimation;
+        const freezeTimeSec = config.poseFreezeTimeSec ?? 0;
+        try {
+          centerFigure.setMotion((loaded2) => createPosedMotion(loaded2, vrmAnimation, { freezeTimeSec }));
+          centerFigureMotionMode = "posed";
+        } catch {
+          // クリップ生成などの失敗は致命ではない。既定の固定（バインド）ポーズを保つ（縮退）。
+          centerFigureMotionMode = "fixed";
+        }
+      }
+      // VRM本体の表示は成立したため true を返す。VRMアニメーションの読み込みや姿勢適用の失敗は付加的な向上の失敗であり、
+      // 中心の表示自体は成功している。
       return true;
     } catch (error) {
       // 失敗は最新の世代のときだけ記録する。古い失敗が新しい読み込みの状態を上書きしないようにする。
@@ -800,6 +845,14 @@ export function createRenderRoot(
         // 中心オブジェクトの表示状態。作っていない（WebGL 不可）なら fallback を返す。
         centerFigureStatus: centerFigure ? centerFigure.status() : "fallback",
         centerFigureError,
+        // 中心オブジェクトのモーション層の種別（本タスク）。posed=VRMアニメーションの固定ポーズ適用済み、fixed=既定。
+        // 中心オブジェクトが無いとき fixed を返す理由を先に述べる。中心オブジェクトを作っていない（WebGL 不可）、
+        // または後始末済み（dispose で centerFigure を null にした）ときは、適用されたモーション層が存在しないため、
+        // 既定の fixed を報告する。隣接の centerFigureStatus・centerFigurePoseMaxAngleDeg も中心オブジェクトの有無で
+        // 縮退しており、それらと一貫させて、状態が「posed なのに最大回転角が null」のような食い違いを生まないようにする。
+        centerFigureMotionMode: centerFigure ? centerFigureMotionMode : "fixed",
+        // 診断専用。全ての正規化した人体ボーンの回転角のうち最大の角（度。読み込み済みVRMが無ければ null）。
+        centerFigurePoseMaxAngleDeg: centerFigure ? centerFigure.debugMaxNormalizedBoneAngleDeg() : null,
         // 中心オブジェクトを反射に含める意図の値（Issue #92）。実効値 reflectionEnabled とは別概念。
         centerFigureReflected,
         // 2次元層（Issue #15）。作っていない（WebGL 不可）なら null。視錐台と載っている表示物の数を返す。

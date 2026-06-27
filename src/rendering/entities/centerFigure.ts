@@ -14,6 +14,7 @@ import {
   MeshBasicMaterial,
   type Object3D,
 } from "three";
+import type { VRMHumanBoneName } from "@pixiv/three-vrm";
 import type { CharacterModelConfig } from "../../types/character";
 import type { LoadedVrm } from "../loaders/vrmLoader";
 import { createFixedPoseMotion, type VrmMotion, type VrmMotionFactory } from "./vrmMotion";
@@ -54,6 +55,13 @@ export interface CenterFigure {
   setMotion(create: VrmMotionFactory): void;
   /** 読み込み失敗を記録する。光柱の表示は続けつつ、状態を error にする。 */
   markLoadFailed(): void;
+  /** 診断専用。読み込み済みVRMがあれば、全ての正規化した人体ボーンの回転の中で最も大きい回転角（度）を返し、
+   *  無ければ null を返す。固定ポーズがバインドポーズ（全ボーン無回転で最大角0度）から明確に回転したかを外部の
+   *  診断・スモークが直接確かめるために用いる。最大角を採る理由を先に述べる。再生型モーションのクリップは
+   *  VRMアニメーションの姿勢を対象モデルの正規化空間へ再ターゲットするため、特定の1ボーン（例: 腰）の回転は小さく
+   *  なりうるが、姿勢が適用されていれば必ずいずれかのボーンが大きく回転する。最大角はどのボーンが大きく回るかに
+   *  依らず「姿勢が適用された」を頑健に表す。 */
+  debugMaxNormalizedBoneAngleDeg(): number | null;
   /** 後始末。光柱と（あれば）VRMとモーションを解放する。冪等。 */
   dispose(): void;
 }
@@ -182,6 +190,28 @@ export function createCenterFigure(): CenterFigure {
       if (status === "fallback") {
         status = "error";
       }
+    },
+    debugMaxNormalizedBoneAngleDeg(): number | null {
+      // 読み込み済みVRMが無ければ姿勢は無いため null を返す。
+      if (!loadedVrm) {
+        return null;
+      }
+      // 全ての人体ボーンについて、正規化した節の回転（四元数）から回転角を求め、その最大値（度）を返す。
+      // 四元数の w 成分は回転角の半分の余弦に等しいため、回転角は 2×逆余弦(|w|) で求まる（符号反転は同じ回転）。
+      const humanoid = loadedVrm.vrm.humanoid;
+      let maxAngleDeg = 0;
+      for (const name of Object.keys(humanoid.humanBones) as VRMHumanBoneName[]) {
+        const node = humanoid.getNormalizedBoneNode(name);
+        if (!node) {
+          continue;
+        }
+        const w = Math.min(1, Math.abs(node.quaternion.w));
+        const angleDeg = (2 * Math.acos(w) * 180) / Math.PI;
+        if (angleDeg > maxAngleDeg) {
+          maxAngleDeg = angleDeg;
+        }
+      }
+      return maxAngleDeg;
     },
     dispose(): void {
       if (disposed) {

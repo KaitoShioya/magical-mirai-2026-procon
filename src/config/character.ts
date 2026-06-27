@@ -27,13 +27,20 @@ export const PCL_CREDIT: CharacterCredit = {
  * url は public/ 直下を基準とする配信パス（public/models/miku/ に配置した実体を指す）。
  */
 export const MIKU_CHARACTER: CharacterModelConfig = {
-  url: "/models/miku/miku-magical-mirai-2026_V02.vrm",
+  url: "/models/miku/miku-plane-ver3.0.vrm",
   position: { x: 0, y: 0, z: 0 },
-  // 倍率の初期値。目視比較（実寸1.0は遠い暫定カメラで小さく、6.0は他要素を圧倒）に基づき、暫定カメラで
-  // 明瞭に見えて灯しに囲まれた中心の存在感が出る3.0を採る。最終的な寄りはカメラ軌跡（Issue #13・#59）が担う。
-  scale: 3,
+  // 倍率。採用理由を先に述べる。従来の3.0はユーザーの目視確認で暫定カメラにおいてミクが小さく見えたため、
+  // 3.0を1.3倍した3.9を採る。最終的な寄りはカメラ軌跡（Issue #13・#59）が担う。
+  scale: 3.9,
   rotationY: 0,
   displayName: "初音ミク",
   credit: PCL_CREDIT,
-  provenance: "VRoid Studio で人間が自作した初音ミクの二次創作モデル",
+  provenance:
+    "VRoid Studio で人間が自作した初音ミクの二次創作モデル（miku-plane ver3）。" +
+    "姿勢は作者本人が手付けで作成したVRMアニメーション（miku-ver3-posed.vrma）の固定ポーズであり、いずれもAIが生成したものではない。",
+  // 固定ポーズを与える自作VRMアニメーション。固定する時刻は0秒。
+  // 0秒を採る理由は、このVRMアニメーションが全フレーム同一姿勢（人体ボーンの回転と平行移動が全フレームで一致）であり、
+  // 任意の時刻で同じ作成ポーズが得られるため、補間の生じないクリップ先頭を最も単純で決定的な標本点として選ぶことによる。
+  poseAnimationUrl: "/models/miku/miku-ver3-posed.vrma",
+  poseFreezeTimeSec: 0,
 };

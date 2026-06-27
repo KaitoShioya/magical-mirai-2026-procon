@@ -6,8 +6,8 @@
 //
 // 音程スロットの縦方向の規約（帯中央の正規化Y・正規化Yからスロット番号への写像）は、入力と描画（音程ガイド）の
 // 双方が共有するため、その正典を src/utils/pitchSlotAxis.ts に置く。ここでは正典を取り込み、入力の取得経路（この
-// モジュール）を変えずに同名で再エクスポートする。スロット番号0が画面最上部・増えるほど下側、帯は半開区間
-// [i/slotCount, (i+1)/slotCount) という規約の説明は正典側に記す。
+// モジュール）を変えずに同名で再エクスポートする。スロット番号0が帯の最上部・増えるほど下側で、音程スロットは
+// 画面縦幅の一部の帯（中央寄せに圧縮した範囲）を等分する。帯の割合と上端余白、各区画の範囲という規約の説明は正典側に記す。
 import { slotIndexFromNormalizedY, slotCenterNormalizedY } from "../utils/pitchSlotAxis";
 
 export { slotIndexFromNormalizedY, slotCenterNormalizedY };

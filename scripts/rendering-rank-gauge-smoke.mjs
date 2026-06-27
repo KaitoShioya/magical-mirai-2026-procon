@@ -5,7 +5,7 @@
 //   (c) 各帯中心の百分位（12.5・37.5・62.5・87.5）で、満ちバー中心の描画画素が算出アンカー色に一致する
 //       （各チャンネル絶対0.02の許容誤差）。算出色だけでなく描画画素まで見ることで色空間適用の取り違えを検出する。
 //   (d) 同じ百分位でランク添字が rankFromPercentile 由来の期待値（0=C, 1=B, 2=A, 3=S）に一致する。
-//   (e) ゲージの矩形が視錐台内に収まり、縦の下端が判定レーン上端（0.30）より上にある。
+//   (e) ゲージの矩形が視錐台内に収まり、ランク文字中央が引き下げ後の位置（0.6以下）にある（画面右上のクレジットボタンと重ならない高さ）。
 //   (f) ページ例外・コンソールエラーが無い。
 // 採用理由を先に述べる。携帯主軸（CLAUDE.md）のため縦長でも画面外切れ・干渉が無いことを実機相当の縦横比で追認する。
 // 色の判定基準は診断ページが公開する算出 sRGB（材質へ設定する値）と読み戻し画素の両方で、許容誤差0.02は
@@ -31,8 +31,10 @@ const BAND_CENTERS = [
 
 // 色の許容誤差（各チャンネル、0..1）。8ビット量子化と合成誤差を吸収する。
 const COLOR_TOLERANCE = 0.02;
-// 判定レーンの帯上端（fallingLane.ts の帯上端 0.30）。ゲージはこの上に置く。
-const LANE_TOP_Y = 0.3;
+// ランク文字中央の許容上限（2次元層）。採用理由を先に述べる。ランク表示は画面右上のクレジットボタンと重ならないよう
+// 引き下げ、文字中央を 0.54 に置く。最小級の縦640画素端末でのクレジットボタンの下端（約 +0.84）より十分下にあることを
+// 確認できる値として、0.54 に小さな余裕を持たせた 0.6 を上限とする。
+const LETTER_CENTER_MAX = 0.6;
 
 let failed = false;
 function fail(message) {
@@ -137,17 +139,17 @@ async function runViewport(viewport, browser) {
       fail(`[${label}] 百分位${band.percentile}のランク添字が不一致（実 ${sample.rankIndex} 期待 ${band.expectedRankIndex}）`);
     }
 
-    // (e) 矩形が視錐台内、かつ縦の下端が判定レーン上端より上。
+    // (e) 矩形が視錐台内、かつランク文字中央が引き下げ後の位置（0.6以下）にある。
     const left = sample.groupX - sample.width / 2;
     const right = sample.groupX + sample.width / 2;
     const withinHorizontal = left >= -sample.aspect - 1e-6 && right <= sample.aspect + 1e-6;
     const withinVertical = sample.trackBottomY >= -1 - 1e-6 && sample.letterCenterY <= 1 - 1e-6;
-    const aboveLane = sample.trackBottomY > LANE_TOP_Y;
-    if (withinHorizontal && withinVertical && aboveLane) {
-      ok(`[${label}] 百分位${band.percentile}で矩形が視錐台内かつレーン上端より上（下端=${sample.trackBottomY.toFixed(2)}）`);
+    const loweredClear = sample.letterCenterY <= LETTER_CENTER_MAX;
+    if (withinHorizontal && withinVertical && loweredClear) {
+      ok(`[${label}] 百分位${band.percentile}で矩形が視錐台内かつ文字中央が引き下げ後の高さ（文字中心=${sample.letterCenterY.toFixed(2)}）`);
     } else {
       fail(
-        `[${label}] 百分位${band.percentile}で矩形が画面内・レーン上に収まらない（` +
+        `[${label}] 百分位${band.percentile}で矩形が画面内・引き下げ後の高さに収まらない（` +
           `left=${left.toFixed(3)} right=${right.toFixed(3)} aspect=${sample.aspect.toFixed(3)} ` +
           `下端=${sample.trackBottomY} 文字中心=${sample.letterCenterY}）`
       );

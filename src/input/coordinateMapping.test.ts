@@ -66,10 +66,11 @@ describe("slotIndexFromNormalizedY", () => {
     expect(slotIndexFromNormalizedY(0, slotCount)).toBe(0);
     expect(slotIndexFromNormalizedY(1, slotCount)).toBe(6);
   });
-  it("帯境界の座標は番号が大きい方の帯（画面で下側）へ属する", () => {
-    // 1/7 は floor(1) で帯1。前版の「上側の帯」は誤りで、下側の帯1が正しい。
-    expect(slotIndexFromNormalizedY(1 / 7, slotCount)).toBe(1);
-    expect(slotIndexFromNormalizedY(2 / 7, slotCount)).toBe(2);
+  it("帯の内側の境界は番号が大きい方の区画（画面で下側）へ属する", () => {
+    // 圧縮帯（上端余白0.125・帯割合0.75）を等分した内側の境界。境界は下側の区画に属する。
+    const boundary = (i: number) => 0.125 + (i / slotCount) * 0.75;
+    expect(slotIndexFromNormalizedY(boundary(1), slotCount)).toBe(1);
+    expect(slotIndexFromNormalizedY(boundary(2), slotCount)).toBe(2);
   });
   it("帯の内部は番号が単調に増える", () => {
     expect(slotIndexFromNormalizedY(0.05, slotCount)).toBe(0);
@@ -95,9 +96,9 @@ describe("slotCenterNormalizedY と slotIndexFromNormalizedY の往復", () => {
       expect(slotIndexFromNormalizedY(center, slotCount)).toBe(i);
     }
   });
-  it("帯0の中央は0.5/7、帯6の中央は6.5/7", () => {
-    expect(slotCenterNormalizedY(0, slotCount)).toBeCloseTo(0.5 / 7, 10);
-    expect(slotCenterNormalizedY(6, slotCount)).toBeCloseTo(6.5 / 7, 10);
+  it("帯0の中央と帯6の中央は圧縮帯（上端余白0.125・帯割合0.75）の式に従う", () => {
+    expect(slotCenterNormalizedY(0, slotCount)).toBeCloseTo(0.125 + (0.5 / 7) * 0.75, 10);
+    expect(slotCenterNormalizedY(6, slotCount)).toBeCloseTo(0.125 + (6.5 / 7) * 0.75, 10);
   });
 });
 

@@ -161,3 +161,58 @@ export function lanePoolCapacity(
   const windowMs = window.leadMs + window.postTargetMs;
   return maxConcurrentInWindow(sortedNotes, windowMs) + margin;
 }
+
+/**
+ * timeMs 昇順のノーツ列から、前フレームのゲーム時刻以上・現フレームのゲーム時刻未満に目標線へ到達した
+ * ノーツの添字区間を求める（半開区間 [prevGameTimeMs, currentGameTimeMs)）。
+ * 消滅エフェクトの発火（線分到達の瞬間の検出）に用いる。下端は「value 以上」、上端も「value 以上」で区切る。
+ * 採用理由を先に述べる。ノーツが線分へ到達する時刻は noteTimeMs（進度0の瞬間）であり、毎フレーム、前回処理した
+ * 時刻から現在時刻までに跨いだ noteTimeMs を1回だけ拾うため、両端とも「value 以上の最初の添字」で挟む。
+ * 時刻が有限でない、または現在時刻が前回以下（再生位置の停止・巻き戻し）のときは空区間を返す。
+ */
+export function reachedNoteRange(
+  sortedNotes: readonly LaneNote[],
+  prevGameTimeMs: number,
+  currentGameTimeMs: number
+): NoteIndexRange {
+  if (!Number.isFinite(prevGameTimeMs) || !Number.isFinite(currentGameTimeMs)) {
+    return { start: 0, end: 0 };
+  }
+  if (currentGameTimeMs <= prevGameTimeMs) {
+    return { start: 0, end: 0 };
+  }
+  const start = lowerBoundByTime(sortedNotes, prevGameTimeMs);
+  const end = lowerBoundByTime(sortedNotes, currentGameTimeMs);
+  return { start, end };
+}
+
+/** 消滅エフェクトの円周上の方向の総回転（ラジアン）。1周。 */
+const FULL_TURN_RADIANS = Math.PI * 2;
+
+/** 黄金角（ラジアン）。整数の種から、偏りの少ない角度を一意に散らすために用いる。 */
+const GOLDEN_ANGLE_RADIANS = Math.PI * (3 - Math.sqrt(5));
+
+/**
+ * ノーツごとの消滅エフェクトの基準角度（位相、ラジアン、0以上 2π 未満）を整数の種から決定的に返す。
+ * 採用理由を先に述べる。乱数を使わずノーツごとに角度をずらして、しぶきの向きが毎回同じに揃わないようにしつつ、
+ * 診断と検査を再現可能にするため、整数の種に黄金角を掛けて 2π で折り返す。
+ */
+export function notePhaseRadians(seed: number): number {
+  if (!Number.isFinite(seed)) {
+    return 0;
+  }
+  const value = (seed * GOLDEN_ANGLE_RADIANS) % FULL_TURN_RADIANS;
+  return value < 0 ? value + FULL_TURN_RADIANS : value;
+}
+
+/**
+ * しぶきの粒の飛ぶ方向（ラジアン）を返す。等間隔角度（1周を粒数で割った角度）に基準角度（位相）を足す。
+ * これにより各ノーツの粒は外向きに等間隔へ散り、ノーツごとに全体の向きがずれる。
+ */
+export function sparkDirectionRadians(
+  sparkIndex: number,
+  sparkCount: number,
+  phaseRadians: number
+): number {
+  return phaseRadians + (sparkIndex / sparkCount) * FULL_TURN_RADIANS;
+}

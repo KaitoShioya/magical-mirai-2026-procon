@@ -23,9 +23,11 @@ function approxEqual(a, b) {
   return Math.abs(a - b) < 1e-9;
 }
 
-// 入力面の矩形は全画面（横844×縦390）。スロット s の中央の縦位置はその帯の中央 (s+0.5)/SLOT_COUNT に対応する。
+// 音程スロットの帯は画面縦幅の4分の3に圧縮して中央へ寄せる（上端余白0.125・帯割合0.75。正典は src/utils/pitchSlotAxis.ts）。
+// スロット s の中央の縦位置は、圧縮帯の中で (s+0.5)/SLOT_COUNT に対応する正規化Y 0.125 + (s+0.5)/SLOT_COUNT × 0.75 を、
+// 入力面の画素高さへ掛けた値とする。これに合わせないとタップが帯の外へ落ち、中央タップが中央スロットへ対応する検証が成立しない。
 function clientYForSlotCenter(slot, height) {
-  return ((slot + 0.5) / SLOT_COUNT) * height;
+  return (0.125 + ((slot + 0.5) / SLOT_COUNT) * 0.75) * height;
 }
 
 async function dispatchPointerDown(page, pointerId, pointerType, clientX, clientY) {

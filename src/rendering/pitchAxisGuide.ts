@@ -1,9 +1,11 @@
-// 本編左端のY軸音程ガイド（Issue #58）。2次元層へ載せる純粋な表示物で、音程スロットの境界マークと
-// 番号1〜slotCount を画面左端の余白に薄く表示する。状態を読んで描くビューであり、判定・得点・時刻の論理を持たない
-// （依存規則 docs/decisions/architecture.md §5）。番号と境界の縦位置は src/utils/pitchSlotAxis.ts の正典に従い、
-// 入力（src/input/coordinateMapping.ts）のスロット規約と一致する。
+// 本編左端のY軸音程ガイド（Issue #58・Issue #199）。2次元層へ載せる純粋な表示物で、音程スロットの番号1〜slotCount を
+// 画面縦中央の圧縮帯（縦4分の3）に薄く表示し、各番号の縦中央の右側に短い線分を1本ずつ引く。
+// 線分の左端は番号の右端、右端は通路の右端（落下ノーツが流れる通路の右端＝画面横4分の1）に合わせる。
+// 状態を読んで描くビューであり、判定・得点・時刻の論理を持たない（依存規則 docs/decisions/architecture.md §5）。
+// 番号と線分の縦位置は src/utils/pitchSlotAxis.ts の正典に従い、入力（src/input/coordinateMapping.ts）のスロット規約と一致する。
+// 横方向の配置（番号の枠の寸法・番号の右端・通路の右端）は src/utils/pitchHudLayout.ts が単一に所有し、落下ノーツと共有する。
 //
-// 表示の薄さ・余白・マーク長・文字高割合・番号画像の画素数の下限と上限は、本モジュールの単一所有の定数とする。
+// 番号画像の画素数の下限と上限・文字高割合・薄さ・色は、本モジュールの単一所有の定数とする。
 // 番号画像の画素数を表示の実画素から決める根拠と、下限・上限を設ける根拠は各定数のコメントに先に記す。
 
 import {
@@ -21,28 +23,12 @@ import {
 } from "three";
 import { overlayPointFromNormalized, type OverlayFrustum } from "./viewport";
 import { OVERLAY_RENDER_ORDER } from "./overlay";
+import { slotCenterNormalizedY, slotDisplayNumber } from "../utils/pitchSlotAxis";
 import {
-  slotBoundaryNormalizedY,
-  slotCenterNormalizedY,
-  slotDisplayNumber,
-} from "../utils/pitchSlotAxis";
-
-/** 2次元層は高さを基準軸に上下が +1〜-1 で正規化されるため、画面の全高は 2 の長さに当たる。 */
-const OVERLAY_FULL_HEIGHT = 2;
-
-/** 左端の余白（2次元層の高さ基準の長さ）。視錐台左端から内側へこの量だけ寄せる。
- * 端末の表示端の切れ落ちで番号や境界が見えなくなるのを避けるため、左端ぴったりではなく内側へ置く。 */
-const LEFT_MARGIN = 0.06;
-
-/** 境界線の起点から番号の左端までの距離（高さ基準の長さ）。境界線が番号の手前に短い助走を持つようにする。 */
-const NUMBER_LEFT_INSET = 0.05;
-
-/** 1つの帯の高さに対する番号文字の高さの割合。文字は帯の高さ全体ではなく一部を占めるため、割合で持つ。 */
-const LABEL_HEIGHT_FRACTION = 0.5;
-
-/** 番号の枠の横幅÷縦幅。1個の数字の字形は縦長で、枠をこの比に絞ると数字が枠の幅をほぼ満たし、
- * 枠の右端（=境界線の右端）が数字の右端に近づく。境界線を番号の右端と揃えるための比である。 */
-const DIGIT_BOX_ASPECT = 0.62;
+  numberBoxHeight,
+  numberBoxWidth,
+  pitchHudHorizontalLayout,
+} from "../utils/pitchHudLayout";
 
 /** 番号画像の縦画素数の下限。これより小さいと数字の線がつぶれて読めなくなるため、読める最小画素数で下支えする。 */
 const LABEL_MIN_TEXEL = 24;
@@ -56,16 +42,19 @@ const DIGIT_FONT_FRACTION = 0.8;
 /** ガイドの不透明度。低いほど3D世界・歌詞を阻害しないが低すぎると視認できないため、薄く読める折衷値とする。 */
 const GUIDE_OPACITY = 0.22;
 
-/** 境界マークと番号文字の色（白）。深夜の暗い背景の上で薄く読めるようにする。 */
+/** 線分と番号文字の色（白）。深夜の暗い背景の上で薄く読めるようにする。 */
 const GUIDE_COLOR = 0xffffff;
 const DIGIT_FILL_STYLE = "#ffffff";
+
+/** 番号の枠の横幅÷縦幅。番号画像の横画素数を縦画素数から決める際に用いる（横方向の正典 pitchHudLayout と同じ比）。 */
+const DIGIT_BOX_ASPECT = 0.62;
 
 /** Y軸音程ガイドの外部契約。 */
 export interface PitchAxisGuide {
   /** 2次元層へ載せるまとめ物体。 */
   readonly object3d: Object3D;
   /**
-   * 視錐台と現在の表示縦画素数から、境界マークと番号の位置を再計算する。
+   * 視錐台と現在の表示縦画素数から、線分と番号の位置を再計算する。
    * 番号画像の目標縦画素数が前回と異なるときだけ画像を作り直す（寸法・画素密度の変更時のみ）。
    */
   layout(frustum: OverlayFrustum, devicePixelHeight: number): void;
@@ -115,7 +104,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Y軸音程ガイドを生成する。slotCount 個の帯の境界マーク（slotCount+1 本）と番号（slotCount 枚）を組み立てる。
+ * Y軸音程ガイドを生成する。番号（slotCount 枚）と、各番号の縦中央の右側の線分（slotCount 本）を組み立てる。
  * 位置と番号画像は layout で確定する（生成時点では視錐台と表示画素が未確定のため）。
  */
 export function createPitchAxisGuide(options: {
@@ -126,25 +115,24 @@ export function createPitchAxisGuide(options: {
   const makeLabelTexture = options.createLabelTexture ?? createCanvasLabelTexture;
   const group = new Group();
 
-  // 境界マークは1つの線分集合にまとめる。境界は slotCount+1 本（最上部から最下部まで）。
-  const boundaryCount = slotCount + 1;
-  const boundaryPositions = new Float32Array(boundaryCount * 2 * 3);
-  const boundaryGeometry = new BufferGeometry();
-  boundaryGeometry.setAttribute("position", new Float32BufferAttribute(boundaryPositions, 3));
-  const boundaryMaterial = new LineBasicMaterial({
+  // 線分は1つの線分集合にまとめる。線分は slotCount 本（各番号の縦中央の右側に1本ずつ）。
+  const segmentPositions = new Float32Array(slotCount * 2 * 3);
+  const segmentGeometry = new BufferGeometry();
+  segmentGeometry.setAttribute("position", new Float32BufferAttribute(segmentPositions, 3));
+  const segmentMaterial = new LineBasicMaterial({
     color: GUIDE_COLOR,
     transparent: true,
     opacity: GUIDE_OPACITY,
     depthTest: false,
     depthWrite: false,
   });
-  const boundaryLines = new LineSegments(boundaryGeometry, boundaryMaterial);
-  boundaryLines.renderOrder = OVERLAY_RENDER_ORDER.backgroundReference;
-  group.add(boundaryLines);
+  const segmentLines = new LineSegments(segmentGeometry, segmentMaterial);
+  segmentLines.renderOrder = OVERLAY_RENDER_ORDER.backgroundReference;
+  group.add(segmentLines);
 
-  // 番号の四角形。高さは帯の高さ × 文字高割合、横幅は数字の字形比に合わせる。いずれも視錐台に依らず一定。
-  const labelPlaneHeight = (OVERLAY_FULL_HEIGHT / slotCount) * LABEL_HEIGHT_FRACTION;
-  const labelPlaneWidth = labelPlaneHeight * DIGIT_BOX_ASPECT;
+  // 番号の四角形。高さ・幅は横方向の正典 pitchHudLayout が圧縮帯（縦4分の3）を反映して返す。いずれも視錐台に依らず一定。
+  const labelPlaneHeight = numberBoxHeight(slotCount);
+  const labelPlaneWidth = numberBoxWidth(slotCount);
   const labels: LabelEntry[] = [];
   for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
     const geometry = new PlaneGeometry(labelPlaneWidth, labelPlaneHeight);
@@ -166,32 +154,26 @@ export function createPitchAxisGuide(options: {
   function layout(frustum: OverlayFrustum, devicePixelHeight: number): void {
     // 縦横比は視錐台の左右幅の半分（右端 = 縦横比、左端 = -縦横比）。
     const aspect = (frustum.right - frustum.left) / 2;
-    const leftAnchorX = frustum.left + LEFT_MARGIN;
-    // 番号の中心と右端。境界線は左端アンカーからこの右端まで伸ばし、番号の右端と揃える。
-    const labelCenterX = leftAnchorX + NUMBER_LEFT_INSET + labelPlaneWidth / 2;
-    const numberRightEdgeX = labelCenterX + labelPlaneWidth / 2;
+    const horizontal = pitchHudHorizontalLayout(aspect, slotCount);
 
-    // 境界線の位置を更新する。各境界線は左端アンカーから番号の右端まで水平に伸びる。縦位置は正規化Yを写した値。
-    const positionAttribute = boundaryGeometry.getAttribute("position") as BufferAttribute;
-    for (let boundaryIndex = 0; boundaryIndex <= slotCount; boundaryIndex += 1) {
-      const y = overlayPointFromNormalized(
-        0,
-        slotBoundaryNormalizedY(boundaryIndex, slotCount),
-        aspect
-      ).y;
-      const base = boundaryIndex * 2 * 3;
-      positionAttribute.array[base] = leftAnchorX;
+    // 線分の位置を更新する。各線分は番号の右端から通路の右端まで水平に伸びる。縦位置はスロット中央の正規化Yを写した値。
+    const positionAttribute = segmentGeometry.getAttribute("position") as BufferAttribute;
+    for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
+      const y = overlayPointFromNormalized(0, slotCenterNormalizedY(slotIndex, slotCount), aspect).y;
+      const base = slotIndex * 2 * 3;
+      positionAttribute.array[base] = horizontal.numberRightEdgeX;
       positionAttribute.array[base + 1] = y;
       positionAttribute.array[base + 2] = 0;
-      positionAttribute.array[base + 3] = numberRightEdgeX;
+      positionAttribute.array[base + 3] = horizontal.channelRightX;
       positionAttribute.array[base + 4] = y;
       positionAttribute.array[base + 5] = 0;
     }
     positionAttribute.needsUpdate = true;
 
-    // 番号画像の目標縦画素数。表示縦画素数（画素密度倍率を含む）に帯の高さ割合と文字高割合を掛け、下限上限で挟む。
+    // 番号画像の目標縦画素数。番号の枠の高さ（2次元層の長さ）を画面縦の割合（枠の高さ÷画面全高2）に直し、
+    // 表示縦画素数（画素密度倍率を含む）へ掛け、下限上限で挟む。圧縮帯の割合は枠の高さに既に反映されている。
     const targetTexelSize = clamp(
-      Math.round(devicePixelHeight * (1 / slotCount) * LABEL_HEIGHT_FRACTION),
+      Math.round(devicePixelHeight * (labelPlaneHeight / 2)),
       LABEL_MIN_TEXEL,
       LABEL_MAX_TEXEL
     );
@@ -207,7 +189,7 @@ export function createPitchAxisGuide(options: {
         slotCenterNormalizedY(slotIndex, slotCount),
         aspect
       ).y;
-      entry.mesh.position.set(labelCenterX, centerY, 0);
+      entry.mesh.position.set(horizontal.numberCenterX, centerY, 0);
       if (regenerate) {
         if (entry.texture !== null) {
           entry.texture.dispose();
@@ -221,8 +203,8 @@ export function createPitchAxisGuide(options: {
   }
 
   function dispose(): void {
-    boundaryGeometry.dispose();
-    boundaryMaterial.dispose();
+    segmentGeometry.dispose();
+    segmentMaterial.dispose();
     for (const entry of labels) {
       entry.mesh.geometry.dispose();
       if (entry.texture !== null) {

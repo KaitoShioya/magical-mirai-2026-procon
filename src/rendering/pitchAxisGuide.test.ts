@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { LineSegments, Mesh, PlaneGeometry, Texture, type BufferAttribute } from "three";
+import { LineSegments, Mesh, Texture, type BufferAttribute } from "three";
 import { createPitchAxisGuide } from "./pitchAxisGuide";
 import { OVERLAY_RENDER_ORDER } from "./overlay";
 import { overlayPointFromNormalized, type OverlayFrustum } from "./viewport";
-import { slotBoundaryNormalizedY, slotCenterNormalizedY } from "../utils/pitchSlotAxis";
+import { slotCenterNormalizedY } from "../utils/pitchSlotAxis";
+import { pitchHudHorizontalLayout } from "../utils/pitchHudLayout";
 
 /** 縦横比から2次元層の視錐台を作る（rendering/overlay.ts と同じ規約）。 */
 function makeFrustum(aspect: number): OverlayFrustum {
@@ -31,27 +32,27 @@ function labelMeshes(object3d: { children: unknown[] }): Mesh[] {
   return (object3d.children as Mesh[]).filter((c): c is Mesh => c instanceof Mesh);
 }
 
-function boundaryLines(object3d: { children: unknown[] }): LineSegments {
+function segmentLines(object3d: { children: unknown[] }): LineSegments {
   const found = (object3d.children as LineSegments[]).find(
     (c): c is LineSegments => c instanceof LineSegments
   );
   if (found === undefined) {
-    throw new Error("境界マークの線分集合が見つからない");
+    throw new Error("線分集合が見つからない");
   }
   return found;
 }
 
 describe("createPitchAxisGuide の組み立て", () => {
-  it("境界マーク1本（線分集合）と番号 slotCount 枚を持つ", () => {
+  it("線分集合1本（slotCount 本の線分）と番号 slotCount 枚を持つ", () => {
     const slotCount = 7;
     const { factory } = makeStubFactory();
     const guide = createPitchAxisGuide({ slotCount, createLabelTexture: factory });
-    const lines = boundaryLines(guide.object3d);
+    const lines = segmentLines(guide.object3d);
     const labels = labelMeshes(guide.object3d);
     expect(labels).toHaveLength(slotCount);
-    // 境界は slotCount+1 本。線分1本につき頂点2個。
+    // 線分は slotCount 本（各番号の縦中央の右側に1本ずつ）。線分1本につき頂点2個。
     const position = lines.geometry.getAttribute("position") as BufferAttribute;
-    expect(position.count).toBe((slotCount + 1) * 2);
+    expect(position.count).toBe(slotCount * 2);
     guide.dispose();
   });
 
@@ -60,10 +61,10 @@ describe("createPitchAxisGuide の組み立て", () => {
       const { factory } = makeStubFactory();
       const guide = createPitchAxisGuide({ slotCount, createLabelTexture: factory });
       expect(labelMeshes(guide.object3d)).toHaveLength(slotCount);
-      const position = boundaryLines(guide.object3d).geometry.getAttribute(
+      const position = segmentLines(guide.object3d).geometry.getAttribute(
         "position"
       ) as BufferAttribute;
-      expect(position.count).toBe((slotCount + 1) * 2);
+      expect(position.count).toBe(slotCount * 2);
       guide.dispose();
     }
   });
@@ -87,16 +88,16 @@ describe("layout の座標が入力規約の正典と一致する", () => {
     guide.dispose();
   });
 
-  it("境界マークの縦位置が境界の正規化Yの写像と一致する", () => {
+  it("各線分の縦位置がスロット中央の正規化Yの写像と一致する（2頂点とも同じ縦位置）", () => {
     const { factory } = makeStubFactory();
     const guide = createPitchAxisGuide({ slotCount, createLabelTexture: factory });
     guide.layout(frustum, devicePixelHeight);
-    const position = boundaryLines(guide.object3d).geometry.getAttribute(
+    const position = segmentLines(guide.object3d).geometry.getAttribute(
       "position"
     ) as BufferAttribute;
-    for (let i = 0; i <= slotCount; i += 1) {
-      const expectedY = overlayPointFromNormalized(0, slotBoundaryNormalizedY(i, slotCount), aspect).y;
-      // 1本の境界の2頂点はともに同じ縦位置。頂点は32ビット浮動小数点で格納されるため許容桁を5桁とする。
+    for (let i = 0; i < slotCount; i += 1) {
+      const expectedY = overlayPointFromNormalized(0, slotCenterNormalizedY(i, slotCount), aspect).y;
+      // 頂点は32ビット浮動小数点で格納されるため許容桁を5桁とする。
       expect(position.getY(i * 2)).toBeCloseTo(expectedY, 5);
       expect(position.getY(i * 2 + 1)).toBeCloseTo(expectedY, 5);
     }
@@ -124,23 +125,45 @@ describe("上下の向き（番号1が最上部・番号7が最下部）", () =>
   });
 });
 
-describe("左端アンカーと描画順序", () => {
+describe("線分の横位置と描画順序", () => {
   const slotCount = 7;
   const aspect = 16 / 9;
   const frustum = makeFrustum(aspect);
 
-  it("境界マークは左端より内側かつ画面左半分にあり、番号はマークより右にある", () => {
+  it("線分は番号の右端から始まり通路の右端で終わり、番号は線分の起点より左にある", () => {
     const { factory } = makeStubFactory();
     const guide = createPitchAxisGuide({ slotCount, createLabelTexture: factory });
     guide.layout(frustum, 1800);
-    const position = boundaryLines(guide.object3d).geometry.getAttribute(
+    const horizontal = pitchHudHorizontalLayout(aspect, slotCount);
+    const position = segmentLines(guide.object3d).geometry.getAttribute(
       "position"
     ) as BufferAttribute;
-    const markStartX = position.getX(0);
-    expect(markStartX).toBeGreaterThan(frustum.left);
-    expect(markStartX).toBeLessThan(0);
+    const startX = position.getX(0);
+    const endX = position.getX(1);
+    // 線分は番号の右端から始まり、通路の右端で終わる。
+    expect(startX).toBeCloseTo(horizontal.numberRightEdgeX, 5);
+    expect(endX).toBeCloseTo(horizontal.channelRightX, 5);
+    // 線分は左から右へ伸びる。
+    expect(startX).toBeLessThan(endX);
+    // 番号の中心は線分の起点（番号の右端）より左。
     const labelX = labelMeshes(guide.object3d)[0].position.x;
-    expect(labelX).toBeGreaterThan(markStartX);
+    expect(labelX).toBeLessThan(startX);
+    guide.dispose();
+  });
+
+  it("全ての線分が同じ起点から始まり、同じ右端で終わる", () => {
+    const { factory } = makeStubFactory();
+    const guide = createPitchAxisGuide({ slotCount, createLabelTexture: factory });
+    guide.layout(frustum, 1800);
+    const position = segmentLines(guide.object3d).geometry.getAttribute(
+      "position"
+    ) as BufferAttribute;
+    const startX = position.getX(0);
+    const endX = position.getX(1);
+    for (let i = 0; i < slotCount; i += 1) {
+      expect(position.getX(i * 2)).toBeCloseTo(startX, 5);
+      expect(position.getX(i * 2 + 1)).toBeCloseTo(endX, 5);
+    }
     guide.dispose();
   });
 
@@ -150,37 +173,6 @@ describe("左端アンカーと描画順序", () => {
     for (const child of guide.object3d.children) {
       expect(child.renderOrder).toBe(OVERLAY_RENDER_ORDER.backgroundReference);
     }
-    guide.dispose();
-  });
-});
-
-describe("境界線が番号の右端まで伸びる", () => {
-  const slotCount = 7;
-  const frustum = makeFrustum(16 / 9);
-
-  it("各境界線は同じ左端から始まり、番号の右端で揃って終わる", () => {
-    const { factory } = makeStubFactory();
-    const guide = createPitchAxisGuide({ slotCount, createLabelTexture: factory });
-    guide.layout(frustum, 1800);
-    const labels = labelMeshes(guide.object3d);
-    // 全ての番号は同じ中心Xに置かれ、同じ枠幅を持つため右端が揃う。
-    const planeWidth = (labels[0].geometry as PlaneGeometry).parameters.width;
-    for (const label of labels) {
-      expect(label.position.x).toBeCloseTo(labels[0].position.x, 10);
-    }
-    const expectedRightEdge = labels[0].position.x + planeWidth / 2;
-    const position = boundaryLines(guide.object3d).geometry.getAttribute(
-      "position"
-    ) as BufferAttribute;
-    const startX = position.getX(0);
-    for (let i = 0; i <= slotCount; i += 1) {
-      // 全境界線が同じ位置から始まる。
-      expect(position.getX(i * 2)).toBeCloseTo(startX, 5);
-      // 全境界線が番号の右端で終わる。
-      expect(position.getX(i * 2 + 1)).toBeCloseTo(expectedRightEdge, 5);
-    }
-    // 線は左から右へ伸びる（起点が番号の右端より左）。
-    expect(startX).toBeLessThan(expectedRightEdge);
     guide.dispose();
   });
 });
@@ -239,7 +231,7 @@ describe("dispose の資源解放", () => {
     const { factory, created } = makeStubFactory();
     const guide = createPitchAxisGuide({ slotCount, createLabelTexture: factory });
     guide.layout(makeFrustum(16 / 9), 1800);
-    const lines = boundaryLines(guide.object3d);
+    const lines = segmentLines(guide.object3d);
     const labels = labelMeshes(guide.object3d);
     const lineGeometryDispose = vi.spyOn(lines.geometry, "dispose");
     const lineMaterialDispose = vi.spyOn(lines.material as { dispose: () => void }, "dispose");

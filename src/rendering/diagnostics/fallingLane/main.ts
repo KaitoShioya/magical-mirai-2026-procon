@@ -69,22 +69,25 @@ function frame(nowMs: number): void {
   renderRoot.render();
 
   hud.textContent =
-    `gameTime=${Math.round(gameTimeMs)}ms 可視=${lane.probe(gameTimeMs).length}\n` +
-    `targetY=${lane.targetY.toFixed(3)} topY=${lane.topY.toFixed(3)} groupX=${lane.currentGroupX().toFixed(3)}`;
+    `gameTime=${Math.round(gameTimeMs)}ms 可視=${lane.probe(gameTimeMs).length} 消滅エフェクト=${lane.burstActiveCount()}\n` +
+    `topY=${lane.topY.toFixed(3)} 通路左=${lane.channelLeftX().toFixed(3)} 通路右=${lane.channelRightX().toFixed(3)}`;
 
   rafHandle = requestAnimationFrame(frame);
 }
 rafHandle = requestAnimationFrame(frame);
 
 window.__fallingLaneProbe = (gameTimeMs: number) => {
-  // 落下位置は副作用の無い純粋な問い合わせで計算する。横位置・縦横比・表示物数は描画状態を変えずに読む。
+  // 落下位置は副作用の無い純粋な問い合わせで計算する。通路の両端・縦横比・表示物数・消滅エフェクトは描画状態を変えずに読む。
   return {
     notes: lane.probe(gameTimeMs),
     topY: lane.topY,
-    targetY: lane.targetY,
-    groupX: lane.currentGroupX(),
+    channelLeftX: lane.channelLeftX(),
+    channelRightX: lane.channelRightX(),
     aspect: currentAspect(),
     overlayObjectCount: renderRoot.state().overlay?.objectCount ?? 0,
+    burstActiveCount: lane.burstActiveCount(),
+    burstSuppressedCount: lane.burstSuppressedCount(),
+    burstSample: lane.burstSample(),
   };
 };
 

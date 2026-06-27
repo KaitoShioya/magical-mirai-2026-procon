@@ -1,45 +1,37 @@
-// 判定UI（落下式レーン Issue #57）の表示物。画面右下に直線の落下式レーン（レーン帯・目標線・上から落ちる
-// ノーツ点・各点の音程番号1〜9）を2次元層へ載せる。落下速度は実時刻に一致し、ノーツが目標線に重なる瞬間が
-// ノーツの実時刻に一致する。状態を読んで描くビューであり、判定・得点・時刻の論理を持たない
-// （依存規則 docs/decisions/architecture.md §5）。profiles は import しない（曲プロファイルの値は LaneNote として
-// 統括から渡される）。設計の出典は docs/idea/concept-final.md §4。
+// 判定UI 落下式レーン（Issue #57・Issue #199）の表示物。画面左の音程番号の右の通路に、番号1のノーツを最も左・
+// 番号 slotCount のノーツを最も右とする列で、発光する水滴のノーツを画面上端から落とす。各ノーツは自分の音程番号の
+// 線分の高さ（スロット中央）に中心が到達した直後に消える。出現から消滅までの時間は全段一定で、速度は段ごとに変わる。
+// ノーツが線分へ到達した瞬間に消滅エフェクト（波紋の輪としぶきの粒）を発火する。
+// 状態を読んで描くビューであり、判定・得点・時刻の論理を持たない（依存規則 docs/decisions/architecture.md §5）。
+// profiles は import しない（曲プロファイルの値は LaneNote として統括から渡される）。設計の出典は docs/idea/concept-final.md §4。
 
-import {
-  CircleGeometry,
-  Group,
-  Mesh,
-  MeshBasicMaterial,
-  type Object3D,
-  PlaneGeometry,
-  type Texture,
-} from "three";
+import { Group, type Object3D, PlaneGeometry } from "three";
 import type { LaneNote } from "../types/judgmentLane";
+import { PITCH_SLOT_COUNT_DEFAULT } from "../config/tuning";
 import {
-  createDigitAtlas,
-  DIGIT_ATLAS_CELL_COUNT,
-  type DigitAtlas,
-} from "./digitAtlas";
-import {
-  digitCellIndex,
   laneNoteY,
   laneProgress,
   lanePoolCapacity,
+  maxConcurrentInWindow,
+  notePhaseRadians,
+  reachedNoteRange,
   sortLaneNotesByTime,
   visibleNoteRange,
-  type LaneGeometryY,
   type LaneTimingWindow,
 } from "./fallingLaneLayout";
-
-// --- 時間の定数（採用理由は各所に先述、★暫定は実機調整で確定） ---
+import { overlayPointFromNormalized } from "./viewport";
+import { slotCenterNormalizedY } from "../utils/pitchSlotAxis";
+import { columnCenterX, pitchHudHorizontalLayout } from "../utils/pitchHudLayout";
+import { createNoteSprite, createNoteSpriteGeometry, type NoteSprite } from "./noteSprite";
+import { createNoteBurst, NOTE_BURST_LIFETIME_MS, type NoteBurst, type NoteBurstSample } from "./noteBurst";
 
 /** 出現から目標線到達までの時間（ミリ秒、★暫定）。採用理由を先に述べる。数字を読んで狙う時間として数百
- *  ミリ秒では短く、毎分175拍の約5〜6拍ぶん（約1715〜2057ミリ秒）あれば落下中に番号を読み高さを定められる。
- *  長すぎると画面に多数のノーツが同時に並び密集するため、約2000ミリ秒（約5.8拍）を初期値とする。 */
+ *  ミリ秒では短く、毎分175拍の約5〜6拍ぶん（約1715〜2057ミリ秒）あれば落下中に高さを定められる。
+ *  長すぎると画面に多数のノーツが同時に並び密集するため、約2000ミリ秒を全段共通の出現〜消滅の時間とする。 */
 export const LANE_LEAD_MS = 2000;
 
-/** 目標線を越えた後も表示し続ける時間（ミリ秒）。採用理由を先に述べる。ノーツ点の円板が消える時点は、円板の
- *  中心が目標線に一致した時点とする。すなわち円板の中心が目標線を越えて下へ進む表示は行わない。よって目標線
- *  通過後の表示時間は0とする。これにより、円板は上端から目標線まで落ち、中心が目標線に一致した瞬間に消える。 */
+/** 目標線を越えた後も表示し続ける時間（ミリ秒）。ノーツの水滴は中心が自分の線分に一致した時点で消える。
+ *  すなわち中心が線分を越えて下へ進む表示は行わないため、目標線通過後の表示時間は0とする。 */
 export const POST_TARGET_VISIBLE_MS = 0;
 
 const TIMING_WINDOW: LaneTimingWindow = {
@@ -47,261 +39,226 @@ const TIMING_WINDOW: LaneTimingWindow = {
   postTargetMs: POST_TARGET_VISIBLE_MS,
 };
 
-// --- 2次元層上の寸法の定数（高さ基準2.0が画面全体の高さに相当する単位、★暫定） ---
-// 採用理由を先に述べる。画面の隅で操作の妨げにならず、かつ番号が読める大きさとして、画面高さの約6割の
-// 縦長・細い帯を右下隅へ小さな余白で寄せる。
-
-const LANE_HEIGHT = 1.2;
-const LANE_WIDTH = 0.18;
-const LANE_RIGHT_MARGIN = 0.08;
-const LANE_BOTTOM_MARGIN = 0.1;
-/** 目標線をレーン帯の下端からどれだけ上に置くか。採用理由を先に述べる。目標線を下端側に置きノーツを上端から
- *  落とすことで「上から落ちて目標線に重なる」動きを成立させる。目標線を最下端ちょうどでなく少し上へ置くのは、
- *  目標線が帯の縁に埋もれず明確に見えるようにするためである。 */
-const LANE_TARGET_OFFSET = 0.1;
-
-const BAND_BOTTOM_Y = -1 + LANE_BOTTOM_MARGIN; // -0.90
-const BAND_TOP_Y = BAND_BOTTOM_Y + LANE_HEIGHT; // 0.30
-const BAND_CENTER_Y = (BAND_TOP_Y + BAND_BOTTOM_Y) / 2;
-/** ノーツが出現するレーン上端の縦位置。 */
-const NOTE_TOP_Y = BAND_TOP_Y;
-/** 目標線の縦位置。 */
-const NOTE_TARGET_Y = BAND_BOTTOM_Y + LANE_TARGET_OFFSET; // -0.80
-
-const LANE_GEOMETRY_Y: LaneGeometryY = { topY: NOTE_TOP_Y, targetY: NOTE_TARGET_Y };
-
-/** 目標線の太さ（2次元層の単位、★暫定）。 */
-const TARGET_LINE_THICKNESS = 0.012;
-/** ノーツ点の円板の半径（2次元層の単位、★暫定）。レーン幅に収まる小さな点。 */
-const DISC_RADIUS = LANE_WIDTH * 0.18;
-/** 円板の分割数。小さな円を滑らかに見せる最小限。 */
-const DISC_SEGMENTS = 16;
-
-/** 数字の画面上の高さの下限（デバイス画素、★暫定）。採用理由を先に述べる。文字可読性ゲート
- *  （src/typography/kineticText/readability.ts の既定 minPixelHeight が18）が読める最小高さをデバイス画素18と
- *  しており、同じ基準を数字へ適用する。 */
-export const MIN_DIGIT_DEVICE_PIXELS = 18;
-/** 数字の基準の大きさ（2次元層の単位）。レーン幅に収まる大きさ。 */
-const DIGIT_BASE_UNITS = LANE_WIDTH * 0.6;
-/** 数字の大きさの上限（2次元層の単位）。レーン幅をはみ出さないよう抑える。 */
-const DIGIT_MAX_UNITS = LANE_WIDTH * 0.9;
+/** ノーツが出現する縦位置（2次元層の上端 +1）。全段共通。ユーザー確定「画面上端から落下」。 */
+const NOTE_TOP_Y = 1;
 
 /** ノーツ点プールの容量の余裕。窓境界の丸めや実機の時刻揺れで瞬間的に増える分への備え。 */
 const POOL_MARGIN = 4;
 
-// --- 重ね順の定数 ---
-// 採用理由を先に述べる。2次元層は深度を消した平面の重ね合わせのため、深度比較に任せると同一平面の競合が
-// 起きうる。レーンの全マテリアルで深度試験と深度書き込みを無効にし、描画順序の番号で奥から手前へ塗り重ねる。
-// 基準値を持たせ、2次元層に載る他の表示物（左端Y軸音程帯 #58・反応位置の光点）と番号帯が重ならないようにする。
-const RENDER_ORDER_BASE = 10;
-const RENDER_ORDER_BAND = RENDER_ORDER_BASE;
-const RENDER_ORDER_TARGET_LINE = RENDER_ORDER_BASE + 1;
-const RENDER_ORDER_DISC = RENDER_ORDER_BASE + 2;
-const RENDER_ORDER_DIGIT = RENDER_ORDER_BASE + 3;
+/** 消滅エフェクトのプールの容量の余裕。 */
+const BURST_MARGIN = 4;
 
-// --- 色（2次元層の表示物の色、★暫定） ---
-const BAND_COLOR = 0x0a0a14;
-const BAND_OPACITY = 0.35;
-const TARGET_LINE_COLOR = 0x7ec8e3;
-const TARGET_LINE_OPACITY = 0.9;
-const DISC_COLOR = 0x7ec8e3;
-const DISC_OPACITY = 0.85;
+/** 芯の半径が1列の幅に占める割合。芯の直径が列幅の0.9となり列の境界に小さな余白を残す。 */
+const CORE_RADIUS_OVER_COLUMN_WIDTH = 0.45;
+
+/** 波紋の最大半径が1列の幅に占める割合。 */
+const RING_MAX_RADIUS_OVER_COLUMN_WIDTH = 2.5;
+
+/** 芯の半径の下限（デバイス画素）。視認のための下支え。これが列幅の半分を超える場合は列幅の半分で頭打ちにする
+ *  （極めて狭い条件では視認性より、芯が隣の列へはみ出さないことを優先する）。 */
+const MIN_CORE_RADIUS_DEVICE_PIXELS = 3;
+
+// --- 重ね順の定数 ---
+// 採用理由を先に述べる。2次元層は深度を消した平面の重ね合わせのため、深度比較に任せず描画順序の番号で奥から手前へ塗り重ねる。
+// 基準値を持たせ、2次元層に載る他の表示物（左端Y軸音程ガイド #58・ランク表示 #65）と重ならないようにする。
+const RENDER_ORDER_BASE = 10;
+const RENDER_ORDER_BURST = RENDER_ORDER_BASE + 1;
+const RENDER_ORDER_NOTE = RENDER_ORDER_BASE + 3;
 
 /** 指定時刻における可視ノーツ1個ぶんの計算値（描画状態を変えない問い合わせの結果）。 */
 export interface FallingLaneProbeNote {
   readonly id: string;
   readonly slotIndex: number;
-  /** 表示する数字。slotIndex がセル範囲外で表示しないときは null。 */
-  readonly digit: number | null;
-  /** 2次元層上の縦位置。 */
+  /** 2次元層上の現在の縦位置。 */
   readonly y: number;
+  /** 2次元層上の列の中心の横位置。 */
+  readonly x: number;
+  /** そのスロットの線分（消滅高さ）の縦位置。 */
+  readonly targetY: number;
 }
 
 /** 落下式レーンの外部契約。 */
 export interface FallingLane {
   /** 2次元層へ載せる本体。統括（プレイ画面）が renderRoot.addOverlayObject で載せる。 */
   readonly object: Object3D;
-  /** ノーツが出現するレーン上端の縦位置。 */
+  /** ノーツが出現する縦位置（全段共通の上端 +1）。 */
   readonly topY: number;
-  /** 目標線の縦位置。 */
-  readonly targetY: number;
   /**
-   * 毎フレームの更新。ゲーム時刻で可視ノーツの落下位置を求めて表示し、横位置を縦横比から画面右下へ追従させ、
-   * 数字の大きさを縦のデバイス画素数から最小読み取りサイズ以上に保つ。
+   * 毎フレームの更新。ゲーム時刻で可視ノーツの落下位置・列の横位置・芯の半径・接近の脈動を求めて表示し、
+   * 線分へ到達したノーツの消滅エフェクトを発火し、消滅エフェクトの寿命を進める。
    */
   update(input: { gameTimeMs: number; aspect: number; viewportPixelHeight: number }): void;
-  /** 横位置（2次元層のx座標）。直近の update が縦横比から定めた値。受け入れ診断が読む。 */
-  currentGroupX(): number;
-  /** 指定時刻の可視ノーツの計算値を返す副作用の無い問い合わせ（落下位置の純粋関数で計算し描画状態を変えない）。 */
+  /** 通路の左端の横位置（直近の update が縦横比から定めた値）。受け入れ診断が読む。 */
+  channelLeftX(): number;
+  /** 通路の右端の横位置（直近の update が縦横比から定めた値）。受け入れ診断が読む。 */
+  channelRightX(): number;
+  /** 活動中の消滅エフェクトの数。受け入れ診断が読む。 */
+  burstActiveCount(): number;
+  /** 同時上限超過で消滅エフェクトの生成を抑制した累計回数。受け入れ診断が読む（プール容量の不足を観測するため）。 */
+  burstSuppressedCount(): number;
+  /** 直近の活動中の消滅エフェクトの標本（無ければ null）。受け入れ診断が読む。 */
+  burstSample(): NoteBurstSample | null;
+  /** 指定時刻の可視ノーツの計算値を返す副作用の無い問い合わせ（描画状態を変えない）。 */
   probe(gameTimeMs: number): FallingLaneProbeNote[];
-  /** 後始末。生成した形状・材質・テクスチャを解放する。冪等。2次元層からの取り外しは載せた側が行う。 */
+  /** 後始末。生成した形状・材質を解放する。冪等。2次元層からの取り外しは載せた側が行う。 */
   dispose(): void;
-}
-
-function makeOverlayMaterial(options: { color: number; opacity: number; map?: Texture }): MeshBasicMaterial {
-  // 2次元層の重ね順は描画順序の番号で決めるため、深度試験と深度書き込みを無効にする。
-  // 透明な重ね合わせのため transparent を真にする。色をそのまま出すためトーンマップを無効にする。
-  return new MeshBasicMaterial({
-    color: options.color,
-    map: options.map,
-    transparent: true,
-    opacity: options.opacity,
-    depthTest: false,
-    depthWrite: false,
-    toneMapped: false,
-  });
 }
 
 /**
  * 落下式レーンを生成する。
  * notes は曲プロファイルのノーツ列（時刻と音程番号と識別子）。内部で時刻昇順へ複製して並べ替え、最も密集する
- * 時間窓の同時数からノーツ点プールの容量を定める。生成直後は何も可視でなく、update で時刻に応じて表示する。
+ * 時間窓の同時数からノーツ点と消滅エフェクトのプール容量を定める。生成直後は何も可視でなく、update で時刻に応じて表示する。
  */
-export function createFallingLane(options: { notes: readonly LaneNote[] }): FallingLane {
+export function createFallingLane(options: {
+  notes: readonly LaneNote[];
+  slotCount?: number;
+}): FallingLane {
+  const slotCount = options.slotCount ?? PITCH_SLOT_COUNT_DEFAULT;
   const sortedNotes = sortLaneNotesByTime(options.notes);
   const capacity = lanePoolCapacity(sortedNotes, TIMING_WINDOW, POOL_MARGIN);
+  const burstCapacity = maxConcurrentInWindow(sortedNotes, NOTE_BURST_LIFETIME_MS) + BURST_MARGIN;
 
   const group = new Group();
 
-  // 数字図版（透明背景・白塗り・暗い縁取り）。
-  const atlas: DigitAtlas = createDigitAtlas();
-
-  // 数字1〜9に対応する固定UVのジオメトリ9個。各ノーツ点の数字メッシュへ、そのノーツの数字のジオメトリを
-  // 割り当てる。1個のジオメトリを共有してUVを書き換えると全ノーツの数字が同じになるため、数字ごとに用意する。
-  // ジオメトリは単位正方形にし、表示の大きさはメッシュの拡大率で与える。
-  const digitGeometries: PlaneGeometry[] = [];
-  for (let cell = 0; cell < DIGIT_ATLAS_CELL_COUNT; cell += 1) {
-    const geometry = new PlaneGeometry(1, 1);
-    const uv = atlas.cellUv(cell);
-    // PlaneGeometry の頂点は左上・右上・左下・右下の順。各頂点のテクスチャ座標を該当セルの矩形へ写す。
-    const uvAttribute = geometry.getAttribute("uv");
-    uvAttribute.setXY(0, uv.u0, uv.v1); // 左上
-    uvAttribute.setXY(1, uv.u1, uv.v1); // 右上
-    uvAttribute.setXY(2, uv.u0, uv.v0); // 左下
-    uvAttribute.setXY(3, uv.u1, uv.v0); // 右下
-    uvAttribute.needsUpdate = true;
-    digitGeometries.push(geometry);
+  // スロットごとの目標Y（消滅高さ）。2次元層の縦位置は normalizedY だけで決まり縦横比に依らないため、ここで一度だけ求める。
+  const targetYBySlot0: number[] = [];
+  for (let i = 0; i < slotCount; i += 1) {
+    targetYBySlot0.push(overlayPointFromNormalized(0, slotCenterNormalizedY(i, slotCount), 1).y);
   }
 
-  // 共有の材質。
-  const bandMaterial = makeOverlayMaterial({ color: BAND_COLOR, opacity: BAND_OPACITY });
-  const targetLineMaterial = makeOverlayMaterial({
-    color: TARGET_LINE_COLOR,
-    opacity: TARGET_LINE_OPACITY,
-  });
-  const discMaterial = makeOverlayMaterial({ color: DISC_COLOR, opacity: DISC_OPACITY });
-  const digitMaterial = makeOverlayMaterial({ color: 0xffffff, opacity: 1, map: atlas.texture });
+  // 消滅エフェクトのプール。
+  const burst: NoteBurst = createNoteBurst({ capacity: burstCapacity, renderOrder: RENDER_ORDER_BURST });
+  group.add(burst.object);
 
-  // 静的なレーン帯。
-  const bandGeometry = new PlaneGeometry(LANE_WIDTH, LANE_HEIGHT);
-  const band = new Mesh(bandGeometry, bandMaterial);
-  band.position.set(0, BAND_CENTER_Y, 0);
-  band.renderOrder = RENDER_ORDER_BAND;
-  group.add(band);
-
-  // 静的な目標線。
-  const targetGeometry = new PlaneGeometry(LANE_WIDTH, TARGET_LINE_THICKNESS);
-  const targetLine = new Mesh(targetGeometry, targetLineMaterial);
-  targetLine.position.set(0, NOTE_TARGET_Y, 0);
-  targetLine.renderOrder = RENDER_ORDER_TARGET_LINE;
-  group.add(targetLine);
-
-  // ノーツ点プール。各スロットは円板メッシュ（点）と数字メッシュ（番号）の一組。生成直後は不可視。
-  const discGeometry = new CircleGeometry(1, DISC_SEGMENTS);
-  const discMeshes: Mesh[] = [];
-  const digitMeshes: Mesh[] = [];
+  // ノーツの水滴の造形のプール。共有の単位四角形ジオメトリを全ノーツで使い、材質はノーツごとに持つ。
+  const spriteGeometry: PlaneGeometry = createNoteSpriteGeometry();
+  const sprites: NoteSprite[] = [];
   for (let i = 0; i < capacity; i += 1) {
-    const disc = new Mesh(discGeometry, discMaterial);
-    disc.scale.setScalar(DISC_RADIUS);
-    disc.renderOrder = RENDER_ORDER_DISC;
-    disc.visible = false;
-    group.add(disc);
-    discMeshes.push(disc);
-
-    const digit = new Mesh(digitGeometries[0], digitMaterial);
-    digit.renderOrder = RENDER_ORDER_DIGIT;
-    digit.visible = false;
-    group.add(digit);
-    digitMeshes.push(digit);
+    const sprite = createNoteSprite(spriteGeometry, RENDER_ORDER_NOTE);
+    group.add(sprite.mesh);
+    sprites.push(sprite);
   }
 
-  let currentGroupX = 0;
+  let lastGameTimeMs: number | null = null;
+  let lastAspect = 1;
+  let currentChannelLeftX = 0;
+  let currentChannelRightX = 0;
   let disposed = false;
 
-  function computeDigitSize(viewportPixelHeight: number): number {
-    // 2次元層の縦は上端+1・下端-1の2単位ぶんが画面の縦デバイス画素数に対応するため、縦1単位はデバイス画素で
-    // viewportPixelHeight ÷ 2。数字の2次元層上の高さ H をデバイス画素へ直すと H × viewportPixelHeight ÷ 2 で、
-    // これを下限以上に保つには H ≥ 2 × MIN_DIGIT_DEVICE_PIXELS ÷ viewportPixelHeight が必要。
-    // 画素数が不正なときは基準値を使う。
+  function computeCoreRadius(columnWidth: number, viewportPixelHeight: number): number {
+    const base = columnWidth * CORE_RADIUS_OVER_COLUMN_WIDTH;
+    const half = columnWidth / 2;
     if (!Number.isFinite(viewportPixelHeight) || viewportPixelHeight <= 0) {
-      return DIGIT_BASE_UNITS;
+      return Math.min(base, half);
     }
-    const minUnits = (2 * MIN_DIGIT_DEVICE_PIXELS) / viewportPixelHeight;
-    const wanted = Math.max(DIGIT_BASE_UNITS, minUnits);
-    return Math.min(DIGIT_MAX_UNITS, wanted);
+    // デバイス画素の半径を2次元層の長さへ直す（縦1単位＝viewportPixelHeight÷2画素のため、半径 px の長さは 2×px÷高さ）。
+    const minUnits = (2 * MIN_CORE_RADIUS_DEVICE_PIXELS) / viewportPixelHeight;
+    const wanted = Math.max(base, minUnits);
+    return Math.min(wanted, half);
+  }
+
+  function slotIndex0Of(note: LaneNote): number {
+    const i = note.slotIndex - 1;
+    if (i < 0) {
+      return 0;
+    }
+    if (i > slotCount - 1) {
+      return slotCount - 1;
+    }
+    return i;
   }
 
   return {
     object: group,
     topY: NOTE_TOP_Y,
-    targetY: NOTE_TARGET_Y,
     update(input): void {
       const { gameTimeMs, aspect, viewportPixelHeight } = input;
-
-      // 横位置を縦横比から画面右端へ寄せる。レーンの中心を右端から余白とレーン幅の半分だけ内側に置く。
-      // 縦横比が不正なときは前回の横位置を保つ。
       if (Number.isFinite(aspect)) {
-        currentGroupX = aspect - LANE_RIGHT_MARGIN - LANE_WIDTH / 2;
-        group.position.x = currentGroupX;
+        lastAspect = aspect;
+      }
+      const horizontal = pitchHudHorizontalLayout(lastAspect, slotCount);
+      currentChannelLeftX = horizontal.channelLeftX;
+      currentChannelRightX = horizontal.channelRightX;
+      const columnWidth = horizontal.columnWidth;
+      const coreRadius = computeCoreRadius(columnWidth, viewportPixelHeight);
+      const maxRadius = columnWidth * RING_MAX_RADIUS_OVER_COLUMN_WIDTH;
+
+      // 消滅エフェクトの寿命を進める。前回処理した時刻から現在時刻までの差を経過時間として用いる。
+      if (lastGameTimeMs !== null && Number.isFinite(gameTimeMs)) {
+        const deltaSeconds = Math.max(0, (gameTimeMs - lastGameTimeMs) / 1000);
+        burst.update(deltaSeconds);
       }
 
-      const digitSize = computeDigitSize(viewportPixelHeight);
+      // 線分へ到達したノーツ（前回時刻以上・現在時刻未満）で消滅エフェクトを発火する。
+      if (lastGameTimeMs !== null) {
+        const reached = reachedNoteRange(sortedNotes, lastGameTimeMs, gameTimeMs);
+        for (let i = reached.start; i < reached.end; i += 1) {
+          const note = sortedNotes[i];
+          const slot0 = slotIndex0Of(note);
+          burst.spawn({
+            x: columnCenterX(horizontal, slot0, slotCount),
+            y: targetYBySlot0[slot0],
+            phase: notePhaseRadians(i),
+            coreRadius,
+            maxRadius,
+          });
+        }
+      }
+      if (Number.isFinite(gameTimeMs)) {
+        lastGameTimeMs = gameTimeMs;
+      }
 
+      // 可視ノーツを水滴で表示する。
       const range = visibleNoteRange(sortedNotes, gameTimeMs, TIMING_WINDOW);
       let slot = 0;
       for (let i = range.start; i < range.end && slot < capacity; i += 1) {
         const note = sortedNotes[i];
-        const cellIndex = digitCellIndex(note.slotIndex, DIGIT_ATLAS_CELL_COUNT);
-        if (cellIndex === null) {
-          // セル範囲外の音程番号は表示しない（防御。読込時の検証で通常は起きない）。
-          continue;
-        }
+        const slot0 = slotIndex0Of(note);
         const progress = laneProgress(note.timeMs, gameTimeMs, LANE_LEAD_MS);
-        const y = laneNoteY(progress, LANE_GEOMETRY_Y);
+        const y = laneNoteY(progress, { topY: NOTE_TOP_Y, targetY: targetYBySlot0[slot0] });
+        const x = columnCenterX(horizontal, slot0, slotCount);
+        const approach = progress < 0 ? 1 : progress > 1 ? 0 : 1 - progress;
 
-        const disc = discMeshes[slot];
-        disc.position.set(0, y, 0);
-        disc.visible = true;
-
-        const digit = digitMeshes[slot];
-        digit.geometry = digitGeometries[cellIndex];
-        digit.position.set(0, y, 0);
-        digit.scale.set(digitSize, digitSize, 1);
-        digit.visible = true;
-
+        const sprite = sprites[slot];
+        sprite.setPosition(x, y);
+        sprite.setCoreRadius(coreRadius);
+        sprite.setApproach(approach);
+        sprite.setVisible(true);
         slot += 1;
       }
-      // 使わないスロットを隠す。
       for (let s = slot; s < capacity; s += 1) {
-        discMeshes[s].visible = false;
-        digitMeshes[s].visible = false;
+        sprites[s].setVisible(false);
       }
     },
-    currentGroupX(): number {
-      return currentGroupX;
+    channelLeftX(): number {
+      return currentChannelLeftX;
+    },
+    channelRightX(): number {
+      return currentChannelRightX;
+    },
+    burstActiveCount(): number {
+      return burst.activeCount();
+    },
+    burstSuppressedCount(): number {
+      return burst.suppressedCount();
+    },
+    burstSample(): NoteBurstSample | null {
+      return burst.sample();
     },
     probe(gameTimeMs): FallingLaneProbeNote[] {
+      const horizontal = pitchHudHorizontalLayout(lastAspect, slotCount);
       const range = visibleNoteRange(sortedNotes, gameTimeMs, TIMING_WINDOW);
       const result: FallingLaneProbeNote[] = [];
       for (let i = range.start; i < range.end; i += 1) {
         const note = sortedNotes[i];
-        const cellIndex = digitCellIndex(note.slotIndex, DIGIT_ATLAS_CELL_COUNT);
+        const slot0 = slotIndex0Of(note);
         const progress = laneProgress(note.timeMs, gameTimeMs, LANE_LEAD_MS);
         result.push({
           id: note.id,
           slotIndex: note.slotIndex,
-          digit: cellIndex === null ? null : cellIndex + 1,
-          y: laneNoteY(progress, LANE_GEOMETRY_Y),
+          y: laneNoteY(progress, { topY: NOTE_TOP_Y, targetY: targetYBySlot0[slot0] }),
+          x: columnCenterX(horizontal, slot0, slotCount),
+          targetY: targetYBySlot0[slot0],
         });
       }
       return result;
@@ -311,20 +268,11 @@ export function createFallingLane(options: { notes: readonly LaneNote[] }): Fall
         return;
       }
       disposed = true;
-      // 形状を解放する。
-      bandGeometry.dispose();
-      targetGeometry.dispose();
-      discGeometry.dispose();
-      for (const geometry of digitGeometries) {
-        geometry.dispose();
+      spriteGeometry.dispose();
+      for (const sprite of sprites) {
+        sprite.dispose();
       }
-      // 材質を解放する。
-      bandMaterial.dispose();
-      targetLineMaterial.dispose();
-      discMaterial.dispose();
-      digitMaterial.dispose();
-      // テクスチャを解放する。
-      atlas.dispose();
+      burst.dispose();
     },
   };
 }

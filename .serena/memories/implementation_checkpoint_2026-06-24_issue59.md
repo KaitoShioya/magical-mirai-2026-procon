@@ -1,7 +1,7 @@
 # 実装チェックポイント 2026-06-24 Issue #59「TAKEOVER通しプレイ成立」
 
 ## 概要
-既存の全機構を統括（src/app）で結線し、TAKEOVER を先頭から末尾まで遊べる状態を成立させた統合チェックポイント（M4・P0）。新規ロジックは作らず、判定・採点・操作音・反応強度・カメラ軌跡評価器・曲プロファイル・蝶造形を結線した。ブランチ `worktree-worktree-issue-59-takeover-playthrough`。
+既存の全機構を統括（src/app）で結線し、TAKEOVER を先頭から末尾まで遊べる状態を成立させた統合チェックポイント（M4・P0）。新規ロジックは作らず、判定・採点・操作音・反応強度・カメラ軌跡評価器・曲プロファイル・蝶造形を結線した。ブランチ `worktree-issue-59-takeover-playthrough`、PR #197（base=main）。
 
 ## 意思決定（ユーザー確定 2026-06-23）
 投下はゲージ満タンで自動発動（見せ場区間内でのみ成立、消費割合×見せ場重みで倍率）。発動専用操作は設けない。入力モジュールは変更しない。正典反映済み: `docs/idea/concept-final.md` §8、`docs/decisions/app-overall-decisions.md` §3.6。

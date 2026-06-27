@@ -7,24 +7,43 @@ import {
   laneCenterNormalizedX,
   laneWidthNormalizedX,
   overlayXFromNormalizedX,
+  resolveSlotCount,
   slotIndexFromNormalizedX,
 } from "./pitchHudLayout";
 
 describe("帯の定数とレーン幅", () => {
-  it("帯は正規化X 0 から 0.42、1レーンの幅は帯幅をスロット数で割った値", () => {
-    expect(LANE_BAND_LEFT_NORMALIZED_X).toBeCloseTo(0, 10);
-    expect(LANE_BAND_RIGHT_NORMALIZED_X).toBeCloseTo(0.42, 10);
-    expect(laneWidthNormalizedX(7)).toBeCloseTo(0.42 / 7, 10);
+  it("帯は左端から右端まで、1レーンの幅は帯幅をスロット数で割った値", () => {
+    expect(LANE_BAND_LEFT_NORMALIZED_X).toBeCloseTo(0.02, 10);
+    expect(LANE_BAND_RIGHT_NORMALIZED_X).toBeCloseTo(0.44, 10);
+    const bandWidth = LANE_BAND_RIGHT_NORMALIZED_X - LANE_BAND_LEFT_NORMALIZED_X;
+    expect(laneWidthNormalizedX(7)).toBeCloseTo(bandWidth / 7, 10);
+  });
+});
+
+describe("resolveSlotCount", () => {
+  const fallback = 7;
+  it("未指定・1未満・非整数・非有限は予備値へ丸め、正の整数はその値を返す", () => {
+    expect(resolveSlotCount(undefined, fallback)).toBe(7);
+    expect(resolveSlotCount(5, fallback)).toBe(5);
+    expect(resolveSlotCount(1, fallback)).toBe(1);
+    expect(resolveSlotCount(0, fallback)).toBe(7);
+    expect(resolveSlotCount(5.5, fallback)).toBe(7);
+    expect(resolveSlotCount(Number.NaN, fallback)).toBe(7);
   });
 });
 
 describe("slotIndexFromNormalizedX", () => {
   const slotCount = 7;
-  it("帯を等分したレーンへ写し、レーンの境界は右側のレーンに属する", () => {
+  it("帯を等分したレーンへ写し、区間は隙間なく連続する（境界のわずか内側は右側、わずか手前は左側）", () => {
+    // 境界ちょうどの値は浮動小数点の丸めでどちらの隣レーンへも落ちうる（実機の任意タップでは「失敗のない床」により
+    // どちらでも有効音が鳴るため帰属は不問）。ここでは区間の連続性を検証するため、レーン幅のごく一部だけ境界の内側・手前へ
+    // 寄せた点で帰属を確かめる。
+    const inset = laneWidthNormalizedX(slotCount) * 0.001;
     expect(slotIndexFromNormalizedX(0, slotCount)).toBe(0);
-    expect(slotIndexFromNormalizedX(0.03, slotCount)).toBe(0);
-    expect(slotIndexFromNormalizedX(laneBoundaryNormalizedX(1, slotCount), slotCount)).toBe(1);
-    expect(slotIndexFromNormalizedX(laneBoundaryNormalizedX(2, slotCount), slotCount)).toBe(2);
+    expect(slotIndexFromNormalizedX(LANE_BAND_LEFT_NORMALIZED_X + inset, slotCount)).toBe(0);
+    expect(slotIndexFromNormalizedX(laneBoundaryNormalizedX(1, slotCount) + inset, slotCount)).toBe(1);
+    expect(slotIndexFromNormalizedX(laneBoundaryNormalizedX(2, slotCount) + inset, slotCount)).toBe(2);
+    expect(slotIndexFromNormalizedX(laneBoundaryNormalizedX(2, slotCount) - inset, slotCount)).toBe(1);
   });
   it("帯の外側は最近接の端レーンへ寄せ、非有限値は最も左のレーンへ丸める", () => {
     expect(slotIndexFromNormalizedX(-0.5, slotCount)).toBe(0);
@@ -45,16 +64,18 @@ describe("laneCenterNormalizedX と往復の不変条件", () => {
     }
   });
   it("レーン0の中央と最終レーンの中央は帯の式に従う", () => {
-    expect(laneCenterNormalizedX(0, 7)).toBeCloseTo((0.5 / 7) * 0.42, 10);
-    expect(laneCenterNormalizedX(6, 7)).toBeCloseTo((6.5 / 7) * 0.42, 10);
+    const bandWidth = LANE_BAND_RIGHT_NORMALIZED_X - LANE_BAND_LEFT_NORMALIZED_X;
+    expect(laneCenterNormalizedX(0, 7)).toBeCloseTo(LANE_BAND_LEFT_NORMALIZED_X + (0.5 / 7) * bandWidth, 10);
+    expect(laneCenterNormalizedX(6, 7)).toBeCloseTo(LANE_BAND_LEFT_NORMALIZED_X + (6.5 / 7) * bandWidth, 10);
   });
 });
 
 describe("laneBoundaryNormalizedX", () => {
   it("境界0が帯左端、slotCount が帯右端", () => {
-    expect(laneBoundaryNormalizedX(0, 7)).toBeCloseTo(0, 10);
-    expect(laneBoundaryNormalizedX(7, 7)).toBeCloseTo(0.42, 10);
-    expect(laneBoundaryNormalizedX(1, 7)).toBeCloseTo(0.42 / 7, 10);
+    const bandWidth = LANE_BAND_RIGHT_NORMALIZED_X - LANE_BAND_LEFT_NORMALIZED_X;
+    expect(laneBoundaryNormalizedX(0, 7)).toBeCloseTo(LANE_BAND_LEFT_NORMALIZED_X, 10);
+    expect(laneBoundaryNormalizedX(7, 7)).toBeCloseTo(LANE_BAND_RIGHT_NORMALIZED_X, 10);
+    expect(laneBoundaryNormalizedX(1, 7)).toBeCloseTo(LANE_BAND_LEFT_NORMALIZED_X + bandWidth / 7, 10);
   });
 });
 

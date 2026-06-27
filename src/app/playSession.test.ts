@@ -39,6 +39,7 @@ interface Harness {
   playSlot: ReturnType<typeof vi.fn>;
   setDeployTimbre: ReturnType<typeof vi.fn>;
   spawn: ReturnType<typeof vi.fn>;
+  tapRipple: ReturnType<typeof vi.fn>;
 }
 
 function makeHarness(profile: SongProfile, config = DEFAULT_OBJECTIVE_CONFIG): Harness {
@@ -47,11 +48,13 @@ function makeHarness(profile: SongProfile, config = DEFAULT_OBJECTIVE_CONFIG): H
   const playSlot = vi.fn<(slotIndex: number) => void>();
   const setDeployTimbre = vi.fn<(active: boolean) => void>();
   const spawn = vi.fn<(input: ReactionLightInput) => void>();
+  const tapRipple = vi.fn<(slotIndex0: number) => void>();
   const deps: PlaySessionDeps = {
     profile,
     cameraTrajectory: createCameraTrajectory(profile.camera),
     operationSound: { setSlotPitches, playSlot, setDeployTimbre },
     spawnReactionLight: spawn,
+    spawnTapRipple: tapRipple,
     getFrameSample: () => frame,
     getCalibrationOffsetMs: () => 0,
     config,
@@ -65,6 +68,7 @@ function makeHarness(profile: SongProfile, config = DEFAULT_OBJECTIVE_CONFIG): H
     playSlot,
     setDeployTimbre,
     spawn,
+    tapRipple,
   };
 }
 
@@ -120,6 +124,31 @@ describe("createPlaySession", () => {
       expect(() => session.onReaction(makeReaction(2))).not.toThrow();
       expect(h.playSlot).toHaveBeenCalledTimes(1);
       expect(h.spawn).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("画面全体の波紋（得点が0でないタップのみ）", () => {
+    it("得点が正のタップ（ノーツに一致）で、そのレーンから波紋を立てる", () => {
+      const h = makeHarness(minimalValidProfile);
+      const session = createPlaySession(h.deps);
+      session.reset();
+      // n0（拍格子時刻310・slot0=2）に JUST 一致するタップ。素点が正になる。
+      h.setFrame(makeFrame(310));
+      session.onReaction(makeReaction(2, { eventTimeMs: 0 }));
+      expect(h.tapRipple).toHaveBeenCalledTimes(1);
+      expect(h.tapRipple).toHaveBeenCalledWith(2);
+    });
+
+    it("得点0のタップ（判定窓外の空打ち）では波紋を立てない", () => {
+      const h = makeHarness(minimalValidProfile);
+      const session = createPlaySession(h.deps);
+      session.reset();
+      // どのノーツ（拍格子時刻 310・653）からも判定窓外端90ミリ秒を超えて離れた時刻。対応ノーツが無く素点が0になる。
+      h.setFrame(makeFrame(5000));
+      session.onReaction(makeReaction(4));
+      // 協和音は床として鳴る一方、波紋は素点0のため立てない。
+      expect(h.playSlot).toHaveBeenCalledTimes(1);
+      expect(h.tapRipple).not.toHaveBeenCalled();
     });
   });
 

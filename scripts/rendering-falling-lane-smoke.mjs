@@ -188,7 +188,12 @@ async function run() {
     const captured = await page.evaluate(() => {
       const p = window.__fallingLaneProbe(0);
       if (p.burstActiveCount > 0 && p.burstSample) {
-        return { sample: p.burstSample, channelLeftX: p.channelLeftX, channelRightX: p.channelRightX };
+        return {
+          sample: p.burstSample,
+          channelLeftX: p.channelLeftX,
+          channelRightX: p.channelRightX,
+          rippleActiveCount: p.rippleActiveCount,
+        };
       }
       return null;
     });
@@ -206,6 +211,13 @@ async function run() {
       ok(`消滅エフェクトが湧き、その位置が通路の横範囲に収まる（x=${sample.x.toFixed(3)}）`);
     } else {
       fail(`消滅エフェクトの標本が通路の横範囲に収まらない（${JSON.stringify(sample)}）`);
+    }
+    // 診断ページは各ノーツの到達時刻で擬似タップ（得点するタップ）を与えるため、着水を捉えた瞬間には、そのタップで立てた
+    // 画面全体の波紋が1つ以上活動している（波紋の寿命は消滅エフェクトより長い）。波紋はプレイヤーの得点タップでのみ立つ。
+    if (burstCaught.rippleActiveCount >= 1) {
+      ok(`得点タップ（擬似）で画面全体の波紋が立つ（活動中の波紋 ${burstCaught.rippleActiveCount}）`);
+    } else {
+      fail("得点タップ（擬似）の瞬間に画面全体の波紋が立っていない");
     }
   }
 

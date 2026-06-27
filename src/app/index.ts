@@ -198,6 +198,10 @@ export function createApp(
   // 直前フレームの再同期回数。当該フレームで再同期したか（resyncCount の増加）を検出するための比較基準。
   let prevResyncCount = 0;
 
+  // プレイヤーのタップを画面全体の波紋へ届ける受け口（Issue #202）。プレイ画面が落下式レーンの spawnTapRipple を登録し、
+  // 画面から抜けるときに何もしない受け口へ戻す。プレイ画面が組み立て前・WebGL が無い等で未登録のあいだは何もしない。
+  let tapRippleSink: ((slotIndex0: number) => void) | null = null;
+
   // プレイ進行の判定・採点・音・光の統合（Issue #59）。曲プロファイルを渡し、副作用の出口（操作音・反応光点・
   // フレーム時刻標本・較正値）を注入する。較正値はプレイ開始ごとに読み直すため関数で渡す。
   const session = createPlaySession({
@@ -205,6 +209,9 @@ export function createApp(
     cameraTrajectory,
     operationSound,
     spawnReactionLight: (reactionLight) => renderRoot.spawnReactionButterfly(reactionLight),
+    // 得点が0でないタップ（ノーツに当たったタップ）のレーンから、画面全体の水面の波紋を立てる（Issue #202）。
+    // 受け口（tapRippleSink）はプレイ画面が落下式レーンの spawnTapRipple を登録する。未登録のあいだは何もしない。
+    spawnTapRipple: (slotIndex0) => tapRippleSink?.(slotIndex0),
     getFrameSample: () => latestFrameSample,
     getCalibrationOffsetMs: () => loadCalibrationOffsetMs(),
   });
@@ -273,10 +280,14 @@ export function createApp(
       addOverlayObject: (object) => renderRoot.addOverlayObject(object),
       removeOverlayObject: (object) => renderRoot.removeOverlayObject(object),
       laneNotes: takeoverProfile.notes,
-      // Y軸音程ガイド（Issue #58）。音程スロット数は楽曲非依存の既定値を統括が注入する。WebGL が無い端末では
-      // 描画基盤側が何もしない。将来の曲別スロット数対応はこの注入箇所だけで変わる。
+      // レーンガイド（Issue #58・Issue #202。レーンの仕切り線と単一判定線）。音程スロット数（レーン数）は楽曲非依存の既定値を統括が注入する。
+      // WebGL が無い端末では描画基盤側が何もしない。将来の曲別スロット数対応はこの注入箇所だけで変わる。
       showPitchAxisGuide: () => renderRoot.showPitchAxisGuide(PITCH_SLOT_COUNT_DEFAULT),
       hidePitchAxisGuide: () => renderRoot.hidePitchAxisGuide(),
+      // タップを画面全体の波紋へ届ける受け口の登録（Issue #202）。プレイ画面が落下式レーンの spawnTapRipple を登録する。
+      registerTapRipple: (sink) => {
+        tapRippleSink = sink;
+      },
       // ランク専用ゲージ（Issue #65・#59）の現在入力。プレイ進行セッションが実スコアの累積から百分位・
       // ランク添字（rankFromPercentile・rankOrdinal 由来）を供給する。
       currentRankGaugeState: () => session.rankGaugeState(),

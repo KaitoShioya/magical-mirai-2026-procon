@@ -23,12 +23,14 @@ function approxEqual(a, b) {
   return Math.abs(a - b) < 1e-9;
 }
 
-// 音程はX軸の7レーンで選ぶ。レーン帯は画面左の正規化X 0 から 0.42（正典は src/utils/pitchHudLayout.ts）。
-// レーン s の中央の横位置は、帯の中で (s+0.5)/SLOT_COUNT に対応する正規化X (s+0.5)/SLOT_COUNT × 0.42 を、入力面の画素幅へ掛けた値。
+// 音程はX軸の7レーンで選ぶ。レーン帯は画面左の正規化X 0.02 から 0.44（正典は src/utils/pitchHudLayout.ts）。
+// 左端を画面端から少し内側へ寄せるのは、最も左のレーンの仕切り線を画面内に見せるため。
+// レーン s の中央の横位置は、帯左端 + (s+0.5)/SLOT_COUNT × 帯幅 に対応する正規化Xを、入力面の画素幅へ掛けた値。
 // これに合わせないとタップが帯の外へ落ち、中央レーンのタップが中央スロットへ対応する検証が成立しない。Y軸は判定に使わない。
-const LANE_BAND_RIGHT_NX = 0.42;
+const LANE_BAND_LEFT_NX = 0.02;
+const LANE_BAND_RIGHT_NX = 0.44;
 function clientXForLaneCenter(slot, width) {
-  return ((slot + 0.5) / SLOT_COUNT) * LANE_BAND_RIGHT_NX * width;
+  return (LANE_BAND_LEFT_NX + ((slot + 0.5) / SLOT_COUNT) * (LANE_BAND_RIGHT_NX - LANE_BAND_LEFT_NX)) * width;
 }
 
 async function dispatchPointerDown(page, pointerId, pointerType, clientX, clientY) {

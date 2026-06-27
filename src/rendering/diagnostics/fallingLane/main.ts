@@ -53,6 +53,7 @@ const DISPLAY_PERIOD_MS = 7000;
 
 let startMs: number | null = null;
 let lastMs = 0;
+let prevGameTimeMs = 0;
 let rafHandle = 0;
 
 function frame(nowMs: number): void {
@@ -65,11 +66,21 @@ function frame(nowMs: number): void {
   lastMs = nowMs;
 
   lane.update({ gameTimeMs, aspect: currentAspect(), viewportPixelHeight: viewportPixelHeight() });
+
+  // 本ページにはプレイヤー入力が無いため、各テスト用ノーツが判定線へ到達する時刻（timeMs）でタップを擬似的に発生させる。
+  // 画面全体の波紋はプレイヤーのタップでのみ立つため、こうして擬似タップを与えて波紋を目視・検査できるようにする。
+  for (const note of TEST_NOTES) {
+    if (prevGameTimeMs < note.timeMs && gameTimeMs >= note.timeMs) {
+      lane.spawnTapRipple(note.slotIndex - 1);
+    }
+  }
+  prevGameTimeMs = gameTimeMs;
+
   renderRoot.update(deltaSeconds);
   renderRoot.render();
 
   hud.textContent =
-    `gameTime=${Math.round(gameTimeMs)}ms 可視=${lane.probe(gameTimeMs).length} 消滅エフェクト=${lane.burstActiveCount()}\n` +
+    `gameTime=${Math.round(gameTimeMs)}ms 可視=${lane.probe(gameTimeMs).length} 消滅エフェクト=${lane.burstActiveCount()} 波紋=${lane.rippleActiveCount()}\n` +
     `topY=${lane.topY.toFixed(3)} 通路左=${lane.channelLeftX().toFixed(3)} 通路右=${lane.channelRightX().toFixed(3)}`;
 
   rafHandle = requestAnimationFrame(frame);
@@ -89,6 +100,7 @@ window.__fallingLaneProbe = (gameTimeMs: number) => {
     burstActiveCount: lane.burstActiveCount(),
     burstSuppressedCount: lane.burstSuppressedCount(),
     burstSample: lane.burstSample(),
+    rippleActiveCount: lane.rippleActiveCount(),
   };
 };
 

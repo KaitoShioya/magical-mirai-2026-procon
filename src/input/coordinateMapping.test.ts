@@ -4,7 +4,6 @@ import {
   inputSourceFromPointerType,
   mapToReactionCore,
   normalizePointerPosition,
-  resolveSlotCount,
   slotIndexFromNormalizedX,
 } from "./coordinateMapping";
 import { laneCenterNormalizedX } from "../utils/pitchHudLayout";
@@ -50,18 +49,6 @@ describe("inputSourceFromPointerType", () => {
     expect(inputSourceFromPointerType("touch")).toBe("touch");
     expect(inputSourceFromPointerType("pen")).toBe("pen");
     expect(inputSourceFromPointerType("")).toBe("mouse");
-  });
-});
-
-describe("resolveSlotCount", () => {
-  const fallback = 7;
-  it("未指定・1未満・非整数・非有限は予備値へ丸め、正の整数はその値を返す", () => {
-    expect(resolveSlotCount(undefined, fallback)).toBe(7);
-    expect(resolveSlotCount(5, fallback)).toBe(5);
-    expect(resolveSlotCount(1, fallback)).toBe(1);
-    expect(resolveSlotCount(0, fallback)).toBe(7);
-    expect(resolveSlotCount(5.5, fallback)).toBe(7);
-    expect(resolveSlotCount(Number.NaN, fallback)).toBe(7);
   });
 });
 

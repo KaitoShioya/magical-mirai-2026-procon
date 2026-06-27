@@ -189,6 +189,8 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
       // 組み立ての中（built が偽の間のみ到達）で生成する。
       lane = createFallingLane({ notes: play.laneNotes });
       play.addOverlayObject(lane.object);
+      // タップした瞬間に画面全体の波紋を立てる受け口として、このレーンの spawnTapRipple を統括へ登録する（Issue #202）。
+      play.registerTapRipple((slotIndex0) => lane?.spawnTapRipple(slotIndex0));
       // ランク専用ゲージ（Issue #65）を生成して2次元層へ載せる。レーンと同じく組み立ての一度きりで生成する。
       rankGauge = createRankGauge();
       play.addOverlayObject(rankGauge.object);
@@ -201,7 +203,7 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
     onEnter(): void {
       // 準備完了していれば組み立てる。未完了なら onUpdate で準備完了を待って組み立てる。
       tryBuild();
-      // Y軸音程ガイド（Issue #58）をプレイ画面の表示中だけ出す。WebGL が無い端末では結線先が何もしない。
+      // レーンガイド（Issue #58・Issue #202。レーンの仕切り線と単一判定線）をプレイ画面の表示中だけ出す。WebGL が無い端末では結線先が何もしない。
       play?.showPitchAxisGuide();
     },
     onUpdate(deltaMs: number): void {
@@ -237,12 +239,14 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
       }
     },
     onExit(): void {
-      // Y軸音程ガイド（Issue #58）を非表示にし、その表示物の資源を解放する。
+      // レーンガイド（Issue #58・Issue #202）を非表示にし、その表示物の資源を解放する。
       play?.hidePitchAxisGuide();
       conductor?.dispose();
       conductor = null;
       engine?.dispose();
       engine = null;
+      // タップの波紋の受け口を、これから外すレーンを参照しない無動作へ戻す（Issue #202）。
+      play?.registerTapRipple(() => {});
       // 落下式レーンを2次元層から外して資源解放し、保持変数を空に戻す（重複生成の防止のため built も偽へ戻す）。
       if (lane !== null) {
         play?.removeOverlayObject(lane.object);

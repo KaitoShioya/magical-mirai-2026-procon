@@ -21,10 +21,11 @@ import {
   visibleNoteRange,
   type LaneTimingWindow,
 } from "./fallingLaneLayout";
-import { columnCenterX, laneBoundaryX, laneWidthNormalizedX } from "../utils/pitchHudLayout";
+import { columnCenterX, laneBoundaryX, laneWidthNormalizedX, resolveSlotCount } from "../utils/pitchHudLayout";
 import { laneColor } from "./noteColors";
 import { createNoteSprite, createNoteSpriteGeometry, type NoteSprite } from "./noteSprite";
 import { createNoteBurst, NOTE_BURST_LIFETIME_MS, type NoteBurst, type NoteBurstSample } from "./noteBurst";
+import { createRippleField, type RippleField } from "./rippleField";
 
 /** 出現から判定線到達までの時間（ミリ秒、★暫定）。採用理由を先に述べる。狙う時間として数百ミリ秒では短く、
  *  毎分175拍の約5〜6拍ぶん（約1715〜2057ミリ秒）あれば落下中にレーンとタイミングを定められる。長すぎると画面に
@@ -61,6 +62,8 @@ const MIN_CORE_RADIUS_DEVICE_PIXELS = 3;
 const RENDER_ORDER_BASE = 10;
 const RENDER_ORDER_BURST = RENDER_ORDER_BASE + 1;
 const RENDER_ORDER_NOTE = RENDER_ORDER_BASE + 3;
+// 画面全体の波紋はレーンガイド（最背面）より手前・ノーツより奥に置き、水面がノーツの背後で広がるようにする。
+const RENDER_ORDER_RIPPLE = RENDER_ORDER_BASE - 2;
 
 /** 指定時刻における可視ノーツ1個ぶんの計算値（描画状態を変えない問い合わせの結果）。 */
 export interface FallingLaneProbeNote {
@@ -85,12 +88,19 @@ export interface FallingLane {
    * 判定線へ到達したノーツの消滅エフェクトを発火し、消滅エフェクトの寿命を進める。
    */
   update(input: { gameTimeMs: number; aspect: number; viewportPixelHeight: number }): void;
+  /**
+   * プレイヤーがタップした瞬間に、そのレーン（音程スロット、0始まり）の判定線の位置から画面全体の水面の波紋を1つ立てる。
+   * 波紋はプレイヤーのタップに対する手応えであり、ノーツが判定線を自動で通過しただけでは立てない。
+   */
+  spawnTapRipple(slotIndex0: number): void;
   /** 帯の左端の横位置（直近の update が縦横比から定めた値）。受け入れ診断が読む。 */
   channelLeftX(): number;
   /** 帯の右端の横位置（直近の update が縦横比から定めた値）。受け入れ診断が読む。 */
   channelRightX(): number;
   /** 活動中の消滅エフェクトの数。受け入れ診断が読む。 */
   burstActiveCount(): number;
+  /** 活動中の画面全体の波紋の数。受け入れ診断が読む。 */
+  rippleActiveCount(): number;
   /** 同時上限超過で消滅エフェクトの生成を抑制した累計回数。受け入れ診断が読む（プール容量の不足を観測するため）。 */
   burstSuppressedCount(): number;
   /** 直近の活動中の消滅エフェクトの標本（無ければ null）。受け入れ診断が読む。 */
@@ -110,7 +120,9 @@ export function createFallingLane(options: {
   notes: readonly LaneNote[];
   slotCount?: number;
 }): FallingLane {
-  const slotCount = options.slotCount ?? PITCH_SLOT_COUNT_DEFAULT;
+  // スロット数は入力側（src/input）と同じ正典 resolveSlotCount で検証して確定する。0・非整数・非有限が混入しても
+  // レーン幅が無限大や非整数の刻みにならず、既定値へ丸めて表示を続ける（失敗のない床）。
+  const slotCount = resolveSlotCount(options.slotCount, PITCH_SLOT_COUNT_DEFAULT);
   const sortedNotes = sortLaneNotesByTime(options.notes);
   const capacity = lanePoolCapacity(sortedNotes, TIMING_WINDOW, POOL_MARGIN);
   const burstCapacity = maxConcurrentInWindow(sortedNotes, NOTE_BURST_LIFETIME_MS) + BURST_MARGIN;
@@ -120,6 +132,11 @@ export function createFallingLane(options: {
   // 消滅エフェクトのプール。
   const burst: NoteBurst = createNoteBurst({ capacity: burstCapacity, renderOrder: RENDER_ORDER_BURST });
   group.add(burst.object);
+
+  // 画面全体の水面の波紋。プレイヤーの得点したタップ（spawnTapRipple）でのみ立て、落下中の他ノーツへも影響させる。
+  // ノーツが判定線を自動で通過しただけでは立てない（自動通過で出るのは着水点の局所の消滅エフェクト burst のみ）。
+  const ripple: RippleField = createRippleField({ renderOrder: RENDER_ORDER_RIPPLE });
+  group.add(ripple.object);
 
   // ノーツの水滴の造形のプール。共有の単位四角形ジオメトリを全ノーツで使い、材質はノーツごとに持つ。
   const spriteGeometry: PlaneGeometry = createNoteSpriteGeometry();
@@ -179,10 +196,14 @@ export function createFallingLane(options: {
       const coreRadius = computeCoreRadius(laneWidth, viewportPixelHeight);
       const maxRadius = laneWidth * RING_MAX_RADIUS_OVER_LANE_WIDTH;
 
-      // 消滅エフェクトの寿命を進める。前回処理した時刻から現在時刻までの差を経過時間として用いる。
+      // 画面全体の波紋を視錐台（縦横比）へ合わせる。
+      ripple.layout(lastAspect);
+
+      // 消滅エフェクトと画面全体の波紋の寿命を進める。前回処理した時刻から現在時刻までの差を経過時間として用いる。
       if (lastGameTimeMs !== null && Number.isFinite(gameTimeMs)) {
         const deltaSeconds = Math.max(0, (gameTimeMs - lastGameTimeMs) / 1000);
         burst.update(deltaSeconds);
+        ripple.update(deltaSeconds);
       }
 
       // 判定線へ到達したノーツ（前回時刻以上・現在時刻未満）で消滅エフェクトを発火する。
@@ -217,17 +238,31 @@ export function createFallingLane(options: {
         const approach = progress < 0 ? 1 : progress > 1 ? 0 : 1 - progress;
         const [r, g, b] = laneColor(slot0);
 
+        // 画面全体の波紋がこのノーツの位置を通過するとき、波面の向きへ小さく揺らし明るさを脈動させる（他ノーツとの干渉）。
+        const influence = ripple.sampleNoteInfluence(x, y);
+
         const sprite = sprites[slot];
-        sprite.setPosition(x, y);
+        sprite.setPosition(x + influence.offsetX, y + influence.offsetY);
         sprite.setCoreRadius(coreRadius);
         sprite.setApproach(approach);
         sprite.setColor(r, g, b);
+        sprite.setBrightness(1 + influence.brightnessPulse);
         sprite.setVisible(true);
         slot += 1;
       }
       for (let s = slot; s < capacity; s += 1) {
         sprites[s].setVisible(false);
       }
+    },
+    spawnTapRipple(slotIndex0: number): void {
+      // タップしたレーンの中心・判定線の高さから波紋を立てる。レーン番号は安全のため帯の端へ丸める（失敗のない床）。
+      let s = Math.floor(slotIndex0);
+      if (!Number.isFinite(s) || s < 0) {
+        s = 0;
+      } else if (s > slotCount - 1) {
+        s = slotCount - 1;
+      }
+      ripple.spawn(columnCenterX(s, slotCount, lastAspect), JUDGMENT_LINE_OVERLAY_Y);
     },
     channelLeftX(): number {
       return currentChannelLeftX;
@@ -237,6 +272,9 @@ export function createFallingLane(options: {
     },
     burstActiveCount(): number {
       return burst.activeCount();
+    },
+    rippleActiveCount(): number {
+      return ripple.activeCount();
     },
     burstSuppressedCount(): number {
       return burst.suppressedCount();
@@ -270,6 +308,7 @@ export function createFallingLane(options: {
         sprite.dispose();
       }
       burst.dispose();
+      ripple.dispose();
     },
   };
 }

@@ -6,13 +6,16 @@
 // 正規化Xは左上原点・右方向正・0以上1以下（入力層の座標規約）。2次元層の横位置は高さ基準で左端 −縦横比・右端 +縦横比。
 // 両座標系を結ぶ写像は x = (正規化X − 0.5) × 2 × 縦横比（src/rendering/viewport.ts の overlayPointFromNormalized と同式）。
 
-/** レーン帯の左端の正規化X。画面左端に置く。 */
-export const LANE_BAND_LEFT_NORMALIZED_X = 0;
+/** レーン帯の左端の正規化X。採用理由を先に述べる。画面左端そのもの（0）に置くと、最も左のレーンの仕切り線が画面端に
+ * 重なって見えず、左端のレーンの境界が分からない。少し内側（0.02、横持ちの代表幅844画素で約17画素）へ寄せて、左端の
+ * 仕切り線も画面内に見えるようにする。★暫定。 */
+export const LANE_BAND_LEFT_NORMALIZED_X = 0.02;
 
 /** レーン帯の右端の正規化X。採用理由を先に述べる。主たる操作は横持ち両手（docs/research/04-ux-and-chart-design.md §4）で、
- * 横持ちの代表幅844画素で1レーンの幅は 0.42 × 844 ÷ 7 ＝ 約50.6画素となり、最小タップ目標48画素（src/config/tuning.ts の
- * MIN_TOUCH_TARGET_PX）を満たす。右側の3Dシーン・ミクを広く見せるためにも、左側の約4割に収める。★暫定。 */
-export const LANE_BAND_RIGHT_NORMALIZED_X = 0.42;
+ * 帯の幅（右端 − 左端 ＝ 0.42）を横持ちの代表幅844画素に掛けて7レーンで割ると、1レーンの幅は 0.42 × 844 ÷ 7 ＝ 約50.6画素となり、
+ * 最小タップ目標48画素（src/config/tuning.ts の MIN_TOUCH_TARGET_PX）を満たす。左端を内側へ寄せた分だけ右端も右へずらして帯の幅を
+ * 保つ。右側の3Dシーン・ミクを広く見せるためにも、左側の約4割に収める。★暫定。 */
+export const LANE_BAND_RIGHT_NORMALIZED_X = 0.44;
 
 /** 帯の幅（正規化X）。 */
 function bandWidthNormalizedX(): number {
@@ -22,6 +25,23 @@ function bandWidthNormalizedX(): number {
 /** 1レーンの幅（正規化X）。帯の幅をスロット数で割る。 */
 export function laneWidthNormalizedX(slotCount: number): number {
   return bandWidthNormalizedX() / slotCount;
+}
+
+/**
+ * スロット総数の設定値を検証して確定する。正の有限整数のときはその値、それ以外は予備値を返す。
+ * スロット番号は0以上 slotCount-1 以下の整数であり、レーンを成立させるには1以上の整数が必要なため、
+ * 1未満・非整数・非有限の値は予備値へ丸める。本作の「失敗のない床」の方針のため、不正な設定でも継続する。
+ * レーン幅はここで帯の幅を slotCount で割るため、0や非整数の slotCount を素通しすると幅が無限大や非整数の刻みになる。
+ * その混入を入力（src/input）と描画（src/rendering/fallingLane.ts）の双方が同じ正典で防げるよう、検証をレーン幾何の所有者であるこのモジュールへ置く。
+ */
+export function resolveSlotCount(requested: number | undefined, fallback: number): number {
+  if (requested === undefined) {
+    return fallback;
+  }
+  if (Number.isInteger(requested) && requested >= 1) {
+    return requested;
+  }
+  return fallback;
 }
 
 /**

@@ -77,6 +77,8 @@ export interface NoteSprite {
   setCoreRadius(radius: number): void;
   /** 接近の近さ（遠いとき0、線分に近いとき1）を設定する。 */
   setApproach(approach: number): void;
+  /** 明るさの倍率を設定する（既定1）。画面全体の波紋が通過する位置で脈動させるために用いる。 */
+  setBrightness(value: number): void;
   /** 芯とにじみの色（レーンの固有色、各チャンネル0..1）を設定する。縁の光と艶は白寄りのまま保つ。 */
   setColor(r: number, g: number, b: number): void;
   /** 後始末。材質を解放する（共有ジオメトリは生成側がまとめて解放する）。 */
@@ -126,6 +128,9 @@ export function createNoteSprite(sharedGeometry: PlaneGeometry, renderOrder: num
     },
     setApproach(approach: number): void {
       material.uniforms.uApproach.value = approach;
+    },
+    setBrightness(value: number): void {
+      material.uniforms.uBrightness.value = value;
     },
     setColor(r: number, g: number, b: number): void {
       (material.uniforms.uCoreColor.value as Color).setRGB(r, g, b);

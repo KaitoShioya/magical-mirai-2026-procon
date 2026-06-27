@@ -7,9 +7,9 @@
 // 音程はX軸の7レーンで選ぶ。タップの正規化Xからレーン番号（スロット）への写像と、レーンの中央の正規化Xは、
 // 入力と描画（落下レーン）の双方が共有するため、その正典を src/utils/pitchHudLayout.ts に置く。ここでは正典を
 // 取り込み、入力の取得経路（このモジュール）を変えずに同名で再エクスポートする。
-import { slotIndexFromNormalizedX } from "../utils/pitchHudLayout";
+import { resolveSlotCount, slotIndexFromNormalizedX } from "../utils/pitchHudLayout";
 
-export { slotIndexFromNormalizedX };
+export { resolveSlotCount, slotIndexFromNormalizedX };
 
 /** 入力面要素の矩形。位置（左上）と大きさを持つ。 */
 export interface RectLike {
@@ -80,21 +80,6 @@ export function inputSourceFromPointerType(pointerType: string): PointerInputSou
     return "pen";
   }
   return "mouse";
-}
-
-/**
- * スロット総数の設定値を検証して確定する。正の有限整数のときはその値、それ以外は予備値を返す。
- * スロット番号は0以上 slotCount-1 以下の整数であり、レーンを成立させるには1以上の整数が必要なため、
- * 1未満・非整数・非有限の値は予備値へ丸める。入力は「失敗のない床」の方針のため、不正な設定でも継続する。
- */
-export function resolveSlotCount(requested: number | undefined, fallback: number): number {
-  if (requested === undefined) {
-    return fallback;
-  }
-  if (Number.isInteger(requested) && requested >= 1) {
-    return requested;
-  }
-  return fallback;
 }
 
 /**

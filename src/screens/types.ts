@@ -83,11 +83,17 @@ export interface PlayWiring {
   removeOverlayObject(object: Object3D): void;
   /** 落下式レーン（判定UI #57）が描画するノーツ列（時刻と音程番号と識別子）。曲プロファイルの notes を渡す。 */
   readonly laneNotes: readonly LaneNote[];
-  /** Y軸音程ガイド（Issue #58）を表示する。プレイ画面の表示中だけ出す。音程スロット数は統括（src/app）が注入し、
-   *  画面層は楽曲非依存の設定を知らない。WebGL が無い端末では統括の結線先が何もしない。 */
+  /** レーンガイド（Issue #58・Issue #202。レーンの仕切り線と単一判定線）を表示する。プレイ画面の表示中だけ出す。
+   *  音程スロット数（レーン数）は統括（src/app）が注入し、画面層は楽曲非依存の設定を知らない。WebGL が無い端末では統括の結線先が何もしない。 */
   showPitchAxisGuide(): void;
-  /** Y軸音程ガイド（Issue #58）を非表示にする。プレイ画面から抜けるときに呼ぶ。 */
+  /** レーンガイド（Issue #58・Issue #202）を非表示にする。プレイ画面から抜けるときに呼ぶ。 */
   hidePitchAxisGuide(): void;
+  /**
+   * プレイヤーのタップを画面全体の波紋へ届ける受け口を登録する（Issue #202）。統括（src/app）はタップ反応ごとに
+   * 登録された受け口へそのレーン（音程スロット、0始まり）を渡す。プレイ画面は落下式レーンの spawnTapRipple を登録し、
+   * 画面から抜けるときに何もしない受け口へ戻す。波紋はプレイヤーのタップでのみ立て、ノーツの自動通過では立てない。
+   */
+  registerTapRipple(sink: (slotIndex0: number) => void): void;
   /** ランク専用ゲージ（Issue #65）の現在入力を読む。実スコア未供給（Issue #59 の結線前）の間は null を返す。
    *  null のときプレイ画面は百分位0・ランク添字0（空・ランクC）でゲージを更新する。 */
   currentRankGaugeState(): RankGaugeInput | null;

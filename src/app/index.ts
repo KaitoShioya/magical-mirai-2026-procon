@@ -26,13 +26,16 @@ import { buildCreditRegistry } from "./credits/registry";
 import { createCreditsView, type CreditsView } from "./credits/creditsView";
 import { createCalibrationView, type CalibrationView } from "./calibration/calibrationView";
 import { createOperationSoundEngine } from "../audio";
-import { loadCalibrationOffsetMs, saveCalibrationOffsetMs } from "../scoring";
+import { loadCalibrationOffsetMs, saveCalibrationOffsetMs, type FrameTimeSample } from "../scoring";
 import {
   takeoverTypographyChart,
   TAKEOVER_DEFAULT_READING_PIXEL_HEIGHT,
   TAKEOVER_DEFAULT_READING_REGION,
 } from "../profiles/takeover/typographyChart";
 import { takeoverProfile } from "../profiles/takeover/profile";
+import { createCameraTrajectory } from "../utils/cameraTrajectory";
+import { createInput } from "../input";
+import { createPlaySession } from "./playSession";
 
 /** 統括の外部契約。後始末のみを公開する。 */
 export interface App {
@@ -71,6 +74,9 @@ export function createApp(
     reflectionResolution: options.reflectionResolution,
     bloomEnabled: options.bloomEnabled,
   });
+
+  // 演出カメラ軌跡（Issue #13・#59）。曲プロファイルのキーフレームから評価器を作り、プレイ中に毎フレーム駆動する。
+  const cameraTrajectory = createCameraTrajectory(takeoverProfile.camera);
 
   // 性能バジェットの自動劣化制御（Issue #18）。診断の有無に依らず常時生成する。理由を先に述べる。これは実機の
   // 性能に追従する本番機能であり、本番ビルドでも監視と劣化適用を動かす必要がある。FPSの読み出し口（window.__fps
@@ -159,10 +165,11 @@ export function createApp(
     saveOffsetMs: (offsetMs: number) => saveCalibrationOffsetMs(offsetMs),
   });
 
-  // 画面拡大・減衰揺れ（Issue #76）。拍に同期して画面を一瞬拡大し減衰させる演出を防御的に結線する。
-  // 現状の曲設定は拍時刻配列を持たないため拍は空で、演出は恒等変換のまま無作用である。拍時刻の供給は
-  // 曲プロファイル生成（#46）が、実プレイ中の拍駆動・再生位置の飛びでの基準貼り直しは #59 が担う。
-  const screenShakeBeats: { startTimeMs: number; position: number }[] = [];
+  // 画面拡大・減衰揺れ（Issue #76）。拍に同期して画面を一瞬拡大し減衰させる演出を結線する。
+  // 拍時刻は曲プロファイル生成（#46）の beats から供給する（#59）。各拍の開始時刻と小節内位置を写す。
+  const screenShakeBeats: { startTimeMs: number; position: number }[] = takeoverProfile.beats.map(
+    (beat) => ({ startTimeMs: beat.startTimeMs, position: beat.position })
+  );
   const screenShakeAmplitudes = resolveBeatAmplitudes(screenShakeBeats);
   const beatScheduler = createBeatScheduler(screenShakeBeats.map((b) => b.startTimeMs));
   const screenShake = createScreenShake();
@@ -182,6 +189,32 @@ export function createApp(
   // このプレイ進行中に「触れて再生」を一度でも触れたか。一度触れたら、このプレイ中は二度と出さない。
   let tapToPlayAcknowledged = false;
 
+  // 判定の音楽時刻の復元に使うフレーム時刻標本（Issue #59）。onFrame 先頭で毎フレーム更新する。
+  let latestFrameSample: FrameTimeSample = {
+    musicPositionMs: 0,
+    frameWallTimeMs: 0,
+    reliableMusicTime: false,
+  };
+  // 直前フレームの再同期回数。当該フレームで再同期したか（resyncCount の増加）を検出するための比較基準。
+  let prevResyncCount = 0;
+
+  // プレイ進行の判定・採点・音・光の統合（Issue #59）。曲プロファイルを渡し、副作用の出口（操作音・反応光点・
+  // フレーム時刻標本・較正値）を注入する。較正値はプレイ開始ごとに読み直すため関数で渡す。
+  const session = createPlaySession({
+    profile: takeoverProfile,
+    cameraTrajectory,
+    operationSound,
+    spawnReactionLight: (reactionLight) => renderRoot.spawnReactionButterfly(reactionLight),
+    getFrameSample: () => latestFrameSample,
+    getCalibrationOffsetMs: () => loadCalibrationOffsetMs(),
+  });
+
+  // 入力（Issue #47・#59）。全画面（root）を入力面とし、プレイ進行中だけ有効化する。タップごとにセッションへ渡す。
+  const input = createInput({
+    target: root,
+    onReaction: (reaction) => session.onReaction(reaction),
+  });
+
   function enterPlay(): void {
     inPlayPhase = true;
     playStartElapsedMs = 0;
@@ -191,6 +224,9 @@ export function createApp(
     // プレイ開始ごとに画面拡大・減衰揺れの状態を初期化する（再挑戦で前回の拍・余韻を持ち越さない）。
     beatScheduler.reset();
     screenShake.reset();
+    // プレイ進行の判定・採点・音・光のセッションを初期化し、入力を有効化する（Issue #59）。
+    session.reset();
+    input.setActive(true);
     playback.beginFromStart();
   }
 
@@ -241,11 +277,9 @@ export function createApp(
       // 描画基盤側が何もしない。将来の曲別スロット数対応はこの注入箇所だけで変わる。
       showPitchAxisGuide: () => renderRoot.showPitchAxisGuide(PITCH_SLOT_COUNT_DEFAULT),
       hidePitchAxisGuide: () => renderRoot.hidePitchAxisGuide(),
-      // ランク専用ゲージ（Issue #65）の現在入力。実スコアの累積から百分位・ランク添字を供給する結線は
-      // Issue #59（本編プレイ成立）の責務のため、本Issueでは null を返す。null の間プレイ画面は
-      // 百分位0・ランク添字0（空・ランクC）でゲージを更新する。#59 はここを scoring の rankFromPercentile・
-      // rankOrdinal を用いた実装へ差し替える。
-      currentRankGaugeState: () => null,
+      // ランク専用ゲージ（Issue #65・#59）の現在入力。プレイ進行セッションが実スコアの累積から百分位・
+      // ランク添字（rankFromPercentile・rankOrdinal 由来）を供給する。
+      currentRankGaugeState: () => session.rankGaugeState(),
     },
   };
 
@@ -283,6 +317,9 @@ export function createApp(
     if (playback.hasEnded()) {
       inPlayPhase = false;
       overlays.hideTapToPlay();
+      // 入力を無効化する（結果画面ではタップを判定・採点へ流さない）。最終スコアは session.finalResult() で
+      // 取得でき、結果画面への引き渡しは結果画面の実装（Issue #74）が結線する。
+      input.setActive(false);
       machine.requestTransition("result");
     }
   }
@@ -298,6 +335,25 @@ export function createApp(
       world.step(stepEndGameTimeMs);
     },
     onFrame: (realDeltaMs: number): void => {
+      // 判定の音楽時刻標本（Issue #59）を毎フレーム先頭で更新する。順序を固定する:
+      // (1) 実時計を読む (2) ループ状態を読む (3) 当該フレームの再同期を検出する (4) 比較の直後に前回値を更新する
+      // (5) 信頼性を求める (6) 標本を確定する。順序を固定する理由は、更新を比較より前に置くと当該フレームの再同期を
+      // 常に見逃し、後のフレームまで遅らせると次フレームで重複検出するためである。音楽時刻は平滑化値 clock.gameTimeMs
+      //（loop.state().gameTimeMs）を使い、実時計は描画合図時刻と1ミリ秒未満しか違わない performance.now() を読む。
+      const frameWallTimeMs = performance.now();
+      const engineState = loop.state();
+      const didResync = engineState.resyncCount !== prevResyncCount;
+      prevResyncCount = engineState.resyncCount;
+      latestFrameSample = {
+        musicPositionMs: engineState.gameTimeMs,
+        frameWallTimeMs,
+        reliableMusicTime:
+          engineState.ready &&
+          engineState.hasClockSample &&
+          playback.timeSource.isPlaying() &&
+          !didResync,
+      };
+
       // 自動劣化制御（Issue #18）。毎フレームの実経過を制御器へ渡し、段階が変化したときだけ描画へ適用する。
       // 適用結果の実効変化の有無を制御器へ返す（端末画素密度倍率が1以下で段階0→1が無変化のときの判定に使う）。
       const perfDecision = perfBudget.recordFrame(realDeltaMs);
@@ -325,6 +381,15 @@ export function createApp(
             diagPerfHistory.shift();
           }
         }
+      }
+      // カメラ軌跡駆動（Issue #13・#59）。プレイ進行中だけ、平滑化した音楽時刻でカメラ姿勢を更新する。
+      // 文字配置（createCameraPlacement）がカメラ姿勢を毎フレーム読むため、文字駆動 machine.update より前に置く。
+      // 投下区間判定・スロット音高の更新も同じ音楽時刻でセッションへ進める。
+      if (inPlayPhase) {
+        const musicTimeMs = engineState.gameTimeMs;
+        const pose = cameraTrajectory.poseAt(musicTimeMs);
+        renderRoot.setCameraPose(pose.position, pose.target);
+        session.updateFrame(musicTimeMs);
       }
       machine.update(realDeltaMs);
       tickPlay(realDeltaMs);
@@ -375,6 +440,8 @@ export function createApp(
     window.__screenHistory = (): readonly string[] => machine.history();
     window.__engineState = () => loop.state();
     window.__renderState = () => renderRoot.state();
+    // プレイ進行セッション（Issue #59）の読み取り専用診断。通しスモークが採点・投下・発音の進行を確かめる。
+    window.__playSession = () => session.diagnostics();
     // 性能計測フック（Issue #18）。試作ツールと同じ契約名で、本編アプリでも scripts/harness が計測できる。
     window.__fps = (): number => diagLastFps;
     window.__avgFps = (): number =>
@@ -405,6 +472,8 @@ export function createApp(
       creditsView.dispose();
       calibrationView.dispose();
       operationSound.dispose();
+      // 入力（Issue #59）の待ち受けを解除する。
+      input.dispose();
       playback.dispose();
       renderRoot.dispose();
       // 確定前に破棄された場合に備え、renderOverlays が付けた inert 属性を外す。
@@ -413,6 +482,7 @@ export function createApp(
         delete window.__screenHistory;
         delete window.__engineState;
         delete window.__renderState;
+        delete window.__playSession;
         delete window.__fps;
         delete window.__avgFps;
         delete window.__fpsSamples;

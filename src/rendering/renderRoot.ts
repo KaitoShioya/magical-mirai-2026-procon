@@ -35,6 +35,8 @@ import {
   type CenterFigure,
   type CenterFigureStatus,
 } from "./entities/centerFigure";
+import { createButterflyFigures, type ButterflyFigures } from "./entities/butterflyFigures";
+import { reactionToScale, reactionToBrightness } from "./entities/butterflyReactionMapping";
 import { loadVrm } from "./loaders/vrmLoader";
 import type { CharacterModelConfig } from "../types/character";
 import { createOverlayLayer, type OverlayLayer } from "./overlay";
@@ -60,6 +62,12 @@ export type WaterSource = "placeholder-plane" | "stage-mesh";
 // 描かないため、暫定視点を水面（高さ0）より上に固定する。
 const PLACEHOLDER_CAMERA_POSITION = { x: 0, y: 14, z: 34 } as const;
 const PLACEHOLDER_CAMERA_TARGET = { x: 0, y: 1, z: 0 } as const;
+
+// 反応の蝶（演奏中の一過性の光点、Issue #59）の同時生存上限。採用理由を先に述べる。蝶の寿命は約1.2秒で、
+// その間に重なりうる演奏中の蝶を収める余裕として64とする。満タン容量がおよそ50タップ相当の操作密度でも、
+// 寿命の短さから同時生存はこの範囲に収まり、容量超過で生成が失敗して「どのタップも光点」が崩れることを
+// 避けられる上限である。★実機調整で確定する暫定値。
+const REACTION_BUTTERFLY_CAPACITY = 64;
 
 /** 診断・検証用の描画状態（window.__renderState が返す素の構造）。 */
 export interface RenderState {
@@ -128,6 +136,22 @@ export interface RenderState {
   /** レンダラのトーンマッピング方式の数値。現状はトーンマッピング無し（NoToneMapping）を明示設定し検証する。
    *  レンダラが無い端末では NoToneMapping の値を返す。 */
   toneMapping: number;
+  /** 反応の蝶（演奏中の一過性の光点、Issue #59）の現在の活動個体数。通しスモークが「タップが光点を生む」
+   *  供給経路を確かめるために読む。WebGL が無く蝶を作らない端末では0。 */
+  reactionButterflyActiveCount: number;
+}
+
+/** 反応の蝶（演奏中の一過性の光点、Issue #59）を1個出す入力。位置と、0以上1以下の反応強度（タイミング精度→大きさ、
+ *  音程精度→輝度）と寿命秒を受け取る。世界座標の大きさ・輝度への写像は描画層（butterflyReactionMapping）が担うため、
+ *  呼び出し側（統括）は強度をそのまま渡す（既存の sunflowerFigures.setInstance と同じ受け渡し）。 */
+export interface ReactionButterflyInput {
+  position: { x: number; y: number; z: number };
+  /** タイミング精度（0以上1以下）。大きさへ写す。 */
+  sizeStrength: number;
+  /** 音程精度（0以上1以下）。輝度へ写す。 */
+  brightnessStrength: number;
+  /** 寿命秒（出現から消滅まで）。正。 */
+  lifeSeconds: number;
 }
 
 /** applyPerformanceLevel の戻り値。段階適用で描画上の何が実際に変わったかを示す（Issue #18）。 */
@@ -199,6 +223,10 @@ export interface RenderRoot {
    *  減衰で0へ向かう。値を橋渡しするだけで時刻ロジックは持たない。後処理パスが無効（既定）の端末では効果は出ない。
    *  本編での有効化は #59 が createRenderRoot({ postEffectEnabled: true }) で行う。WebGL が無い端末では何もしない。 */
   setChromaBurstIntensity(intensity: number): void;
+  /** 反応の蝶（演奏中の一過性の光点、Issue #59）を1個発生させる。判定論理は持たず、位置と反応強度（0以上1以下）と
+   *  寿命だけを受け取り、強度から世界座標の大きさ・輝度へ写してから蝶エンティティへ委譲する（依存規則 §5、scoring を
+   *  import しない）。WebGL が無く蝶を作らない端末、または容量に空きが無いときは何もしない。 */
+  spawnReactionButterfly(input: ReactionButterflyInput): void;
   /** 診断・検証用の現在状態を返す。 */
   state(): RenderState;
   /** 後始末。リサイズ待ち受けの解除・GPU資源の解放・canvas の取り外しを行う。冪等。 */
@@ -336,6 +364,8 @@ export function createRenderRoot(
   // 夜の照明と中心オブジェクト（Issue #64）。標準マテリアルのモデルを照らす光源と、中心に常在する造形。
   let lighting: NightLighting | null = null;
   let centerFigure: CenterFigure | null = null;
+  // 反応の蝶（演奏中の一過性の光点、Issue #59）。spawn 方式の寿命プールを持ち、毎フレーム update で進める。
+  let reactionButterfly: ButterflyFigures | null = null;
   // 2次元層（Issue #15）。3次元の合成の後に最前面へ重ねる正射影カメラと専用シーン。
   let overlay: OverlayLayer | null = null;
   if (renderer) {
@@ -350,6 +380,9 @@ export function createRenderRoot(
     // 中心オブジェクト（Issue #64）。初期は光柱（fallback）を中心へ立て、VRM読み込み成功で差し替える。
     centerFigure = createCenterFigure();
     scene.add(centerFigure.object3d);
+    // 反応の蝶（Issue #59）。spawn 方式の寿命プールを3次元の場面へ載せ、update で羽ばたきと寿命を進める。
+    reactionButterfly = createButterflyFigures({ capacity: REACTION_BUTTERFLY_CAPACITY });
+    scene.add(reactionButterfly.object);
     // 暫定カメラ視点（Issue #13 で置換）。湖面と発光点を画面に収め、映り込みを目視できるようにする。
     camera.position.set(
       PLACEHOLDER_CAMERA_POSITION.x,
@@ -563,6 +596,8 @@ export function createRenderRoot(
       return;
     }
     centerFigure?.update(deltaSeconds);
+    // 反応の蝶（Issue #59）の羽ばたき時間と寿命を進める。活動個体が無いときは内部で軽く返る。
+    reactionButterfly?.update(deltaSeconds);
   }
 
   async function mountCenterCharacter(config: CharacterModelConfig): Promise<boolean> {
@@ -712,6 +747,20 @@ export function createRenderRoot(
       // 値を橋渡しするだけ（時刻ロジックは持たない）。WebGL が無く合成器が無い端末では何もしない。
       bloomComposer?.setChromaBurstIntensity(intensity);
     },
+    spawnReactionButterfly(input: ReactionButterflyInput): void {
+      if (!reactionButterfly) {
+        return;
+      }
+      // 反応強度（0以上1以下）を世界座標の大きさ・輝度へ写してから発生させる（写像は描画層の責務）。
+      // 容量に空きが無いとき spawn は false を返すが、戻り値は使わない（音は別経路で鳴り、光点が出ないだけで
+      // 演出は破綻しないため）。
+      reactionButterfly.spawn({
+        position: input.position,
+        scale: reactionToScale(input.sizeStrength),
+        brightness: reactionToBrightness(input.brightnessStrength),
+        lifeSeconds: input.lifeSeconds,
+      });
+    },
     resize,
     applyPerformanceLevel,
     setCenterFigureReflected(reflected: boolean): void {
@@ -774,6 +823,8 @@ export function createRenderRoot(
         // 色管理の明示設定（レンダラが無い端末では既定値を返す）。後処理を線形空間で作用させる前提を診断で確かめる。
         outputColorSpace: renderer ? renderer.outputColorSpace : SRGBColorSpace,
         toneMapping: renderer ? renderer.toneMapping : NoToneMapping,
+        // 反応の蝶（Issue #59）の活動個体数。蝶を作っていない（WebGL 不可）端末では0。
+        reactionButterflyActiveCount: reactionButterfly ? reactionButterfly.activeCount() : 0,
       };
     },
     dispose(): void {
@@ -807,6 +858,12 @@ export function createRenderRoot(
         scene.remove(centerFigure.object3d);
         centerFigure.dispose();
         centerFigure = null;
+      }
+      // 反応の蝶（Issue #59）を場面から外し、形状・材質を解放する。
+      if (reactionButterfly) {
+        scene.remove(reactionButterfly.object);
+        reactionButterfly.dispose();
+        reactionButterfly = null;
       }
       // 夜の照明を解放する。
       if (lighting) {

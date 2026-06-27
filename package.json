@@ -19,6 +19,7 @@
     "reflection:fps": "node scripts/reflection-fps.mjs",
     "screen-shake:fps": "node scripts/screen-shake-fps.mjs",
     "smoke": "node scripts/screens-smoke.mjs",
+    "smoke:play": "node scripts/play-smoke.mjs",
     "smoke:glow": "node scripts/rendering-glow-smoke.mjs",
     "smoke:butterfly": "node scripts/rendering-butterfly-smoke.mjs",
     "smoke:sunflower": "node scripts/rendering-sunflower-smoke.mjs",

@@ -6,15 +6,18 @@
 // 失敗時の扱いは仕様で「警告（格下げ可）」のため、--warn-only を与えると不成立でも終了コード0で返す（提出が逼迫した
 // 場合に進行を止めない退避手段）。既定は厳格に終了コード1。
 //
-// 接続先サーバは環境変数 BASE で指定する（既定 http://127.0.0.1:4173）。別端末で開発サーバまたはプレビュー
-// サーバを起動してから実行する。
+// 接続先サーバは環境変数 BASE で指定する（既定 http://localhost:5173 ＝開発サーバ）。
+// 本診断ページ（display-sync.html）は楽曲データ /docs/analysis/takeover.songmap.json を実行時に取得するため、
+// docs/ を配信する開発サーバ（npm run dev）に対して実行する必要がある。プレビュー（vite preview）や本番ビルドは
+// docs/ を配信しないため、このゲートは開発サーバへ向ける（既定をプレビューの 4173 ではなく開発サーバの 5173 とする理由）。
+//   別端末で開発サーバを起動してから実行する。
 //   PowerShell:  $env:BASE='http://localhost:5173'; node scripts/display-sync-quality.mjs
 //   Unix系シェル: BASE=http://localhost:5173 node scripts/display-sync-quality.mjs
 import { chromium } from "playwright";
 import { openPage } from "./harness/page.mjs";
 
 const args = process.argv.slice(2);
-const BASE = process.env.BASE || "http://127.0.0.1:4173";
+const BASE = process.env.BASE || "http://localhost:5173";
 const warnOnly = args.includes("--warn-only");
 // 検証用の閾値上書きを診断ページへ渡す起動時パラメータ（例 --query=coverageMinFraction=2）。
 // 閾値を変えた場合の合否を手元で確かめるための診断用。指定が無ければ既定閾値で動く。

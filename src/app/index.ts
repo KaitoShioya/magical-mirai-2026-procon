@@ -413,6 +413,8 @@ export function createApp(
         }
         beatScheduler.advance(gameTimeMs, (event): void => {
           // ノーツのある拍（ノーツが目標線に達して消える瞬間）だけ振動させる。休符の拍では振動させない。
+          // 全区間（サビ以外も含む）でノーツに同期させる方針をユーザーが確定したため、#198 のサビ区間限定の
+          // 発火条件は用いない（振幅の縮小は screenShake.ts 側で保持される）。
           if (!noteBeatIndices.has(event.index)) {
             return;
           }

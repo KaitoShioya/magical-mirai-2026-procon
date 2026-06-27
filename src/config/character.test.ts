@@ -27,6 +27,24 @@ describe("MIKU_CHARACTER の配置値", () => {
   });
 });
 
+describe("MIKU_CHARACTER の固定ポーズ設定", () => {
+  // 固定ポーズのVRMアニメーションは public/ 配信を指す絶対パスで、拡張子が .vrma でなければ読み込めない。
+  it("固定ポーズのVRMアニメーションの配信先は public/ を指す絶対パスで、拡張子が .vrma である", () => {
+    expect(MIKU_CHARACTER.poseAnimationUrl).toBeDefined();
+    const url = MIKU_CHARACTER.poseAnimationUrl ?? "";
+    expect(url.startsWith("/models/")).toBe(true);
+    expect(url.endsWith(".vrma")).toBe(true);
+  });
+
+  // 固定する時刻は描画のミキサーへ渡るため、非有限値や負の値が混じると姿勢の固定が壊れる。
+  it("固定する時刻は有限かつ0以上である", () => {
+    expect(MIKU_CHARACTER.poseFreezeTimeSec).toBeDefined();
+    const seconds = MIKU_CHARACTER.poseFreezeTimeSec ?? Number.NaN;
+    expect(Number.isFinite(seconds)).toBe(true);
+    expect(seconds).toBeGreaterThanOrEqual(0);
+  });
+});
+
 describe("PCL_CREDIT の必須4要素", () => {
   // 出典の必須4要素（描いた旨・ライセンス名・ライセンスのアドレス・権利者の社名・ガイドライン遵守の旨）が
   // すべて非空であることを固定する。空の要素があると常時表示が要件を満たさない。

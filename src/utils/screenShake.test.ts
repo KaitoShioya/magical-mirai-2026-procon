@@ -3,6 +3,7 @@ import {
   createScreenShake,
   resolveBeatAmplitudes,
   inverseScreenPoint,
+  isWithinAnyRange,
   BEAT_AMPLITUDE_DOWNBEAT,
   BEAT_AMPLITUDE_OFFBEAT,
   DECAY_ZOOM_TAU_MS,
@@ -62,6 +63,37 @@ describe("resolveBeatAmplitudes（小節頭判定）", () => {
   });
 });
 
+describe("isWithinAnyRange（サビ区間の判定）", () => {
+  // TAKEOVER のサビ区間（コーラス区間）に相当する代表データ。半開区間の境界を確かめる。
+  const ranges = [
+    { startTimeMs: 1000, endTimeMs: 5000 },
+    { startTimeMs: 10000, endTimeMs: 15000 },
+  ];
+
+  it("区間の開始時刻は内側とみなす（半開区間の下端を含む）", () => {
+    expect(isWithinAnyRange(ranges, 1000)).toBe(true);
+  });
+
+  it("区間の終了時刻は内側とみなさない（半開区間の上端を含まない）", () => {
+    expect(isWithinAnyRange(ranges, 5000)).toBe(false);
+  });
+
+  it("区間の内部の時刻は内側とみなす", () => {
+    expect(isWithinAnyRange(ranges, 3000)).toBe(true);
+    expect(isWithinAnyRange(ranges, 12000)).toBe(true);
+  });
+
+  it("いずれの区間にも属さない時刻は外側とみなす", () => {
+    expect(isWithinAnyRange(ranges, 0)).toBe(false);
+    expect(isWithinAnyRange(ranges, 7000)).toBe(false);
+    expect(isWithinAnyRange(ranges, 20000)).toBe(false);
+  });
+
+  it("空配列ではどの時刻も外側とみなす", () => {
+    expect(isWithinAnyRange([], 3000)).toBe(false);
+  });
+});
+
 describe("createScreenShake（拡大の減衰）", () => {
   it("拍未発火・初期状態では恒等変換を返す", () => {
     const shake = createScreenShake();
@@ -91,7 +123,7 @@ describe("createScreenShake（拡大の減衰）", () => {
     const shake = createScreenShake();
     shake.trigger(0, BEAT_AMPLITUDE_DOWNBEAT, 0); // 強拍
     shake.trigger(0, BEAT_AMPLITUDE_OFFBEAT, 1); // 同時刻の弱拍
-    // 強拍の拡大量0.12が保たれる（弱拍0.05へ下がらない）。
+    // 強拍の拡大量0.09が保たれる（弱拍0.05へ下がらない）。
     expect(shake.evaluate(0, W, H, false).scale - 1).toBeCloseTo(BEAT_AMPLITUDE_DOWNBEAT, 4);
   });
 

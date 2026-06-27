@@ -126,6 +126,8 @@ declare global {
       } | null;
       centerFigureStatus: "fallback" | "loaded" | "error";
       centerFigureError: string | null;
+      centerFigureMotionMode: "fixed" | "posed";
+      centerFigurePoseMaxAngleDeg: number | null;
       centerFigureReflected: boolean;
       overlay: {
         objectCount: number;
@@ -233,6 +235,8 @@ declare global {
       webglAvailable: boolean;
       centerFigureStatus: "fallback" | "loaded" | "error";
       centerFigureError: string | null;
+      centerFigureMotionMode: "fixed" | "posed";
+      centerFigurePoseMaxAngleDeg: number | null;
       reflectionEnabled: boolean;
       centerFigureReflected: boolean;
       cameraPosition: { x: number; y: number; z: number };

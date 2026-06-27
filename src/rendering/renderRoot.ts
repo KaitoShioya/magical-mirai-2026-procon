@@ -19,6 +19,7 @@ import {
   CAMERA_FOV,
   CAMERA_NEAR,
   DEFAULT_REFLECTION_RESOLUTION,
+  FOG_COLOR,
   FOG_DENSITY,
   MAX_PIXEL_RATIO,
   NIGHT_COLOR,
@@ -30,6 +31,7 @@ import { clampPixelRatio, computeAspect } from "./viewport";
 import { createWater, type Water } from "./water";
 import { createBloomComposer, type BloomComposer, type BloomState } from "./bloom";
 import { createNightLighting, type NightLighting } from "./lighting";
+import { createNeonNebulaSky, type NeonNebulaSky } from "./sky";
 import {
   createCenterFigure,
   type CenterFigure,
@@ -147,6 +149,9 @@ export interface RenderState {
   /** 反応の蝶（演奏中の一過性の光点、Issue #59）の現在の活動個体数。通しスモークが「タップが光点を生む」
    *  供給経路を確かめるために読む。WebGL が無く蝶を作らない端末では0。 */
   reactionButterflyActiveCount: number;
+  /** ネオン星雲の夜空（Issue #205）をシーンに組み込んだなら真。WebGL が無く夜空を作らない端末では偽。
+   *  夜空スモークが夜空の組み込みを直接確かめるために読む。 */
+  skyPresent: boolean;
 }
 
 /** 反応の蝶（演奏中の一過性の光点、Issue #59）を1個出す入力。位置と、0以上1以下の反応強度（タイミング精度→大きさ、
@@ -280,15 +285,23 @@ export function createRenderRoot(
     reflectionResolution?: number;
     bloomEnabled?: boolean;
     postEffectEnabled?: boolean;
+    placeholderGlowEnabled?: boolean;
   } = {}
 ): RenderRoot {
   const reflectionResolution = options.reflectionResolution ?? DEFAULT_REFLECTION_RESOLUTION;
   const bloomEnabled = options.bloomEnabled ?? true;
   const postEffectEnabled = options.postEffectEnabled ?? false;
+  // 暫定発光点（Issue #9/#10 の反射確認用の固定の光点）を置くか。採用理由を先に述べる。既定は真として既存の
+  // 呼び出し・スモークの見えを変えない。夜空の受け入れ診断（Issue #205）は、評価の妨げになる暫定の光点を外して
+  // 夜空そのものを見るため偽を渡す。
+  const placeholderGlowEnabled = options.placeholderGlowEnabled ?? true;
 
   const scene = new Scene();
+  // 背景色は深夜色のまま残す（夜空ドームが視界を覆うため見えないが、ドーム生成失敗時の安全な下地として保つ）。
   scene.background = new Color(NIGHT_COLOR);
-  scene.fog = new FogExp2(NIGHT_COLOR, FOG_DENSITY);
+  // 霧の色は夜空の地平色（FOG_COLOR）にする（Issue #205）。遠景の陸地が黒でなく夜空の地平へ溶ける大気遠近を出す。
+  // 霧は本描画と反射の双方の地形に適用される（Reflector は scene を通常描画するため）。
+  scene.fog = new FogExp2(FOG_COLOR, FOG_DENSITY);
 
   const camera = new PerspectiveCamera(
     CAMERA_FOV,
@@ -373,6 +386,8 @@ export function createRenderRoot(
   // 夜の照明と中心オブジェクト（Issue #64）。標準マテリアルのモデルを照らす光源と、中心に常在する造形。
   let lighting: NightLighting | null = null;
   let centerFigure: CenterFigure | null = null;
+  // ネオン星雲の夜空（Issue #205）。最背面に不透明で描き、使用中のカメラへ追従する。反射に映すためシーンへ加える。
+  let sky: NeonNebulaSky | null = null;
   // 反応の蝶（演奏中の一過性の光点、Issue #59）。spawn 方式の寿命プールを持ち、毎フレーム update で進める。
   let reactionButterfly: ButterflyFigures | null = null;
   // 2次元層（Issue #15）。3次元の合成の後に最前面へ重ねる正射影カメラと専用シーン。
@@ -380,12 +395,17 @@ export function createRenderRoot(
   if (renderer) {
     water = createWater({ reflectionResolution });
     scene.add(water.object3d);
-    // 暫定発光点（Issue #10 で発光点本実装へ置換）。反射に映る対象として置く。
-    placeholderGlow = createPlaceholderGlow();
-    scene.add(placeholderGlow.object3d);
-    // 夜の照明（Issue #64）。中心オブジェクトを深夜の背景から分離する淡い環境光とリムライト。
+    // 暫定発光点（Issue #10 で発光点本実装へ置換）。反射に映る対象として置く。夜空診断では外す（上記の理由）。
+    if (placeholderGlowEnabled) {
+      placeholderGlow = createPlaceholderGlow();
+      scene.add(placeholderGlow.object3d);
+    }
+    // 夜の照明（Issue #64・#205）。中心オブジェクトを背景から分離する環境光とリムライト、遠景の陸地を可視化する半球光。
     lighting = createNightLighting();
     scene.add(lighting.object3d);
+    // ネオン星雲の夜空（Issue #205）。シーンへ加えると反射（Reflector が scene を再描画）にも自動で映る。
+    sky = createNeonNebulaSky();
+    scene.add(sky.object3d);
     // 中心オブジェクト（Issue #64）。初期は光柱（fallback）を中心へ立て、VRM読み込み成功で差し替える。
     centerFigure = createCenterFigure();
     scene.add(centerFigure.object3d);
@@ -611,6 +631,8 @@ export function createRenderRoot(
     centerFigure?.update(deltaSeconds);
     // 反応の蝶（Issue #59）の羽ばたき時間と寿命を進める。活動個体が無いときは内部で軽く返る。
     reactionButterfly?.update(deltaSeconds);
+    // ネオン星雲の夜空（Issue #205）の星雲の漂いと星の瞬きの時刻を進める。
+    sky?.update(deltaSeconds);
   }
 
   async function mountCenterCharacter(config: CharacterModelConfig): Promise<boolean> {
@@ -880,6 +902,8 @@ export function createRenderRoot(
         toneMapping: renderer ? renderer.toneMapping : NoToneMapping,
         // 反応の蝶（Issue #59）の活動個体数。蝶を作っていない（WebGL 不可）端末では0。
         reactionButterflyActiveCount: reactionButterfly ? reactionButterfly.activeCount() : 0,
+        // ネオン星雲の夜空（Issue #205）をシーンに組み込んだか。WebGL 不可で夜空を作らない端末では偽。
+        skyPresent: sky !== null,
       };
     },
     dispose(): void {
@@ -925,6 +949,12 @@ export function createRenderRoot(
         scene.remove(lighting.object3d);
         lighting.dispose();
         lighting = null;
+      }
+      // ネオン星雲の夜空（Issue #205）を場面から外し、ジオメトリ・マテリアルを解放する。
+      if (sky) {
+        scene.remove(sky.object3d);
+        sky.dispose();
+        sky = null;
       }
       if (bloomComposer) {
         bloomComposer.dispose();

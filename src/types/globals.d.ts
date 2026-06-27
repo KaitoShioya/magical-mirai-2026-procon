@@ -157,6 +157,7 @@ declare global {
       outputColorSpace: string;
       toneMapping: number;
       reactionButterflyActiveCount: number;
+      skyPresent: boolean;
     };
     /**
      * 検証用の舞台土台診断アクセサ。舞台土台の受け入れ診断ページ（stage.html）だけが取り付ける。
@@ -560,6 +561,24 @@ declare global {
     __scoreHistoryControl?: {
       reset(): void;
       record(totalScore: number, recordedAtMs: number): void;
+    };
+    /**
+     * ネオン星雲の夜空（Issue #205）の受け入れ診断ページ（night-sky.html）だけが取り付ける。
+     * __nightSkyReady は舞台土台の読み込み確定後に真を返す（駆動部は関数の存在かつ戻り値が真を待つ）。
+     * __nightSkyState は描画状態（夜空の組み込み・反射の有無と解像度・描画命令数）と、画面の画素を読み戻して
+     * 求めた代表輝度（空領域の平均と最大、地形領域の平均。いずれも256段階の知覚輝度）を返す。
+     * scripts/rendering-night-sky-smoke.mjs が読む。共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __nightSkyReady?: () => boolean;
+    __nightSkyState?: () => {
+      webglAvailable: boolean;
+      skyPresent: boolean;
+      reflectionEnabled: boolean;
+      reflectionResolution: number;
+      drawCalls: number;
+      skyLuminance: number;
+      skyMaxLuminance: number;
+      terrainLuminance: number;
     };
   }
 }

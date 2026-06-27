@@ -1,20 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { AmbientLight, DirectionalLight } from "three";
+import { AmbientLight, DirectionalLight, HemisphereLight } from "three";
 import { createNightLighting } from "./lighting";
 
 describe("createNightLighting の組み立て", () => {
-  // 構成は淡い環境光1灯とリムライト1灯の計2灯であることを固定する。世界観を保つため光源を増やさない。
-  it("環境光1灯とリムライト1灯の2灯を持つ", () => {
+  // 構成は淡い環境光1灯・リムライト1灯・半球光1灯の計3灯であることを固定する（Issue #205 で半球光を追加）。
+  // 世界観を保つためこれ以上は増やさない。半球光は遠景の陸地を可視化する。
+  it("環境光1灯・リムライト1灯・半球光1灯の3灯を持つ", () => {
     const lighting = createNightLighting();
     const children = lighting.object3d.children;
-    expect(children).toHaveLength(2);
+    expect(children).toHaveLength(3);
     expect(children.filter((c) => c instanceof AmbientLight)).toHaveLength(1);
     expect(children.filter((c) => c instanceof DirectionalLight)).toHaveLength(1);
+    expect(children.filter((c) => c instanceof HemisphereLight)).toHaveLength(1);
     lighting.dispose();
   });
 
-  // 強さは正でなければ照明として働かない。深夜の暗さを壊さないため、環境光は控えめ（1未満）に保つ。
-  it("環境光は控えめな正の強さ、リムライトは正の強さである", () => {
+  // 強さは正でなければ照明として働かない。深夜の暗さを壊さないため、環境光と半球光は控えめ（1未満）に保つ。
+  // 半球光は地形がブルーム下限を超えないよう特に控えめ（上限の目安0.35以下）にする。
+  it("環境光と半球光は控えめな正の強さ、リムライトは正の強さである", () => {
     const lighting = createNightLighting();
     const ambient = lighting.object3d.children.find(
       (c): c is AmbientLight => c instanceof AmbientLight
@@ -22,11 +25,17 @@ describe("createNightLighting の組み立て", () => {
     const rim = lighting.object3d.children.find(
       (c): c is DirectionalLight => c instanceof DirectionalLight
     );
+    const hemisphere = lighting.object3d.children.find(
+      (c): c is HemisphereLight => c instanceof HemisphereLight
+    );
     expect(ambient).toBeDefined();
     expect(rim).toBeDefined();
+    expect(hemisphere).toBeDefined();
     expect(ambient!.intensity).toBeGreaterThan(0);
     expect(ambient!.intensity).toBeLessThan(1);
     expect(rim!.intensity).toBeGreaterThan(0);
+    expect(hemisphere!.intensity).toBeGreaterThan(0);
+    expect(hemisphere!.intensity).toBeLessThanOrEqual(0.35);
     lighting.dispose();
   });
 

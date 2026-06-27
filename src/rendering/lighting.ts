@@ -3,12 +3,20 @@
 // profiles・tools は import しない。水面（Reflector）と発光点（光源非依存の MeshBasicMaterial）は照明の影響を
 // 受けないため、ここで光源を足してもそれらの既存の見えは変わらず、影響は標準マテリアルのモデルに限られる。
 //
-// 構成の根拠を先に述べる。舞台は深夜・雨の暗い湖（背景色 0x05060a）であり、明るく均一に照らすと世界観が崩れる。
+// 構成の根拠を先に述べる。舞台は深夜・雨の暗い湖であり、明るく均一に照らすと世界観が崩れる。
 // 研究の正典（docs/research/02-non-text-expression.md §4）は「輪郭を縁取る光（リムライト）でモデルを背景から
 // 分離する」と定める。これに従い、(1)暗部を完全な黒にしないための淡い環境光と、(2)背後上方からモデルの輪郭を
-// 縁取るリムライトの2灯だけを置く。影は本Issueでは扱わない（視認性と負荷を優先し、接地影は後続の範囲とする）。
+// 縁取るリムライトを置く。さらに夜空の作り込み（Issue #205）に合わせ、(3)空の色で上から・地面の色で下から弱く
+// 照らす半球光を1灯加え、遠景の陸地を立体感を保ったまま可視化する。半球光は影を持たず最も軽い光源で、毎秒60
+// フレームの予算に資する。影は扱わない（視認性と負荷を優先し、接地影は後続の範囲とする）。
 
-import { AmbientLight, DirectionalLight, Group, type Object3D } from "three";
+import {
+  AmbientLight,
+  DirectionalLight,
+  Group,
+  HemisphereLight,
+  type Object3D,
+} from "three";
 
 // 淡い環境光の色と強さ。採用理由を先に述べる。月明かりを思わせる寒色を弱く当て、モデルの正面が完全な黒に
 // 沈むのを防ぐ。深夜の暗さを壊さないため強さは控えめにする。値は実機目視で調整できる初期値とする。
@@ -22,6 +30,15 @@ const RIM_COLOR = 0x9fc7ff;
 const RIM_INTENSITY = 1.6;
 const RIM_POSITION = { x: -2, y: 7, z: -8 } as const;
 
+// 半球光の色と強さ（Issue #205）。採用理由を先に述べる。空側は夜空の地平に馴染む寒色、地面側は暗い地面色にして、
+// 地形を上から空の色・下から地面の色で弱く照らし遠景の陸地を可視化する。強さは初期0.25とし上限の目安を0.35とする。
+// 理由を先に述べる。地形は標準マテリアルで、環境光（0.55）に半球光を足すほど最終輝度が上がりブルーム下限0.5に
+// 近づく。地形を可視化しつつブルームでにじませない範囲として低めの0.25から始める。値は地形の代表画素輝度を診断で
+// 実測して0.5未満を保つよう調整する（超える場合は強さを下げる）。
+const HEMISPHERE_SKY_COLOR = 0x3a3f6b;
+const HEMISPHERE_GROUND_COLOR = 0x0a0c14;
+const HEMISPHERE_INTENSITY = 0.25;
+
 /** 夜の照明。シーンへ追加する本体と、後始末を提供する。 */
 export interface NightLighting {
   /** シーンへ追加する光源の入れ物。 */
@@ -31,8 +48,9 @@ export interface NightLighting {
 }
 
 /**
- * 夜の照明を生成する。淡い環境光と、背後上方からのリムライトの2灯を1つの入れ物にまとめて返す。
- * リムライトの注視点は既定の原点であり、湖の中心（原点）に置くモデルを照らす。
+ * 夜の照明を生成する。淡い環境光・背後上方からのリムライト・空と地面の色で弱く照らす半球光の3灯を1つの入れ物に
+ * まとめて返す。リムライトの注視点は既定の原点であり、湖の中心（原点）に置くモデルを照らす。半球光は遠景の陸地を
+ * 立体感を保ったまま可視化する（Issue #205）。
  */
 export function createNightLighting(): NightLighting {
   const group = new Group();
@@ -43,8 +61,15 @@ export function createNightLighting(): NightLighting {
   rim.position.set(RIM_POSITION.x, RIM_POSITION.y, RIM_POSITION.z);
   // 注視点（target）は既定で原点に置かれる。モデルを原点に配置するため、target をシーンへ追加せずとも原点を向く。
 
+  const hemisphere = new HemisphereLight(
+    HEMISPHERE_SKY_COLOR,
+    HEMISPHERE_GROUND_COLOR,
+    HEMISPHERE_INTENSITY
+  );
+
   group.add(ambient);
   group.add(rim);
+  group.add(hemisphere);
 
   let disposed = false;
   return {
@@ -57,6 +82,7 @@ export function createNightLighting(): NightLighting {
       // 光源の dispose を呼ぶ。方向性光源は影用の資源を持ちうるため明示的に解放する。冪等性は disposed で担保する。
       ambient.dispose();
       rim.dispose();
+      hemisphere.dispose();
     },
   };
 }

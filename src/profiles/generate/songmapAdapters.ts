@@ -116,9 +116,41 @@ export function toChorusSegments(songmap: RawSongmap): ChorusSegment[] {
     .map((s) => ({ startMs: s.startTime, endMs: s.endTime }));
 }
 
-/** オンセット選択（#38）が要求するビート形（index・startTimeMs）へ変換する。 */
+/** オンセット選択（#38）が要求するビート形へ変換する。
+ *  小節内拍位置（position）と小節内拍数（lengthInBar）も写す理由を先に述べる。再設計（不満①③）の強調選別は
+ *  強拍（小節頭）を弱拍より優先するため、小節内拍位置が要るためである。songmap の length を lengthInBar に対応づける。 */
 export function toOnsetBeats(songmap: RawSongmap): OnsetBeat[] {
-  return songmap.beats.map((b) => ({ index: b.index, startTimeMs: b.startTime }));
+  return songmap.beats.map((b) => ({
+    index: b.index,
+    startTimeMs: b.startTime,
+    position: b.position,
+    lengthInBar: b.length,
+  }));
+}
+
+/** 各フレーズ先頭文字の開始時刻の配列を返す（昇順想定）。番号割当（#39再設計）の跳躍優先順位の第1条件
+ *  （フレーズ先頭）に使う。
+ *  フレーズ単位の取得は phrase.words[].chars[] を辿る（CLAUDE.md の linked list の罠を避けるため .next を使わない）。
+ *  文字を1つも持たないフレーズや空の単語があり得るため、先頭文字が得られないフレーズは飛ばす（不正な時刻を作らない防御）。 */
+export function toPhraseOnsetsMs(songmap: RawSongmap): number[] {
+  const onsets: number[] = [];
+  for (const phrase of songmap.phrases) {
+    let firstCharTime: number | undefined;
+    for (const word of phrase.words) {
+      if (word.chars.length > 0) {
+        firstCharTime = word.chars[0].startTime;
+        break;
+      }
+    }
+    if (firstCharTime !== undefined) onsets.push(firstCharTime);
+  }
+  return onsets;
+}
+
+/** 各コード区間の開始時刻の配列を返す（昇順想定）。番号割当のコード境界跳躍と、選別のコード変化近接に使う。
+ *  無和音「N」を含む全区間の開始時刻をそのまま返す（コードの音高集合が変わる境界はどの区間境界でも生じるため）。 */
+export function toChordChangeTimesMs(songmap: RawSongmap): number[] {
+  return songmap.chords.map((c) => c.startTime);
 }
 
 /** 譜面密度設計（#43）が要求するビート形（index・startMs・endMs）へ変換する。
@@ -196,11 +228,31 @@ export function toLyricCharOnsetsMs(songmap: RawSongmap): number[] {
 // 個々のフィールド変換を組み合わせて、各生成関数が要求する入力オブジェクトを1つの関数で作る。
 // 生成本体（buildProfile.ts）と各実データ検証テストが同じ関数を使うことで、入力の作り方のずれを無くす。
 
-/** オンセット選択（#38）の入力を songmap から作る。 */
-export function toOnsetInput(songmap: RawSongmap): OnsetInput {
+/** オンセット選択（#38再設計）の入力を songmap と密度プラン由来の部品から作る。
+ *  密度プランの区間・区間別目標数・見せ場信号は songmap だけからは導けないため、第2引数で受け取り、songmap 由来の
+ *  部品（拍・サビ区間・コード変化時刻・歌詞オンセット・声量）とまとめて1つの OnsetInput にする。 */
+export function toOnsetInput(
+  songmap: RawSongmap,
+  densityParts: {
+    regions: OnsetInput["regions"];
+    regionTargets: OnsetInput["regionTargets"];
+    selectionSignal: OnsetInput["selectionSignal"];
+  },
+): OnsetInput {
+  const loudnessCurve = toLoudnessCurve(songmap);
   return {
     beats: toOnsetBeats(songmap),
     chorusSegments: toChorusSegments(songmap),
+    regions: densityParts.regions,
+    regionTargets: densityParts.regionTargets,
+    chordChangeTimesMs: toChordChangeTimesMs(songmap),
+    lyricCharOnsetsMs: toLyricCharOnsetsMs(songmap),
+    loudness: {
+      stepMs: loudnessCurve.stepMs,
+      maxAmplitude: loudnessCurve.maxAmplitude,
+      values: loudnessCurve.values,
+    },
+    selectionSignal: densityParts.selectionSignal,
   };
 }
 

@@ -17,7 +17,7 @@ import { createFakePlayback, createTextAlivePlayback, type Playback } from "../t
 import { createOverlays } from "./overlay";
 import { createRenderRoot, createPerfBudget } from "../rendering";
 import { createBeatScheduler } from "../utils/beatScheduler";
-import { createScreenShake, resolveBeatAmplitudes, isWithinAnyRange } from "../utils/screenShake";
+import { createScreenShake, resolveBeatAmplitudes } from "../utils/screenShake";
 import { MIKU_CHARACTER } from "../config/character";
 import { LAKE_STAGE } from "../config/stage";
 import { PITCH_SLOT_COUNT_DEFAULT } from "../config/tuning";
@@ -165,21 +165,21 @@ export function createApp(
     saveOffsetMs: (offsetMs: number) => saveCalibrationOffsetMs(offsetMs),
   });
 
-  // 画面拡大・減衰揺れ（Issue #76）。拍に同期して画面を一瞬拡大し減衰させる演出を結線する。
-  // 拍時刻は曲プロファイル生成（#46）の beats から供給する（#59）。各拍の開始時刻と小節内位置を写す。
+  // 画面拡大・減衰揺れ（Issue #76）。ノーツの消滅（目標線到達）に同期して画面を一瞬拡大し減衰させる演出を結線する。
+  // 拍時刻は曲プロファイル生成（#46）の beats から供給する（#59）。各拍の開始時刻と小節内位置を写す。拍走査器は全拍を
+  // 走査し、強度は小節内位置で決める（小節頭を強く）が、発火はノーツのある拍だけに限る（下記 noteBeatIndices）。
   const screenShakeBeats: { startTimeMs: number; position: number }[] = takeoverProfile.beats.map(
     (beat) => ({ startTimeMs: beat.startTimeMs, position: beat.position })
   );
   const screenShakeAmplitudes = resolveBeatAmplitudes(screenShakeBeats);
   const beatScheduler = createBeatScheduler(screenShakeBeats.map((b) => b.startTimeMs));
   const screenShake = createScreenShake();
+  // 画面振動をノーツの消滅に同期させるためのノーツ拍索引集合。各ノーツは拍上（beatIndex）に置かれ、自分の拍時刻で
+  // 目標線へ達して消えるため、ノーツのある拍だけで振動を発火する。休符の拍では振動させないことで、振動が譜面の抑揚ある
+  // リズムに同期して躍動感が出て、休符で静まる緩急が生まれる。beatIndex は beats 配列の添字で拍走査器の event.index と
+  // 同じ意味である。
+  const noteBeatIndices = new Set<number>(takeoverProfile.notes.map((note) => note.beatIndex));
   const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-  // 画面振動をサビ区間（コーラス区間）に限定する区間配列を前計算する（Issue #198）。
-  // 曲プロファイルの繰り返し区間のうちコーラス区間（isChorus が真）だけを写す。画面振動も拍と同じく曲プロファイル駆動のため、
-  // 同じプロファイルのデータを再利用する。サビ区間内の拍だけ振動を発火させ、それ以外の拍では発火させない。
-  const screenShakeChorusRanges = takeoverProfile.repetitiveSegments
-    .filter((segment) => segment.isChorus)
-    .map((segment) => ({ startTimeMs: segment.startTimeMs, endTimeMs: segment.endTimeMs }));
 
   // エンジンの固定時間刻みの時計・走査器・世界状態。プレイ画面の本編表示（Issue #33）が同期の基準として
   // world.gameTimeMs を読むため、画面文脈より前に生成する。ループ（下）も同じ実体を使う。
@@ -399,17 +399,26 @@ export function createApp(
       }
       machine.update(realDeltaMs);
       tickPlay(realDeltaMs);
-      // 画面拡大・減衰揺れ（Issue #76）。プレイ進行中だけ拍へ反応させ、それ以外は恒等へ戻す。
+      // 画面拡大・減衰揺れ（Issue #76）。プレイ進行中だけノーツの消滅へ反応させ、それ以外は恒等へ戻す。
       // 拍の時刻源はゲームの時計 world.gameTimeMs（再生位置の平滑化値）で、advanceFrame が onFrame より
       // 先にこれを更新するため当該フレームの最新値になる。画面寸法は canvas を載せた常在領域から毎フレーム読む。
       if (inPlayPhase) {
         const gameTimeMs = world.gameTimeMs;
+        // 再生位置の飛び（スタート直後の同期確立・タブ復帰・シーク）では、飛び区間の拍を一括発火させず基準を貼り直す。
+        // 理由を先に述べる。一括発火は screenShake.trigger が最新拍だけを残すため飛び区間の手前のノーツの振動が失われ、
+        // スタート直後にノーツと振動がずれる。clock の再同期（didResync）を拍走査器へ伝えて syncTo で基準を貼り直し、
+        // 飛びの直後の拍から正しく振動を発火させる。
+        if (didResync) {
+          beatScheduler.syncTo(gameTimeMs);
+        }
         beatScheduler.advance(gameTimeMs, (event): void => {
-          // サビ区間（コーラス区間）内の拍だけ振動を発火させる（Issue #198）。サビ区間外では発火しないため、
-          // 既存の減衰と恒等吸着により、サビ区間の最後の拍の余韻が消えたあとは変換が恒等に戻る。
-          if (isWithinAnyRange(screenShakeChorusRanges, event.timeMs)) {
-            screenShake.trigger(event.timeMs, screenShakeAmplitudes[event.index], event.index);
+          // ノーツのある拍（ノーツが目標線に達して消える瞬間）だけ振動させる。休符の拍では振動させない。
+          // 全区間（サビ以外も含む）でノーツに同期させる方針をユーザーが確定したため、#198 のサビ区間限定の
+          // 発火条件は用いない（振幅の縮小は screenShake.ts 側で保持される）。
+          if (!noteBeatIndices.has(event.index)) {
+            return;
           }
+          screenShake.trigger(event.timeMs, screenShakeAmplitudes[event.index], event.index);
         });
         const transform = screenShake.evaluate(
           gameTimeMs,

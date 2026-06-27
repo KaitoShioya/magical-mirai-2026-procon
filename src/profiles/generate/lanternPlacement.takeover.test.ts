@@ -1,5 +1,5 @@
 // TAKEOVER 実データでの受入検証（Issue #62）。コミット済み takeover.profile.json の各ノーツの
-// trajectoryPosition（434件）を素案位置として緩和し、受入条件1（空白も塊も無い）と受入条件2
+// trajectoryPosition（譜面再設計後291件）を素案位置として緩和し、受入条件1（空白も塊も無い）と受入条件2
 // （重心が湖の中心から許容半径以内・重心保存）を実データで表明する。src/tools/ も描画層も import しない。
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
@@ -43,8 +43,9 @@ describe("lanternPlacement TAKEOVER 受入（Issue #62）", () => {
   const relaxed = relaxLanternPlacement(seeds, REGION);
   const after = measureLanternDistribution(relaxed.map((p) => p.position), spec);
 
-  it("入力は434件で、出力の識別子が入力ノーツと一対一・件数と順序が一致する（呼び出し契約）", () => {
-    expect(seeds.length).toBe(434);
+  it("入力は291件で、出力の識別子が入力ノーツと一対一・件数と順序が一致する（呼び出し契約）", () => {
+    // 譜面再設計（不満①③・難易度）で総ノーツ数が434から291に変わった。緩和の受入条件は比率で定義されるため成立する。
+    expect(seeds.length).toBe(291);
     expect(relaxed.map((p) => p.id)).toEqual(seeds.map((s) => s.id));
   });
 

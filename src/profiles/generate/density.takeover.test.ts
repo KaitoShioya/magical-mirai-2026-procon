@@ -45,10 +45,14 @@ describe("譜面密度設計 実データ検証（Issue #43 受け入れ基準�
     }
   });
 
-  it("達成基準2: サビの目標密度が非サビ基本の2倍", () => {
+  it("達成基準2: サビの目標密度は基本と同じ0.5（実機確認で難易度を下げた）", () => {
     const chorus = plan.regions.find((r) => r.className === "chorus")!;
     const base = plan.regions.find((r) => r.className === "base")!;
-    expect(chorus.targetDensityPerBeat).toBe(2 * base.targetDensityPerBeat);
+    // 不満③（サビが密で単調で難しい）の実機目視確認を受け、サビ密度を1.0→0.75→0.5へ段階的に下げ、基本と同じ0.5に
+    // 揃えた。サビ前半の密な連続区間と難易度を解消し、サビの個性は反復間の番号対比（基準G）と配置語彙で保つ。
+    expect(chorus.targetDensityPerBeat).toBe(0.5);
+    expect(chorus.targetDensityPerBeat).toBe(base.targetDensityPerBeat);
+    expect(chorus.targetDensityPerBeat).toBeLessThan(1.0);
   });
 
   it("達成基準3: 3つのサビ区間が現れ境界が音楽地図と一致、合計192拍", () => {
@@ -103,12 +107,14 @@ describe("譜面密度設計 実データ検証（Issue #43 受け入れ基準�
     for (const b of buildupBeats) expect(b.startMs).toBeLessThan(lastShowcaseStart);
   });
 
-  it("達成基準6: 骨格434、実効が340-676かつ約387、休符0カウント・溜め密度0.25", () => {
+  it("達成基準6: 骨格338、実効が260超かつ291、休符0カウント・溜め密度0.25", () => {
+    // サビ密度を0.5へ下げたため、骨格＝サビ192拍×0.5＋非サビ484拍×0.5＝96＋242＝338。
+    // 実効は休符0・溜め0.25反映後で291（=チャートの総ノーツ数）。上限260を上回り一回性を保つ（基準M）。
     const summary = countTargetNotes(plan);
-    expect(summary.skeleton).toBe(434);
-    expect(summary.effective).toBeGreaterThanOrEqual(340);
-    expect(summary.effective).toBeLessThanOrEqual(676);
-    expect(summary.effective).toBe(387);
+    expect(summary.skeleton).toBe(338);
+    expect(summary.effective).toBeGreaterThan(260);
+    expect(summary.effective).toBeLessThanOrEqual(434);
+    expect(summary.effective).toBe(291);
     // 休符は0カウント。
     expect(summary.byClass.rest).toBe(0);
     // 溜め区間の目標密度は0.25。

@@ -33,7 +33,7 @@ import { createCameraTrajectory } from "../../utils/cameraTrajectory";
 import { resolveNoChordRegions } from "./noChordResolution";
 import { generateChordToneSlots, type ResolvedChordRegion } from "./chordToneSlots";
 import { generateShowcases } from "./showcases";
-import { generateDensityPlan, type DensityInput } from "./density";
+import { generateDensityPlan, countTargetNotes, type DensityInput } from "./density";
 import { generateTapBudget } from "./tapBudget";
 import { generateOnsetNotes } from "./onsetNotes";
 import { applyNotePatterns } from "./notePatterns";
@@ -50,6 +50,7 @@ import {
   toLyricChars,
   toLyricCharOnsetsMs,
   toOnsetInput,
+  toPhraseOnsetsMs,
   toTapBudgetInput,
   toShowcaseInput,
 } from "./songmapAdapters";
@@ -205,9 +206,37 @@ export function buildProfile(args: {
 
   // 7. ノーツ（オンセット選択→パターン付与→軌跡上配置を識別子で突き合わせて最終 Note へ合成）。
   //    手動カメラが無い場合は曲長から暫定カメラを自動生成する。
+  //    再設計（不満①②③）: 密度プランの区間分類・区間別目標数・見せ場信号をオンセット選別へ結線し、
+  //    番号割当には拍・フレーズ先頭時刻・多様性逓減区間（反復役割）を渡す。
   const camera = manual.camera ?? buildPlaceholderCamera(durationMs);
-  const onsets = generateOnsetNotes(toOnsetInput(songmap));
-  const patterned = applyNotePatterns({ notes: onsets, slots, loudness: loudnessCurve, emotion: emotionCurve });
+  const diversityZones = deriveDiversityZones(chorusSegments, manual.diversityZoneLabels);
+  const targetCounts = countTargetNotes(densityPlan);
+  const onsetInput = toOnsetInput(songmap, {
+    regions: densityPlan.regions.map((r) => ({
+      startMs: r.startMs,
+      endMs: r.endMs,
+      className: r.className,
+    })),
+    regionTargets: targetCounts.byRegion.map((r) => ({
+      regionIndex: r.regionIndex,
+      targetNotes: r.targetNotes,
+    })),
+    selectionSignal: densityPlan.selectionSignal,
+  });
+  const onsets = generateOnsetNotes(onsetInput);
+  const patterned = applyNotePatterns({
+    notes: onsets,
+    slots,
+    loudness: loudnessCurve,
+    beats: beats.map((b) => ({
+      index: b.index,
+      position: b.position,
+      lengthInBar: b.lengthInBar,
+      startTimeMs: b.startTimeMs,
+    })),
+    phraseOnsetsMs: toPhraseOnsetsMs(songmap),
+    diversityZones,
+  });
   const trajectory = createCameraTrajectory(camera);
   const placements = placeNotesOnTrajectory(
     patterned.map((n) => ({ id: n.id, timeMs: n.timeMs })),
@@ -228,6 +257,19 @@ export function buildProfile(args: {
       trajectoryPosition,
     };
   });
+
+  // 7.5. 最終 Note 配列での同一 beatIndex 重複検査（結線の取り違えを最終段でも捕捉する。再設計プラン新節5）。
+  //      判定は playSession が beatIndex から判定時刻を引き、多様性逓減は beatOffset キーを拍単位で一意とするため、
+  //      同一 beatIndex の重複は同時刻判定とキー衝突を招く重大な不変条件である。
+  {
+    const seenBeatIndex = new Set<number>();
+    for (const n of notes) {
+      if (seenBeatIndex.has(n.beatIndex)) {
+        throw new Error(`最終ノーツ配列に同一 beatIndex（${n.beatIndex}）が重複しています（ノーツ ${n.id}）`);
+      }
+      seenBeatIndex.add(n.beatIndex);
+    }
+  }
 
   // 8. 代表テンポ。拍の長さの中央値から求める。
   //    中央値を使う理由を先に述べる。曲尾の長さ0の拍や曲頭の不規則な拍といった外れ値に対し平均より頑健だからである。
@@ -263,7 +305,7 @@ export function buildProfile(args: {
     camera,
     colors: manual.colors,
     sfx: manual.sfx,
-    diversityZones: deriveDiversityZones(chorusSegments, manual.diversityZoneLabels),
+    diversityZones,
     tapBudget,
   };
 

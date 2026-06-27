@@ -1,111 +1,156 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_ONSET_OPTIONS, generateOnsetNotes, type OnsetBeat, type OnsetInput } from "./onsetNotes";
+import {
+  DEFAULT_ONSET_OPTIONS,
+  generateOnsetNotes,
+  type OnsetBeat,
+  type OnsetInput,
+} from "./onsetNotes";
 import type { ChorusSegment } from "./types";
 
-// 拍を等間隔で組み立てる補助。index は0始まりの連番、開始時刻は stepMs 刻み。
+// 拍を等間隔で組み立てる補助。index は0始まりの連番、開始時刻は stepMs 刻み。position は1..4 を循環、lengthInBar=4。
 function beatsEvery(count: number, stepMs: number, firstMs = 0): OnsetBeat[] {
   const out: OnsetBeat[] = [];
   for (let i = 0; i < count; i++) {
-    out.push({ index: i, startTimeMs: firstMs + i * stepMs });
+    out.push({
+      index: i,
+      startTimeMs: firstMs + i * stepMs,
+      position: (i % 4) + 1,
+      lengthInBar: 4,
+    });
   }
   return out;
 }
 
-describe("generateOnsetNotes（オンセット選択・ノーツ生成、Issue #38）", () => {
-  it("サビ区間が無いとき、サビ以外として2拍に1回（既定）選ぶ", () => {
-    const input: OnsetInput = { beats: beatsEvery(10, 343), chorusSegments: [] };
-    const notes = generateOnsetNotes(input);
-    // 10拍を2拍に1回 → 拍索引 0,2,4,6,8 の5個。
-    expect(notes.map((n) => n.beatIndex)).toEqual([0, 2, 4, 6, 8]);
-    expect(notes.every((n) => n.sectionKind === "nonChorus")).toBe(true);
+/** 1区間で曲全体を覆う最小の入力を作る補助。区間別目標数とサビ区間を引数で与える。 */
+function singleRegionInput(
+  beats: OnsetBeat[],
+  className: OnsetInput["regions"][number]["className"],
+  targetNotes: number,
+  chorusSegments: ChorusSegment[] = [],
+): OnsetInput {
+  const endMs = beats.length > 0 ? beats[beats.length - 1].startTimeMs + 1000 : 1000;
+  return {
+    beats,
+    chorusSegments,
+    regions: [{ startMs: 0, endMs, className }],
+    regionTargets: [{ regionIndex: 0, targetNotes }],
+    chordChangeTimesMs: [],
+    lyricCharOnsetsMs: [],
+    loudness: { stepMs: 100, maxAmplitude: 1, values: [] },
+    selectionSignal: { stepMs: 1000, samples: [] },
+  };
+}
+
+describe("generateOnsetNotes（密度プラン・強調選別、Issue #38 再設計）", () => {
+  it("区間別目標数だけ拍を選び、出力は拍索引昇順", () => {
+    // 8拍の基本区間で目標4ノーツ。強拍（position=1）優先で選ばれ、出力は拍索引昇順になる。
+    const beats = beatsEvery(8, 343);
+    const notes = generateOnsetNotes(singleRegionInput(beats, "base", 4));
+    expect(notes).toHaveLength(4);
+    const idxs = notes.map((n) => n.beatIndex);
+    expect([...idxs].sort((a, b) => a - b)).toEqual(idxs); // 昇順。
   });
 
-  it("全拍がサビのとき、毎拍（既定）選ぶ", () => {
+  it("休符区間（目標0）には何も置かない", () => {
     const beats = beatsEvery(8, 343);
-    const chorus: ChorusSegment[] = [{ startMs: 0, endMs: 8 * 343 }];
-    const notes = generateOnsetNotes({ beats, chorusSegments: chorus });
-    expect(notes.map((n) => n.beatIndex)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    const notes = generateOnsetNotes(singleRegionInput(beats, "rest", 0));
+    expect(notes).toHaveLength(0);
+  });
+
+  it("強拍（小節頭 position=1）が弱拍より優先して選ばれる", () => {
+    // 4拍1小節を2小節。目標2なら、各小節の強拍（index 0 と 4、position=1）が最高スコアで選ばれる。
+    const beats = beatsEvery(8, 343);
+    const notes = generateOnsetNotes(singleRegionInput(beats, "base", 2));
+    expect(notes.map((n) => n.beatIndex).sort((a, b) => a - b)).toEqual([0, 4]);
+  });
+
+  it("サビ3反復は同一の相対拍位置（beatOffset）集合を選ぶ（基準G・多様性逓減の前提）", () => {
+    // 3つの同型サビ（各8拍、目標4）を離して並べ、各サビで同じ相対拍位置が選ばれることを確認する。
+    const stride = 343;
+    const beats: OnsetBeat[] = [];
+    const chorusSegments: ChorusSegment[] = [];
+    const regions: OnsetInput["regions"] = [];
+    const regionTargets: OnsetInput["regionTargets"] = [];
+    let idx = 0;
+    for (let c = 0; c < 3; c++) {
+      const baseMs = c * 100000;
+      const startMs = baseMs;
+      for (let j = 0; j < 8; j++) {
+        beats.push({ index: idx++, startTimeMs: baseMs + j * stride, position: (j % 4) + 1, lengthInBar: 4 });
+      }
+      const endMs = baseMs + 8 * stride;
+      chorusSegments.push({ startMs, endMs });
+      regions.push({ startMs, endMs, className: "chorus" });
+      regionTargets.push({ regionIndex: c, targetNotes: 4 });
+    }
+    const input: OnsetInput = {
+      beats,
+      chorusSegments,
+      regions,
+      regionTargets,
+      chordChangeTimesMs: [],
+      lyricCharOnsetsMs: [],
+      loudness: { stepMs: 100, maxAmplitude: 1, values: [] },
+      selectionSignal: { stepMs: 1000, samples: [] },
+    };
+    const notes = generateOnsetNotes(input);
+    expect(notes).toHaveLength(12);
+    // 各サビの先頭拍 index を anchor に、相対 offset 集合を作る。
+    const offsetsByChorus: number[][] = [[], [], []];
+    for (const c of [0, 1, 2]) {
+      const cNotes = notes.filter((n) => n.timeMs >= c * 100000 && n.timeMs < c * 100000 + 8 * stride);
+      const anchor = cNotes[0].beatIndex;
+      offsetsByChorus[c] = cNotes.map((n) => n.beatIndex - anchor).sort((a, b) => a - b);
+    }
+    expect(offsetsByChorus[1]).toEqual(offsetsByChorus[0]);
+    expect(offsetsByChorus[2]).toEqual(offsetsByChorus[0]);
+  });
+
+  it("サビ区間内のノーツは sectionKind が chorus、それ以外は nonChorus", () => {
+    const beats = beatsEvery(8, 100);
+    const input = singleRegionInput(beats, "chorus", 4, [{ startMs: 0, endMs: 800 }]);
+    const notes = generateOnsetNotes(input);
     expect(notes.every((n) => n.sectionKind === "chorus")).toBe(true);
   });
 
-  it("サビとサビ以外が混在するとき、種別ごとに独立した計数器で間引き、サビ先頭拍を必ず選ぶ", () => {
-    // 拍0..5（時刻0,100,...,500）。サビ区間は時刻250以上450未満で、拍2(200)はサビ外、拍3(300)・拍4(400)がサビ。
-    const beats = beatsEvery(6, 100);
-    const chorus: ChorusSegment[] = [{ startMs: 250, endMs: 450 }];
-    const notes = generateOnsetNotes({ beats, chorusSegments: chorus });
-    // サビ以外の拍は出現順に 0,1,2,5。2拍に1回（計数器0,1,2,3）で計数器が偶数の拍0と拍2を選ぶ。
-    // サビの拍は出現順に 3,4。毎拍で両方選び、サビ先頭の拍3が必ず選ばれる。
-    expect(notes.map((n) => n.beatIndex)).toEqual([0, 2, 3, 4]);
-    expect(notes.map((n) => n.sectionKind)).toEqual(["nonChorus", "nonChorus", "chorus", "chorus"]);
-  });
-
-  it("サビ区間の終端時刻にちょうど重なる拍は、右半開判定によりサビ以外に分類する", () => {
-    // 拍1の時刻はちょうどサビ終端。endMs 未満でないためサビ外。
-    const beats: OnsetBeat[] = [
-      { index: 0, startTimeMs: 0 },
-      { index: 1, startTimeMs: 200 },
-    ];
-    const chorus: ChorusSegment[] = [{ startMs: 0, endMs: 200 }];
-    const notes = generateOnsetNotes({ beats, chorusSegments: chorus });
-    const byIndex = new Map(notes.map((n) => [n.beatIndex, n.sectionKind]));
-    expect(byIndex.get(0)).toBe("chorus");
-    expect(byIndex.get(1)).toBe("nonChorus");
-  });
-
   it("拍が空のとき、空配列を返す", () => {
-    expect(generateOnsetNotes({ beats: [], chorusSegments: [] })).toEqual([]);
+    const input: OnsetInput = {
+      beats: [],
+      chorusSegments: [],
+      regions: [],
+      regionTargets: [],
+      chordChangeTimesMs: [],
+      lyricCharOnsetsMs: [],
+      loudness: { stepMs: 100, maxAmplitude: 1, values: [] },
+      selectionSignal: { stepMs: 1000, samples: [] },
+    };
+    expect(generateOnsetNotes(input)).toEqual([]);
   });
 
-  it("拍の index が配列の位置と一致しない（飛び番号の）とき、拍自身の index を保持する", () => {
-    const beats: OnsetBeat[] = [
-      { index: 10, startTimeMs: 0 },
-      { index: 11, startTimeMs: 100 },
-      { index: 12, startTimeMs: 200 },
-    ];
-    const notes = generateOnsetNotes({ beats, chorusSegments: [] });
-    // 2拍に1回 → 出現順0番目と2番目、すなわち index 10 と 12。
-    expect(notes.map((n) => n.beatIndex)).toEqual([10, 12]);
-  });
-
-  it("id は固定4桁ゼロ埋めの選択順連番で、一意かつ昇順である", () => {
-    const notes = generateOnsetNotes({ beats: beatsEvery(6, 100), chorusSegments: [] });
+  it("id は固定4桁ゼロ埋めの選択順連番で、一意である", () => {
+    const beats = beatsEvery(8, 100);
+    const notes = generateOnsetNotes(singleRegionInput(beats, "base", 3));
     expect(notes.map((n) => n.id)).toEqual(["note-0000", "note-0001", "note-0002"]);
     expect(new Set(notes.map((n) => n.id)).size).toBe(notes.length);
   });
 
-  it("間引き間隔のオプション上書きが効く", () => {
-    const beats = beatsEvery(9, 100);
-    const chorus: ChorusSegment[] = [{ startMs: 0, endMs: 9 * 100 }];
-    // サビを3拍に1回へ上書き。出現順0,3,6 → 索引0,3,6。
-    const notes = generateOnsetNotes({ beats, chorusSegments: chorus }, { chorusBeatStride: 3 });
-    expect(notes.map((n) => n.beatIndex)).toEqual([0, 3, 6]);
-  });
-
   it("接頭辞のオプション上書きが効く", () => {
-    const notes = generateOnsetNotes({ beats: beatsEvery(1, 100), chorusSegments: [] }, { idPrefix: "n_" });
+    const beats = beatsEvery(4, 100);
+    const notes = generateOnsetNotes(singleRegionInput(beats, "base", 1), { idPrefix: "n_" });
     expect(notes[0].id).toBe("n_0000");
   });
 
-  it("間引き間隔に0・1未満・非整数を渡すと例外を投げる", () => {
-    const input: OnsetInput = { beats: beatsEvery(4, 100), chorusSegments: [] };
-    expect(() => generateOnsetNotes(input, { nonChorusBeatStride: 0 })).toThrow();
-    expect(() => generateOnsetNotes(input, { nonChorusBeatStride: -1 })).toThrow();
-    expect(() => generateOnsetNotes(input, { nonChorusBeatStride: 1.5 })).toThrow();
-    expect(() => generateOnsetNotes(input, { chorusBeatStride: 0 })).toThrow();
-  });
-
   it("同じ入力に対し常に同じ出力を返す（決定論）", () => {
-    const input: OnsetInput = {
-      beats: beatsEvery(20, 100),
-      chorusSegments: [{ startMs: 500, endMs: 1200 }],
-    };
-    const first = generateOnsetNotes(input);
-    const second = generateOnsetNotes(input);
-    expect(second).toEqual(first);
+    const beats = beatsEvery(16, 100);
+    const input = singleRegionInput(beats, "base", 6);
+    expect(generateOnsetNotes(input)).toEqual(generateOnsetNotes(input));
   });
 
-  it("既定オプションはサビ毎拍・サビ以外2拍に1回である", () => {
-    expect(DEFAULT_ONSET_OPTIONS.chorusBeatStride).toBe(1);
-    expect(DEFAULT_ONSET_OPTIONS.nonChorusBeatStride).toBe(2);
+  it("既定オプションの重みは強拍とコード変化を最重視する", () => {
+    expect(DEFAULT_ONSET_OPTIONS.beatPositionWeight).toBeGreaterThan(0);
+    expect(DEFAULT_ONSET_OPTIONS.chordChangeWeight).toBeGreaterThan(0);
+    expect(DEFAULT_ONSET_OPTIONS.beatPositionWeight).toBeGreaterThanOrEqual(
+      DEFAULT_ONSET_OPTIONS.showcaseWeight,
+    );
   });
 });

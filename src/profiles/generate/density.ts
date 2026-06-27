@@ -69,7 +69,11 @@ export interface DensityOptions {
 }
 
 export const DEFAULT_DENSITY_OPTIONS: DensityOptions = {
-  chorusDensityPerBeat: 1.0,
+  // サビ目標密度0.5（拍あたり）。0.75からさらに下げる理由を先に述べる。0.75（4拍に3回）は実機の目視確認で
+  // サビ前半に密な連続区間が生じて難易度が高く単調と判断されたため（不満③・難易度）、基本と同じ0.5（2拍に1回）に
+  // 揃えて物量と難易度を下げる。サビの個性は密度でなく反復間の音程番号の対比（基準G）と配置語彙で保つ。0.5は各小節の
+  // 強拍（位置1）と中強拍（位置3）の均等配置に対応し、前方密集を解消する。countTargetNotes は0.25刻みのみ扱う。
+  chorusDensityPerBeat: 0.5,
   baseDensityPerBeat: 0.5,
   restDensityPerBeat: 0,
   buildupDensityPerBeat: 0.25,

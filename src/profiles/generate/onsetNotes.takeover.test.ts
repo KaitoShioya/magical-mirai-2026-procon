@@ -2,88 +2,159 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { generateOnsetNotes, type OnsetInput } from "./onsetNotes";
-import { toOnsetInput, type RawSongmap } from "./songmapAdapters";
-import { validateProfile } from "../schema/validateProfile";
-import { minimalValidProfile } from "../schema/fixtures/minimalValidProfile";
-import type { Note, SongProfile } from "../schema/profileSchema";
+import {
+  toOnsetInput,
+  toDensityBeats,
+  toChorusSegments,
+  toLyricCharOnsetsMs,
+  type RawSongmap,
+} from "./songmapAdapters";
+import { generateDensityPlan, countTargetNotes, type DensityInput } from "./density";
+import { generateShowcases } from "./showcases";
+import { DEFAULT_SHOWCASE_OPTIONS } from "./types";
 
-// 実データ（TAKEOVERの音楽地図ダンプ）を素のデータファイルとして読む。src/tools/ への import は一切しない
-// （profiles から tools への依存禁止に抵触しない）。songmap → 各入力への変換は共有アダプタ songmapAdapters を使い、
-// 生成本体（#45 の buildProfile）と同じ変換でテストする。
+// 実データ（TAKEOVERの音楽地図ダンプ）を素のデータファイルとして読む。src/tools/ への import は一切しない。
+// songmap・密度プラン → オンセット入力への変換は共有アダプタと密度生成を使い、生成本体（buildProfile）と同じ結線でテストする。
 const songmapPath = fileURLToPath(new URL("../../../docs/analysis/takeover.songmap.json", import.meta.url));
 const songmap = JSON.parse(readFileSync(songmapPath, "utf8")) as RawSongmap;
 
-describe("オンセット選択・ノーツ生成 実データ検証（Issue #38 受け入れ基準）", () => {
-  const input = toOnsetInput(songmap);
+/** buildProfile と同じ手順で密度プランを作り、オンセット入力を組む。 */
+function buildOnsetInput(): { input: OnsetInput; effectiveTarget: number } {
+  const densityInput: DensityInput = {
+    durationMs: songmap.song.duration,
+    beats: toDensityBeats(songmap),
+    chorusSegments: toChorusSegments(songmap),
+    lyricCharOnsetsMs: toLyricCharOnsetsMs(songmap),
+    showcases: generateShowcases(
+      {
+        durationMs: songmap.song.duration,
+        amplitudeCurve: songmap.amplitudeCurve,
+        amplitudeStepMs: songmap.amplitudeStep,
+        lyricCharOnsetsMs: toLyricCharOnsetsMs(songmap),
+        chorusSegments: toChorusSegments(songmap),
+        beatsMs: songmap.beats.map((b) => b.startTime),
+      },
+      { climaxAnchorMs: DEFAULT_SHOWCASE_OPTIONS.climaxAnchorMs },
+    ),
+    climaxAnchorMs: DEFAULT_SHOWCASE_OPTIONS.climaxAnchorMs,
+  };
+  const plan = generateDensityPlan(densityInput);
+  const targets = countTargetNotes(plan);
+  const input = toOnsetInput(songmap, {
+    regions: plan.regions.map((r) => ({ startMs: r.startMs, endMs: r.endMs, className: r.className })),
+    regionTargets: targets.byRegion.map((r) => ({ regionIndex: r.regionIndex, targetNotes: r.targetNotes })),
+    selectionSignal: plan.selectionSignal,
+  });
+  return { input, effectiveTarget: targets.effective };
+}
+
+describe("オンセット選択・ノーツ生成 実データ検証（再設計：不満①③）", () => {
+  const { input, effectiveTarget } = buildOnsetInput();
   const notes = generateOnsetNotes(input);
   const chorusNotes = notes.filter((n) => n.sectionKind === "chorus");
-  const nonChorusNotes = notes.filter((n) => n.sectionKind === "nonChorus");
 
-  it("達成基準1: 総数434・サビ192・サビ以外242（厳密一致）", () => {
-    // 出典 docs/research/07-feasibility-and-parameters.md §2.1。676拍に対しサビ3区間192拍を毎拍、
-    // サビ以外484拍を2拍に1回で合計434（サビ192・サビ以外242）。
-    expect(notes).toHaveLength(434);
-    expect(chorusNotes).toHaveLength(192);
-    expect(nonChorusNotes).toHaveLength(242);
+  it("総数は密度プランの実効目標数（291）と一致し、上限260を上回る（一回性の維持＝基準M）", () => {
+    // 再設計後の総数は密度プランの区間別目標数の合計（=countTargetNotes.effective）に一致する。
+    // サビ密度0.5・休符0・溜め0.25・基本0.5の累積で 291 になる（旧434から物量を抑え、実機確認で難易度を下げた）。
+    expect(notes).toHaveLength(effectiveTarget);
+    expect(notes).toHaveLength(291);
+    expect(notes.length).toBeGreaterThan(260);
   });
 
-  it("達成基準2: サビ密度がサビ以外密度のおよそ2倍（比2の前後10パーセント以内）", () => {
+  it("基準N: 同一 beatIndex のノーツが0件（拍の一意性）", () => {
+    const seen = new Set<number>();
+    let dup = 0;
+    for (const n of notes) {
+      if (seen.has(n.beatIndex)) dup++;
+      seen.add(n.beatIndex);
+    }
+    expect(dup).toBe(0);
+  });
+
+  it("基準D: 休符区間のノーツ密度が基本区間より有意に低い（休符はほぼ0）", () => {
+    // 休符区間（rest）と基本区間（base）で、区間内拍に対するノーツの割合を比べる。
+    const restRegionIdx = new Set(
+      input.regions.map((r, i) => (r.className === "rest" ? i : -1)).filter((i) => i >= 0),
+    );
+    const baseRegionIdx = new Set(
+      input.regions.map((r, i) => (r.className === "base" ? i : -1)).filter((i) => i >= 0),
+    );
+    const noteBeats = new Set(notes.map((n) => n.beatIndex));
+    let restBeats = 0;
+    let restNotes = 0;
+    let baseBeats = 0;
+    let baseNotes = 0;
+    for (const b of input.beats) {
+      const ri = input.regions.findIndex((r) => b.startTimeMs >= r.startMs && b.startTimeMs < r.endMs);
+      if (restRegionIdx.has(ri)) {
+        restBeats++;
+        if (noteBeats.has(b.index)) restNotes++;
+      } else if (baseRegionIdx.has(ri)) {
+        baseBeats++;
+        if (noteBeats.has(b.index)) baseNotes++;
+      }
+    }
+    const restDensity = restBeats > 0 ? restNotes / restBeats : 0;
+    const baseDensity = baseBeats > 0 ? baseNotes / baseBeats : 0;
+    expect(restDensity).toBe(0); // 休符は置かない。
+    expect(baseDensity).toBeGreaterThan(0);
+    expect(restDensity).toBeLessThan(baseDensity);
+  });
+
+  it("基準E: 非サビで小節内拍位置の選別パターンが2種以上・単一パターン80パーセント未満", () => {
+    // 小節（position=1 で始まる4拍）ごとに、ノーツの立つ拍位置の集合をパターン文字列にして数える。
+    const noteBeats = new Set(notes.map((n) => n.beatIndex));
     const chorusSegments = input.chorusSegments;
-
-    // 密度を区間長から求める前に、サビ区間が互いに重複しないことを確認する。
-    // 先に確認する理由を述べる。サビの総時間をサビ区間長の単純合計で求める計算は、区間が互いに重ならないことを
-    // 前提とするため、前提が崩れていないことを先に検証して分母の二重計上を防ぐ。
-    const sorted = [...chorusSegments].sort((a, b) => a.startMs - b.startMs);
-    for (let i = 1; i < sorted.length; i++) {
-      expect(sorted[i].startMs).toBeGreaterThanOrEqual(sorted[i - 1].endMs);
+    const inChorus = (t: number): boolean => chorusSegments.some((s) => t >= s.startMs && t < s.endMs);
+    // 小節を組む。
+    const bars: { beats: typeof input.beats }[] = [];
+    let cur: typeof input.beats = [];
+    for (const b of input.beats) {
+      if (b.position === 1 && cur.length > 0) {
+        bars.push({ beats: cur });
+        cur = [];
+      }
+      cur.push(b);
     }
+    if (cur.length > 0) bars.push({ beats: cur });
 
-    const chorusDurationMs = chorusSegments.reduce((sum, s) => sum + (s.endMs - s.startMs), 0);
-    const nonChorusDurationMs = songmap.song.duration - chorusDurationMs;
-    // 密度＝ノーツ数÷時間（秒）。比を取るので秒への換算係数は約分され、ミリ秒のまま比を計算しても等しい。
-    const chorusDensity = chorusNotes.length / chorusDurationMs;
-    const nonChorusDensity = nonChorusNotes.length / nonChorusDurationMs;
-    const ratio = chorusDensity / nonChorusDensity;
-
-    // 許容差10パーセントの理由を先に述べる。毎秒あたり密度は1拍あたり密度を拍の長さで割った値であり、
-    // TAKEOVERの拍の長さは厳密には一定でなく（先頭拍376ミリ秒、以降約343ミリ秒）、サビ区間の端と拍の境界も
-    // 完全には一致しないため、比はちょうど2から僅かに揺れる。この揺れを吸収する本検査専用の許容差を10パーセントとする。
-    expect(ratio).toBeGreaterThanOrEqual(2 * 0.9);
-    expect(ratio).toBeLessThanOrEqual(2 * 1.1);
+    const patternCount = new Map<string, number>();
+    let nonChorusBarsWithNotes = 0;
+    for (const bar of bars) {
+      if (bar.beats.length === 0 || inChorus(bar.beats[0].startTimeMs)) continue;
+      const pat = bar.beats
+        .filter((b) => noteBeats.has(b.index))
+        .map((b) => b.position)
+        .join(",");
+      if (pat === "") continue;
+      nonChorusBarsWithNotes++;
+      patternCount.set(pat, (patternCount.get(pat) ?? 0) + 1);
+    }
+    expect(patternCount.size).toBeGreaterThanOrEqual(2);
+    const maxShare = Math.max(...patternCount.values()) / nonChorusBarsWithNotes;
+    expect(maxShare).toBeLessThan(0.8);
   });
 
-  it("達成基準2の補足: サビ内の隣接ノーツ間隔がサビ以外の約半分（局所的にサビとAメロが区別できる）", () => {
-    // 受け入れ基準「サビとAメロが区別できる」を局所的に示す。
-    // 隣接ノーツ間隔を使う理由を先に述べる。間隔は密度の逆数であり、サビ（毎拍）とAメロを含むサビ以外（2拍に1回）が
-    // 隣り合って区別できることを、総量の比ではなく局所の値で直接示せるためである。
-    // 同じ種別が連続する隣接ノーツ対のみの間隔を集める。種別境界をまたぐ対を除外する理由は、密度の出所が混ざり
-    // 局所の代表値を歪めるためである。
-    const chorusGaps: number[] = [];
-    const nonChorusGaps: number[] = [];
-    for (let i = 1; i < notes.length; i++) {
-      const prev = notes[i - 1];
-      const cur = notes[i];
-      if (prev.sectionKind !== cur.sectionKind) continue;
-      const gapMs = cur.timeMs - prev.timeMs;
-      (cur.sectionKind === "chorus" ? chorusGaps : nonChorusGaps).push(gapMs);
+  it("基準F補助: サビ区間内の局所密度が平準化され密のピークが無い（実機確認で密な連続を解消）", () => {
+    // 各サビ区間を8拍窓に割り、窓ごとのノーツ数が均一で密のピークが無いことを確認する。
+    // 旧実装は強調スコア上位採用でサビ前半に密が偏り約30ノーツの密な連続が生じ、特定区間が高頻度で難しかった
+    // （実機目視で判明）。等間隔セグメント選択で局所密度を区間平均（拍あたり0.5＝8拍窓で約4）へ揃える。
+    const noteBeats = new Set(notes.map((n) => n.beatIndex));
+    for (const seg of input.chorusSegments) {
+      const segBeats = input.beats.filter((b) => b.startTimeMs >= seg.startMs && b.startTimeMs < seg.endMs);
+      const windows: number[] = [];
+      for (let i = 0; i < segBeats.length; i += 8) {
+        const w = segBeats.slice(i, i + 8).filter((b) => noteBeats.has(b.index)).length;
+        windows.push(w);
+      }
+      // 密のピークが無い: どの8拍窓も5ノーツ以下（毎拍に近い密な連続が生じない）。
+      expect(Math.max(...windows)).toBeLessThanOrEqual(5);
+      // 平準化: 窓ごとのノーツ数の最大と最小の差が2以下（区間平均の周辺に揃う）。
+      expect(Math.max(...windows) - Math.min(...windows)).toBeLessThanOrEqual(2);
     }
-
-    // 中央値を使う理由を先に述べる。サビ区間の境界やテンポの微小変動による外れ値の影響を受けにくく、
-    // 代表的な間隔を表すためである。
-    const median = (xs: number[]): number => {
-      const sorted = [...xs].sort((a, b) => a - b);
-      const mid = Math.floor(sorted.length / 2);
-      return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
-    };
-    const ratio = median(nonChorusGaps) / median(chorusGaps);
-
-    // サビ以外の間隔はサビの約2倍（2拍に1回を毎拍で割った値）。許容差10パーセントの理由は達成基準2と同じで、
-    // 拍の長さが厳密には一定でないことによる揺れを吸収するためである。
-    expect(ratio).toBeGreaterThanOrEqual(2 * 0.9);
-    expect(ratio).toBeLessThanOrEqual(2 * 1.1);
   });
 
-  it("達成基準3: 全ノーツの時刻が曲の範囲内、拍索引が有効、識別子が一意（validateProfileのノーツ規則に対応）", () => {
+  it("全ノーツの時刻が曲の範囲内、拍索引が有効、識別子が一意", () => {
     const ids = new Set<string>();
     for (const n of notes) {
       expect(n.timeMs).toBeGreaterThanOrEqual(0);
@@ -95,32 +166,17 @@ describe("オンセット選択・ノーツ生成 実データ検証（Issue #38
       ids.add(n.id);
     }
   });
-});
 
-describe("オンセット選択・ノーツ生成 スキーマ適合（Issue #38）", () => {
-  it("中間ノーツに後段の項目を補うと、validateProfile のノーツ検査を通る最終ノーツになる", () => {
-    // 後段（#39・#40）が付与する項目を仮値で補い、最終 Note を作る。
-    // 仮 slotIndex を1にする理由を先に述べる。スキーマがスロット索引を1以上スロット数以下と定めるため、
-    // 有効範囲の下限である1を用いる。pattern は #39、trajectoryPosition は #40 が後段で確定する。
-    const input: OnsetInput = {
-      beats: minimalValidProfile.beats.map((b) => ({ index: b.index, startTimeMs: b.startTimeMs })),
-      chorusSegments: minimalValidProfile.repetitiveSegments
-        .filter((s) => s.isChorus)
-        .map((s) => ({ startMs: s.startTimeMs, endMs: s.endTimeMs })),
-    };
-    const completed: Note[] = generateOnsetNotes(input).map((n) => ({
-      id: n.id,
-      timeMs: n.timeMs,
-      beatIndex: n.beatIndex,
-      slotIndex: 1,
-      pattern: "single",
-      trajectoryPosition: { x: 0, y: 0, z: 0 },
-    }));
-    expect(completed.length).toBeGreaterThan(0);
-
-    const profile = structuredClone(minimalValidProfile) as SongProfile;
-    profile.notes = completed;
-    const result = validateProfile(profile);
-    expect(result.ok).toBe(true);
+  it("3つのサビ反復が同一の beatOffset 集合を持つ（基準G・多様性逓減の前提）", () => {
+    const chorusSegments = [...input.chorusSegments].sort((a, b) => a.startMs - b.startMs);
+    const offsetSets = chorusSegments.map((seg) => {
+      const cNotes = chorusNotes
+        .filter((n) => n.timeMs >= seg.startMs && n.timeMs < seg.endMs)
+        .sort((a, b) => a.beatIndex - b.beatIndex);
+      const anchor = cNotes[0].beatIndex;
+      return cNotes.map((n) => n.beatIndex - anchor).sort((a, b) => a - b);
+    });
+    expect(offsetSets[1]).toEqual(offsetSets[0]);
+    expect(offsetSets[2]).toEqual(offsetSets[0]);
   });
 });

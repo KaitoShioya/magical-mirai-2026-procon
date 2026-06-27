@@ -51,7 +51,7 @@ describe("譜面密度設計（合成入力の単体テスト）", () => {
     }
   });
 
-  it("サビの目標密度が非サビ基本の目標密度のちょうど2倍", () => {
+  it("サビの目標密度は基本と同じ0.5（実機確認で難易度を下げた）", () => {
     const input: DensityInput = {
       durationMs: 16000,
       beats: makeBeats(16),
@@ -65,7 +65,10 @@ describe("譜面密度設計（合成入力の単体テスト）", () => {
     const base = plan.regions.find((r) => r.className === "base");
     expect(chorus).toBeDefined();
     expect(base).toBeDefined();
-    expect(chorus!.targetDensityPerBeat).toBe(2 * base!.targetDensityPerBeat);
+    // 実機目視確認（不満③・難易度）でサビ目標密度を1.0→0.75→0.5へ下げ、基本と同じ0.5に揃えた。
+    expect(chorus!.targetDensityPerBeat).toBe(0.5);
+    expect(chorus!.targetDensityPerBeat).toBe(base!.targetDensityPerBeat);
+    expect(chorus!.targetDensityPerBeat).toBeLessThan(1.0);
     // サビ区間の境界が音楽地図の時刻と一致する。
     expect(chorus!.startMs).toBe(4000);
     expect(chorus!.endMs).toBe(8000);
@@ -234,7 +237,7 @@ describe("譜面密度設計（合成入力の単体テスト）", () => {
     expect(generateDensityPlan(input)).toEqual(generateDensityPlan(input));
   });
 
-  it("骨格計数はサビ拍×1＋非サビ拍×0.5、実効と区間別割当の合計が一致", () => {
+  it("骨格計数はサビ拍×0.5＋非サビ拍×0.5、実効と区間別割当の合計が一致", () => {
     const input: DensityInput = {
       durationMs: 16000,
       beats: makeBeats(16),
@@ -245,8 +248,8 @@ describe("譜面密度設計（合成入力の単体テスト）", () => {
     };
     const plan = generateDensityPlan(input);
     const summary = countTargetNotes(plan);
-    // サビ4拍×1.0 + 非サビ12拍×0.5 = 10。
-    expect(summary.skeleton).toBe(10);
+    // サビ密度0.5。サビ4拍×0.5 + 非サビ12拍×0.5 = 2 + 6 = 8。
+    expect(summary.skeleton).toBe(8);
     const regionSum = summary.byRegion.reduce((acc, r) => acc + r.targetNotes, 0);
     expect(regionSum).toBe(summary.effective);
     const classSum =

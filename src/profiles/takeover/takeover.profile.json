@@ -18252,33 +18252,9 @@
   "notes": [
     {
       "id": "note-0000",
-      "timeMs": 310,
-      "beatIndex": 0,
-      "slotIndex": 2,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -29.742213388126373,
-        "y": 5.03936245318912,
-        "z": 29.739793974188565
-      }
-    },
-    {
-      "id": "note-0001",
-      "timeMs": 1028.8999999999999,
-      "beatIndex": 2,
-      "slotIndex": 2,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -29.14842323856383,
-        "y": 5.135154530716146,
-        "z": 29.12257982623874
-      }
-    },
-    {
-      "id": "note-0002",
       "timeMs": 1371.6999999999998,
       "beatIndex": 3,
-      "slotIndex": 4,
+      "slotIndex": 1,
       "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -28.867141303179782,
@@ -18287,22 +18263,10 @@
       }
     },
     {
-      "id": "note-0003",
-      "timeMs": 1714.6,
-      "beatIndex": 4,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -28.586900108722144,
-        "y": 5.231950056766359,
-        "z": 28.517274692849064
-      }
-    },
-    {
-      "id": "note-0004",
+      "id": "note-0001",
       "timeMs": 2057.4,
       "beatIndex": 5,
-      "slotIndex": 4,
+      "slotIndex": 1,
       "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -28.307805051476393,
@@ -18311,7 +18275,7 @@
       }
     },
     {
-      "id": "note-0005",
+      "id": "note-0002",
       "timeMs": 2400.3,
       "beatIndex": 6,
       "slotIndex": 3,
@@ -18323,7 +18287,7 @@
       }
     },
     {
-      "id": "note-0006",
+      "id": "note-0003",
       "timeMs": 2743.2,
       "beatIndex": 7,
       "slotIndex": 3,
@@ -18335,47 +18299,11 @@
       }
     },
     {
-      "id": "note-0007",
-      "timeMs": 3086,
-      "beatIndex": 8,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -27.476164020440887,
-        "y": 5.439331318853942,
-        "z": 27.26449822794514
-      }
-    },
-    {
-      "id": "note-0008",
-      "timeMs": 3428.9,
-      "beatIndex": 9,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -27.200665769949193,
-        "y": 5.4936781251107245,
-        "z": 26.943632770428707
-      }
-    },
-    {
-      "id": "note-0009",
-      "timeMs": 3771.7000000000003,
-      "beatIndex": 10,
-      "slotIndex": 2,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -26.926021964339665,
-        "y": 5.548876252823323,
-        "z": 26.620209347332523
-      }
-    },
-    {
-      "id": "note-0010",
+      "id": "note-0004",
       "timeMs": 4114.6,
       "beatIndex": 11,
       "slotIndex": 4,
-      "pattern": "ascending",
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -26.65201428812415,
         "y": 5.604892843488338,
@@ -18383,23 +18311,11 @@
       }
     },
     {
-      "id": "note-0011",
-      "timeMs": 4457.4,
-      "beatIndex": 12,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -26.37874450182363,
-        "y": 5.6616301873644375,
-        "z": 25.96610833521389
-      }
-    },
-    {
-      "id": "note-0012",
+      "id": "note-0005",
       "timeMs": 4800.3,
       "beatIndex": 13,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "slotIndex": 2,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -26.10599509159482,
         "y": 5.719056323973988,
@@ -18407,23 +18323,11 @@
       }
     },
     {
-      "id": "note-0013",
-      "timeMs": 5143.2,
-      "beatIndex": 14,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -25.83378777356117,
-        "y": 5.777089727936646,
-        "z": 25.30368930424347
-      }
-    },
-    {
-      "id": "note-0014",
+      "id": "note-0006",
       "timeMs": 5486,
       "beatIndex": 15,
       "slotIndex": 4,
-      "pattern": "descending",
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -25.562143631530386,
         "y": 5.835648165533682,
@@ -18431,23 +18335,11 @@
       }
     },
     {
-      "id": "note-0015",
-      "timeMs": 5828.9,
-      "beatIndex": 16,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -25.290846100109743,
-        "y": 5.894700738769215,
-        "z": 24.634736854662872
-      }
-    },
-    {
-      "id": "note-0016",
+      "id": "note-0007",
       "timeMs": 6171.700000000001,
       "beatIndex": 17,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "slotIndex": 3,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -25.019995359100022,
         "y": 5.9541479671334265,
@@ -18455,23 +18347,11 @@
       }
     },
     {
-      "id": "note-0017",
-      "timeMs": 6514.599999999999,
-      "beatIndex": 18,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -24.749375306002914,
-        "y": 6.013959471178138,
-        "z": 23.960746181987236
-      }
-    },
-    {
-      "id": "note-0018",
+      "id": "note-0008",
       "timeMs": 6857.400000000001,
       "beatIndex": 19,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 4,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -24.47908572547291,
         "y": 6.074035327739224,
@@ -18479,35 +18359,11 @@
       }
     },
     {
-      "id": "note-0019",
-      "timeMs": 7200.3,
-      "beatIndex": 20,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -24.208910842409868,
-        "y": 6.134345524129417,
-        "z": 23.28330851166739
-      }
-    },
-    {
-      "id": "note-0020",
-      "timeMs": 7543.1,
-      "beatIndex": 21,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -23.938950181818228,
-        "y": 6.194789846317081,
-        "z": 22.943843848021448
-      }
-    },
-    {
-      "id": "note-0021",
+      "id": "note-0009",
       "timeMs": 7886,
       "beatIndex": 22,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 5,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": -23.66898816049979,
         "y": 6.255338496589061,
@@ -18515,11 +18371,11 @@
       }
     },
     {
-      "id": "note-0022",
+      "id": "note-0010",
       "timeMs": 8228.9,
       "beatIndex": 23,
       "slotIndex": 4,
-      "pattern": "ascending",
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": -23.39904545302648,
         "y": 6.3159087827888625,
@@ -18527,23 +18383,11 @@
       }
     },
     {
-      "id": "note-0023",
-      "timeMs": 8571.7,
-      "beatIndex": 24,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -23.12914271144185,
-        "y": 6.376417987523075,
-        "z": 21.9244570798983
-      }
-    },
-    {
-      "id": "note-0024",
+      "id": "note-0011",
       "timeMs": 8914.6,
       "beatIndex": 25,
       "slotIndex": 4,
-      "pattern": "ascending",
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -22.85906438633944,
         "y": 6.436836350933002,
@@ -18551,23 +18395,11 @@
       }
     },
     {
-      "id": "note-0025",
-      "timeMs": 9257.4,
-      "beatIndex": 26,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -22.58890994640523,
-        "y": 6.4970635958974645,
-        "z": 21.246225769350684
-      }
-    },
-    {
-      "id": "note-0026",
+      "id": "note-0012",
       "timeMs": 9600.300000000001,
       "beatIndex": 27,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 7,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": -22.318463695384253,
         "y": 6.557069798053819,
@@ -18575,23 +18407,11 @@
       }
     },
     {
-      "id": "note-0027",
-      "timeMs": 9943.099999999999,
-      "beatIndex": 28,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -22.047825316559116,
-        "y": 6.616754920678234,
-        "z": 20.570912362962115
-      }
-    },
-    {
-      "id": "note-0028",
+      "id": "note-0013",
       "timeMs": 10286,
       "beatIndex": 29,
-      "slotIndex": 5,
-      "pattern": "ascending",
+      "slotIndex": 6,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": -21.7767788313301,
         "y": 6.676088723117322,
@@ -18599,23 +18419,11 @@
       }
     },
     {
-      "id": "note-0029",
-      "timeMs": 10628.9,
-      "beatIndex": 30,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -21.505345052680408,
-        "y": 6.734988668266911,
-        "z": 19.900010664736897
-      }
-    },
-    {
-      "id": "note-0030",
+      "id": "note-0014",
       "timeMs": 10971.7,
       "beatIndex": 31,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 4,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -21.233545245346154,
         "y": 6.7933727250895135,
@@ -18623,22 +18431,10 @@
       }
     },
     {
-      "id": "note-0031",
-      "timeMs": 11314.6,
-      "beatIndex": 32,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -20.961162753114724,
-        "y": 6.851209893850174,
-        "z": 19.235307748718686
-      }
-    },
-    {
-      "id": "note-0032",
+      "id": "note-0015",
       "timeMs": 11657.400000000001,
       "beatIndex": 33,
-      "slotIndex": 3,
+      "slotIndex": 4,
       "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -20.688298388601602,
@@ -18647,10 +18443,10 @@
       }
     },
     {
-      "id": "note-0033",
+      "id": "note-0016",
       "timeMs": 12000.3,
       "beatIndex": 34,
-      "slotIndex": 3,
+      "slotIndex": 5,
       "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -20.414734874498965,
@@ -18659,7 +18455,7 @@
       }
     },
     {
-      "id": "note-0034",
+      "id": "note-0017",
       "timeMs": 12343.1,
       "beatIndex": 35,
       "slotIndex": 4,
@@ -18671,23 +18467,11 @@
       }
     },
     {
-      "id": "note-0035",
-      "timeMs": 12686,
-      "beatIndex": 36,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -19.865596868002307,
-        "y": 7.075585256215705,
-        "z": 17.93056857984316
-      }
-    },
-    {
-      "id": "note-0036",
+      "id": "note-0018",
       "timeMs": 13028.9,
       "beatIndex": 37,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 3,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": -19.589826123052518,
         "y": 7.1296268063006,
@@ -18695,7 +18479,7 @@
       }
     },
     {
-      "id": "note-0037",
+      "id": "note-0019",
       "timeMs": 13371.7,
       "beatIndex": 38,
       "slotIndex": 4,
@@ -18707,10 +18491,10 @@
       }
     },
     {
-      "id": "note-0038",
+      "id": "note-0020",
       "timeMs": 13714.6,
       "beatIndex": 39,
-      "slotIndex": 5,
+      "slotIndex": 6,
       "pattern": "ascending",
       "trajectoryPosition": {
         "x": -19.035751630309765,
@@ -18719,23 +18503,11 @@
       }
     },
     {
-      "id": "note-0039",
-      "timeMs": 14057.4,
-      "beatIndex": 40,
-      "slotIndex": 6,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -18.757332276043016,
-        "y": 7.285735159953282,
-        "z": 16.669326464854265
-      }
-    },
-    {
-      "id": "note-0040",
+      "id": "note-0021",
       "timeMs": 14400.3,
       "beatIndex": 41,
-      "slotIndex": 5,
-      "pattern": "descending",
+      "slotIndex": 6,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -18.477805603735007,
         "y": 7.335569211598513,
@@ -18743,23 +18515,11 @@
       }
     },
     {
-      "id": "note-0041",
-      "timeMs": 14743.1,
-      "beatIndex": 42,
-      "slotIndex": 6,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -18.19727659291874,
-        "y": 7.3841745622516015,
-        "z": 16.05899486619434
-      }
-    },
-    {
-      "id": "note-0042",
+      "id": "note-0022",
       "timeMs": 15086,
       "beatIndex": 43,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 4,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": -17.915523494497425,
         "y": 7.431514506981456,
@@ -18767,23 +18527,11 @@
       }
     },
     {
-      "id": "note-0043",
-      "timeMs": 15428.9,
-      "beatIndex": 44,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -17.632569888123825,
-        "y": 7.477509607987177,
-        "z": 15.464225699407017
-      }
-    },
-    {
-      "id": "note-0044",
+      "id": "note-0023",
       "timeMs": 15771.699999999999,
       "beatIndex": 45,
-      "slotIndex": 4,
-      "pattern": "sameTone",
+      "slotIndex": 2,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": -17.348440753766184,
         "y": 7.522081996141731,
@@ -18791,23 +18539,11 @@
       }
     },
     {
-      "id": "note-0045",
-      "timeMs": 16114.599999999999,
-      "beatIndex": 46,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -17.062912241905575,
-        "y": 7.565192613560415,
-        "z": 14.88678383598961
-      }
-    },
-    {
-      "id": "note-0046",
+      "id": "note-0024",
       "timeMs": 16457.4,
       "beatIndex": 47,
-      "slotIndex": 5,
-      "pattern": "descending",
+      "slotIndex": 1,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -16.77609283271048,
         "y": 7.606751278045345,
@@ -18815,23 +18551,11 @@
       }
     },
     {
-      "id": "note-0047",
-      "timeMs": 16800.3,
-      "beatIndex": 48,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -16.48775710707339,
-        "y": 7.6467171734132915,
-        "z": 14.32817259535647
-      }
-    },
-    {
-      "id": "note-0048",
+      "id": "note-0025",
       "timeMs": 17143.100000000002,
       "beatIndex": 49,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "slotIndex": 1,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -16.19801518249948,
         "y": 7.685001951658301,
@@ -18839,23 +18563,11 @@
       }
     },
     {
-      "id": "note-0049",
-      "timeMs": 17486,
-      "beatIndex": 50,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -15.906639934796438,
-        "y": 7.721562886511818,
-        "z": 13.789983202958418
-      }
-    },
-    {
-      "id": "note-0050",
+      "id": "note-0026",
       "timeMs": 17828.9,
       "beatIndex": 51,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 5,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -15.613657571875315,
         "y": 7.756323484423882,
@@ -18863,47 +18575,11 @@
       }
     },
     {
-      "id": "note-0051",
-      "timeMs": 18171.7,
-      "beatIndex": 52,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -15.319096176243912,
-        "y": 7.789209351821997,
-        "z": 13.273806884246266
-      }
-    },
-    {
-      "id": "note-0052",
-      "timeMs": 18514.600000000002,
-      "beatIndex": 53,
-      "slotIndex": 5,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -15.022725811883136,
-        "y": 7.820174612547969,
-        "z": 13.024434963248055
-      }
-    },
-    {
-      "id": "note-0053",
-      "timeMs": 18857.399999999998,
-      "beatIndex": 54,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -14.724661282584991,
-        "y": 7.849136168309833,
-        "z": 12.781234864670832
-      }
-    },
-    {
-      "id": "note-0054",
+      "id": "note-0027",
       "timeMs": 19200.3,
       "beatIndex": 55,
-      "slotIndex": 5,
-      "pattern": "descending",
+      "slotIndex": 1,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -14.424670608495095,
         "y": 7.876045853386017,
@@ -18911,23 +18587,11 @@
       }
     },
     {
-      "id": "note-0055",
-      "timeMs": 19543.1,
-      "beatIndex": 56,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -14.122870704988847,
-        "y": 7.900822934941335,
-        "z": 12.313858369682926
-      }
-    },
-    {
-      "id": "note-0056",
+      "id": "note-0028",
       "timeMs": 19886,
       "beatIndex": 57,
-      "slotIndex": 5,
-      "pattern": "ascending",
+      "slotIndex": 1,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -13.81902741288036,
         "y": 7.923416805904033,
@@ -18935,23 +18599,11 @@
       }
     },
     {
-      "id": "note-0057",
-      "timeMs": 20228.8,
-      "beatIndex": 58,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -13.51325989462466,
-        "y": 7.943749250682506,
-        "z": 11.873268624733361
-      }
-    },
-    {
-      "id": "note-0058",
+      "id": "note-0029",
       "timeMs": 20571.7,
       "beatIndex": 59,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 4,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -13.20533167620812,
         "y": 7.961767069068024,
@@ -18959,47 +18611,11 @@
       }
     },
     {
-      "id": "note-0059",
-      "timeMs": 20914.6,
-      "beatIndex": 60,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -12.89527356422347,
-        "y": 7.977398919086805,
-        "z": 11.460998886746204
-      }
-    },
-    {
-      "id": "note-0060",
-      "timeMs": 21257.4,
-      "beatIndex": 61,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -12.583118849647548,
-        "y": 7.990576241843996,
-        "z": 11.26606209211717
-      }
-    },
-    {
-      "id": "note-0061",
-      "timeMs": 21600.3,
-      "beatIndex": 62,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -12.268627331981138,
-        "y": 8.001241662613934,
-        "z": 11.07876080487149
-      }
-    },
-    {
-      "id": "note-0062",
+      "id": "note-0030",
       "timeMs": 21943.100000000002,
       "beatIndex": 63,
       "slotIndex": 4,
-      "pattern": "ascending",
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -11.951924384367825,
         "y": 8.00932392319795,
@@ -19007,23 +18623,11 @@
       }
     },
     {
-      "id": "note-0063",
-      "timeMs": 22286,
-      "beatIndex": 64,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -11.63276715273019,
-        "y": 8.014762676255348,
-        "z": 10.728083381446105
-      }
-    },
-    {
-      "id": "note-0064",
+      "id": "note-0031",
       "timeMs": 22628.8,
       "beatIndex": 65,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 6,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -11.31128373153814,
         "y": 8.017489712095895,
@@ -19031,23 +18635,23 @@
       }
     },
     {
-      "id": "note-0065",
-      "timeMs": 22971.699999999997,
-      "beatIndex": 66,
-      "slotIndex": 5,
-      "pattern": "ascending",
+      "id": "note-0032",
+      "timeMs": 23314.6,
+      "beatIndex": 67,
+      "slotIndex": 7,
+      "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -10.987228477639807,
-        "y": 8.01744155897706,
-        "z": 10.410557841920866
+        "x": -10.660636722907556,
+        "y": 8.014551944274166,
+        "z": 10.264703661852321
       }
     },
     {
-      "id": "note-0066",
+      "id": "note-0033",
       "timeMs": 23657.399999999998,
       "beatIndex": 68,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 7,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -10.331546757879156,
         "y": 8.008757909745068,
@@ -19055,11 +18659,11 @@
       }
     },
     {
-      "id": "note-0067",
+      "id": "note-0034",
       "timeMs": 24343.1,
       "beatIndex": 70,
-      "slotIndex": 5,
-      "pattern": "ascending",
+      "slotIndex": 6,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": -9.788769021849324,
         "y": 7.992684944188899,
@@ -19067,11 +18671,23 @@
       }
     },
     {
-      "id": "note-0068",
+      "id": "note-0035",
+      "timeMs": 24686,
+      "beatIndex": 71,
+      "slotIndex": 3,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": -9.575263426424844,
+        "y": 7.9837152961532665,
+        "z": 9.85687488432857
+      }
+    },
+    {
+      "id": "note-0036",
       "timeMs": 25028.8,
       "beatIndex": 72,
-      "slotIndex": 5,
-      "pattern": "sameTone",
+      "slotIndex": 4,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": -9.35947876588908,
         "y": 7.973121664400574,
@@ -19079,22 +18695,22 @@
       }
     },
     {
-      "id": "note-0069",
-      "timeMs": 25714.600000000002,
-      "beatIndex": 74,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "id": "note-0037",
+      "timeMs": 26057.4,
+      "beatIndex": 75,
+      "slotIndex": 6,
+      "pattern": "ascending",
       "trajectoryPosition": {
-        "x": -8.920975889950562,
-        "y": 7.947170973067697,
-        "z": 9.686603816728514
+        "x": -8.69849487558928,
+        "y": 7.931883564970033,
+        "z": 9.641177200756994
       }
     },
     {
-      "id": "note-0070",
+      "id": "note-0038",
       "timeMs": 26400.300000000003,
       "beatIndex": 76,
-      "slotIndex": 5,
+      "slotIndex": 7,
       "pattern": "ascending",
       "trajectoryPosition": {
         "x": -8.47382565180973,
@@ -19103,23 +18719,35 @@
       }
     },
     {
-      "id": "note-0071",
-      "timeMs": 27086,
-      "beatIndex": 78,
-      "slotIndex": 4,
+      "id": "note-0039",
+      "timeMs": 26743.1,
+      "beatIndex": 77,
+      "slotIndex": 6,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": -8.018402091487596,
-        "y": 7.877120257968107,
-        "z": 9.53709212513466
+        "x": -8.2471539141422,
+        "y": 7.896827591891135,
+        "z": 9.56654432363819
       }
     },
     {
-      "id": "note-0072",
+      "id": "note-0040",
+      "timeMs": 27428.8,
+      "beatIndex": 79,
+      "slotIndex": 6,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": -7.787758260594567,
+        "y": 7.856009357895006,
+        "z": 9.512727179328172
+      }
+    },
+    {
+      "id": "note-0041",
       "timeMs": 27771.7,
       "beatIndex": 80,
-      "slotIndex": 3,
-      "pattern": "descending",
+      "slotIndex": 7,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": -7.555142532923396,
         "y": 7.833513625721123,
@@ -19127,23 +18755,35 @@
       }
     },
     {
-      "id": "note-0073",
-      "timeMs": 28457.4,
-      "beatIndex": 82,
-      "slotIndex": 3,
-      "pattern": "sameTone",
+      "id": "note-0042",
+      "timeMs": 28114.6,
+      "beatIndex": 81,
+      "slotIndex": 6,
+      "pattern": "descending",
       "trajectoryPosition": {
-        "x": -7.084484300056366,
-        "y": 7.784517287750305,
-        "z": 9.468850708762817
+        "x": -7.32067659713927,
+        "y": 7.80967007408006,
+        "z": 9.478726023993504
       }
     },
     {
-      "id": "note-0074",
-      "timeMs": 29143.100000000002,
-      "beatIndex": 84,
+      "id": "note-0043",
+      "timeMs": 28800.3,
+      "beatIndex": 83,
       "slotIndex": 2,
       "pattern": "descending",
+      "trajectoryPosition": {
+        "x": -6.846482515990161,
+        "y": 7.758071642621134,
+        "z": 9.463554469601533
+      }
+    },
+    {
+      "id": "note-0044",
+      "timeMs": 29143.100000000002,
+      "beatIndex": 84,
+      "slotIndex": 3,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": -6.606864716825737,
         "y": 7.730379602111367,
@@ -19151,46 +18791,58 @@
       }
     },
     {
-      "id": "note-0075",
-      "timeMs": 29828.800000000003,
-      "beatIndex": 86,
-      "slotIndex": 3,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -6.122721107170748,
-        "y": 7.6713489268600314,
-        "z": 9.473910105797794
-      }
-    },
-    {
-      "id": "note-0076",
-      "timeMs": 30514.600000000002,
-      "beatIndex": 88,
+      "id": "note-0045",
+      "timeMs": 29486,
+      "beatIndex": 85,
       "slotIndex": 2,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": -5.632418878988531,
-        "y": 7.607664007224665,
-        "z": 9.501442309667649
+        "x": -6.36554577833594,
+        "y": 7.701456060631768,
+        "z": 9.466209954557982
       }
     },
     {
-      "id": "note-0077",
-      "timeMs": 31200.3,
-      "beatIndex": 90,
-      "slotIndex": 2,
+      "id": "note-0046",
+      "timeMs": 30171.7,
+      "beatIndex": 87,
+      "slotIndex": 5,
+      "pattern": "ascending",
+      "trajectoryPosition": {
+        "x": -5.878303708115841,
+        "y": 7.64007168616768,
+        "z": 9.48569629613595
+      }
+    },
+    {
+      "id": "note-0047",
+      "timeMs": 30857.399999999998,
+      "beatIndex": 89,
+      "slotIndex": 5,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -5.136538396311171,
-        "y": 7.539591803891567,
-        "z": 9.54430817555817
+        "x": -5.385193629269103,
+        "y": 7.574166877284588,
+        "z": 9.52101731160854
       }
     },
     {
-      "id": "note-0078",
+      "id": "note-0048",
+      "timeMs": 31543.1,
+      "beatIndex": 91,
+      "slotIndex": 1,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": -4.886652865734956,
+        "y": 7.5039899920382105,
+        "z": 9.571176818248851
+      }
+    },
+    {
+      "id": "note-0049",
       "timeMs": 31886,
       "beatIndex": 92,
-      "slotIndex": 3,
+      "slotIndex": 2,
       "pattern": "ascending",
       "trajectoryPosition": {
         "x": -4.635445922804892,
@@ -19199,31 +18851,31 @@
       }
     },
     {
-      "id": "note-0079",
-      "timeMs": 32571.7,
-      "beatIndex": 94,
-      "slotIndex": 3,
-      "pattern": "sameTone",
+      "id": "note-0050",
+      "timeMs": 32228.8,
+      "beatIndex": 93,
+      "slotIndex": 1,
+      "pattern": "descending",
       "trajectoryPosition": {
-        "x": -4.129578782408925,
-        "y": 7.391252117604268,
-        "z": 9.672064706105623
+        "x": -4.383118741452639,
+        "y": 7.429789388484266,
+        "z": 9.635178633329986
       }
     },
     {
-      "id": "note-0080",
-      "timeMs": 33257.399999999994,
-      "beatIndex": 96,
+      "id": "note-0051",
+      "timeMs": 32914.6,
+      "beatIndex": 95,
       "slotIndex": 4,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": -3.619374299062513,
-        "y": 7.311481350761502,
-        "z": 9.754963005308754
+        "x": -3.874954171333358,
+        "y": 7.351801789690123,
+        "z": 9.712038669765535
       }
     },
     {
-      "id": "note-0081",
+      "id": "note-0052",
       "timeMs": 33943.1,
       "beatIndex": 98,
       "slotIndex": 5,
@@ -19235,95 +18887,59 @@
       }
     },
     {
-      "id": "note-0082",
-      "timeMs": 34628.799999999996,
-      "beatIndex": 100,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -2.587702599275264,
-        "y": 7.141979759956324,
-        "z": 9.953818757939343
-      }
-    },
-    {
-      "id": "note-0083",
-      "timeMs": 35314.5,
-      "beatIndex": 102,
+      "id": "note-0053",
+      "timeMs": 34286,
+      "beatIndex": 99,
       "slotIndex": 5,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": -2.067110030712896,
-        "y": 7.052745652105347,
-        "z": 10.067783845913004
+        "x": -2.84685396072947,
+        "y": 7.185516257260008,
+        "z": 9.900291363314683
       }
     },
     {
-      "id": "note-0084",
-      "timeMs": 36000.3,
-      "beatIndex": 104,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -1.5438529487150006,
-        "y": 6.9608402304414065,
-        "z": 10.190130566091261
-      }
-    },
-    {
-      "id": "note-0085",
-      "timeMs": 36686,
-      "beatIndex": 106,
-      "slotIndex": 5,
+      "id": "note-0054",
+      "timeMs": 35657.4,
+      "beatIndex": 103,
+      "slotIndex": 6,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": -1.0185213279446912,
-        "y": 6.866538685601817,
-        "z": 10.31982693467724
+        "x": -1.8057777452715982,
+        "y": 7.0071097253696575,
+        "z": 10.127973785878051
       }
     },
     {
-      "id": "note-0086",
-      "timeMs": 37371.7,
-      "beatIndex": 108,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "id": "note-0055",
+      "timeMs": 37028.799999999996,
+      "beatIndex": 107,
+      "slotIndex": 7,
+      "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -0.49147637163707647,
-        "y": 6.770076162202001,
-        "z": 10.455894023332792
+        "x": -0.7552241164736211,
+        "y": 6.818569058464819,
+        "z": 10.387116475640452
       }
     },
     {
-      "id": "note-0087",
-      "timeMs": 38057.4,
-      "beatIndex": 110,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "id": "note-0056",
+      "timeMs": 39086,
+      "beatIndex": 113,
+      "slotIndex": 7,
+      "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 0.0368445962686087,
-        "y": 6.671701018297675,
-        "z": 10.597335649331018
+        "x": 0.830800539714427,
+        "y": 6.521088023546907,
+        "z": 10.817407078715387
       }
     },
     {
-      "id": "note-0088",
-      "timeMs": 38743.1,
-      "beatIndex": 112,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 0.5660042518331302,
-        "y": 6.571661611944559,
-        "z": 10.743155629945019
-      }
-    },
-    {
-      "id": "note-0089",
+      "id": "note-0057",
       "timeMs": 39428.8,
       "beatIndex": 114,
-      "slotIndex": 5,
-      "pattern": "sameTone",
+      "slotIndex": 6,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 1.095565271117259,
         "y": 6.470206301198369,
@@ -19331,107 +18947,71 @@
       }
     },
     {
-      "id": "note-0090",
-      "timeMs": 40114.5,
-      "beatIndex": 116,
-      "slotIndex": 5,
+      "id": "note-0058",
+      "timeMs": 39771.700000000004,
+      "beatIndex": 115,
+      "slotIndex": 7,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": 1.6250903301817419,
-        "y": 6.367583444114826,
-        "z": 11.043945924112755
+        "x": 1.3603982417578269,
+        "y": 6.4190178097403745,
+        "z": 10.96792692261947
       }
     },
     {
-      "id": "note-0091",
-      "timeMs": 40800.3,
-      "beatIndex": 118,
+      "id": "note-0059",
+      "timeMs": 41143.1,
+      "beatIndex": 119,
+      "slotIndex": 6,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": 2.4183923596710155,
+        "y": 6.211995692583999,
+        "z": 11.273633903176812
+      }
+    },
+    {
+      "id": "note-0060",
+      "timeMs": 42514.5,
+      "beatIndex": 123,
+      "slotIndex": 6,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": 3.471869269757863,
+        "y": 6.002787043074656,
+        "z": 11.578922722553735
+      }
+    },
+    {
+      "id": "note-0061",
+      "timeMs": 43886,
+      "beatIndex": 127,
       "slotIndex": 4,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": 2.1542192042986485,
-        "y": 6.264026243593978,
-        "z": 11.196946234881368
+        "x": 4.5174062363156136,
+        "y": 5.793363497001389,
+        "z": 11.8758450688768
       }
     },
     {
-      "id": "note-0092",
-      "timeMs": 41486,
-      "beatIndex": 120,
+      "id": "note-0062",
+      "timeMs": 45257.399999999994,
+      "beatIndex": 131,
       "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 2.6823602064128664,
-        "y": 6.159813288283892,
-        "z": 11.35031779144371
-      }
-    },
-    {
-      "id": "note-0093",
-      "timeMs": 42171.700000000004,
-      "beatIndex": 122,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 3.2091532127120166,
-        "y": 6.055177897023242,
-        "z": 11.503086643707658
-      }
-    },
-    {
-      "id": "note-0094",
-      "timeMs": 42857.4,
-      "beatIndex": 124,
-      "slotIndex": 5,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 3.734160899256851,
-        "y": 5.950368427867748,
-        "z": 11.654256608946318
-      }
-    },
-    {
-      "id": "note-0095",
-      "timeMs": 43543.100000000006,
-      "beatIndex": 126,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 4.256945942108143,
-        "y": 5.845633238873125,
-        "z": 11.802831504432787
-      }
-    },
-    {
-      "id": "note-0096",
-      "timeMs": 44228.8,
-      "beatIndex": 128,
-      "slotIndex": 5,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 4.777071017326653,
-        "y": 5.741220688095092,
-        "z": 11.94781514744017
+        "x": 5.551351989034842,
+        "y": 5.585742578887035,
+        "z": 12.156387697137827
       }
     },
     {
-      "id": "note-0097",
-      "timeMs": 44914.5,
-      "beatIndex": 130,
-      "slotIndex": 5,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 5.294098800973144,
-        "y": 5.63737913358937,
-        "z": 12.088211355241562
-      }
-    },
-    {
-      "id": "note-0098",
+      "id": "note-0063",
       "timeMs": 45600.299999999996,
       "beatIndex": 132,
-      "slotIndex": 5,
-      "pattern": "sameTone",
+      "slotIndex": 4,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 5.807666576049638,
         "y": 5.534341980858203,
@@ -19439,47 +19019,59 @@
       }
     },
     {
-      "id": "note-0099",
-      "timeMs": 46286,
-      "beatIndex": 134,
+      "id": "note-0064",
+      "timeMs": 45943.1,
+      "beatIndex": 133,
+      "slotIndex": 3,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 6.062913563309476,
+        "y": 5.483223268000554,
+        "z": 12.288034429727533
+      }
+    },
+    {
+      "id": "note-0065",
+      "timeMs": 46628.799999999996,
+      "beatIndex": 135,
+      "slotIndex": 2,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 6.570284504275132,
+        "y": 5.381895866635499,
+        "z": 12.412603197654166
+      }
+    },
+    {
+      "id": "note-0066",
+      "timeMs": 47314.5,
+      "beatIndex": 137,
+      "slotIndex": 2,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 7.073027487992595,
+        "y": 5.282008732847579,
+        "z": 12.529097818190834
+      }
+    },
+    {
+      "id": "note-0067",
+      "timeMs": 48000.2,
+      "beatIndex": 139,
       "slotIndex": 4,
-      "pattern": "sameTone",
+      "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 6.317187193587652,
-        "y": 5.43238766688801,
-        "z": 12.351274907029246
+        "x": 7.570705190522607,
+        "y": 5.183810224692522,
+        "z": 12.636522108610631
       }
     },
     {
-      "id": "note-0100",
-      "timeMs": 46971.7,
-      "beatIndex": 136,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 6.8222984839582,
-        "y": 5.331749459576918,
-        "z": 12.471930535346933
-      }
-    },
-    {
-      "id": "note-0101",
-      "timeMs": 47657.4,
-      "beatIndex": 138,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 7.322563123222071,
-        "y": 5.2326757169806415,
-        "z": 12.584013852271362
-      }
-    },
-    {
-      "id": "note-0102",
+      "id": "note-0068",
       "timeMs": 48343.1,
       "beatIndex": 140,
-      "slotIndex": 4,
-      "pattern": "sameTone",
+      "slotIndex": 6,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 7.817543787440006,
         "y": 5.135414797154903,
@@ -19487,95 +19079,107 @@
       }
     },
     {
-      "id": "note-0103",
-      "timeMs": 49028.799999999996,
-      "beatIndex": 142,
-      "slotIndex": 4,
+      "id": "note-0069",
+      "timeMs": 48686,
+      "beatIndex": 141,
+      "slotIndex": 6,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 8.30680315267278,
-        "y": 5.040215058155418,
-        "z": 12.77847882103286
+        "x": 8.062951642393951,
+        "y": 5.087534815132374,
+        "z": 12.733893301915636
       }
     },
     {
-      "id": "note-0104",
-      "timeMs": 49714.5,
-      "beatIndex": 144,
+      "id": "note-0070",
+      "timeMs": 49371.7,
+      "beatIndex": 143,
+      "slotIndex": 7,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 8.54918591258017,
+        "y": 4.993458969224954,
+        "z": 12.820186697927191
+      }
+    },
+    {
+      "id": "note-0071",
+      "timeMs": 50057.4,
+      "beatIndex": 145,
+      "slotIndex": 5,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 9.029042865983502,
+        "y": 4.9018168593371865,
+        "z": 12.894421070361508
+      }
+    },
+    {
+      "id": "note-0072",
+      "timeMs": 50743.1,
+      "beatIndex": 147,
+      "slotIndex": 7,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 9.502085178664725,
+        "y": 4.812856843524784,
+        "z": 12.95560023649169
+      }
+    },
+    {
+      "id": "note-0073",
+      "timeMs": 51428.8,
+      "beatIndex": 149,
+      "slotIndex": 2,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 9.967875526684603,
+        "y": 4.726827279843464,
+        "z": 13.00272801359084
+      }
+    },
+    {
+      "id": "note-0074",
+      "timeMs": 52114.5,
+      "beatIndex": 151,
+      "slotIndex": 2,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 10.425976586103886,
+        "y": 4.643976526348953,
+        "z": 13.03480821893205
+      }
+    },
+    {
+      "id": "note-0075",
+      "timeMs": 52800.2,
+      "beatIndex": 153,
       "slotIndex": 3,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 8.789903894981173,
-        "y": 4.947324858037904,
-        "z": 12.858868107416132
+        "x": 10.875951032983346,
+        "y": 4.564552941096962,
+        "z": 13.050844669788432
       }
     },
     {
-      "id": "note-0105",
-      "timeMs": 50400.2,
-      "beatIndex": 146,
-      "slotIndex": 3,
-      "pattern": "sameTone",
+      "id": "note-0076",
+      "timeMs": 53486,
+      "beatIndex": 155,
+      "slotIndex": 2,
+      "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 9.26640869042593,
-        "y": 4.8569925548580795,
-        "z": 12.926700351498553
+        "x": 11.317425271269302,
+        "y": 4.488794115448786,
+        "z": 13.049839745948606
       }
     },
     {
-      "id": "note-0106",
-      "timeMs": 51086,
-      "beatIndex": 148,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 9.735948146899513,
-        "y": 4.769453958923092,
-        "z": 12.980986249550561
-      }
-    },
-    {
-      "id": "note-0107",
-      "timeMs": 51771.700000000004,
-      "beatIndex": 150,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 10.197947955421359,
-        "y": 4.684982987371947,
-        "z": 13.02071366636732
-      }
-    },
-    {
-      "id": "note-0108",
-      "timeMs": 52457.4,
-      "beatIndex": 152,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 10.652039781484136,
-        "y": 4.60381502314528,
-        "z": 13.044895347422859
-      }
-    },
-    {
-      "id": "note-0109",
-      "timeMs": 53143.1,
-      "beatIndex": 154,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 11.097786301148602,
-        "y": 4.526198424298814,
-        "z": 13.05253510999028
-      }
-    },
-    {
-      "id": "note-0110",
+      "id": "note-0077",
       "timeMs": 53828.8,
       "beatIndex": 156,
       "slotIndex": 5,
-      "pattern": "sameTone",
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 11.534750190475538,
         "y": 4.452381548888262,
@@ -19583,155 +19187,143 @@
       }
     },
     {
-      "id": "note-0111",
-      "timeMs": 54514.5,
-      "beatIndex": 158,
-      "slotIndex": 4,
+      "id": "note-0078",
+      "timeMs": 54171.700000000004,
+      "beatIndex": 157,
+      "slotIndex": 7,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 11.96249412552569,
-        "y": 4.382612754969349,
-        "z": 13.014204148753176
+        "x": 11.749833176646757,
+        "y": 4.4169705312065055,
+        "z": 13.03079743668191
       }
     },
     {
-      "id": "note-0112",
-      "timeMs": 55200.200000000004,
-      "beatIndex": 160,
+      "id": "note-0079",
+      "timeMs": 54857.4,
+      "beatIndex": 159,
+      "slotIndex": 7,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 12.172802433888947,
+        "y": 4.34931922559354,
+        "z": 12.992722679470006
+      }
+    },
+    {
+      "id": "note-0080",
+      "timeMs": 56228.8,
+      "beatIndex": 163,
+      "slotIndex": 1,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 12.98867570821059,
+        "y": 4.227526882478419,
+        "z": 12.855491090303001
+      }
+    },
+    {
+      "id": "note-0081",
+      "timeMs": 56914.5,
+      "beatIndex": 165,
+      "slotIndex": 1,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 13.38070507741159,
+        "y": 4.173882561087699,
+        "z": 12.754341892894097
+      }
+    },
+    {
+      "id": "note-0082",
+      "timeMs": 58286,
+      "beatIndex": 169,
+      "slotIndex": 4,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 14.13081563626153,
+        "y": 4.082333535459545,
+        "z": 12.481972369092425
+      }
+    },
+    {
+      "id": "note-0083",
+      "timeMs": 58971.7,
+      "beatIndex": 171,
+      "slotIndex": 7,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 14.487967410910091,
+        "y": 4.044932264692795,
+        "z": 12.308779366992802
+      }
+    },
+    {
+      "id": "note-0084",
+      "timeMs": 59657.4,
+      "beatIndex": 173,
+      "slotIndex": 7,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 14.832619206071007,
+        "y": 4.013441815165022,
+        "z": 12.109580492580026
+      }
+    },
+    {
+      "id": "note-0085",
+      "timeMs": 60343.1,
+      "beatIndex": 175,
+      "slotIndex": 5,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 15.114496959332463,
+        "y": 3.991423592483457,
+        "z": 11.920441513810214
+      }
+    },
+    {
+      "id": "note-0086",
+      "timeMs": 61028.799999999996,
+      "beatIndex": 177,
       "slotIndex": 3,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 15.343094789160476,
+        "y": 3.975316454367967,
+        "z": 11.752650794606993
+      }
+    },
+    {
+      "id": "note-0087",
+      "timeMs": 61714.5,
+      "beatIndex": 179,
+      "slotIndex": 6,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 15.571319379380675,
+        "y": 3.960573243540804,
+        "z": 11.573345835861264
+      }
+    },
+    {
+      "id": "note-0088",
+      "timeMs": 62400.2,
+      "beatIndex": 181,
+      "slotIndex": 6,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 12.380580782359843,
-        "y": 4.3171404005977845,
-        "z": 12.96624105949485
+        "x": 15.799089536849879,
+        "y": 3.9471779911636946,
+        "z": 11.382769597223481
       }
     },
     {
-      "id": "note-0113",
-      "timeMs": 55886,
-      "beatIndex": 162,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 12.78863157966832,
-        "y": 4.256204301898064,
-        "z": 12.897739787124365
-      }
-    },
-    {
-      "id": "note-0114",
-      "timeMs": 56571.7,
-      "beatIndex": 164,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 13.186090140421335,
-        "y": 4.200070617917253,
-        "z": 12.80772400488554
-      }
-    },
-    {
-      "id": "note-0115",
-      "timeMs": 57257.399999999994,
-      "beatIndex": 166,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 13.572579387362902,
-        "y": 4.148978483870584,
-        "z": 12.695189062517528
-      }
-    },
-    {
-      "id": "note-0116",
-      "timeMs": 57943.1,
-      "beatIndex": 168,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 13.947661996553785,
-        "y": 4.103176257813777,
-        "z": 12.559138777293438
-      }
-    },
-    {
-      "id": "note-0117",
-      "timeMs": 58628.799999999996,
-      "beatIndex": 170,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 14.31090064405475,
-        "y": 4.062912297802551,
-        "z": 12.398576966486363
-      }
-    },
-    {
-      "id": "note-0118",
-      "timeMs": 59314.5,
-      "beatIndex": 172,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 14.661858005926563,
-        "y": 4.028434961892624,
-        "z": 12.212507447369411
-      }
-    },
-    {
-      "id": "note-0119",
-      "timeMs": 60000.2,
-      "beatIndex": 174,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 15.000066761940893,
-        "y": 3.999994899614269,
-        "z": 11.999954487080412
-      }
-    },
-    {
-      "id": "note-0120",
-      "timeMs": 60686,
-      "beatIndex": 176,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 15.228854123810825,
-        "y": 3.983197360011154,
-        "z": 11.837988383365627
-      }
-    },
-    {
-      "id": "note-0121",
-      "timeMs": 61371.7,
-      "beatIndex": 178,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 15.457275455761657,
-        "y": 3.9677742810996723,
-        "z": 11.664409334838034
-      }
-    },
-    {
-      "id": "note-0122",
-      "timeMs": 62057.4,
-      "beatIndex": 180,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 15.685282945612629,
-        "y": 3.953707143892963,
-        "z": 11.479437544309336
-      }
-    },
-    {
-      "id": "note-0123",
+      "id": "note-0089",
       "timeMs": 62743.1,
       "beatIndex": 182,
-      "slotIndex": 4,
-      "pattern": "sameTone",
+      "slotIndex": 7,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 15.912795400220554,
         "y": 3.940979979552751,
@@ -19739,23 +19331,35 @@
       }
     },
     {
-      "id": "note-0124",
-      "timeMs": 63428.8,
-      "beatIndex": 184,
-      "slotIndex": 4,
+      "id": "note-0090",
+      "timeMs": 63085.9,
+      "beatIndex": 183,
+      "slotIndex": 6,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 16.139731626442252,
-        "y": 3.9295768192407636,
-        "z": 11.076287575850426
+        "x": 16.0263240684249,
+        "y": 3.9351147283983647,
+        "z": 11.181165038344089
       }
     },
     {
-      "id": "note-0125",
+      "id": "note-0091",
+      "timeMs": 63771.700000000004,
+      "beatIndex": 185,
+      "slotIndex": 2,
+      "pattern": "ascending",
+      "trajectoryPosition": {
+        "x": 16.25297478113577,
+        "y": 3.9243660142671577,
+        "z": 10.968743369948076
+      }
+    },
+    {
+      "id": "note-0092",
       "timeMs": 64114.50000000001,
       "beatIndex": 186,
-      "slotIndex": 4,
-      "pattern": "sameTone",
+      "slotIndex": 3,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 16.36601043113454,
         "y": 3.9194816941187276,
@@ -19763,23 +19367,35 @@
       }
     },
     {
-      "id": "note-0126",
-      "timeMs": 64800.200000000004,
-      "beatIndex": 188,
-      "slotIndex": 3,
+      "id": "note-0093",
+      "timeMs": 64457.40000000001,
+      "beatIndex": 187,
+      "slotIndex": 5,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 16.591550621154234,
-        "y": 3.9106786353483685,
-        "z": 10.630482155192501
+        "x": 16.478894373776004,
+        "y": 3.9149190126408366,
+        "z": 10.745809529790082
       }
     },
     {
-      "id": "note-0127",
+      "id": "note-0094",
+      "timeMs": 65143.100000000006,
+      "beatIndex": 189,
+      "slotIndex": 1,
+      "pattern": "ascending",
+      "trajectoryPosition": {
+        "x": 16.704034749251594,
+        "y": 3.9067560917826376,
+        "z": 10.512576283774191
+      }
+    },
+    {
+      "id": "note-0095",
       "timeMs": 65485.9,
       "beatIndex": 190,
-      "slotIndex": 4,
-      "pattern": "sameTone",
+      "slotIndex": 2,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 16.816271003358153,
         "y": 3.9031516740914145,
@@ -19787,47 +19403,47 @@
       }
     },
     {
-      "id": "note-0128",
-      "timeMs": 66171.7,
-      "beatIndex": 192,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "id": "note-0096",
+      "timeMs": 65828.8,
+      "beatIndex": 191,
+      "slotIndex": 2,
+      "pattern": "descending",
       "trajectoryPosition": {
-        "x": 17.04012295595279,
-        "y": 3.8968840187007143,
-        "z": 10.143928046413595
+        "x": 16.92831471441936,
+        "y": 3.8998612828542867,
+        "z": 10.269286591550845
       }
     },
     {
-      "id": "note-0129",
-      "timeMs": 66857.4,
-      "beatIndex": 194,
-      "slotIndex": 5,
-      "pattern": "ascending",
+      "id": "note-0097",
+      "timeMs": 66514.5,
+      "beatIndex": 193,
+      "slotIndex": 1,
+      "pattern": "descending",
       "trajectoryPosition": {
-        "x": 17.26295999393467,
-        "y": 3.8918615262349157,
-        "z": 9.886008536358858
+        "x": 17.151653076136117,
+        "y": 3.894218617017512,
+        "z": 10.016183412770506
       }
     },
     {
-      "id": "note-0130",
-      "timeMs": 67543.09999999999,
-      "beatIndex": 196,
+      "id": "note-0098",
+      "timeMs": 67200.2,
+      "beatIndex": 195,
       "slotIndex": 4,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 17.4847336328303,
-        "y": 3.8880672224388637,
-        "z": 9.618639996938976
+        "x": 17.37396864125869,
+        "y": 3.8898121254340388,
+        "z": 9.753509707083614
       }
     },
     {
-      "id": "note-0131",
+      "id": "note-0099",
       "timeMs": 68228.8,
       "beatIndex": 198,
-      "slotIndex": 5,
-      "pattern": "descending",
+      "slotIndex": 7,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 17.705362679496517,
         "y": 3.8854851384742846,
@@ -19835,47 +19451,47 @@
       }
     },
     {
-      "id": "note-0132",
-      "timeMs": 68914.5,
-      "beatIndex": 200,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "id": "note-0100",
+      "timeMs": 69257.40000000001,
+      "beatIndex": 201,
+      "slotIndex": 7,
+      "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 17.92476594079013,
-        "y": 3.884099305502905,
-        "z": 9.056527668605579
+        "x": 18.03399843249334,
+        "y": 3.883849977940946,
+        "z": 8.910452110111802
       }
     },
     {
-      "id": "note-0133",
-      "timeMs": 69600.2,
-      "beatIndex": 202,
-      "slotIndex": 5,
+      "id": "note-0101",
+      "timeMs": 69943.1,
+      "beatIndex": 203,
+      "slotIndex": 6,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 18.142862223567953,
-        "y": 3.883893754686452,
-        "z": 8.762269798992975
+        "x": 18.251410677361406,
+        "y": 3.884228664787176,
+        "z": 8.611924657020484
       }
     },
     {
-      "id": "note-0134",
-      "timeMs": 70285.9,
-      "beatIndex": 204,
-      "slotIndex": 3,
-      "pattern": "sameTone",
+      "id": "note-0102",
+      "timeMs": 70628.8,
+      "beatIndex": 205,
+      "slotIndex": 7,
+      "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 18.359570334686815,
-        "y": 3.884852517186652,
-        "z": 8.459534738617016
+        "x": 18.467394148078455,
+        "y": 3.885763679366503,
+        "z": 8.305041510707225
       }
     },
     {
-      "id": "note-0135",
+      "id": "note-0103",
       "timeMs": 70971.7,
       "beatIndex": 206,
-      "slotIndex": 4,
-      "pattern": "sameTone",
+      "slotIndex": 7,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 18.57484035953444,
         "y": 3.8869600144290257,
@@ -19883,47 +19499,47 @@
       }
     },
     {
-      "id": "note-0136",
-      "timeMs": 71657.4,
-      "beatIndex": 208,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 18.788528315856755,
-        "y": 3.8901996610246767,
-        "z": 7.829557797145056
-      }
-    },
-    {
-      "id": "note-0137",
-      "timeMs": 72343.1,
-      "beatIndex": 210,
-      "slotIndex": 3,
+      "id": "note-0104",
+      "timeMs": 71314.5,
+      "beatIndex": 207,
+      "slotIndex": 6,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": 19.000584509249638,
-        "y": 3.8945557120933225,
-        "z": 7.502847810114852
+        "x": 18.68186765150131,
+        "y": 3.888439052840654,
+        "z": 7.990045630822474
       }
     },
     {
-      "id": "note-0138",
-      "timeMs": 73028.8,
-      "beatIndex": 212,
-      "slotIndex": 3,
+      "id": "note-0105",
+      "timeMs": 72000.20000000001,
+      "beatIndex": 209,
+      "slotIndex": 7,
+      "pattern": "ascending",
+      "trajectoryPosition": {
+        "x": 18.894749994486787,
+        "y": 3.8922388163713557,
+        "z": 7.667179977016686
+      }
+    },
+    {
+      "id": "note-0106",
+      "timeMs": 72685.90000000001,
+      "beatIndex": 211,
+      "slotIndex": 6,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 19.210927746569904,
-        "y": 3.90001219879669,
-        "z": 7.168632506355462
+        "x": 19.10595998389169,
+        "y": 3.8971470011203335,
+        "z": 7.336687508940308
       }
     },
     {
-      "id": "note-0139",
+      "id": "note-0107",
       "timeMs": 73714.5,
       "beatIndex": 214,
       "slotIndex": 3,
-      "pattern": "descending",
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 19.41947683467438,
         "y": 3.906553152296506,
@@ -19931,95 +19547,71 @@
       }
     },
     {
-      "id": "note-0140",
-      "timeMs": 74400.2,
-      "beatIndex": 216,
-      "slotIndex": 2,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 19.62615058041987,
-        "y": 3.9141626037544954,
-        "z": 6.47865778725094
-      }
-    },
-    {
-      "id": "note-0141",
-      "timeMs": 75085.9,
-      "beatIndex": 218,
-      "slotIndex": 3,
+      "id": "note-0108",
+      "timeMs": 74057.4,
+      "beatIndex": 215,
+      "slotIndex": 5,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 19.830867790663206,
-        "y": 3.9228245843323872,
-        "z": 6.123384291206695
+        "x": 19.523068270429633,
+        "y": 3.910225868751853,
+        "z": 6.65374314355476
       }
     },
     {
-      "id": "note-0142",
-      "timeMs": 75771.6,
-      "beatIndex": 220,
-      "slotIndex": 3,
+      "id": "note-0109",
+      "timeMs": 75428.79999999999,
+      "beatIndex": 219,
+      "slotIndex": 6,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": 20.0335472722612,
-        "y": 3.9325231251919064,
-        "z": 5.761577317035066
+        "x": 19.932482101375573,
+        "y": 3.927545990030591,
+        "z": 5.943255920845268
       }
     },
     {
-      "id": "note-0143",
-      "timeMs": 76457.40000000001,
-      "beatIndex": 222,
-      "slotIndex": 2,
+      "id": "note-0110",
+      "timeMs": 76114.5,
+      "beatIndex": 221,
+      "slotIndex": 5,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": 20.234136922616702,
-        "y": 3.9432438943882224,
-        "z": 5.393425695437058
+        "x": 20.134112116714064,
+        "y": 3.9377568971362065,
+        "z": 5.578272858786305
       }
     },
     {
-      "id": "note-0144",
-      "timeMs": 77143.1,
-      "beatIndex": 224,
-      "slotIndex": 3,
+      "id": "note-0111",
+      "timeMs": 76800.2,
+      "beatIndex": 223,
+      "slotIndex": 5,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 20.432497040716363,
-        "y": 3.9549677946421045,
-        "z": 5.01927977972674
+        "x": 20.333582607771962,
+        "y": 3.9489804101016204,
+        "z": 5.20712077579184
       }
     },
     {
-      "id": "note-0145",
-      "timeMs": 77828.8,
-      "beatIndex": 226,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 20.628575838900215,
-        "y": 3.9676803463339563,
-        "z": 4.6393293002727445
-      }
-    },
-    {
-      "id": "note-0146",
-      "timeMs": 78514.5,
-      "beatIndex": 228,
+      "id": "note-0112",
+      "timeMs": 78171.59999999999,
+      "beatIndex": 227,
       "slotIndex": 4,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 20.82229212402508,
-        "y": 3.9813655806255035,
-        "z": 4.253817216725536
+        "x": 20.725720244473326,
+        "y": 3.9744013782587504,
+        "z": 4.44728138559809
       }
     },
     {
-      "id": "note-0147",
+      "id": "note-0113",
       "timeMs": 79200.2,
       "beatIndex": 230,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 2,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 21.01356470294778,
         "y": 3.9960075286784753,
@@ -20027,179 +19619,155 @@
       }
     },
     {
-      "id": "note-0148",
-      "timeMs": 79885.90000000001,
-      "beatIndex": 232,
-      "slotIndex": 5,
-      "pattern": "ascending",
+      "id": "note-0114",
+      "timeMs": 79543.09999999999,
+      "beatIndex": 231,
+      "slotIndex": 2,
+      "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 21.202312382525133,
-        "y": 4.011590221654598,
-        "z": 3.4670800759531977
+        "x": 21.1082729931043,
+        "y": 4.003683416416234,
+        "z": 3.6656236884365567
       }
     },
     {
-      "id": "note-0149",
-      "timeMs": 80571.6,
-      "beatIndex": 234,
-      "slotIndex": 4,
+      "id": "note-0115",
+      "timeMs": 80228.8,
+      "beatIndex": 233,
+      "slotIndex": 1,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": 21.388453969613938,
-        "y": 4.028097690715595,
-        "z": 3.066340938029015
+        "x": 21.295727585548526,
+        "y": 4.019730560972529,
+        "z": 3.2672701907340853
       }
     },
     {
-      "id": "note-0150",
-      "timeMs": 81257.40000000001,
-      "beatIndex": 236,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 21.571934825452306,
-        "y": 4.045516572451531,
-        "z": 2.6609526000039967
-      }
-    },
-    {
-      "id": "note-0151",
-      "timeMs": 81943.1,
-      "beatIndex": 238,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 21.752620238468282,
-        "y": 4.063825816211185,
-        "z": 2.251276274543769
-      }
-    },
-    {
-      "id": "note-0152",
-      "timeMs": 82628.8,
-      "beatIndex": 240,
+      "id": "note-0116",
+      "timeMs": 80914.5,
+      "beatIndex": 235,
       "slotIndex": 4,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 21.93045596772525,
-        "y": 4.083011927212059,
-        "z": 1.8374961383253907
+        "x": 21.480535483012165,
+        "y": 4.036694496030146,
+        "z": 2.8642054654311417
       }
     },
     {
-      "id": "note-0153",
-      "timeMs": 83314.5,
-      "beatIndex": 242,
-      "slotIndex": 4,
+      "id": "note-0117",
+      "timeMs": 82285.9,
+      "beatIndex": 239,
+      "slotIndex": 5,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 22.105360820080044,
-        "y": 4.103058936615879,
-        "z": 1.4198551509992767
+        "x": 21.841886420424967,
+        "y": 4.0733088622962486,
+        "z": 2.044914170625641
       }
     },
     {
-      "id": "note-0154",
-      "timeMs": 84000.20000000001,
-      "beatIndex": 244,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 22.277253602389486,
-        "y": 4.12395087558437,
-        "z": 0.9985962722158812
-      }
-    },
-    {
-      "id": "note-0155",
-      "timeMs": 84685.90000000001,
-      "beatIndex": 246,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 22.44605312151037,
-        "y": 4.14567177527926,
-        "z": 0.5739624616257013
-      }
-    },
-    {
-      "id": "note-0156",
-      "timeMs": 85371.6,
-      "beatIndex": 248,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 22.611678184299535,
-        "y": 4.168205666862273,
-        "z": 0.14619667887913756
-      }
-    },
-    {
-      "id": "note-0157",
-      "timeMs": 86057.4,
-      "beatIndex": 250,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 22.774071035601366,
-        "y": 4.191540041340576,
-        "z": -0.28452112038498223
-      }
-    },
-    {
-      "id": "note-0158",
-      "timeMs": 86743.09999999999,
-      "beatIndex": 252,
+      "id": "note-0118",
+      "timeMs": 82971.59999999999,
+      "beatIndex": 241,
       "slotIndex": 5,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": 22.93310311374319,
-        "y": 4.215652122926543,
-        "z": -0.7178223366649106
+        "x": 22.018267074087767,
+        "y": 4.092927355828187,
+        "z": 1.6291735204239834
       }
     },
     {
-      "id": "note-0159",
-      "timeMs": 87428.79999999999,
-      "beatIndex": 254,
+      "id": "note-0119",
+      "timeMs": 83657.4,
+      "beatIndex": 243,
       "slotIndex": 4,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": 23.088717144282825,
-        "y": 4.240529287556978,
-        "z": -1.153526610717499
+        "x": 22.19170132891029,
+        "y": 4.113401811409962,
+        "z": 1.2096320448809361
       }
     },
     {
-      "id": "note-0160",
-      "timeMs": 88114.5,
-      "beatIndex": 256,
-      "slotIndex": 4,
+      "id": "note-0120",
+      "timeMs": 84343.1,
+      "beatIndex": 245,
+      "slotIndex": 1,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 23.24083193407708,
-        "y": 4.266155566393606,
-        "z": -1.5913909828922952
+        "x": 22.362057403213,
+        "y": 4.134710287292707,
+        "z": 0.7866550841445665
       }
     },
     {
-      "id": "note-0161",
-      "timeMs": 88800.2,
-      "beatIndex": 258,
+      "id": "note-0121",
+      "timeMs": 85028.8,
+      "beatIndex": 247,
+      "slotIndex": 1,
+      "pattern": "ascending",
+      "trajectoryPosition": {
+        "x": 22.529279611835108,
+        "y": 4.156839738318293,
+        "z": 0.36042468914281556
+      }
+    },
+    {
+      "id": "note-0122",
+      "timeMs": 85714.5,
+      "beatIndex": 249,
+      "slotIndex": 2,
+      "pattern": "ascending",
+      "trajectoryPosition": {
+        "x": 22.69328676163344,
+        "y": 4.1797741956484495,
+        "z": -0.06881618047391536
+      }
+    },
+    {
+      "id": "note-0123",
+      "timeMs": 86400.2,
+      "beatIndex": 251,
+      "slotIndex": 4,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": 22.85399765946482,
+        "y": 4.203497690444902,
+        "z": -0.5008245650551588
+      }
+    },
+    {
+      "id": "note-0124",
+      "timeMs": 87085.9,
+      "beatIndex": 253,
+      "slotIndex": 3,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": 23.01133111218606,
+        "y": 4.227994253869377,
+        "z": -0.9353575049504639
+      }
+    },
+    {
+      "id": "note-0125",
+      "timeMs": 88457.3,
+      "beatIndex": 257,
       "slotIndex": 3,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 23.38936628998278,
-        "y": 4.292514990598154,
-        "z": -2.0311724935388487
+        "x": 23.315540909725378,
+        "y": 4.279242711249301,
+        "z": -1.8110252120814572
       }
     },
     {
-      "id": "note-0162",
+      "id": "note-0126",
       "timeMs": 89143.1,
       "beatIndex": 259,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 1,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 23.462275996463585,
         "y": 4.305966616378443,
@@ -20207,22 +19775,10 @@
       }
     },
     {
-      "id": "note-0163",
-      "timeMs": 89485.9,
-      "beatIndex": 260,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 23.534239018856752,
-        "y": 4.319591591332349,
-        "z": -2.472628183006712
-      }
-    },
-    {
-      "id": "note-0164",
+      "id": "note-0127",
       "timeMs": 89828.8,
       "beatIndex": 261,
-      "slotIndex": 5,
+      "slotIndex": 1,
       "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 23.60528719147312,
@@ -20231,11 +19787,11 @@
       }
     },
     {
-      "id": "note-0165",
+      "id": "note-0128",
       "timeMs": 90171.59999999999,
       "beatIndex": 262,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 2,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 23.6753689275558,
         "y": 4.347369399757919,
@@ -20243,11 +19799,11 @@
       }
     },
     {
-      "id": "note-0166",
+      "id": "note-0129",
       "timeMs": 90514.5,
       "beatIndex": 263,
-      "slotIndex": 5,
-      "pattern": "ascending",
+      "slotIndex": 1,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 23.744514963815686,
         "y": 4.361518342117095,
@@ -20255,47 +19811,11 @@
       }
     },
     {
-      "id": "note-0167",
-      "timeMs": 90857.29999999999,
-      "beatIndex": 264,
-      "slotIndex": 5,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 23.81267482293674,
-        "y": 4.3758324470365855,
-        "z": -3.3595902598045373
-      }
-    },
-    {
-      "id": "note-0168",
-      "timeMs": 91200.2,
-      "beatIndex": 265,
-      "slotIndex": 6,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 23.879878120348096,
-        "y": 4.390318069309873,
-        "z": -3.5820299671390354
-      }
-    },
-    {
-      "id": "note-0169",
-      "timeMs": 91543.09999999999,
-      "beatIndex": 266,
-      "slotIndex": 5,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 23.94609467777891,
-        "y": 4.404969060914155,
-        "z": -3.8046756851302046
-      }
-    },
-    {
-      "id": "note-0170",
+      "id": "note-0130",
       "timeMs": 91885.90000000001,
       "beatIndex": 267,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 1,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 24.011295467927187,
         "y": 4.419779080933925,
@@ -20303,23 +19823,11 @@
       }
     },
     {
-      "id": "note-0171",
-      "timeMs": 92228.8,
-      "beatIndex": 268,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 24.07550837981073,
-        "y": 4.434754773494688,
-        "z": -4.250398578086778
-      }
-    },
-    {
-      "id": "note-0172",
+      "id": "note-0131",
       "timeMs": 92571.6,
       "beatIndex": 269,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 2,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 24.138685813409744,
         "y": 4.449885408150971,
@@ -20327,23 +19835,11 @@
       }
     },
     {
-      "id": "note-0173",
-      "timeMs": 92914.5,
-      "beatIndex": 270,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 24.20085447725398,
-        "y": 4.465177816084663,
-        "z": -4.69658081618005
-      }
-    },
-    {
-      "id": "note-0174",
+      "id": "note-0132",
       "timeMs": 93257.3,
       "beatIndex": 271,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "slotIndex": 2,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 24.261967963652605,
         "y": 4.480621082122741,
@@ -20351,23 +19847,11 @@
       }
     },
     {
-      "id": "note-0175",
-      "timeMs": 93600.2,
-      "beatIndex": 272,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 24.322051776965488,
-        "y": 4.496222219845806,
-        "z": -5.142979439759573
-      }
-    },
-    {
-      "id": "note-0176",
+      "id": "note-0133",
       "timeMs": 93943.1,
       "beatIndex": 273,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 1,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 24.381077784093883,
         "y": 4.511974749799423,
@@ -20375,23 +19859,11 @@
       }
     },
     {
-      "id": "note-0177",
-      "timeMs": 94285.9,
-      "beatIndex": 274,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 24.439019085802062,
-        "y": 4.5278720159398445,
-        "z": -5.589351489174875
-      }
-    },
-    {
-      "id": "note-0178",
+      "id": "note-0134",
       "timeMs": 94628.8,
       "beatIndex": 275,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "slotIndex": 2,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 24.495899335700365,
         "y": 4.543921296725207,
@@ -20399,35 +19871,11 @@
       }
     },
     {
-      "id": "note-0179",
-      "timeMs": 94971.59999999999,
-      "beatIndex": 276,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 24.551675210620527,
-        "y": 4.560111235528504,
-        "z": -6.035454004775544
-      }
-    },
-    {
-      "id": "note-0180",
-      "timeMs": 95314.5,
-      "beatIndex": 277,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 24.606369100796698,
-        "y": 4.576449281562057,
-        "z": -6.258360754857144
-      }
-    },
-    {
-      "id": "note-0181",
+      "id": "note-0135",
       "timeMs": 95657.3,
       "beatIndex": 278,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 3,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 24.6599389582777,
         "y": 4.592923909773515,
@@ -20435,11 +19883,11 @@
       }
     },
     {
-      "id": "note-0182",
+      "id": "note-0136",
       "timeMs": 96000.20000000001,
       "beatIndex": 279,
-      "slotIndex": 5,
-      "pattern": "ascending",
+      "slotIndex": 2,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 24.71240588623968,
         "y": 4.609542735471701,
@@ -20447,23 +19895,11 @@
       }
     },
     {
-      "id": "note-0183",
-      "timeMs": 96343.1,
-      "beatIndex": 280,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 24.76374394181323,
-        "y": 4.626298976299996,
-        "z": -6.9259434020829636
-      }
-    },
-    {
-      "id": "note-0184",
+      "id": "note-0137",
       "timeMs": 96685.90000000001,
       "beatIndex": 281,
-      "slotIndex": 5,
-      "pattern": "ascending",
+      "slotIndex": 2,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 24.813928498886145,
         "y": 4.643185689615865,
@@ -20471,23 +19907,11 @@
       }
     },
     {
-      "id": "note-0185",
-      "timeMs": 97028.8,
-      "beatIndex": 282,
-      "slotIndex": 6,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 24.86297868554677,
-        "y": 4.660210731151166,
-        "z": -7.369779395013318
-      }
-    },
-    {
-      "id": "note-0186",
+      "id": "note-0138",
       "timeMs": 97371.6,
       "beatIndex": 283,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 5,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 24.910855745592887,
         "y": 4.677362175156271,
@@ -20495,19 +19919,7 @@
       }
     },
     {
-      "id": "note-0187",
-      "timeMs": 97714.5,
-      "beatIndex": 284,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 24.957577460848555,
-        "y": 4.694648031815025,
-        "z": -7.8123739800948595
-      }
-    },
-    {
-      "id": "note-0188",
+      "id": "note-0139",
       "timeMs": 98057.3,
       "beatIndex": 285,
       "slotIndex": 4,
@@ -20519,23 +19931,11 @@
       }
     },
     {
-      "id": "note-0189",
-      "timeMs": 98400.2,
-      "beatIndex": 286,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 25.0474590745754,
-        "y": 4.729594909453302,
-        "z": -8.253484197677142
-      }
-    },
-    {
-      "id": "note-0190",
+      "id": "note-0140",
       "timeMs": 98743.09999999999,
       "beatIndex": 287,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 2,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 25.09061177734168,
         "y": 4.74725703368162,
@@ -20543,22 +19943,10 @@
       }
     },
     {
-      "id": "note-0191",
-      "timeMs": 99085.9,
-      "beatIndex": 288,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.13254233358412,
-        "y": 4.765035395227722,
-        "z": -8.6928670881097
-      }
-    },
-    {
-      "id": "note-0192",
+      "id": "note-0141",
       "timeMs": 99428.79999999999,
       "beatIndex": 289,
-      "slotIndex": 5,
+      "slotIndex": 2,
       "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 25.17326505575466,
@@ -20567,10 +19955,10 @@
       }
     },
     {
-      "id": "note-0193",
+      "id": "note-0142",
       "timeMs": 99771.6,
       "beatIndex": 290,
-      "slotIndex": 4,
+      "slotIndex": 3,
       "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 25.212746044731542,
@@ -20579,11 +19967,11 @@
       }
     },
     {
-      "id": "note-0194",
+      "id": "note-0143",
       "timeMs": 100114.5,
       "beatIndex": 291,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 2,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 25.250998183814282,
         "y": 4.819089360109313,
@@ -20591,23 +19979,11 @@
       }
     },
     {
-      "id": "note-0195",
-      "timeMs": 100457.3,
-      "beatIndex": 292,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.28798901487447,
-        "y": 4.8373333158319,
-        "z": -9.565479048923912
-      }
-    },
-    {
-      "id": "note-0196",
+      "id": "note-0144",
       "timeMs": 100800.2,
       "beatIndex": 293,
-      "slotIndex": 6,
-      "pattern": "ascending",
+      "slotIndex": 1,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 25.32372996837737,
         "y": 4.855694035056359,
@@ -20615,10 +19991,10 @@
       }
     },
     {
-      "id": "note-0197",
+      "id": "note-0145",
       "timeMs": 101143.1,
       "beatIndex": 294,
-      "slotIndex": 4,
+      "slotIndex": 2,
       "pattern": "ascending",
       "trajectoryPosition": {
         "x": 25.358199917083958,
@@ -20627,10 +20003,10 @@
       }
     },
     {
-      "id": "note-0198",
+      "id": "note-0146",
       "timeMs": 101485.9,
       "beatIndex": 295,
-      "slotIndex": 5,
+      "slotIndex": 4,
       "pattern": "ascending",
       "trajectoryPosition": {
         "x": 25.391379216300738,
@@ -20639,22 +20015,10 @@
       }
     },
     {
-      "id": "note-0199",
-      "timeMs": 101828.8,
-      "beatIndex": 296,
-      "slotIndex": 5,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 25.42327707272876,
-        "y": 4.911419506652388,
-        "z": -10.428328692727982
-      }
-    },
-    {
-      "id": "note-0200",
+      "id": "note-0147",
       "timeMs": 102171.59999999999,
       "beatIndex": 297,
-      "slotIndex": 5,
+      "slotIndex": 4,
       "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 25.453864734441208,
@@ -20663,22 +20027,10 @@
       }
     },
     {
-      "id": "note-0201",
-      "timeMs": 102514.5,
-      "beatIndex": 298,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 25.483149896098602,
-        "y": 4.949088559710669,
-        "z": -10.855430105867576
-      }
-    },
-    {
-      "id": "note-0202",
+      "id": "note-0148",
       "timeMs": 102857.29999999999,
       "beatIndex": 299,
-      "slotIndex": 4,
+      "slotIndex": 2,
       "pattern": "descending",
       "trajectoryPosition": {
         "x": 25.511105329655596,
@@ -20687,23 +20039,11 @@
       }
     },
     {
-      "id": "note-0203",
-      "timeMs": 103200.2,
-      "beatIndex": 300,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 25.537737194050322,
-        "y": 4.987155405546619,
-        "z": -11.27934639852243
-      }
-    },
-    {
-      "id": "note-0204",
+      "id": "note-0149",
       "timeMs": 103543,
       "beatIndex": 301,
-      "slotIndex": 3,
-      "pattern": "sameTone",
+      "slotIndex": 1,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 25.56301980880072,
         "y": 5.006330206839486,
@@ -20711,23 +20051,11 @@
       }
     },
     {
-      "id": "note-0205",
-      "timeMs": 103885.90000000001,
-      "beatIndex": 302,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.586957773440723,
-        "y": 5.025604075321961,
-        "z": -11.699834611042064
-      }
-    },
-    {
-      "id": "note-0206",
+      "id": "note-0150",
       "timeMs": 104228.8,
       "beatIndex": 303,
-      "slotIndex": 5,
-      "pattern": "descending",
+      "slotIndex": 1,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 25.609533362873794,
         "y": 5.044969434259146,
@@ -20735,23 +20063,11 @@
       }
     },
     {
-      "id": "note-0207",
-      "timeMs": 104571.6,
-      "beatIndex": 304,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 25.630730441126627,
-        "y": 5.064418600198419,
-        "z": -12.116651783775996
-      }
-    },
-    {
-      "id": "note-0208",
+      "id": "note-0151",
       "timeMs": 104914.5,
       "beatIndex": 305,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "slotIndex": 2,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 25.650551224106245,
         "y": 5.08396092388484,
@@ -20759,23 +20075,11 @@
       }
     },
     {
-      "id": "note-0209",
-      "timeMs": 105257.3,
-      "beatIndex": 306,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 25.668974003964852,
-        "y": 5.103583011337722,
-        "z": -12.52955495707381
-      }
-    },
-    {
-      "id": "note-0210",
+      "id": "note-0152",
       "timeMs": 105600.2,
       "beatIndex": 307,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 3,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 25.685999377998968,
         "y": 5.123294314189825,
@@ -20783,47 +20087,11 @@
       }
     },
     {
-      "id": "note-0211",
-      "timeMs": 105943,
-      "beatIndex": 308,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.70160726881221,
-        "y": 5.143081339901601,
-        "z": -12.938301171285062
-      }
-    },
-    {
-      "id": "note-0212",
-      "timeMs": 106285.9,
-      "beatIndex": 309,
-      "slotIndex": 5,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 25.715796631408786,
-        "y": 5.162953636335829,
-        "z": -13.14106897876691
-      }
-    },
-    {
-      "id": "note-0213",
-      "timeMs": 106628.8,
-      "beatIndex": 310,
-      "slotIndex": 5,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 25.72855255259449,
-        "y": 5.182903446124333,
-        "z": -13.342706102461655
-      }
-    },
-    {
-      "id": "note-0214",
+      "id": "note-0153",
       "timeMs": 106971.59999999999,
       "beatIndex": 311,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 1,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 25.73986179119251,
         "y": 5.202922921484574,
@@ -20831,23 +20099,11 @@
       }
     },
     {
-      "id": "note-0215",
-      "timeMs": 107314.5,
-      "beatIndex": 312,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.74972079424193,
-        "y": 5.223021745897575,
-        "z": -13.7424088247291
-      }
-    },
-    {
-      "id": "note-0216",
+      "id": "note-0154",
       "timeMs": 107657.3,
       "beatIndex": 313,
-      "slotIndex": 6,
-      "pattern": "ascending",
+      "slotIndex": 1,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 25.758113664206952,
         "y": 5.24318620079779,
@@ -20855,23 +20111,11 @@
       }
     },
     {
-      "id": "note-0217",
-      "timeMs": 108000.20000000001,
-      "beatIndex": 314,
-      "slotIndex": 6,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 25.76503514662805,
-        "y": 5.263426054251734,
-        "z": -14.1372256735263
-      }
-    },
-    {
-      "id": "note-0218",
+      "id": "note-0155",
       "timeMs": 108343,
       "beatIndex": 315,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 2,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 25.77047105730895,
         "y": 5.2837275054372,
@@ -20879,47 +20123,11 @@
       }
     },
     {
-      "id": "note-0219",
-      "timeMs": 108685.90000000001,
-      "beatIndex": 316,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.774414416609666,
-        "y": 5.30410040234853,
-        "z": -14.526913689202742
-      }
-    },
-    {
-      "id": "note-0220",
-      "timeMs": 109028.8,
-      "beatIndex": 317,
-      "slotIndex": 6,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.776853268295575,
-        "y": 5.324536835513693,
-        "z": -14.719786484095259
-      }
-    },
-    {
-      "id": "note-0221",
-      "timeMs": 109371.6,
-      "beatIndex": 318,
-      "slotIndex": 5,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 25.77777741104359,
-        "y": 5.345028821349697,
-        "z": -14.911229912108034
-      }
-    },
-    {
-      "id": "note-0222",
+      "id": "note-0156",
       "timeMs": 109714.5,
       "beatIndex": 319,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 2,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 25.777177232910393,
         "y": 5.365586319014618,
@@ -20927,23 +20135,11 @@
       }
     },
     {
-      "id": "note-0223",
-      "timeMs": 110057.3,
-      "beatIndex": 320,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.775042936786647,
-        "y": 5.386195342416956,
-        "z": -15.289931382591668
-      }
-    },
-    {
-      "id": "note-0224",
+      "id": "note-0157",
       "timeMs": 110400.2,
       "beatIndex": 321,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 4,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 25.771363126342287,
         "y": 5.406865918998079,
@@ -20951,227 +20147,47 @@
       }
     },
     {
-      "id": "note-0225",
-      "timeMs": 110743,
-      "beatIndex": 322,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.766129800695644,
-        "y": 5.427583996712037,
-        "z": -15.662775141003241
-      }
-    },
-    {
-      "id": "note-0226",
-      "timeMs": 111428.79999999999,
-      "beatIndex": 324,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.75095413638177,
-        "y": 5.469184895692975,
-        "z": -16.02957125544519
-      }
-    },
-    {
-      "id": "note-0227",
-      "timeMs": 112114.5,
-      "beatIndex": 326,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.72943916651635,
-        "y": 5.5109699365017155,
-        "z": -16.389969767910287
-      }
-    },
-    {
-      "id": "note-0228",
-      "timeMs": 112800.2,
-      "beatIndex": 328,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 25.701501943546408,
-        "y": 5.552929201694619,
-        "z": -16.743781653919594
-      }
-    },
-    {
-      "id": "note-0229",
-      "timeMs": 113485.9,
-      "beatIndex": 330,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.667061274328766,
-        "y": 5.595046722433414,
-        "z": -17.090763953822705
-      }
-    },
-    {
-      "id": "note-0230",
-      "timeMs": 114171.59999999999,
-      "beatIndex": 332,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 25.62603596572024,
-        "y": 5.637306529879824,
-        "z": -17.430673707969103
-      }
-    },
-    {
-      "id": "note-0231",
-      "timeMs": 114857.29999999999,
-      "beatIndex": 334,
-      "slotIndex": 4,
+      "id": "note-0158",
+      "timeMs": 120685.90000000001,
+      "beatIndex": 351,
+      "slotIndex": 3,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 25.578344824577655,
-        "y": 5.679692655195576,
-        "z": -17.763267956708365
+        "x": 24.912238656795086,
+        "y": 6.03528185827924,
+        "z": -20.21537581203121
       }
     },
     {
-      "id": "note-0232",
-      "timeMs": 115543,
-      "beatIndex": 336,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.523906657757827,
-        "y": 5.722189129542399,
-        "z": -18.08830374039004
-      }
-    },
-    {
-      "id": "note-0233",
-      "timeMs": 116228.7,
-      "beatIndex": 338,
-      "slotIndex": 5,
+      "id": "note-0159",
+      "timeMs": 122057.3,
+      "beatIndex": 355,
+      "slotIndex": 3,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 25.462640272117554,
-        "y": 5.764779984082016,
-        "z": -18.405538099363667
+        "x": 24.715364739425873,
+        "y": 6.1094517842960006,
+        "z": -20.649349005228974
       }
     },
     {
-      "id": "note-0234",
-      "timeMs": 116914.5,
-      "beatIndex": 340,
-      "slotIndex": 6,
+      "id": "note-0160",
+      "timeMs": 122743,
+      "beatIndex": 357,
+      "slotIndex": 4,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 25.39445402415964,
-        "y": 5.80745547764907,
-        "z": -18.714772566642008
+        "x": 24.606467768532408,
+        "y": 6.1482934547757155,
+        "z": -20.867846452974756
       }
     },
     {
-      "id": "note-0235",
-      "timeMs": 117600.2,
-      "beatIndex": 342,
-      "slotIndex": 5,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 25.319286596043177,
-        "y": 5.850187194001258,
-        "z": -19.015673970933257
-      }
-    },
-    {
-      "id": "note-0236",
-      "timeMs": 118285.9,
-      "beatIndex": 344,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 25.237047357835813,
-        "y": 5.892965381702588,
-        "z": -19.30804503613278
-      }
-    },
-    {
-      "id": "note-0237",
-      "timeMs": 118971.59999999999,
-      "beatIndex": 346,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 25.147655116394386,
-        "y": 5.9357740719147785,
-        "z": -19.59164280259009
-      }
-    },
-    {
-      "id": "note-0238",
-      "timeMs": 119657.3,
-      "beatIndex": 348,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 25.05102867857569,
-        "y": 5.978597295799563,
-        "z": -19.866224310654754
-      }
-    },
-    {
-      "id": "note-0239",
-      "timeMs": 120343,
-      "beatIndex": 350,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 24.957017646244086,
-        "y": 6.017489366823933,
-        "z": -20.10755560114841
-      }
-    },
-    {
-      "id": "note-0240",
-      "timeMs": 121028.7,
-      "beatIndex": 352,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 24.86567962271851,
-        "y": 6.053373673205587,
-        "z": -20.3234502137596
-      }
-    },
-    {
-      "id": "note-0241",
-      "timeMs": 121714.5,
-      "beatIndex": 354,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 24.767213299142437,
-        "y": 6.090467576259812,
-        "z": -20.540478615378007
-      }
-    },
-    {
-      "id": "note-0242",
-      "timeMs": 122400.2,
-      "beatIndex": 356,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 24.661767473649505,
-        "y": 6.1287320025477765,
-        "z": -20.758496224183148
-      }
-    },
-    {
-      "id": "note-0243",
+      "id": "note-0161",
       "timeMs": 123085.9,
       "beatIndex": 358,
-      "slotIndex": 4,
-      "pattern": "sameTone",
+      "slotIndex": 5,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 24.54944837192781,
         "y": 6.168144021504547,
@@ -21179,107 +20195,119 @@
       }
     },
     {
-      "id": "note-0244",
-      "timeMs": 123771.6,
-      "beatIndex": 360,
+      "id": "note-0162",
+      "timeMs": 123428.70000000001,
+      "beatIndex": 359,
+      "slotIndex": 7,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 24.49075754654827,
+        "y": 6.188268593833155,
+        "z": -21.087242761614124
+      }
+    },
+    {
+      "id": "note-0163",
+      "timeMs": 124114.5,
+      "beatIndex": 361,
+      "slotIndex": 7,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 24.368335808103446,
+        "y": 6.229355019404324,
+        "z": -21.307488822111605
+      }
+    },
+    {
+      "id": "note-0164",
+      "timeMs": 124800.2,
+      "beatIndex": 363,
+      "slotIndex": 6,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 24.239358337454306,
+        "y": 6.271512493710208,
+        "z": -21.528439114280168
+      }
+    },
+    {
+      "id": "note-0165",
+      "timeMs": 125485.9,
+      "beatIndex": 365,
+      "slotIndex": 7,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 24.103927836584,
+        "y": 6.314718675566487,
+        "z": -21.750044415778966
+      }
+    },
+    {
+      "id": "note-0166",
+      "timeMs": 126171.59999999999,
+      "beatIndex": 367,
+      "slotIndex": 7,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 23.962164373278956,
+        "y": 6.358945312670788,
+        "z": -21.972223446704717
+      }
+    },
+    {
+      "id": "note-0167",
+      "timeMs": 126857.29999999999,
+      "beatIndex": 369,
+      "slotIndex": 5,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 23.814188015325588,
+        "y": 6.40416415272074,
+        "z": -22.194894927154163
+      }
+    },
+    {
+      "id": "note-0168",
+      "timeMs": 127543,
+      "beatIndex": 371,
+      "slotIndex": 5,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 23.660118830510324,
+        "y": 6.450346943413968,
+        "z": -22.417977577224043
+      }
+    },
+    {
+      "id": "note-0169",
+      "timeMs": 128228.7,
+      "beatIndex": 373,
       "slotIndex": 3,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 24.430376061763774,
-        "y": 6.20867538082775,
-        "z": -21.197268646645462
+        "x": 23.500076886619578,
+        "y": 6.497465432448104,
+        "z": -22.6413901170111
       }
     },
     {
-      "id": "note-0245",
-      "timeMs": 124457.3,
-      "beatIndex": 362,
-      "slotIndex": 3,
-      "pattern": "sameTone",
+      "id": "note-0170",
+      "timeMs": 128914.4,
+      "beatIndex": 375,
+      "slotIndex": 2,
+      "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 24.30467061094382,
-        "y": 6.250297828215015,
-        "z": -21.417860900496102
+        "x": 23.334182251439792,
+        "y": 6.545491367520768,
+        "z": -22.86505126661204
       }
     },
     {
-      "id": "note-0246",
-      "timeMs": 125143,
-      "beatIndex": 364,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 24.17245208725437,
-        "y": 6.292983111363965,
-        "z": -21.639148809555387
-      }
-    },
-    {
-      "id": "note-0247",
-      "timeMs": 125828.7,
-      "beatIndex": 366,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 24.03384055848184,
-        "y": 6.33670297797223,
-        "z": -21.86105109392004
-      }
-    },
-    {
-      "id": "note-0248",
-      "timeMs": 126514.5,
-      "beatIndex": 368,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 23.888934511347937,
-        "y": 6.381435770460676,
-        "z": -22.083518947781474
-      }
-    },
-    {
-      "id": "note-0249",
-      "timeMs": 127200.2,
-      "beatIndex": 370,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 23.73789628721276,
-        "y": 6.4271401876595196,
-        "z": -22.30640620301057
-      }
-    },
-    {
-      "id": "note-0250",
-      "timeMs": 127885.90000000001,
-      "beatIndex": 372,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 23.58082527886402,
-        "y": 6.473794427290347,
-        "z": -22.529663981981685
-      }
-    },
-    {
-      "id": "note-0251",
-      "timeMs": 128571.59999999999,
-      "beatIndex": 374,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 23.41784155408813,
-        "y": 6.521370237050789,
-        "z": -22.75321100479156
-      }
-    },
-    {
-      "id": "note-0252",
+      "id": "note-0171",
       "timeMs": 129257.29999999999,
       "beatIndex": 376,
-      "slotIndex": 4,
-      "pattern": "sameTone",
+      "slotIndex": 3,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 23.24906518067154,
         "y": 6.569839364638463,
@@ -21287,131 +20315,131 @@
       }
     },
     {
-      "id": "note-0253",
-      "timeMs": 129943.00000000001,
-      "beatIndex": 378,
-      "slotIndex": 3,
+      "id": "note-0172",
+      "timeMs": 129600.2,
+      "beatIndex": 377,
+      "slotIndex": 6,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 23.07461622640063,
-        "y": 6.619173557751014,
-        "z": -23.200847662314494
+        "x": 23.162529551025248,
+        "y": 6.594403691220989,
+        "z": -23.088912396708057
       }
     },
     {
-      "id": "note-0254",
-      "timeMs": 130628.70000000001,
-      "beatIndex": 380,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 22.894614759061856,
-        "y": 6.669344564086055,
-        "z": -23.42477473722103
-      }
-    },
-    {
-      "id": "note-0255",
-      "timeMs": 131314.4,
-      "beatIndex": 382,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 22.70918084644163,
-        "y": 6.720324131341216,
-        "z": -23.64866593635325
-      }
-    },
-    {
-      "id": "note-0256",
-      "timeMs": 132000.2,
-      "beatIndex": 384,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 22.51840635699212,
-        "y": 6.772091611219902,
-        "z": -23.872472601706395
-      }
-    },
-    {
-      "id": "note-0257",
-      "timeMs": 132685.9,
-      "beatIndex": 386,
+      "id": "note-0173",
+      "timeMs": 130285.9,
+      "beatIndex": 379,
       "slotIndex": 5,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 22.98528892686824,
+        "y": 6.644159883501406,
+        "z": -23.312826932848605
+      }
+    },
+    {
+      "id": "note-0174",
+      "timeMs": 130971.59999999999,
+      "beatIndex": 381,
+      "slotIndex": 2,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 22.802555832291713,
+        "y": 6.6947387607930215,
+        "z": -23.536746227239668
+      }
+    },
+    {
+      "id": "note-0175",
+      "timeMs": 131657.3,
+      "beatIndex": 383,
+      "slotIndex": 4,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 22.614450335082044,
+        "y": 6.746112070793471,
+        "z": -23.760588999978037
+      }
+    },
+    {
+      "id": "note-0176",
+      "timeMs": 133028.69999999998,
+      "beatIndex": 387,
+      "slotIndex": 5,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 22.222602403909047,
+        "y": 6.851128979711365,
+        "z": -24.207719860883543
+      }
+    },
+    {
+      "id": "note-0177",
+      "timeMs": 133714.40000000002,
+      "beatIndex": 389,
+      "slotIndex": 1,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 22.019100105518547,
+        "y": 6.904716074024067,
+        "z": -24.43084538924417
+      }
+    },
+    {
+      "id": "note-0178",
+      "timeMs": 134400.2,
+      "beatIndex": 391,
+      "slotIndex": 1,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 21.810674933213754,
+        "y": 6.958992554481543,
+        "z": -24.6536017243393
+      }
+    },
+    {
+      "id": "note-0179",
+      "timeMs": 135085.90000000002,
+      "beatIndex": 393,
+      "slotIndex": 2,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 21.597507752450763,
+        "y": 7.01391433668626,
+        "z": -24.87584261390998
+      }
+    },
+    {
+      "id": "note-0180",
+      "timeMs": 135771.6,
+      "beatIndex": 395,
+      "slotIndex": 4,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 21.37968859328342,
+        "y": 7.069461033665361,
+        "z": -25.097519290554803
+      }
+    },
+    {
+      "id": "note-0181",
+      "timeMs": 136457.30000000002,
+      "beatIndex": 397,
+      "slotIndex": 4,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 22.322467008697036,
-        "y": 6.824603651024948,
-        "z": -24.096048174713452
+        "x": 21.157337523498185,
+        "y": 7.125604393116461,
+        "z": -25.31855047437046
       }
     },
     {
-      "id": "note-0258",
-      "timeMs": 133371.6,
-      "beatIndex": 388,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 22.121455435990015,
-        "y": 6.877839490722787,
-        "z": -24.319344020382847
-      }
-    },
-    {
-      "id": "note-0259",
-      "timeMs": 134057.3,
-      "beatIndex": 390,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 21.91549170665747,
-        "y": 6.931770878011044,
-        "z": -24.54227885881132
-      }
-    },
-    {
-      "id": "note-0260",
-      "timeMs": 134743,
-      "beatIndex": 392,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 21.704695888485823,
-        "y": 6.986369560587347,
-        "z": -24.764771410095598
-      }
-    },
-    {
-      "id": "note-0261",
-      "timeMs": 135428.69999999998,
-      "beatIndex": 394,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 21.4891880492615,
-        "y": 7.041607286149324,
-        "z": -24.986740394332415
-      }
-    },
-    {
-      "id": "note-0262",
-      "timeMs": 136114.4,
-      "beatIndex": 396,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 21.269088256770925,
-        "y": 7.097455802394602,
-        "z": -25.20810453161852
-      }
-    },
-    {
-      "id": "note-0263",
+      "id": "note-0182",
       "timeMs": 136800.19999999998,
       "beatIndex": 398,
-      "slotIndex": 4,
-      "pattern": "sameTone",
+      "slotIndex": 5,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 21.044483507790538,
         "y": 7.15389512783119,
@@ -21419,47 +20447,59 @@
       }
     },
     {
-      "id": "note-0264",
-      "timeMs": 137485.9,
-      "beatIndex": 400,
-      "slotIndex": 4,
+      "id": "note-0183",
+      "timeMs": 137143,
+      "beatIndex": 399,
+      "slotIndex": 2,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 20.81555938622979,
-        "y": 7.210880547310623,
-        "z": -25.648725156771917
+        "x": 20.930574610881433,
+        "y": 7.182316162737203,
+        "z": -25.53885488545374
       }
     },
     {
-      "id": "note-0265",
-      "timeMs": 138171.6,
-      "beatIndex": 402,
+      "id": "note-0184",
+      "timeMs": 137828.7,
+      "beatIndex": 401,
+      "slotIndex": 7,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 20.699519923219587,
+        "y": 7.2395680902252115,
+        "z": -25.758351243901366
+      }
+    },
+    {
+      "id": "note-0185",
+      "timeMs": 138514.4,
+      "beatIndex": 403,
       "slotIndex": 3,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 20.582403532272345,
-        "y": 7.268391996446015,
-        "z": -25.867786944089225
+        "x": 20.464293528299113,
+        "y": 7.297331923278106,
+        "z": -25.976958269810048
       }
     },
     {
-      "id": "note-0266",
-      "timeMs": 138857.30000000002,
-      "beatIndex": 404,
-      "slotIndex": 4,
-      "pattern": "sameTone",
+      "id": "note-0186",
+      "timeMs": 139200.19999999998,
+      "beatIndex": 405,
+      "slotIndex": 3,
+      "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 20.345136013704533,
-        "y": 7.326401222935017,
-        "z": -26.08591875298924
+        "x": 20.224980308822783,
+        "y": 7.35558793809414,
+        "z": -26.194626347843755
       }
     },
     {
-      "id": "note-0267",
+      "id": "note-0187",
       "timeMs": 139543,
       "beatIndex": 406,
       "slotIndex": 4,
-      "pattern": "sameTone",
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 20.103876898312862,
         "y": 7.3848799744752345,
@@ -21467,95 +20507,83 @@
       }
     },
     {
-      "id": "note-0268",
-      "timeMs": 140228.7,
-      "beatIndex": 408,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 19.85874625388369,
-        "y": 7.44379999876431,
-        "z": -26.519067315924122
-      }
-    },
-    {
-      "id": "note-0269",
-      "timeMs": 140914.4,
-      "beatIndex": 410,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 19.60986414820346,
-        "y": 7.503133043499867,
-        "z": -26.733921510152513
-      }
-    },
-    {
-      "id": "note-0270",
-      "timeMs": 141600.2,
-      "beatIndex": 412,
+      "id": "note-0188",
+      "timeMs": 139885.9,
+      "beatIndex": 407,
       "slotIndex": 3,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 19.35731356441091,
-        "y": 7.56285959209566,
-        "z": -26.94755166138278
+        "x": 19.981770138134518,
+        "y": 7.414290889723312,
+        "z": -26.41121070963297
       }
     },
     {
-      "id": "note-0271",
-      "timeMs": 142285.9,
-      "beatIndex": 414,
-      "slotIndex": 3,
+      "id": "note-0189",
+      "timeMs": 140571.59999999998,
+      "beatIndex": 409,
+      "slotIndex": 6,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 19.101288236265248,
-        "y": 7.62293397074963,
-        "z": -27.15981417882694
+        "x": 19.734748481057085,
+        "y": 7.473420985890053,
+        "z": -26.626661887319926
       }
     },
     {
-      "id": "note-0272",
-      "timeMs": 142971.6,
-      "beatIndex": 416,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "id": "note-0190",
+      "timeMs": 141257.3,
+      "beatIndex": 411,
+      "slotIndex": 2,
+      "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 18.841871667738037,
-        "y": 7.683336608822748,
-        "z": -27.370659026580608
+        "x": 19.48403540537694,
+        "y": 7.532949974291979,
+        "z": -26.840898601001328
       }
     },
     {
-      "id": "note-0273",
-      "timeMs": 143657.3,
-      "beatIndex": 418,
+      "id": "note-0191",
+      "timeMs": 141943,
+      "beatIndex": 413,
+      "slotIndex": 2,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 19.229750978880496,
+        "y": 7.592849602626719,
+        "z": -27.053839570773913
+      }
+    },
+    {
+      "id": "note-0192",
+      "timeMs": 142628.7,
+      "beatIndex": 415,
+      "slotIndex": 4,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 18.97201526935416,
+        "y": 7.6530916185919065,
+        "z": -27.265403516734434
+      }
+    },
+    {
+      "id": "note-0193",
+      "timeMs": 144000.1,
+      "beatIndex": 419,
       "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 18.579183926615723,
-        "y": 7.744039254012643,
-        "z": -27.58000492474051
-      }
-    },
-    {
-      "id": "note-0274",
-      "timeMs": 144343,
-      "beatIndex": 420,
-      "slotIndex": 3,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 18.313345080684684,
-        "y": 7.805013654016947,
-        "z": -27.787770593403415
+        "x": 18.446670272357565,
+        "y": 7.774489804204113,
+        "z": -27.684075217606164
       }
     },
     {
-      "id": "note-0275",
+      "id": "note-0194",
       "timeMs": 145028.69999999998,
       "beatIndex": 422,
-      "slotIndex": 3,
-      "pattern": "descending",
+      "slotIndex": 6,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 18.0444751977314,
         "y": 7.8662315565332745,
@@ -21563,47 +20591,59 @@
       }
     },
     {
-      "id": "note-0276",
-      "timeMs": 145714.40000000002,
-      "beatIndex": 424,
-      "slotIndex": 2,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 17.772694345542202,
-        "y": 7.927664709259277,
-        "z": -28.198236122625087
-      }
-    },
-    {
-      "id": "note-0277",
-      "timeMs": 146400.1,
-      "beatIndex": 426,
-      "slotIndex": 1,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 17.498122591903616,
-        "y": 7.989284859892555,
-        "z": -28.400773423377323
-      }
-    },
-    {
-      "id": "note-0278",
-      "timeMs": 147085.90000000002,
-      "beatIndex": 428,
-      "slotIndex": 3,
+      "id": "note-0195",
+      "timeMs": 145371.6,
+      "beatIndex": 423,
+      "slotIndex": 6,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 17.22083938360629,
-        "y": 8.051072775944247,
-        "z": -28.60143449154844
+        "x": 17.908921320415576,
+        "y": 7.896927472069383,
+        "z": -28.096293268204995
       }
     },
     {
-      "id": "note-0279",
+      "id": "note-0196",
+      "timeMs": 146057.3,
+      "beatIndex": 425,
+      "slotIndex": 5,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": 17.635729805521244,
+        "y": 7.95845766892229,
+        "z": -28.29975263054052
+      }
+    },
+    {
+      "id": "note-0197",
+      "timeMs": 146743,
+      "beatIndex": 427,
+      "slotIndex": 1,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 17.359807431825814,
+        "y": 8.020160735471194,
+        "z": -28.501347277790817
+      }
+    },
+    {
+      "id": "note-0198",
+      "timeMs": 147428.69999999998,
+      "beatIndex": 429,
+      "slotIndex": 1,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 17.081274267115703,
+        "y": 8.082008419413716,
+        "z": -28.700995930052628
+      }
+    },
+    {
+      "id": "note-0199",
       "timeMs": 147771.6,
       "beatIndex": 430,
-      "slotIndex": 3,
-      "pattern": "descending",
+      "slotIndex": 2,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 16.941045667190057,
         "y": 8.112982182455246,
@@ -21611,46 +20651,46 @@
       }
     },
     {
-      "id": "note-0280",
-      "timeMs": 148457.30000000002,
-      "beatIndex": 432,
-      "slotIndex": 2,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 16.658821270193894,
-        "y": 8.174993825846204,
-        "z": -28.996656624735085
-      }
-    },
-    {
-      "id": "note-0281",
-      "timeMs": 149143,
-      "beatIndex": 434,
-      "slotIndex": 3,
+      "id": "note-0200",
+      "timeMs": 148114.4,
+      "beatIndex": 431,
+      "slotIndex": 4,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 16.37428626040423,
-        "y": 8.237079453814747,
-        "z": -29.191084530269887
+        "x": 16.80025037917733,
+        "y": 8.14397246844749,
+        "z": -28.898617307422676
       }
     },
     {
-      "id": "note-0282",
-      "timeMs": 149828.7,
-      "beatIndex": 436,
+      "id": "note-0201",
+      "timeMs": 148800.09999999998,
+      "beatIndex": 433,
       "slotIndex": 3,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": 16.516855835797127,
+        "y": 8.206024630270141,
+        "z": -29.0941301299977
+      }
+    },
+    {
+      "id": "note-0202",
+      "timeMs": 149485.9,
+      "beatIndex": 435,
+      "slotIndex": 2,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 16.087560705607473,
-        "y": 8.299210814058505,
-        "z": -29.383281955228007
+        "x": 16.231168889017358,
+        "y": 8.268145713763113,
+        "z": -29.28748114774344
       }
     },
     {
-      "id": "note-0283",
+      "id": "note-0203",
       "timeMs": 150514.4,
       "beatIndex": 438,
-      "slotIndex": 3,
+      "slotIndex": 4,
       "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 15.798764673590096,
@@ -21659,95 +20699,83 @@
       }
     },
     {
-      "id": "note-0284",
-      "timeMs": 151200.1,
-      "beatIndex": 440,
-      "slotIndex": 3,
+      "id": "note-0204",
+      "timeMs": 150857.30000000002,
+      "beatIndex": 439,
+      "slotIndex": 4,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 15.508018232138449,
-        "y": 8.423497722162157,
-        "z": -29.76066024380105
+        "x": 15.653606548734027,
+        "y": 8.39243633160967,
+        "z": -29.66723181365794
       }
     },
     {
-      "id": "note-0285",
-      "timeMs": 151885.9,
-      "beatIndex": 442,
+      "id": "note-0205",
+      "timeMs": 152228.7,
+      "beatIndex": 443,
+      "slotIndex": 7,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": 15.068482741307111,
+        "y": 8.516627347292918,
+        "z": -30.037247734525852
+      }
+    },
+    {
+      "id": "note-0206",
+      "timeMs": 152914.4,
+      "beatIndex": 445,
+      "slotIndex": 6,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": 14.773385456880865,
+        "y": 8.578614873567371,
+        "z": -30.218401965809182
+      }
+    },
+    {
+      "id": "note-0207",
+      "timeMs": 153600.1,
+      "beatIndex": 447,
+      "slotIndex": 6,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": 14.476758009027973,
+        "y": 8.640492742393882,
+        "z": -30.396878671121083
+      }
+    },
+    {
+      "id": "note-0208",
+      "timeMs": 154971.6,
+      "beatIndex": 451,
+      "slotIndex": 3,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": 13.879349153098861,
+        "y": 8.763815464701018,
+        "z": -30.745499385014433
+      }
+    },
+    {
+      "id": "note-0209",
+      "timeMs": 155657.3,
+      "beatIndex": 453,
       "slotIndex": 2,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": 15.21539865305592,
-        "y": 8.485605817496731,
-        "z": -29.945705345606257
+        "x": 13.578851459818257,
+        "y": 8.825194816956374,
+        "z": -30.91545540102343
       }
     },
     {
-      "id": "note-0286",
-      "timeMs": 152571.59999999998,
-      "beatIndex": 444,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 14.921111355431345,
-        "y": 8.547637571945778,
-        "z": -30.12816767059782
-      }
-    },
-    {
-      "id": "note-0287",
-      "timeMs": 153257.3,
-      "beatIndex": 446,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 14.625233869242031,
-        "y": 8.609573793037962,
-        "z": -30.3079931036428
-      }
-    },
-    {
-      "id": "note-0288",
-      "timeMs": 153943,
-      "beatIndex": 448,
-      "slotIndex": 3,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 14.327886262274433,
-        "y": 8.671386228470908,
-        "z": -30.485100364837926
-      }
-    },
-    {
-      "id": "note-0289",
-      "timeMs": 154628.7,
-      "beatIndex": 450,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 14.029188602314957,
-        "y": 8.733046625942245,
-        "z": -30.659408174279932
-      }
-    },
-    {
-      "id": "note-0290",
-      "timeMs": 155314.4,
-      "beatIndex": 452,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 13.729260957150016,
-        "y": 8.794526733149599,
-        "z": -30.830835252065555
-      }
-    },
-    {
-      "id": "note-0291",
+      "id": "note-0210",
       "timeMs": 156000.1,
       "beatIndex": 454,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 4,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 13.428223394566045,
         "y": 8.855798297790603,
@@ -21755,94 +20783,94 @@
       }
     },
     {
-      "id": "note-0292",
-      "timeMs": 156685.8,
-      "beatIndex": 456,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "id": "note-0211",
+      "timeMs": 156343,
+      "beatIndex": 455,
+      "slotIndex": 3,
+      "pattern": "descending",
       "trajectoryPosition": {
-        "x": 13.126195982349458,
-        "y": 8.916833067562878,
-        "z": -31.16472209305463
+        "x": 13.277303891766955,
+        "y": 8.88635149843408,
+        "z": -31.08240875959436
       }
     },
     {
-      "id": "note-0293",
-      "timeMs": 157371.6,
-      "beatIndex": 458,
+      "id": "note-0212",
+      "timeMs": 157714.40000000002,
+      "beatIndex": 459,
+      "slotIndex": 6,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": 12.671539402497935,
+        "y": 9.007883839847066,
+        "z": -31.406982384808995
+      }
+    },
+    {
+      "id": "note-0213",
+      "timeMs": 158400.1,
+      "beatIndex": 461,
       "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 12.823254557264793,
-        "y": 8.977611631896618,
-        "z": -31.32704273346345
-      }
-    },
-    {
-      "id": "note-0294",
-      "timeMs": 158057.3,
-      "beatIndex": 460,
-      "slotIndex": 4,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": 12.519607548563076,
-        "y": 9.038088010190185,
-        "z": -31.486133612133553
+        "x": 12.367562616853059,
+        "y": 9.068202995177598,
+        "z": -31.56444009164617
       }
     },
     {
-      "id": "note-0295",
-      "timeMs": 158743,
-      "beatIndex": 462,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 12.215330911098242,
-        "y": 9.098242832587694,
-        "z": -31.641937347777397
-      }
-    },
-    {
-      "id": "note-0296",
-      "timeMs": 159428.69999999998,
-      "beatIndex": 464,
+      "id": "note-0214",
+      "timeMs": 159085.80000000002,
+      "beatIndex": 463,
       "slotIndex": 4,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": 11.910544712656732,
-        "y": 9.158047846786774,
-        "z": -31.794372660491707
+        "x": 12.063016227583148,
+        "y": 9.128186470520996,
+        "z": -31.718570021432242
       }
     },
     {
-      "id": "note-0297",
-      "timeMs": 160114.4,
-      "beatIndex": 466,
+      "id": "note-0215",
+      "timeMs": 159771.6,
+      "beatIndex": 465,
       "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 11.605369021024963,
-        "y": 9.217474800485052,
-        "z": -31.943358270373235
-      }
-    },
-    {
-      "id": "note-0298",
-      "timeMs": 160800.09999999998,
-      "beatIndex": 468,
-      "slotIndex": 3,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 11.299923903989356,
-        "y": 9.276495441380156,
-        "z": -32.08881289751869
+        "x": 11.757975796029516,
+        "y": 9.187814680357858,
+        "z": -31.86931262227858
       }
     },
     {
-      "id": "note-0299",
+      "id": "note-0216",
+      "timeMs": 160457.30000000002,
+      "beatIndex": 467,
+      "slotIndex": 7,
+      "pattern": "ascending",
+      "trajectoryPosition": {
+        "x": 11.452650363576819,
+        "y": 9.247041979564681,
+        "z": -32.01654264330692
+      }
+    },
+    {
+      "id": "note-0217",
+      "timeMs": 161143,
+      "beatIndex": 469,
+      "slotIndex": 2,
+      "pattern": "ascending",
+      "trajectoryPosition": {
+        "x": 11.14711554836866,
+        "y": 9.30584883775703,
+        "z": -32.16020103572075
+      }
+    },
+    {
+      "id": "note-0218",
       "timeMs": 161485.80000000002,
       "beatIndex": 470,
-      "slotIndex": 4,
+      "slotIndex": 3,
       "pattern": "ascending",
       "trajectoryPosition": {
         "x": 10.994329429336322,
@@ -21851,59 +20879,47 @@
       }
     },
     {
-      "id": "note-0300",
-      "timeMs": 162171.6,
-      "beatIndex": 472,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "id": "note-0219",
+      "timeMs": 161828.7,
+      "beatIndex": 471,
+      "slotIndex": 2,
+      "pattern": "descending",
       "trajectoryPosition": {
-        "x": 10.688661097493373,
-        "y": 9.393213216910027,
-        "z": -32.36882395779359
+        "x": 10.841491418191385,
+        "y": 9.364207002632543,
+        "z": -32.300206519616886
       }
     },
     {
-      "id": "note-0301",
-      "timeMs": 162857.30000000002,
-      "beatIndex": 474,
-      "slotIndex": 5,
-      "pattern": "ascending",
+      "id": "note-0220",
+      "timeMs": 162514.4,
+      "beatIndex": 473,
+      "slotIndex": 1,
+      "pattern": "descending",
       "trajectoryPosition": {
-        "x": 10.383128132959916,
-        "y": 9.450845331905143,
-        "z": -32.503197400877234
+        "x": 10.535898040831464,
+        "y": 9.422088221888846,
+        "z": -32.436477815092005
       }
     },
     {
-      "id": "note-0302",
-      "timeMs": 163543,
-      "beatIndex": 476,
-      "slotIndex": 4,
+      "id": "note-0221",
+      "timeMs": 163200.1,
+      "beatIndex": 475,
+      "slotIndex": 1,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 10.077806031678556,
-        "y": 9.507958120767377,
-        "z": -32.6337147297582
+        "x": 10.230455484075307,
+        "y": 9.479464243223562,
+        "z": -32.56893364224287
       }
     },
     {
-      "id": "note-0303",
-      "timeMs": 164228.7,
-      "beatIndex": 478,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 9.772814861435712,
-        "y": 9.564523331194364,
-        "z": -32.760294664533234
-      }
-    },
-    {
-      "id": "note-0304",
+      "id": "note-0222",
       "timeMs": 164914.4,
       "beatIndex": 480,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "slotIndex": 2,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 9.468274690017829,
         "y": 9.620512710883723,
@@ -21911,23 +20927,11 @@
       }
     },
     {
-      "id": "note-0305",
-      "timeMs": 165600.1,
-      "beatIndex": 482,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 9.16430558521128,
-        "y": 9.675898007533094,
-        "z": -33.0013172321524
-      }
-    },
-    {
-      "id": "note-0306",
+      "id": "note-0223",
       "timeMs": 165943,
       "beatIndex": 483,
       "slotIndex": 3,
-      "pattern": "descending",
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 9.012550589128338,
         "y": 9.70335928844401,
@@ -21935,23 +20939,11 @@
       }
     },
     {
-      "id": "note-0307",
-      "timeMs": 166285.8,
-      "beatIndex": 484,
-      "slotIndex": 2,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 8.861027614802552,
-        "y": 9.73065096884009,
-        "z": -33.11559730518999
-      }
-    },
-    {
-      "id": "note-0308",
+      "id": "note-0224",
       "timeMs": 166628.7,
       "beatIndex": 485,
       "slotIndex": 3,
-      "pattern": "ascending",
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 8.709663270490099,
         "y": 9.75778543929751,
@@ -21959,11 +20951,11 @@
       }
     },
     {
-      "id": "note-0309",
+      "id": "note-0225",
       "timeMs": 166971.6,
       "beatIndex": 486,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "slotIndex": 5,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 8.55851680092003,
         "y": 9.784751181588275,
@@ -21971,11 +20963,11 @@
       }
     },
     {
-      "id": "note-0310",
+      "id": "note-0226",
       "timeMs": 167314.4,
       "beatIndex": 487,
-      "slotIndex": 3,
-      "pattern": "descending",
+      "slotIndex": 5,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 8.407647196684394,
         "y": 9.811536874294976,
@@ -21983,47 +20975,11 @@
       }
     },
     {
-      "id": "note-0311",
-      "timeMs": 167657.3,
-      "beatIndex": 488,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 8.256981447235543,
-        "y": 9.838154612785097,
-        "z": -33.33130372054372
-      }
-    },
-    {
-      "id": "note-0312",
-      "timeMs": 168000.1,
-      "beatIndex": 489,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 8.106622435497657,
-        "y": 9.864585341134037,
-        "z": -33.38247857358104
-      }
-    },
-    {
-      "id": "note-0313",
-      "timeMs": 168343,
-      "beatIndex": 490,
-      "slotIndex": 2,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 7.956497448818359,
-        "y": 9.890840947612222,
-        "z": -33.43255176145023
-      }
-    },
-    {
-      "id": "note-0314",
+      "id": "note-0227",
       "timeMs": 168685.8,
       "beatIndex": 491,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "slotIndex": 6,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 7.806709054716305,
         "y": 9.916902587512318,
@@ -22031,23 +20987,11 @@
       }
     },
     {
-      "id": "note-0315",
-      "timeMs": 169028.69999999998,
-      "beatIndex": 492,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 7.657184873454891,
-        "y": 9.942781933767273,
-        "z": -33.52929343707437
-      }
-    },
-    {
-      "id": "note-0316",
+      "id": "note-0228",
       "timeMs": 169371.6,
       "beatIndex": 493,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 4,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 7.50798365908352,
         "y": 9.968467823364927,
@@ -22055,23 +20999,11 @@
       }
     },
     {
-      "id": "note-0317",
-      "timeMs": 169714.40000000002,
-      "beatIndex": 494,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 7.359163788931546,
-        "y": 9.993949318947886,
-        "z": -33.621447467512894
-      }
-    },
-    {
-      "id": "note-0318",
+      "id": "note-0229",
       "timeMs": 170057.3,
       "beatIndex": 495,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "slotIndex": 6,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 7.210653448328811,
         "y": 10.01923775497516,
@@ -22079,23 +21011,11 @@
       }
     },
     {
-      "id": "note-0319",
-      "timeMs": 170400.1,
-      "beatIndex": 496,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 7.062554263034796,
-        "y": 10.044314850851675,
-        "z": -33.708932572862516
-      }
-    },
-    {
-      "id": "note-0320",
+      "id": "note-0230",
       "timeMs": 170743,
       "beatIndex": 497,
       "slotIndex": 5,
-      "pattern": "descending",
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 6.914794838848962,
         "y": 10.069191705097289,
@@ -22103,23 +21023,11 @@
       }
     },
     {
-      "id": "note-0321",
-      "timeMs": 171085.80000000002,
-      "beatIndex": 498,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 6.767476363550987,
-        "y": 10.093850277176283,
-        "z": -33.79166747322001
-      }
-    },
-    {
-      "id": "note-0322",
+      "id": "note-0231",
       "timeMs": 171428.69999999998,
       "beatIndex": 499,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 6,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 6.6205278984304545,
         "y": 10.118301421428935,
@@ -22127,35 +21035,11 @@
       }
     },
     {
-      "id": "note-0323",
-      "timeMs": 171771.5,
-      "beatIndex": 500,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 6.474050158266635,
-        "y": 10.142527345619325,
-        "z": -33.86957088868207
-      }
-    },
-    {
-      "id": "note-0324",
-      "timeMs": 172114.4,
-      "beatIndex": 501,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 6.327972694859678,
-        "y": 10.166538651667725,
-        "z": -33.90669071218716
-      }
-    },
-    {
-      "id": "note-0325",
+      "id": "note-0232",
       "timeMs": 172457.30000000002,
       "beatIndex": 502,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 7,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 6.18235331619284,
         "y": 10.190324707432326,
@@ -22163,11 +21047,11 @@
       }
     },
     {
-      "id": "note-0326",
+      "id": "note-0233",
       "timeMs": 172800.09999999998,
       "beatIndex": 503,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 6,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 6.037249295923061,
         "y": 10.213875143511292,
@@ -22175,23 +21059,11 @@
       }
     },
     {
-      "id": "note-0327",
-      "timeMs": 173143,
-      "beatIndex": 504,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 5.892590987320542,
-        "y": 10.237200167724497,
-        "z": -34.01056769352335
-      }
-    },
-    {
-      "id": "note-0328",
+      "id": "note-0234",
       "timeMs": 173485.80000000002,
       "beatIndex": 505,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 6,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 5.748477769407032,
         "y": 10.26028264465726,
@@ -22199,23 +21071,11 @@
       }
     },
     {
-      "id": "note-0329",
-      "timeMs": 173828.7,
-      "beatIndex": 506,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": 5.604840573517139,
-        "y": 10.283132509107778,
-        "z": -34.07348822878502
-      }
-    },
-    {
-      "id": "note-0330",
+      "id": "note-0235",
       "timeMs": 174171.5,
       "beatIndex": 507,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 7,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 5.461778183097989,
         "y": 10.30573290280326,
@@ -22223,23 +21083,11 @@
       }
     },
     {
-      "id": "note-0331",
-      "timeMs": 174514.4,
-      "beatIndex": 508,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 5.319222142569089,
-        "y": 10.328093479279795,
-        "z": -34.131252147684634
-      }
-    },
-    {
-      "id": "note-0332",
+      "id": "note-0236",
       "timeMs": 174857.30000000002,
       "beatIndex": 509,
-      "slotIndex": 3,
-      "pattern": "descending",
+      "slotIndex": 7,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 5.177229278928058,
         "y": 10.350204076981875,
@@ -22247,23 +21095,11 @@
       }
     },
     {
-      "id": "note-0333",
-      "timeMs": 175200.1,
-      "beatIndex": 510,
-      "slotIndex": 2,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 5.035855762262797,
-        "y": 10.372054825938177,
-        "z": -34.18377817031896
-      }
-    },
-    {
-      "id": "note-0334",
+      "id": "note-0237",
       "timeMs": 175543,
       "beatIndex": 511,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 6,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 4.895034122333449,
         "y": 10.393654942319131,
@@ -22271,22 +21107,10 @@
       }
     },
     {
-      "id": "note-0335",
-      "timeMs": 175885.8,
-      "beatIndex": 512,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 4.754861500384703,
-        "y": 10.414988296780544,
-        "z": -34.230985016784715
-      }
-    },
-    {
-      "id": "note-0336",
+      "id": "note-0238",
       "timeMs": 176228.7,
       "beatIndex": 513,
-      "slotIndex": 4,
+      "slotIndex": 6,
       "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 4.615271126815358,
@@ -22295,10 +21119,10 @@
       }
     },
     {
-      "id": "note-0337",
+      "id": "note-0239",
       "timeMs": 176571.5,
       "beatIndex": 514,
-      "slotIndex": 4,
+      "slotIndex": 7,
       "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 4.476359424721197,
@@ -22307,10 +21131,10 @@
       }
     },
     {
-      "id": "note-0338",
+      "id": "note-0240",
       "timeMs": 176914.4,
       "beatIndex": 515,
-      "slotIndex": 5,
+      "slotIndex": 6,
       "pattern": "descending",
       "trajectoryPosition": {
         "x": 4.338060360160204,
@@ -22319,23 +21143,11 @@
       }
     },
     {
-      "id": "note-0339",
-      "timeMs": 177257.3,
-      "beatIndex": 516,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 4.200429564634797,
-        "y": 10.49766447044909,
-        "z": -34.30912095532468
-      }
-    },
-    {
-      "id": "note-0340",
+      "id": "note-0241",
       "timeMs": 177600.1,
       "beatIndex": 517,
       "slotIndex": 5,
-      "pattern": "ascending",
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 4.0635218901544174,
         "y": 10.517642504957601,
@@ -22343,10 +21155,10 @@
       }
     },
     {
-      "id": "note-0341",
+      "id": "note-0242",
       "timeMs": 177943,
       "beatIndex": 518,
-      "slotIndex": 4,
+      "slotIndex": 6,
       "pattern": "ascending",
       "trajectoryPosition": {
         "x": 3.927272471988065,
@@ -22355,10 +21167,10 @@
       }
     },
     {
-      "id": "note-0342",
+      "id": "note-0243",
       "timeMs": 178285.8,
       "beatIndex": 519,
-      "slotIndex": 5,
+      "slotIndex": 7,
       "pattern": "ascending",
       "trajectoryPosition": {
         "x": 3.7917757845844218,
@@ -22367,23 +21179,11 @@
       }
     },
     {
-      "id": "note-0343",
-      "timeMs": 178628.7,
-      "beatIndex": 520,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 3.656967786425451,
-        "y": 10.575883911818142,
-        "z": -34.364998290335045
-      }
-    },
-    {
-      "id": "note-0344",
+      "id": "note-0244",
       "timeMs": 178971.5,
       "beatIndex": 521,
-      "slotIndex": 3,
-      "pattern": "descending",
+      "slotIndex": 7,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 3.522942111236606,
         "y": 10.59471416254844,
@@ -22391,23 +21191,11 @@
       }
     },
     {
-      "id": "note-0345",
-      "timeMs": 179314.4,
-      "beatIndex": 522,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 3.389635575733376,
-        "y": 10.613254046481728,
-        "z": -34.38438921648417
-      }
-    },
-    {
-      "id": "note-0346",
+      "id": "note-0245",
       "timeMs": 179657.3,
       "beatIndex": 523,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 6,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": 3.257102401413432,
         "y": 10.631494494659258,
@@ -22415,19 +21203,7 @@
       }
     },
     {
-      "id": "note-0347",
-      "timeMs": 180000.1,
-      "beatIndex": 524,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 3.1253959076982625,
-        "y": 10.649426787394859,
-        "z": -34.397973275191596
-      }
-    },
-    {
-      "id": "note-0348",
+      "id": "note-0246",
       "timeMs": 180343,
       "beatIndex": 525,
       "slotIndex": 4,
@@ -22439,23 +21215,11 @@
       }
     },
     {
-      "id": "note-0349",
-      "timeMs": 180685.8,
-      "beatIndex": 526,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 2.8643688501065334,
-        "y": 10.684373882255155,
-        "z": -34.405669186554036
-      }
-    },
-    {
-      "id": "note-0350",
+      "id": "note-0247",
       "timeMs": 181028.69999999998,
       "beatIndex": 527,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "slotIndex": 3,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 2.735078780447786,
         "y": 10.701381440500231,
@@ -22463,23 +21227,11 @@
       }
     },
     {
-      "id": "note-0351",
-      "timeMs": 181371.5,
-      "beatIndex": 528,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 2.606674470744604,
-        "y": 10.718067078760253,
-        "z": -34.407395670668215
-      }
-    },
-    {
-      "id": "note-0352",
+      "id": "note-0248",
       "timeMs": 181714.40000000002,
       "beatIndex": 529,
-      "slotIndex": 5,
-      "pattern": "descending",
+      "slotIndex": 3,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 2.4790960173889367,
         "y": 10.734436999722167,
@@ -22487,23 +21239,11 @@
       }
     },
     {
-      "id": "note-0353",
-      "timeMs": 182057.3,
-      "beatIndex": 530,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 2.3523960173643044,
-        "y": 10.750482756437663,
-        "z": -34.40307037177891
-      }
-    },
-    {
-      "id": "note-0354",
+      "id": "note-0249",
       "timeMs": 182400.1,
       "beatIndex": 531,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 7,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 2.226626042994699,
         "y": 10.766196280075226,
@@ -22511,47 +21251,11 @@
       }
     },
     {
-      "id": "note-0355",
-      "timeMs": 182743,
-      "beatIndex": 532,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 2.101727727623853,
-        "y": 10.781583206160416,
-        "z": -34.392613261492436
-      }
-    },
-    {
-      "id": "note-0356",
-      "timeMs": 183085.80000000002,
-      "beatIndex": 533,
-      "slotIndex": 6,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 1.9777889250514118,
-        "y": 10.79663102925705,
-        "z": -34.385061022099755
-      }
-    },
-    {
-      "id": "note-0357",
-      "timeMs": 183428.69999999998,
-      "beatIndex": 534,
-      "slotIndex": 7,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 1.854752336982731,
-        "y": 10.811344996500637,
-        "z": -34.375942872394354
-      }
-    },
-    {
-      "id": "note-0358",
+      "id": "note-0250",
       "timeMs": 183771.5,
       "beatIndex": 535,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 3,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 1.7327047313455495,
         "y": 10.825712994965258,
@@ -22559,23 +21263,11 @@
       }
     },
     {
-      "id": "note-0359",
-      "timeMs": 184114.4,
-      "beatIndex": 536,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 1.6115899132273377,
-        "y": 10.839739875155953,
-        "z": -34.352977924581396
-      }
-    },
-    {
-      "id": "note-0360",
+      "id": "note-0251",
       "timeMs": 184457.2,
       "beatIndex": 537,
-      "slotIndex": 4,
-      "pattern": "descending",
+      "slotIndex": 3,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 1.4914935296634901,
         "y": 10.853413924897485,
@@ -22583,23 +21275,11 @@
       }
     },
     {
-      "id": "note-0361",
-      "timeMs": 184800.09999999998,
-      "beatIndex": 538,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 1.3723605241441064,
-        "y": 10.866739589823993,
-        "z": -34.32363713815031
-      }
-    },
-    {
-      "id": "note-0362",
+      "id": "note-0252",
       "timeMs": 185143,
       "beatIndex": 539,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 6,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 1.2542410898057597,
         "y": 10.879709296877586,
@@ -22607,47 +21287,11 @@
       }
     },
     {
-      "id": "note-0363",
-      "timeMs": 185485.80000000002,
-      "beatIndex": 540,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 1.1371842375194277,
-        "y": 10.892315888202383,
-        "z": -34.287839233197836
-      }
-    },
-    {
-      "id": "note-0364",
-      "timeMs": 185828.7,
-      "beatIndex": 541,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 1.0211366841306315,
-        "y": 10.90456318664464,
-        "z": -34.267490374449324
-      }
-    },
-    {
-      "id": "note-0365",
-      "timeMs": 186171.5,
-      "beatIndex": 542,
-      "slotIndex": 2,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": 0.9061811211397952,
-        "y": 10.916440517988747,
-        "z": -34.24550292982069
-      }
-    },
-    {
-      "id": "note-0366",
+      "id": "note-0253",
       "timeMs": 186514.4,
       "beatIndex": 543,
-      "slotIndex": 4,
-      "pattern": "ascending",
+      "slotIndex": 6,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 0.79226549134885,
         "y": 10.927951279608383,
@@ -22655,23 +21299,11 @@
       }
     },
     {
-      "id": "note-0367",
-      "timeMs": 186857.2,
-      "beatIndex": 544,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": 0.6794712427915606,
-        "y": 10.939085226880714,
-        "z": -34.19654694811562
-      }
-    },
-    {
-      "id": "note-0368",
+      "id": "note-0254",
       "timeMs": 187200.1,
       "beatIndex": 545,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 7,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": 0.567747579246813,
         "y": 10.949845323466437,
@@ -22679,23 +21311,23 @@
       }
     },
     {
-      "id": "note-0369",
-      "timeMs": 187543,
-      "beatIndex": 546,
-      "slotIndex": 4,
+      "id": "note-0255",
+      "timeMs": 187885.8,
+      "beatIndex": 547,
+      "slotIndex": 5,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 0.45714257903084743,
-        "y": 10.960224733688595,
-        "z": -34.140881398728176
+        "x": 0.34770301561097483,
+        "y": 10.97021706591643,
+        "z": -34.11051872618201
       }
     },
     {
-      "id": "note-0370",
+      "id": "note-0256",
       "timeMs": 188228.7,
       "beatIndex": 548,
-      "slotIndex": 5,
-      "pattern": "descending",
+      "slotIndex": 6,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": 0.239380049991901,
         "y": 10.979824617757528,
@@ -22703,47 +21335,59 @@
       }
     },
     {
-      "id": "note-0371",
-      "timeMs": 188914.4,
-      "beatIndex": 550,
+      "id": "note-0257",
+      "timeMs": 188571.5,
+      "beatIndex": 549,
+      "slotIndex": 5,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": 0.13225186822771562,
+        "y": 10.989038254655993,
+        "z": -34.04465744860485
+      }
+    },
+    {
+      "id": "note-0258",
+      "timeMs": 189257.2,
+      "beatIndex": 551,
+      "slotIndex": 1,
+      "pattern": "descending",
+      "trajectoryPosition": {
+        "x": -0.1568243977625981,
+        "y": 11.01239178141719,
+        "z": -33.94254193988225
+      }
+    },
+    {
+      "id": "note-0259",
+      "timeMs": 189943,
+      "beatIndex": 553,
+      "slotIndex": 1,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": -0.5708673787461608,
+        "y": 11.041925889242496,
+        "z": -33.76647564113198
+      }
+    },
+    {
+      "id": "note-0260",
+      "timeMs": 190628.7,
+      "beatIndex": 555,
       "slotIndex": 4,
-      "pattern": "descending",
+      "pattern": "ascending",
       "trajectoryPosition": {
-        "x": 0.026270979853887155,
-        "y": 10.997859819904736,
-        "z": -34.009137522646185
+        "x": -0.9789686046515867,
+        "y": 11.066442392651604,
+        "z": -33.5577608192136
       }
     },
     {
-      "id": "note-0372",
-      "timeMs": 189600.1,
-      "beatIndex": 552,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -0.3645892964289414,
-        "y": 11.027792517523212,
-        "z": -33.85863881764676
-      }
-    },
-    {
-      "id": "note-0373",
-      "timeMs": 190285.8,
-      "beatIndex": 554,
-      "slotIndex": 2,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -0.7756152804244171,
-        "y": 11.054802088919745,
-        "z": -33.66617257988749
-      }
-    },
-    {
-      "id": "note-0374",
+      "id": "note-0261",
       "timeMs": 190971.5,
       "beatIndex": 556,
-      "slotIndex": 2,
-      "pattern": "sameTone",
+      "slotIndex": 5,
+      "pattern": "ascending",
       "trajectoryPosition": {
         "x": -1.1808248842054077,
         "y": 11.076853769486027,
@@ -22751,47 +21395,47 @@
       }
     },
     {
-      "id": "note-0375",
-      "timeMs": 191657.19999999998,
-      "beatIndex": 558,
-      "slotIndex": 3,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -1.5803472586780252,
-        "y": 11.094057647639541,
-        "z": -33.185018364924126
-      }
-    },
-    {
-      "id": "note-0376",
-      "timeMs": 192343,
-      "beatIndex": 560,
-      "slotIndex": 2,
+      "id": "note-0262",
+      "timeMs": 191314.4,
+      "beatIndex": 557,
+      "slotIndex": 4,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": -1.9743686100075437,
-        "y": 11.10652528965486,
-        "z": -32.89772128249273
+        "x": -1.3813180352130328,
+        "y": 11.08605605746665,
+        "z": -33.317091720109126
       }
     },
     {
-      "id": "note-0377",
-      "timeMs": 193028.69999999998,
-      "beatIndex": 562,
-      "slotIndex": 2,
-      "pattern": "sameTone",
+      "id": "note-0263",
+      "timeMs": 192000.1,
+      "beatIndex": 559,
+      "slotIndex": 3,
+      "pattern": "descending",
       "trajectoryPosition": {
-        "x": -2.3629031962656897,
-        "y": 11.114363161387846,
-        "z": -32.58030338796884
+        "x": -1.7780448213366369,
+        "y": 11.100876972105132,
+        "z": -33.045185845678
       }
     },
     {
-      "id": "note-0378",
+      "id": "note-0264",
+      "timeMs": 193371.5,
+      "beatIndex": 563,
+      "slotIndex": 7,
+      "pattern": "ascending",
+      "trajectoryPosition": {
+        "x": -2.555147063895071,
+        "y": 11.1165809045224,
+        "z": -32.41053377827346
+      }
+    },
+    {
+      "id": "note-0265",
       "timeMs": 193714.40000000002,
       "beatIndex": 564,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 7,
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -2.7461380247689227,
         "y": 11.11768351201546,
@@ -22799,59 +21443,47 @@
       }
     },
     {
-      "id": "note-0379",
-      "timeMs": 194400.1,
-      "beatIndex": 566,
-      "slotIndex": 2,
+      "id": "note-0266",
+      "timeMs": 194057.19999999998,
+      "beatIndex": 565,
+      "slotIndex": 6,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": -3.1242022464233106,
-        "y": 11.116596429955207,
-        "z": -31.85785619570295
+        "x": -2.9357808221422257,
+        "y": 11.117684099136182,
+        "z": -32.0492225890189
       }
     },
     {
-      "id": "note-0380",
-      "timeMs": 195085.80000000002,
-      "beatIndex": 568,
-      "slotIndex": 2,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -3.497225012135088,
-        "y": 11.111212003624578,
-        "z": -31.454261901679835
-      }
-    },
-    {
-      "id": "note-0381",
-      "timeMs": 195771.5,
-      "beatIndex": 570,
-      "slotIndex": 1,
+      "id": "note-0267",
+      "timeMs": 194743,
+      "beatIndex": 567,
+      "slotIndex": 3,
       "pattern": "descending",
       "trajectoryPosition": {
-        "x": -3.865335472810369,
-        "y": 11.101640321441076,
-        "z": -31.023377144875884
+        "x": -3.3113629390780868,
+        "y": 11.114434111329242,
+        "z": -31.659485768788052
       }
     },
     {
-      "id": "note-0382",
-      "timeMs": 196457.2,
-      "beatIndex": 572,
-      "slotIndex": 2,
+      "id": "note-0268",
+      "timeMs": 196114.4,
+      "beatIndex": 571,
+      "slotIndex": 6,
       "pattern": "ascending",
       "trajectoryPosition": {
-        "x": -4.228662779355363,
-        "y": 11.087991471822196,
-        "z": -30.565919427150455
+        "x": -4.047615441180607,
+        "y": 11.095317666440442,
+        "z": -30.797891703025652
       }
     },
     {
-      "id": "note-0383",
+      "id": "note-0269",
       "timeMs": 197142.9,
       "beatIndex": 574,
-      "slotIndex": 3,
-      "pattern": "ascending",
+      "slotIndex": 2,
+      "pattern": "descending",
       "trajectoryPosition": {
         "x": -4.587336082676188,
         "y": 11.070375543185438,
@@ -22859,47 +21491,35 @@
       }
     },
     {
-      "id": "note-0384",
-      "timeMs": 197828.7,
-      "beatIndex": 576,
-      "slotIndex": 3,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -4.9415358576916955,
-        "y": 11.048899216482697,
-        "z": -29.57407916730986
-      }
-    },
-    {
-      "id": "note-0385",
-      "timeMs": 198514.4,
-      "beatIndex": 578,
+      "id": "note-0270",
+      "timeMs": 197485.80000000002,
+      "beatIndex": 575,
       "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -5.2912879756483955,
-        "y": 11.023678856656675,
-        "z": -29.041204068912673
-      }
-    },
-    {
-      "id": "note-0386",
-      "timeMs": 199200.1,
-      "beatIndex": 580,
-      "slotIndex": 5,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -5.6367735619343575,
-        "y": 10.994821699120164,
-        "z": -28.484626121669592
+        "x": -4.764993666244037,
+        "y": 11.06011276075492,
+        "z": -29.831441006572046
       }
     },
     {
-      "id": "note-0387",
+      "id": "note-0271",
+      "timeMs": 198857.2,
+      "beatIndex": 579,
+      "slotIndex": 4,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": -5.464530821517633,
+        "y": 11.009700101612667,
+        "z": -28.76587369430272
+      }
+    },
+    {
+      "id": "note-0272",
       "timeMs": 199885.8,
       "beatIndex": 582,
       "slotIndex": 5,
-      "pattern": "descending",
+      "pattern": "sameTone",
       "trajectoryPosition": {
         "x": -5.978121767455702,
         "y": 10.962437832290664,
@@ -22907,555 +21527,219 @@
       }
     },
     {
-      "id": "note-0388",
-      "timeMs": 200571.5,
-      "beatIndex": 584,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -6.315461743118634,
-        "y": 10.92663734458567,
-        "z": -27.3032316880836
-      }
-    },
-    {
-      "id": "note-0389",
-      "timeMs": 201257.2,
-      "beatIndex": 586,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -6.648922639829295,
-        "y": 10.88753032442268,
-        "z": -26.679850205459502
-      }
-    },
-    {
-      "id": "note-0390",
-      "timeMs": 201942.90000000002,
-      "beatIndex": 588,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -6.978633608493827,
-        "y": 10.845226860219203,
-        "z": -26.035635881427307
-      }
-    },
-    {
-      "id": "note-0391",
-      "timeMs": 202628.7,
-      "beatIndex": 590,
+      "id": "note-0273",
+      "timeMs": 220114.4,
+      "beatIndex": 641,
       "slotIndex": 5,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -7.304771098049437,
-        "y": 10.79983020117462,
-        "z": -25.371207902317636
+        "x": -14.796840146416553,
+        "y": 8.94050160519847,
+        "z": -3.8560532918579185
       }
     },
     {
-      "id": "note-0392",
-      "timeMs": 203314.4,
-      "beatIndex": 592,
+      "id": "note-0274",
+      "timeMs": 220800.09999999998,
+      "beatIndex": 643,
+      "slotIndex": 6,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": -15.07403901744925,
+        "y": 8.85343675371891,
+        "z": -2.920106382954094
+      }
+    },
+    {
+      "id": "note-0275",
+      "timeMs": 221485.80000000002,
+      "beatIndex": 645,
+      "slotIndex": 1,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": -15.351168846018524,
+        "y": 8.766313050344586,
+        "z": -1.9837759065062546
+      }
+    },
+    {
+      "id": "note-0276",
+      "timeMs": 222171.5,
+      "beatIndex": 647,
+      "slotIndex": 4,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": -15.628358783030517,
+        "y": 8.679240583492996,
+        "z": -1.0477793643738647
+      }
+    },
+    {
+      "id": "note-0277",
+      "timeMs": 222857.2,
+      "beatIndex": 649,
+      "slotIndex": 4,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": -15.905737979391432,
+        "y": 8.592329441581633,
+        "z": -0.11283425841625316
+      }
+    },
+    {
+      "id": "note-0278",
+      "timeMs": 223542.9,
+      "beatIndex": 651,
       "slotIndex": 5,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -7.627369163552964,
-        "y": 10.751463688123254,
-        "z": -24.687477624463735
+        "x": -16.183435586007395,
+        "y": 8.505689713028005,
+        "z": 0.8203419095070341
       }
     },
     {
-      "id": "note-0393",
-      "timeMs": 204000.1,
-      "beatIndex": 594,
+      "id": "note-0279",
+      "timeMs": 224228.6,
+      "beatIndex": 653,
       "slotIndex": 4,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -7.94660477256379,
-        "y": 10.700231012338776,
-        "z": -23.9850671154178
+        "x": -16.461580753784602,
+        "y": 8.419431486249596,
+        "z": 1.7510316375366912
       }
     },
     {
-      "id": "note-0394",
-      "timeMs": 204685.8,
-      "beatIndex": 596,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -8.26260707598806,
-        "y": 10.64624226223869,
-        "z": -23.26469387703929
-      }
-    },
-    {
-      "id": "note-0395",
-      "timeMs": 205371.5,
-      "beatIndex": 598,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -8.57550522473193,
-        "y": 10.589607526240497,
-        "z": -22.527075411187653
-      }
-    },
-    {
-      "id": "note-0396",
-      "timeMs": 206057.19999999998,
-      "beatIndex": 600,
-      "slotIndex": 5,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -8.885428369701552,
-        "y": 10.5304368927617,
-        "z": -21.77292921972235
-      }
-    },
-    {
-      "id": "note-0397",
-      "timeMs": 206742.9,
-      "beatIndex": 602,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -9.192505661803125,
-        "y": 10.468840450219783,
-        "z": -21.00297280450273
-      }
-    },
-    {
-      "id": "note-0398",
-      "timeMs": 207428.69999999998,
-      "beatIndex": 604,
-      "slotIndex": 5,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -9.496910446940687,
-        "y": 10.404918802784307,
-        "z": -20.217808112863175
-      }
-    },
-    {
-      "id": "note-0399",
-      "timeMs": 208114.4,
-      "beatIndex": 606,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -9.798683118084373,
-        "y": 10.33880069373588,
-        "z": -19.41838171160991
-      }
-    },
-    {
-      "id": "note-0400",
-      "timeMs": 208800.09999999998,
-      "beatIndex": 608,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -10.097997407913375,
-        "y": 10.270587056931728,
-        "z": -18.605297696818525
-      }
-    },
-    {
-      "id": "note-0401",
-      "timeMs": 209485.80000000002,
-      "beatIndex": 610,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -10.39498246733386,
-        "y": 10.200387980789353,
-        "z": -17.77927357034844
-      }
-    },
-    {
-      "id": "note-0402",
-      "timeMs": 210171.5,
-      "beatIndex": 612,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -10.68976744725197,
-        "y": 10.128313553726258,
-        "z": -16.941026834059144
-      }
-    },
-    {
-      "id": "note-0403",
-      "timeMs": 210857.2,
-      "beatIndex": 614,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -10.982481498573904,
-        "y": 10.054473864159931,
-        "z": -16.091274989809957
-      }
-    },
-    {
-      "id": "note-0404",
-      "timeMs": 211542.9,
-      "beatIndex": 616,
+      "id": "note-0280",
+      "timeMs": 224914.3,
+      "beatIndex": 655,
       "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -11.273253772205788,
-        "y": 9.978979000507877,
-        "z": -15.230735539460412
-      }
-    },
-    {
-      "id": "note-0405",
-      "timeMs": 212228.6,
-      "beatIndex": 618,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -11.562213419053824,
-        "y": 9.901939051187592,
-        "z": -14.360125984869834
-      }
-    },
-    {
-      "id": "note-0406",
-      "timeMs": 212914.4,
-      "beatIndex": 620,
-      "slotIndex": 4,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -11.849531368844326,
-        "y": 9.823452560815252,
-        "z": -13.480034850222282
+        "x": -16.740302633629202,
+        "y": 8.333664849663917,
+        "z": 2.6785174238132328
       }
     },
     {
-      "id": "note-0407",
-      "timeMs": 213600.1,
-      "beatIndex": 622,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -12.135252997584823,
-        "y": 9.743652520219717,
-        "z": -12.591436385742863
-      }
-    },
-    {
-      "id": "note-0408",
-      "timeMs": 214285.8,
-      "beatIndex": 624,
+      "id": "note-0281",
+      "timeMs": 225600.1,
+      "beatIndex": 657,
       "slotIndex": 5,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -12.41954947109482,
-        "y": 9.662637675263348,
-        "z": -11.694920427238674
+        "x": -17.019771184932903,
+        "y": 8.248487520772517,
+        "z": 3.6022161348766915
       }
     },
     {
-      "id": "note-0409",
-      "timeMs": 214971.5,
-      "beatIndex": 626,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -12.702549940280514,
-        "y": 9.580518114363631,
-        "z": -10.791204476569028
-      }
-    },
-    {
-      "id": "note-0410",
-      "timeMs": 215657.19999999998,
-      "beatIndex": 628,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -12.98438355604804,
-        "y": 9.497403925938078,
-        "z": -9.881006035593465
-      }
-    },
-    {
-      "id": "note-0411",
-      "timeMs": 216342.9,
-      "beatIndex": 630,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -13.265179469303586,
-        "y": 9.413405198404172,
-        "z": -8.965042606171313
-      }
-    },
-    {
-      "id": "note-0412",
-      "timeMs": 217028.6,
-      "beatIndex": 632,
+      "id": "note-0282",
+      "timeMs": 226285.8,
+      "beatIndex": 659,
       "slotIndex": 5,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -13.545066830953306,
-        "y": 9.328632020179416,
-        "z": -8.044031690162035
-      }
-    },
-    {
-      "id": "note-0413",
-      "timeMs": 217714.40000000002,
-      "beatIndex": 634,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -13.824215445434575,
-        "y": 9.243181976682054,
-        "z": -7.118555560171847
-      }
-    },
-    {
-      "id": "note-0414",
-      "timeMs": 218400.1,
-      "beatIndex": 636,
-      "slotIndex": 4,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -14.102673071179856,
-        "y": 9.157190089523434,
-        "z": -6.189601702061868
-      }
-    },
-    {
-      "id": "note-0415",
-      "timeMs": 219085.80000000002,
-      "beatIndex": 638,
-      "slotIndex": 3,
-      "pattern": "descending",
-      "trajectoryPosition": {
-        "x": -14.380609616872714,
-        "y": 9.070754032981354,
-        "z": -5.257752967580869
-      }
-    },
-    {
-      "id": "note-0416",
-      "timeMs": 219771.5,
-      "beatIndex": 640,
-      "slotIndex": 3,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -14.658154233419275,
-        "y": 8.983983895473317,
-        "z": -4.323726858588394
+        "x": -17.300034072824975,
+        "y": 8.164034441654927,
+        "z": 4.521140803215111
       }
     },
     {
-      "id": "note-0417",
-      "timeMs": 220457.2,
-      "beatIndex": 642,
+      "id": "note-0283",
+      "timeMs": 226971.5,
+      "beatIndex": 661,
+      "slotIndex": 7,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": -17.581261144337837,
+        "y": 8.080403234037446,
+        "z": 5.434708919584317
+      }
+    },
+    {
+      "id": "note-0284",
+      "timeMs": 227657.19999999998,
+      "beatIndex": 663,
+      "slotIndex": 7,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": -17.863581550377624,
+        "y": 7.997703986337584,
+        "z": 6.342202982124771
+      }
+    },
+    {
+      "id": "note-0285",
+      "timeMs": 228342.9,
+      "beatIndex": 665,
+      "slotIndex": 6,
+      "pattern": "sameTone",
+      "trajectoryPosition": {
+        "x": -18.147124441850536,
+        "y": 7.91604678697283,
+        "z": 7.242905488977147
+      }
+    },
+    {
+      "id": "note-0286",
+      "timeMs": 229028.6,
+      "beatIndex": 667,
       "slotIndex": 3,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -14.935436071725736,
-        "y": 8.896989765416816,
-        "z": -3.3882408769437564
+        "x": -18.43201896966271,
+        "y": 7.835541724360684,
+        "z": 8.136098938281958
       }
     },
     {
-      "id": "note-0418",
-      "timeMs": 221142.9,
-      "beatIndex": 644,
-      "slotIndex": 4,
+      "id": "note-0287",
+      "timeMs": 229714.30000000002,
+      "beatIndex": 669,
+      "slotIndex": 6,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -15.212584282698229,
-        "y": 8.809881731229357,
-        "z": -2.452012524506518
+        "x": -18.718394284720315,
+        "y": 7.75629888691865,
+        "z": 9.02106582817979
       }
     },
     {
-      "id": "note-0419",
-      "timeMs": 221828.6,
-      "beatIndex": 646,
-      "slotIndex": 4,
+      "id": "note-0288",
+      "timeMs": 230400.1,
+      "beatIndex": 671,
+      "slotIndex": 5,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -15.489728017242943,
-        "y": 8.722769881328428,
-        "z": -1.5157593031359653
+        "x": -19.00642166034447,
+        "y": 7.678417112143583,
+        "z": 9.897215725635196
       }
     },
     {
-      "id": "note-0420",
-      "timeMs": 222514.4,
-      "beatIndex": 648,
-      "slotIndex": 3,
+      "id": "note-0289",
+      "timeMs": 231085.80000000002,
+      "beatIndex": 673,
+      "slotIndex": 5,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -15.767036877456789,
-        "y": 8.635751628656994,
-        "z": -0.5800623613298317
+        "x": -19.29614626565268,
+        "y": 7.602029214511007,
+        "z": 10.763575529806886
       }
     },
     {
-      "id": "note-0421",
-      "timeMs": 223200.1,
-      "beatIndex": 650,
-      "slotIndex": 3,
+      "id": "note-0290",
+      "timeMs": 231771.5,
+      "beatIndex": 675,
+      "slotIndex": 6,
       "pattern": "sameTone",
       "trajectoryPosition": {
-        "x": -16.044559158300203,
-        "y": 8.548962452163572,
-        "z": 0.3540878343534182
-      }
-    },
-    {
-      "id": "note-0422",
-      "timeMs": 223885.8,
-      "beatIndex": 652,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -16.322464434269204,
-        "y": 8.462499741264079,
-        "z": 1.2861102887536973
-      }
-    },
-    {
-      "id": "note-0423",
-      "timeMs": 224571.5,
-      "beatIndex": 654,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -16.60088185626998,
-        "y": 8.376473584376006,
-        "z": 2.2152875000117085
-      }
-    },
-    {
-      "id": "note-0424",
-      "timeMs": 225257.2,
-      "beatIndex": 656,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -16.87994057520867,
-        "y": 8.290994069916854,
-        "z": 3.140901966267929
-      }
-    },
-    {
-      "id": "note-0425",
-      "timeMs": 225942.90000000002,
-      "beatIndex": 658,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -17.159769741991436,
-        "y": 8.20617128630413,
-        "z": 4.062236185662915
-      }
-    },
-    {
-      "id": "note-0426",
-      "timeMs": 226628.6,
-      "beatIndex": 660,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -17.440498507524463,
-        "y": 8.122115321955317,
-        "z": 4.9785726563373345
-      }
-    },
-    {
-      "id": "note-0427",
-      "timeMs": 227314.3,
-      "beatIndex": 662,
-      "slotIndex": 4,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -17.722256022713886,
-        "y": 8.038936265287928,
-        "z": 5.889193876431644
-      }
-    },
-    {
-      "id": "note-0428",
-      "timeMs": 228000.1,
-      "beatIndex": 664,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -18.00521278854758,
-        "y": 7.956732295460829,
-        "z": 6.793513703631884
-      }
-    },
-    {
-      "id": "note-0429",
-      "timeMs": 228685.8,
-      "beatIndex": 666,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -18.289415452886068,
-        "y": 7.875637487432204,
-        "z": 7.690550821894149
-      }
-    },
-    {
-      "id": "note-0430",
-      "timeMs": 229371.5,
-      "beatIndex": 668,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -18.57503433843435,
-        "y": 7.795749868392391,
-        "z": 8.57972007936021
-      }
-    },
-    {
-      "id": "note-0431",
-      "timeMs": 230057.19999999998,
-      "beatIndex": 670,
-      "slotIndex": 3,
-      "pattern": "sameTone",
-      "trajectoryPosition": {
-        "x": -18.862198596098576,
-        "y": 7.717179526758885,
-        "z": 9.460303974170579
-      }
-    },
-    {
-      "id": "note-0432",
-      "timeMs": 230742.9,
-      "beatIndex": 672,
-      "slotIndex": 3,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -19.15103737678494,
-        "y": 7.64003655094918,
-        "z": 10.331585004465943
-      }
-    },
-    {
-      "id": "note-0433",
-      "timeMs": 231428.59999999998,
-      "beatIndex": 674,
-      "slotIndex": 4,
-      "pattern": "ascending",
-      "trajectoryPosition": {
-        "x": -19.441679831399576,
-        "y": 7.564431029380781,
-        "z": 11.192845668386752
+        "x": -19.587739129759694,
+        "y": 7.527233823355935,
+        "z": 11.619556164355402
       }
     }
   ],

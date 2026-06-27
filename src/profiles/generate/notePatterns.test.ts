@@ -1,43 +1,27 @@
 import { describe, expect, it } from "vitest";
 import {
   applyNotePatterns,
-  sampleContour,
   DEFAULT_NOTE_PATTERN_OPTIONS,
+  type NotePatternBeat,
   type NotePatternInput,
-  type NotePatternOptions,
 } from "./notePatterns";
 import type { OnsetNote } from "./onsetNotes";
-import type { ChordToneSlotRegion, LoudnessCurve, EmotionCurve } from "../schema/profileSchema";
+import type { ChordToneSlotRegion, LoudnessCurve, DiversityZone } from "../schema/profileSchema";
 
-// テストの作り方の前提を先に述べる。勢い値を一意に制御するため、声量の重みを1・感情の重みを0にして勢い値を
-// 正規化声量だけに依存させる。声量曲線の刻みを100ミリ秒、最大値を1にし、ノーツを100ミリ秒間隔で置くと、
-// k番目のノーツ（時刻 k×100ミリ秒）の勢い値は values[k] に等しくなり、テストで与えた配列がそのまま勢い値の列になる。
-// 刻みを区間探索の許容差1ミリ秒より十分大きい100ミリ秒にする理由は、隣接ノーツが許容差で隣の和音区間へ
-// 取り込まれるのを防ぐためである。感情曲線は最低限の1点だけ持たせるが重み0のため勢い値に寄与しない。
+// 再設計後の番号割当は勢い値ではなく「起点の音域分散・配置語彙・反単調規則・サビ役割変換」で動く。
+// 単体テストは小さな合成入力で、(1) 範囲・連続上限・id引き継ぎ、(2) 区間スロット契約の例外、(3) サビ役割変換を表明する。
 
-/** ノーツとサンプルの間隔（ミリ秒）。区間探索の許容差1ミリ秒より十分大きくする。 */
-const TIME_STEP_MS = 100;
+const TIME_STEP_MS = 343;
 
-/** 声量の重みのみを使う（勢い値＝正規化声量）。 */
-const LOUDNESS_ONLY: NotePatternOptions = { loudnessWeight: 1, emotionWeight: 0, flatEpsilon: 0.02 };
-
-/** 重み0のため勢い値に寄与しない最小の感情曲線。 */
-const EMOTION_ZERO: EmotionCurve = {
-  stepMs: 1000,
-  points: [{ tMs: 0, valence: 0, arousal: 0 }],
-  median: { valence: 0, arousal: 0 },
-};
-
-function onset(id: string, timeMs: number, beatIndex: number): OnsetNote {
-  return { id, timeMs, beatIndex, sectionKind: "nonChorus" };
+function onset(id: string, timeMs: number, beatIndex: number, sectionKind: OnsetNote["sectionKind"] = "nonChorus"): OnsetNote {
+  return { id, timeMs, beatIndex, sectionKind };
 }
 
-/** 刻み100ミリ秒・最大値1の声量曲線。時刻 k×100ミリ秒の正規化声量は values[k] に等しい。 */
 function loudnessFrom(values: number[]): LoudnessCurve {
   return { stepMs: TIME_STEP_MS, maxAmplitude: 1, values };
 }
 
-/** 指定した境界からスロット区間列を作る。pitches はMIDI昇順のダミー（#39は音高値を読まない）。 */
+/** 指定境界からスロット区間列を作る。pitches はMIDI昇順のダミー（音高値は読まない）。 */
 function slotsFrom(boundaries: number[], slotCount = 7): ChordToneSlotRegion[] {
   const regions: ChordToneSlotRegion[] = [];
   for (let i = 0; i + 1 < boundaries.length; i++) {
@@ -51,147 +35,132 @@ function slotsFrom(boundaries: number[], slotCount = 7): ChordToneSlotRegion[] {
   return regions;
 }
 
-/** 時刻 0,100,200,… ミリ秒に1個ずつノーツを置き、単一区間で曲全域を被覆させる入力を作る。 */
-function singleRegionInput(values: number[]): NotePatternInput {
+/** 単一スロット区間で曲全域を覆う入力を作る。拍は4拍循環、声量・フレーズ先頭・サビ役割は引数で与える。 */
+function makeInput(
+  count: number,
+  opts: {
+    loudness?: number[];
+    phraseOnsetsMs?: number[];
+    diversityZones?: DiversityZone[];
+    sectionKindOf?: (i: number) => OnsetNote["sectionKind"];
+  } = {},
+): NotePatternInput {
+  const notes: OnsetNote[] = [];
+  const beats: NotePatternBeat[] = [];
+  for (let i = 0; i < count; i++) {
+    const timeMs = i * TIME_STEP_MS;
+    notes.push(onset(`note-${i}`, timeMs, i, opts.sectionKindOf ? opts.sectionKindOf(i) : "nonChorus"));
+    beats.push({ index: i, position: (i % 4) + 1, lengthInBar: 4, startTimeMs: timeMs });
+  }
   return {
-    notes: values.map((_, i) => onset(`note-${i}`, i * TIME_STEP_MS, i)),
-    slots: slotsFrom([0, values.length * TIME_STEP_MS]),
-    loudness: loudnessFrom(values),
-    emotion: EMOTION_ZERO,
+    notes,
+    slots: slotsFrom([0, count * TIME_STEP_MS]),
+    loudness: loudnessFrom(opts.loudness ?? new Array(count).fill(0.5)),
+    beats,
+    phraseOnsetsMs: opts.phraseOnsetsMs ?? [],
+    diversityZones: opts.diversityZones ?? [],
   };
 }
 
-describe("applyNotePatterns（譜面パターン適用、Issue #39）", () => {
-  it("勢い値が単調増加するとき、同一区間内で slotIndex が非減少になり pattern が ascending になる", () => {
-    const result = applyNotePatterns(singleRegionInput([0.1, 0.3, 0.5, 0.7, 0.9]), LOUDNESS_ONLY);
-    for (let i = 1; i < result.length; i++) {
-      expect(result[i].slotIndex).toBeGreaterThanOrEqual(result[i - 1].slotIndex);
-    }
-    expect(result.map((n) => n.pattern)).toEqual([
-      "ascending",
-      "ascending",
-      "ascending",
-      "ascending",
-      "ascending",
-    ]);
-  });
-
-  it("勢い値が単調減少するとき、同一区間内で slotIndex が非増加になり pattern が descending になる", () => {
-    const result = applyNotePatterns(singleRegionInput([0.9, 0.7, 0.5, 0.3, 0.1]), LOUDNESS_ONLY);
-    for (let i = 1; i < result.length; i++) {
-      expect(result[i].slotIndex).toBeLessThanOrEqual(result[i - 1].slotIndex);
-    }
-    expect(result.every((n) => n.pattern === "descending")).toBe(true);
-  });
-
-  it("勢い値が平坦なとき、slotIndex が一定になり pattern が sameTone になる", () => {
-    const result = applyNotePatterns(singleRegionInput([0.5, 0.5, 0.5, 0.5]), LOUDNESS_ONLY);
-    expect(new Set(result.map((n) => n.slotIndex)).size).toBe(1);
-    expect(result.every((n) => n.pattern === "sameTone")).toBe(true);
-  });
-
-  it("勢い値が上がり続けても slotIndex は天井で頭打ちになり、頭打ちの箇所の pattern は sameTone になる", () => {
-    // 勢い値0.7から始め0.05刻みで上げると、シード5から+1ずつ進み7で頭打ちになる。
-    const result = applyNotePatterns(singleRegionInput([0.7, 0.75, 0.8, 0.85, 0.9]), LOUDNESS_ONLY);
-    expect(result.map((n) => n.slotIndex)).toEqual([5, 6, 7, 7, 7]);
-    expect(result.map((n) => n.pattern)).toEqual([
-      "ascending",
-      "ascending",
-      "ascending",
-      "sameTone",
-      "sameTone",
-    ]);
-  });
-
-  it("勢い値が下がり続けても slotIndex は床で頭打ちになり、頭打ちの箇所の pattern は sameTone になる", () => {
-    // 勢い値0.3から始め0.05刻みで下げると、シード3から−1ずつ進み1で頭打ちになる。
-    const result = applyNotePatterns(singleRegionInput([0.3, 0.25, 0.2, 0.15, 0.1]), LOUDNESS_ONLY);
-    expect(result.map((n) => n.slotIndex)).toEqual([3, 2, 1, 1, 1]);
-    expect(result.map((n) => n.pattern)).toEqual([
-      "descending",
-      "descending",
-      "descending",
-      "sameTone",
-      "sameTone",
-    ]);
-  });
-
-  it("和音区間が変わる箇所で run が区切られ、slotIndex が勢い値から再シードされる", () => {
-    // 区間[0,200) と [200,1000)。時刻200で区間が変わり、直前の slotIndex を引き継がず勢い値0.9から再シードする。
-    const input: NotePatternInput = {
-      notes: [onset("a", 0, 0), onset("b", 100, 1), onset("c", 200, 2), onset("d", 300, 3)],
-      slots: slotsFrom([0, 200, 1000]),
-      loudness: loudnessFrom([0.1, 0.3, 0.9, 0.95]),
-      emotion: EMOTION_ZERO,
-    };
-    const result = applyNotePatterns(input, LOUDNESS_ONLY);
-    // 区間1: シード(0.1)=2、+1で3。
-    expect(result[0].slotIndex).toBe(2);
-    expect(result[1].slotIndex).toBe(3);
-    // 区間2の先頭は再シード(0.9)=6（区間1の3を引き継がない）。
-    expect(result[2].slotIndex).toBe(6);
-    expect(result[3].slotIndex).toBe(7);
-  });
-
-  it("どの区間にも入らない時刻のノーツは先頭区間に寄せられ、例外にならない", () => {
-    const input: NotePatternInput = {
-      notes: [onset("a", 50, 0)],
-      slots: slotsFrom([1000, 2000]),
-      loudness: loudnessFrom([0.5]),
-      emotion: EMOTION_ZERO,
-    };
-    const result = applyNotePatterns(input, LOUDNESS_ONLY);
-    expect(result).toHaveLength(1);
-    expect(result[0].slotIndex).toBeGreaterThanOrEqual(1);
-    expect(result[0].slotIndex).toBeLessThanOrEqual(7);
-  });
-
+describe("applyNotePatterns（音程番号割当、再設計）", () => {
   it("全ノーツの slotIndex が1以上スロット数以下に収まる", () => {
-    const result = applyNotePatterns(singleRegionInput([0, 0.2, 1, 0.8, 0.4, 1, 0]), LOUDNESS_ONLY);
-    for (const note of result) {
-      expect(note.slotIndex).toBeGreaterThanOrEqual(1);
-      expect(note.slotIndex).toBeLessThanOrEqual(7);
+    const result = applyNotePatterns(makeInput(40, { loudness: new Array(40).fill(0.8) }));
+    for (const n of result) {
+      expect(n.slotIndex).toBeGreaterThanOrEqual(1);
+      expect(n.slotIndex).toBeLessThanOrEqual(7);
     }
+  });
+
+  it("基準A: 同一slotIndex の連続が最大2（3連続が生じない）", () => {
+    const result = applyNotePatterns(makeInput(60, { loudness: new Array(60).fill(0.2) }));
+    let run = 1;
+    let maxRun = 1;
+    for (let i = 1; i < result.length; i++) {
+      if (result[i].slotIndex === result[i - 1].slotIndex) {
+        run++;
+        maxRun = Math.max(maxRun, run);
+      } else run = 1;
+    }
+    expect(maxRun).toBeLessThanOrEqual(DEFAULT_NOTE_PATTERN_OPTIONS.maxRun);
   });
 
   it("id・timeMs・beatIndex を入力から引き継ぎ、sectionKind を出力に含めない", () => {
-    const result = applyNotePatterns(singleRegionInput([0.5, 0.6]), LOUDNESS_ONLY);
+    const result = applyNotePatterns(makeInput(3));
     expect(result[0].id).toBe("note-0");
     expect(result[0].timeMs).toBe(0);
     expect(result[1].beatIndex).toBe(1);
     expect(Object.keys(result[0]).sort()).toEqual(["beatIndex", "id", "pattern", "slotIndex", "timeMs"]);
   });
 
-  it("無音センチネル（−1）と負の声量は0として扱われる", () => {
-    const input: NotePatternInput = {
-      notes: [onset("a", 0, 0), onset("b", 100, 1)],
-      slots: slotsFrom([0, 1000]),
-      loudness: loudnessFrom([-1, 0.5]),
-      emotion: EMOTION_ZERO,
-    };
-    const result = applyNotePatterns(input, LOUDNESS_ONLY);
-    // 勢い値0 → シード1。
-    expect(result[0].slotIndex).toBe(1);
+  it("pattern が確定後の slotIndex 差と一致する（同一区間内の連続ノーツ）", () => {
+    const result = applyNotePatterns(makeInput(20, { loudness: new Array(20).fill(0.7) }));
+    for (let i = 1; i < result.length; i++) {
+      const delta = result[i].slotIndex - result[i - 1].slotIndex;
+      const expected = delta > 0 ? "ascending" : delta < 0 ? "descending" : "sameTone";
+      expect(result[i].pattern).toBe(expected);
+    }
   });
 
   it("ノーツが空なら空配列を返す", () => {
     const result = applyNotePatterns({
       notes: [],
       slots: slotsFrom([0, 10]),
-      loudness: loudnessFrom([0.5]),
-      emotion: EMOTION_ZERO,
+      loudness: loudnessFrom([0.5]),      beats: [],
+      phraseOnsetsMs: [],
+      diversityZones: [],
     });
     expect(result).toEqual([]);
   });
 
-  it("flatEpsilon を大きくすると全ノーツが据え置きになり、slotIndex 一定・pattern sameTone になる", () => {
-    const result = applyNotePatterns(singleRegionInput([0.1, 0.3, 0.5, 0.7, 0.9]), {
-      loudnessWeight: 1,
-      emotionWeight: 0,
-      flatEpsilon: 1,
-    });
-    expect(new Set(result.map((n) => n.slotIndex)).size).toBe(1);
-    expect(result.every((n) => n.pattern === "sameTone")).toBe(true);
+  it("決定論: 同一入力で同一出力", () => {
+    const input = makeInput(30, { loudness: new Array(30).fill(0.6), phraseOnsetsMs: [0, 3430, 6860] });
+    expect(applyNotePatterns(input)).toEqual(applyNotePatterns(input));
+  });
+
+  it("サビ3反復: 主題と変奏・回帰の同一 beatOffset で slotIndex が役割により変わる（基準G）", () => {
+    // 3つの同型サビ（各8拍）を離して並べ、すべてのノーツがサビ内。役割変換で番号が反復間で変わることを確認する。
+    const stride = TIME_STEP_MS;
+    const count = 24;
+    const notes: OnsetNote[] = [];
+    const beats: NotePatternBeat[] = [];
+    const zoneStarts = [0, 100000, 200000];
+    const zones: DiversityZone[] = [
+      { startTimeMs: 0, endTimeMs: 8 * stride, role: "theme", label: "主題" },
+      { startTimeMs: 100000, endTimeMs: 100000 + 8 * stride, role: "variation", label: "変奏" },
+      { startTimeMs: 200000, endTimeMs: 200000 + 8 * stride, role: "reprise", label: "回帰" },
+    ];
+    let idx = 0;
+    const boundaries: number[] = [0];
+    for (let z = 0; z < 3; z++) {
+      for (let j = 0; j < 8; j++) {
+        const timeMs = zoneStarts[z] + j * stride;
+        notes.push(onset(`note-${idx}`, timeMs, idx, "chorus"));
+        beats.push({ index: idx, position: (j % 4) + 1, lengthInBar: 4, startTimeMs: timeMs });
+        idx++;
+      }
+    }
+    boundaries.push(200000 + 8 * stride + 1000);
+    const input: NotePatternInput = {
+      notes,
+      slots: slotsFrom(boundaries),
+      loudness: loudnessFrom(new Array(count).fill(0.5)),      beats,
+      phraseOnsetsMs: [],
+      diversityZones: zones,
+    };
+    const result = applyNotePatterns(input);
+    const byZone = zones.map((zn) =>
+      result
+        .filter((n) => n.timeMs >= zn.startTimeMs && n.timeMs < zn.endTimeMs)
+        .sort((a, b) => a.beatIndex - b.beatIndex)
+        .map((n) => n.slotIndex),
+    );
+    // 同じ長さ。
+    expect(byZone[1]).toHaveLength(byZone[0].length);
+    expect(byZone[2]).toHaveLength(byZone[0].length);
+    // 主題と変奏で過半が異なる（役割変換が効いている）。
+    let diff01 = 0;
+    for (let i = 0; i < byZone[0].length; i++) if (byZone[0][i] !== byZone[1][i]) diff01++;
+    expect(diff01 / byZone[0].length).toBeGreaterThanOrEqual(0.3);
   });
 
   describe("入力検査の例外", () => {
@@ -200,8 +169,9 @@ describe("applyNotePatterns（譜面パターン適用、Issue #39）", () => {
         applyNotePatterns({
           notes: [onset("a", 0, 0)],
           slots: [],
-          loudness: loudnessFrom([0.5]),
-          emotion: EMOTION_ZERO,
+          loudness: loudnessFrom([0.5]),          beats: [{ index: 0, position: 1, lengthInBar: 4, startTimeMs: 0 }],
+          phraseOnsetsMs: [],
+          diversityZones: [],
         }),
       ).toThrow(/スロット区間/);
     });
@@ -215,22 +185,11 @@ describe("applyNotePatterns（譜面パターン適用、Issue #39）", () => {
         applyNotePatterns({
           notes: [onset("a", 0, 0)],
           slots,
-          loudness: loudnessFrom([0.5]),
-          emotion: EMOTION_ZERO,
+          loudness: loudnessFrom([0.5]),          beats: [{ index: 0, position: 1, lengthInBar: 4, startTimeMs: 0 }],
+          phraseOnsetsMs: [],
+          diversityZones: [],
         }),
       ).toThrow(/スロット数が同一/);
-    });
-
-    it("スロット数が0なら例外", () => {
-      const slots: ChordToneSlotRegion[] = [{ startTimeMs: 0, endTimeMs: 10, chordName: "Fm", pitches: [] }];
-      expect(() =>
-        applyNotePatterns({
-          notes: [onset("a", 0, 0)],
-          slots,
-          loudness: loudnessFrom([0.5]),
-          emotion: EMOTION_ZERO,
-        }),
-      ).toThrow(/スロット数は1以上/);
     });
 
     it("声量曲線の最大値が0以下なら例外", () => {
@@ -238,53 +197,11 @@ describe("applyNotePatterns（譜面パターン適用、Issue #39）", () => {
         applyNotePatterns({
           notes: [onset("a", 0, 0)],
           slots: slotsFrom([0, 10]),
-          loudness: { stepMs: 1, maxAmplitude: 0, values: [0.5] },
-          emotion: EMOTION_ZERO,
+          loudness: { stepMs: 1, maxAmplitude: 0, values: [0.5] },          beats: [{ index: 0, position: 1, lengthInBar: 4, startTimeMs: 0 }],
+          phraseOnsetsMs: [],
+          diversityZones: [],
         }),
       ).toThrow(/maxAmplitude/);
     });
-
-    it("重みの合計が正でないなら例外", () => {
-      expect(() =>
-        applyNotePatterns(singleRegionInput([0.5]), { loudnessWeight: 0, emotionWeight: 0, flatEpsilon: 0.02 }),
-      ).toThrow(/重み/);
-    });
-  });
-});
-
-describe("sampleContour（勢い値、Issue #39）", () => {
-  it("声量と感情を等価に混ぜ、0以上1以下を返す", () => {
-    const loudness = loudnessFrom([0.4]);
-    const emotion: EmotionCurve = {
-      stepMs: 1000,
-      points: [{ tMs: 0, valence: 0.5, arousal: 0.8 }],
-      median: { valence: 0.5, arousal: 0.5 },
-    };
-    const contour = sampleContour(0, loudness, emotion, DEFAULT_NOTE_PATTERN_OPTIONS);
-    // (0.5×0.4 + 0.5×0.8) / 1 = 0.6。
-    expect(contour).toBeCloseTo(0.6, 10);
-  });
-
-  it("正規化声量は最大値を超えても上限1で切られる", () => {
-    const loudness: LoudnessCurve = { stepMs: 1, maxAmplitude: 1, values: [2] };
-    const contour = sampleContour(0, loudness, EMOTION_ZERO, { loudnessWeight: 1, emotionWeight: 0, flatEpsilon: 0.02 });
-    expect(contour).toBe(1);
-  });
-
-  it("感情の興奮度は時刻以下で最大の時刻を持つ点を階段補間で採る", () => {
-    const emotion: EmotionCurve = {
-      stepMs: 1000,
-      points: [
-        { tMs: 0, valence: 0, arousal: 0.2 },
-        { tMs: 1000, valence: 0, arousal: 0.6 },
-      ],
-      median: { valence: 0, arousal: 0.4 },
-    };
-    const loudness = loudnessFrom(new Array(2000).fill(0));
-    // 時刻500は点0（arousal0.2）を保持、時刻1500は点1（arousal0.6）を保持する。
-    const at500 = sampleContour(500, loudness, emotion, { loudnessWeight: 0, emotionWeight: 1, flatEpsilon: 0.02 });
-    const at1500 = sampleContour(1500, loudness, emotion, { loudnessWeight: 0, emotionWeight: 1, flatEpsilon: 0.02 });
-    expect(at500).toBeCloseTo(0.2, 10);
-    expect(at1500).toBeCloseTo(0.6, 10);
   });
 });

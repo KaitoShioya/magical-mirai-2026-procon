@@ -43,6 +43,20 @@ describe("解析先行スキーマ検証ゲート 第2層（Issue #96 受け入�
     expect(validation.ok).toBe(true);
   });
 
+  it("基準N: コミット済み takeover.profile.json に同一 beatIndex を持つノーツが0件", () => {
+    // 配置の理由を先に述べる。判定は playSession が beatIndex から判定時刻を引くため、同一 beatIndex の重複は
+    // 同時刻判定と多様性逓減の beatOffset キー衝突を招く重大な不変条件であり、コミット済み成果物そのものを検査する
+    // ゲートで強く守るのが適切だからである（再設計プラン フェーズ3・新節5）。
+    const notes = (committed as { notes: Array<{ beatIndex: number }> }).notes;
+    const seen = new Set<number>();
+    const duplicates: number[] = [];
+    for (const n of notes) {
+      if (seen.has(n.beatIndex)) duplicates.push(n.beatIndex);
+      seen.add(n.beatIndex);
+    }
+    expect(duplicates).toEqual([]);
+  });
+
   it("鮮度検査: コミット済みJSONが生成器の出力と構造一致する（古い成果物の混入検知）", () => {
     // 文字列比較では JSON.stringify の整形差やキー順で誤検出するため、解析後オブジェクトの構造比較を用いる。
     // buildProfile は時刻・乱数に依存しない決定的関数であり再生成物は一意であるため、不一致は「生成器または手動入力を

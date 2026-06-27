@@ -23,11 +23,12 @@ function approxEqual(a, b) {
   return Math.abs(a - b) < 1e-9;
 }
 
-// 音程スロットの帯は画面縦幅の4分の3に圧縮して中央へ寄せる（上端余白0.125・帯割合0.75。正典は src/utils/pitchSlotAxis.ts）。
-// スロット s の中央の縦位置は、圧縮帯の中で (s+0.5)/SLOT_COUNT に対応する正規化Y 0.125 + (s+0.5)/SLOT_COUNT × 0.75 を、
-// 入力面の画素高さへ掛けた値とする。これに合わせないとタップが帯の外へ落ち、中央タップが中央スロットへ対応する検証が成立しない。
-function clientYForSlotCenter(slot, height) {
-  return (0.125 + ((slot + 0.5) / SLOT_COUNT) * 0.75) * height;
+// 音程はX軸の7レーンで選ぶ。レーン帯は画面左の正規化X 0 から 0.42（正典は src/utils/pitchHudLayout.ts）。
+// レーン s の中央の横位置は、帯の中で (s+0.5)/SLOT_COUNT に対応する正規化X (s+0.5)/SLOT_COUNT × 0.42 を、入力面の画素幅へ掛けた値。
+// これに合わせないとタップが帯の外へ落ち、中央レーンのタップが中央スロットへ対応する検証が成立しない。Y軸は判定に使わない。
+const LANE_BAND_RIGHT_NX = 0.42;
+function clientXForLaneCenter(slot, width) {
+  return ((slot + 0.5) / SLOT_COUNT) * LANE_BAND_RIGHT_NX * width;
 }
 
 async function dispatchPointerDown(page, pointerId, pointerType, clientX, clientY) {
@@ -146,8 +147,8 @@ try {
   }
 
   // 2. 同一座標でマウスとタッチが同じ slotIndex と colorX01 を返し、source が区別されること。
-  const sameX = rect.width * 0.5;
-  const sameY = clientYForSlotCenter(2, rect.height);
+  const sameX = clientXForLaneCenter(2, rect.width);
+  const sameY = rect.height * 0.5;
   const mouseDownPrevented = await dispatchPointerDown(page, 1, "mouse", sameX, sameY);
   await dispatchPointerUp(page, 1, "mouse", sameX, sameY);
   await dispatchPointerDown(page, 2, "touch", sameX, sameY);
@@ -177,8 +178,8 @@ try {
 
   // 3. 異なるY位置の2点同時押しで、追跡接触数が2へ達し、別々の slotIndex を持つこと。
   const beforeMultiTouch = (await readReactions(page)).length;
-  await dispatchPointerDown(page, 11, "touch", rect.width * 0.3, clientYForSlotCenter(0, rect.height));
-  await dispatchPointerDown(page, 12, "touch", rect.width * 0.7, clientYForSlotCenter(6, rect.height));
+  await dispatchPointerDown(page, 11, "touch", clientXForLaneCenter(0, rect.width), rect.height * 0.5);
+  await dispatchPointerDown(page, 12, "touch", clientXForLaneCenter(6, rect.width), rect.height * 0.5);
   const multiTouchState = await readState(page);
   list = await readReactions(page);
   const multiTouchReactions = list.slice(beforeMultiTouch);
@@ -193,16 +194,16 @@ try {
     console.log("確認: 2点同時押しが独立に追跡され別々のスロットを持つ");
   }
   // 片方を解放しても他方が残ること（多指の独立）。
-  await dispatchPointerUp(page, 11, "touch", rect.width * 0.3, clientYForSlotCenter(0, rect.height));
+  await dispatchPointerUp(page, 11, "touch", clientXForLaneCenter(0, rect.width), rect.height * 0.5);
   const afterOneRelease = await readState(page);
   if (afterOneRelease.activePointerCount !== 1) {
     fail(`片方解放後の追跡接触数が ${afterOneRelease.activePointerCount} です（期待: 1）`);
   } else {
     console.log("確認: 片方の解放が他方に影響しない");
   }
-  await dispatchPointerUp(page, 12, "touch", rect.width * 0.7, clientYForSlotCenter(6, rect.height));
+  await dispatchPointerUp(page, 12, "touch", clientXForLaneCenter(6, rect.width), rect.height * 0.5);
 
-  // 4. キーボード。数字キー「3」で slotIndex 2・colorX01 0.5、「d」後の「3」で colorX01 0.6。
+  // 4. キーボード。数字キー「3」で slotIndex 2、効果色はレーン由来の 2 ÷ (slotCount − 1) ＝ 1/3。
   const key3Prevented = await dispatchKeyDown(page, "3", false);
   list = await readReactions(page);
   const key3Reaction = list[list.length - 1];
@@ -211,17 +212,17 @@ try {
   } else if (
     key3Reaction.source !== "keyboard" ||
     key3Reaction.slotIndex !== 2 ||
-    !approxEqual(key3Reaction.colorX01, 0.5)
+    !approxEqual(key3Reaction.colorX01, 2 / (SLOT_COUNT - 1))
   ) {
     fail(
       `数字キー「3」の出力が不正です（source=${key3Reaction.source}, slot=${key3Reaction.slotIndex}, colorX=${key3Reaction.colorX01}）`
     );
   } else {
-    console.log("確認: 数字キー「3」が中央0.5・スロット2を生む");
+    console.log("確認: 数字キー「3」がスロット2・レーン由来の効果色を生む");
   }
-  // 「3」のキーボード出力が、同じ正規化座標のポインタ押下と一致すること（入力同等性）。
-  const equivX = rect.width * 0.5;
-  const equivY = clientYForSlotCenter(2, rect.height);
+  // 「3」のキーボード出力が、同じレーンの中心のポインタ押下と一致すること（入力同等性）。
+  const equivX = clientXForLaneCenter(2, rect.width);
+  const equivY = rect.height * 0.5;
   await dispatchPointerDown(page, 21, "touch", equivX, equivY);
   await dispatchPointerUp(page, 21, "touch", equivX, equivY);
   list = await readReactions(page);
@@ -230,19 +231,9 @@ try {
     equivPointer.slotIndex !== key3Reaction.slotIndex ||
     !approxEqual(equivPointer.colorX01, key3Reaction.colorX01)
   ) {
-    fail("キーボードと同一正規化座標のポインタ押下で出力が一致しません");
+    fail("キーボードと同一レーンのポインタ押下で出力が一致しません");
   } else {
-    console.log("確認: キーボードとポインタが同一座標で同一出力（入力同等性）");
-  }
-
-  await dispatchKeyDown(page, "d", false);
-  await dispatchKeyDown(page, "3", false);
-  list = await readReactions(page);
-  const afterMoveReaction = list[list.length - 1];
-  if (!approxEqual(afterMoveReaction.colorX01, 0.6)) {
-    fail(`「d」後の「3」の colorX01 が ${afterMoveReaction.colorX01} です（期待: 0.6）`);
-  } else {
-    console.log("確認: 「d」で仮想カーソルが右へ1段移動し colorX01 が0.6");
+    console.log("確認: キーボードとポインタが同一レーンで同一出力（入力同等性）");
   }
 
   // 5. 数字キーの自動繰り返しでは反応が増えないこと（押下1回につき1反応）。
@@ -253,40 +244,6 @@ try {
     fail("数字キーの自動繰り返しで反応が増えました（押下1回につき1反応に反する）");
   } else {
     console.log("確認: 数字キーの自動繰り返しは反応を生まない");
-  }
-
-  // 6. 左移動キー「a」「ArrowLeft」で減少、「ArrowRight」で増加し、0以上1以下に収まること。
-  const xBeforeMove = (await readState(page)).keyboardColorX01;
-  await dispatchKeyDown(page, "a", false);
-  const xAfterLeftKeyA = (await readState(page)).keyboardColorX01;
-  await dispatchKeyDown(page, "ArrowRight", false);
-  const xAfterArrowRight = (await readState(page)).keyboardColorX01;
-  await dispatchKeyDown(page, "ArrowLeft", false);
-  const xAfterArrowLeft = (await readState(page)).keyboardColorX01;
-  if (!(xAfterLeftKeyA < xBeforeMove + 1e-9)) {
-    fail(`「a」で仮想カーソルが減少しません（${xBeforeMove} -> ${xAfterLeftKeyA}）`);
-  } else if (!(xAfterArrowRight > xAfterLeftKeyA - 1e-9)) {
-    fail(`「ArrowRight」で仮想カーソルが増加しません（${xAfterLeftKeyA} -> ${xAfterArrowRight}）`);
-  } else if (!(xAfterArrowLeft < xAfterArrowRight + 1e-9)) {
-    fail(`「ArrowLeft」で仮想カーソルが減少しません（${xAfterArrowRight} -> ${xAfterArrowLeft}）`);
-  } else {
-    console.log("確認: 「a」「ArrowLeft」で減少し「ArrowRight」で増加する");
-  }
-  // 下限・上限のクランプ。全幅1.0を移動量0.1で割ると10回で端から端へ届くため、余裕を見て12回で確実に端へ到達する。
-  for (let i = 0; i < 12; i += 1) {
-    await dispatchKeyDown(page, "a", false);
-  }
-  const xAtLowerBound = (await readState(page)).keyboardColorX01;
-  for (let i = 0; i < 12; i += 1) {
-    await dispatchKeyDown(page, "ArrowRight", false);
-  }
-  const xAtUpperBound = (await readState(page)).keyboardColorX01;
-  if (!approxEqual(xAtLowerBound, 0)) {
-    fail(`左移動を重ねた下限が ${xAtLowerBound} です（期待: 0、0未満にならない）`);
-  } else if (!approxEqual(xAtUpperBound, 1)) {
-    fail(`右移動を重ねた上限が ${xAtUpperBound} です（期待: 1、1超にならない）`);
-  } else {
-    console.log("確認: 仮想カーソルが0以上1以下にクランプされる");
   }
 
   // 7. 通常の本体ページでは入力の診断アクセサが公開されていないこと。

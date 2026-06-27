@@ -86,12 +86,12 @@ async function run() {
 
   const state0 = await probe(0);
 
-  // (a) ある時刻で対象ノーツが自分の線分より上に存在する。
+  // (a) ある時刻で対象ノーツが単一の判定線より上に存在する。
   const a0 = findNote(state0, "probe-a");
-  if (a0 && a0.y > a0.targetY + Y_TOLERANCE && a0.y <= state0.topY + Y_TOLERANCE) {
-    ok(`時刻0で対象ノーツが線分より上に存在する（y=${a0.y.toFixed(4)} 線分=${a0.targetY.toFixed(4)}）`);
+  if (a0 && a0.y > state0.judgmentLineY + Y_TOLERANCE && a0.y <= state0.topY + Y_TOLERANCE) {
+    ok(`時刻0で対象ノーツが判定線より上に存在する（y=${a0.y.toFixed(4)} 判定線=${state0.judgmentLineY.toFixed(4)}）`);
   } else {
-    fail(`時刻0で対象ノーツが線分より上に存在しない（${JSON.stringify(a0)}）`);
+    fail(`時刻0で対象ノーツが判定線より上に存在しない（${JSON.stringify(a0)}）`);
   }
 
   // (b) ゲーム時刻を進めると縦位置が下がり、低下量が経過時間に比例する（落下速度一定）。
@@ -114,19 +114,19 @@ async function run() {
     fail(`ゲーム時刻を進めても縦位置が単調に下がらない（${y0}, ${y300}, ${y600}）`);
   }
 
-  // (c) ゲーム時刻を対象ノーツの実時刻に合わせると縦位置が自分の線分に一致する。
+  // (c) ゲーム時刻を対象ノーツの実時刻に合わせると縦位置が単一の判定線に一致する。
   const stateAtA = await probe(A_TIME);
   const aAtTarget = findNote(stateAtA, "probe-a");
-  if (aAtTarget && Math.abs(aAtTarget.y - aAtTarget.targetY) <= Y_TOLERANCE) {
-    ok(`実時刻で対象ノーツが線分に一致する（y=${aAtTarget.y.toFixed(6)} 線分=${aAtTarget.targetY.toFixed(6)}）`);
+  if (aAtTarget && Math.abs(aAtTarget.y - stateAtA.judgmentLineY) <= Y_TOLERANCE) {
+    ok(`実時刻で対象ノーツが判定線に一致する（y=${aAtTarget.y.toFixed(6)} 判定線=${stateAtA.judgmentLineY.toFixed(6)}）`);
   } else {
-    fail(`実時刻で対象ノーツが線分に一致しない（${JSON.stringify(aAtTarget)}）`);
+    fail(`実時刻で対象ノーツが判定線に一致しない（${JSON.stringify(aAtTarget)}）`);
   }
 
-  // (d) 水滴は中心が線分に一致した時点で消える。直前は可視で線分より上、達した直後は不可視。
+  // (d) 水滴は中心が判定線に一致した時点で消える。直前は可視で判定線より上、達した直後は不可視。
   const beforeReach = await probe(A_TIME - 50);
   const aBefore = findNote(beforeReach, "probe-a");
-  if (aBefore && aBefore.y > aBefore.targetY + Y_TOLERANCE) {
+  if (aBefore && aBefore.y > beforeReach.judgmentLineY + Y_TOLERANCE) {
     ok(`中心が線分へ達する直前は可視で線分より上にある（y=${aBefore.y.toFixed(4)}）`);
   } else {
     fail(`中心が線分へ達する直前に可視でないか線分より上にない（${JSON.stringify(aBefore)}）`);
@@ -172,10 +172,10 @@ async function run() {
     fail(`通路から外れる可視ノーツがある（${JSON.stringify(outOfChannel)}）`);
   }
   const outOfVertical = stateAtA.notes.filter(
-    (note) => note.y < note.targetY - Y_TOLERANCE || note.y > stateAtA.topY + Y_TOLERANCE
+    (note) => note.y < stateAtA.judgmentLineY - Y_TOLERANCE || note.y > stateAtA.topY + Y_TOLERANCE
   );
   if (outOfVertical.length === 0) {
-    ok("可視ノーツの縦位置が線分から上端の範囲に収まる");
+    ok("可視ノーツの縦位置が判定線から上端の範囲に収まる");
   } else {
     fail(`縦範囲から外れる可視ノーツがある（${JSON.stringify(outOfVertical)}）`);
   }

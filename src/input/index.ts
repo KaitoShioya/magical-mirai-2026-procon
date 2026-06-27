@@ -5,13 +5,11 @@
 export type { PointerInputSource, RectLike } from "./coordinateMapping";
 export {
   clamp01,
-  colorParamFromNormalizedX,
   inputSourceFromPointerType,
   mapToReactionCore,
   normalizePointerPosition,
   resolveSlotCount,
-  slotCenterNormalizedY,
-  slotIndexFromNormalizedY,
+  slotIndexFromNormalizedX,
 } from "./coordinateMapping";
 export type { Input, InputOptions, InputSource, Reaction } from "./pointerInput";
 export { createInput } from "./pointerInput";

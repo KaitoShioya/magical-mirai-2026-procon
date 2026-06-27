@@ -4,6 +4,16 @@
 
 import type { LaneNote } from "../types/judgmentLane";
 
+/** ノーツが出現する縦位置（2次元層の上端 +1）。全レーン共通。 */
+export const NOTE_TOP_OVERLAY_Y = 1;
+
+/** 単一判定線の正規化Y。採用理由を先に述べる。画面下部近くに置きつつ、画面下端の出典表記（2次元層の縦 −0.9以下）より
+ * 十分上に置いて重なりを避けるため0.80とする（★暫定）。three.js非依存の純粋モジュールに置き、非重なりを純粋関数で機械検証する。 */
+export const JUDGMENT_LINE_NORMALIZED_Y = 0.8;
+
+/** 単一判定線の2次元層上の縦位置。写像式 y = (0.5 − 正規化Y) × 2 による（0.80 → −0.60）。全レーン共通の目標Y。 */
+export const JUDGMENT_LINE_OVERLAY_Y = (0.5 - JUDGMENT_LINE_NORMALIZED_Y) * 2;
+
 /** レーンの時間窓。leadMs は出現から目標線到達まで、postTargetMs は目標線通過後の表示猶予（ともにミリ秒）。 */
 export interface LaneTimingWindow {
   readonly leadMs: number;
@@ -57,17 +67,6 @@ export function laneFallSpeedPerMs(geometry: LaneGeometryY, leadMs: number): num
 export function isLaneProgressVisible(progress: number, window: LaneTimingWindow): boolean {
   const lowerBound = -window.postTargetMs / window.leadMs;
   return progress >= lowerBound && progress <= 1;
-}
-
-/**
- * 数字図版のセル添字。slotIndex を 0 始まりのセル添字へ写す。
- * slotIndex が整数でない、1未満、またはセル数を越えるときは、対応するセルが無いため null を返す。
- */
-export function digitCellIndex(slotIndex: number, cellCount: number): number | null {
-  if (!Number.isInteger(slotIndex) || slotIndex < 1 || slotIndex > cellCount) {
-    return null;
-  }
-  return slotIndex - 1;
 }
 
 /** timeMs 昇順の列で、timeMs が value 以上になる最初の添字を返す（無ければ末尾の長さ）。 */

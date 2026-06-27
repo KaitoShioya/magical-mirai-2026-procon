@@ -7,7 +7,6 @@ import {
   isLaneProgressVisible,
   laneFallSpeedPerMs,
   visibleNoteRange,
-  digitCellIndex,
   maxConcurrentInWindow,
   lanePoolCapacity,
   reachedNoteRange,
@@ -117,18 +116,6 @@ describe("visibleNoteRange（可視ノーツの添字区間。閉区間）", () 
   });
 });
 
-describe("digitCellIndex（数字図版のセル添字）", () => {
-  it("slotIndex 1〜9 をセル添字 0〜8 へ写す", () => {
-    expect(digitCellIndex(1, 9)).toBe(0);
-    expect(digitCellIndex(7, 9)).toBe(6);
-    expect(digitCellIndex(9, 9)).toBe(8);
-  });
-  it("1未満・セル数を越える slotIndex は null（表示対象から除く）", () => {
-    expect(digitCellIndex(0, 9)).toBeNull();
-    expect(digitCellIndex(10, 9)).toBeNull();
-    expect(digitCellIndex(-1, 9)).toBeNull();
-  });
-});
 
 describe("目標線通過後の表示時間が0の構成（円板が中心一致で消える）", () => {
   // 生産の落下式レーンは目標線通過後の表示時間を0にする（円板の中心が目標線に一致した時点で消える）。

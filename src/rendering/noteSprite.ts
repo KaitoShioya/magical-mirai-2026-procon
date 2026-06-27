@@ -77,6 +77,8 @@ export interface NoteSprite {
   setCoreRadius(radius: number): void;
   /** 接近の近さ（遠いとき0、線分に近いとき1）を設定する。 */
   setApproach(approach: number): void;
+  /** 芯とにじみの色（レーンの固有色、各チャンネル0..1）を設定する。縁の光と艶は白寄りのまま保つ。 */
+  setColor(r: number, g: number, b: number): void;
   /** 後始末。材質を解放する（共有ジオメトリは生成側がまとめて解放する）。 */
   dispose(): void;
 }
@@ -124,6 +126,9 @@ export function createNoteSprite(sharedGeometry: PlaneGeometry, renderOrder: num
     },
     setApproach(approach: number): void {
       material.uniforms.uApproach.value = approach;
+    },
+    setColor(r: number, g: number, b: number): void {
+      (material.uniforms.uCoreColor.value as Color).setRGB(r, g, b);
     },
     dispose(): void {
       material.dispose();

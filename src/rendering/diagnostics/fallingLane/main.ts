@@ -81,6 +81,7 @@ window.__fallingLaneProbe = (gameTimeMs: number) => {
   return {
     notes: lane.probe(gameTimeMs),
     topY: lane.topY,
+    judgmentLineY: lane.judgmentLineY,
     channelLeftX: lane.channelLeftX(),
     channelRightX: lane.channelRightX(),
     aspect: currentAspect(),

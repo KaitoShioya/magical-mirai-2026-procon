@@ -67,7 +67,6 @@ function updateHud(): void {
   hud.textContent = [
     `reactions: ${reactions.length}`,
     `activePointers: ${state.activePointerCount}`,
-    `keyboardX: ${state.keyboardColorX01.toFixed(2)}`,
     last
       ? `last: ${last.source} slot=${last.slotIndex} colorX=${last.colorX01.toFixed(2)}`
       : "last: -",
@@ -92,7 +91,6 @@ window.__inputState = () => {
   const state = input.state();
   return {
     activePointerCount: state.activePointerCount,
-    keyboardColorX01: state.keyboardColorX01,
     touchAction: getComputedStyle(surface).touchAction,
   };
 };

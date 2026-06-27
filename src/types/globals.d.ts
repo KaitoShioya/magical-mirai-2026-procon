@@ -357,7 +357,6 @@ declare global {
      */
     __inputState?: () => {
       activePointerCount: number;
-      keyboardColorX01: number;
       touchAction: string;
     };
     /**
@@ -484,8 +483,9 @@ declare global {
      * 共有型が rendering に依存しないよう素の構造で宣言する。
      */
     __fallingLaneProbe?: (gameTimeMs: number) => {
-      notes: readonly { id: string; slotIndex: number; y: number; x: number; targetY: number }[];
+      notes: readonly { id: string; slotIndex: number; y: number; x: number }[];
       topY: number;
+      judgmentLineY: number;
       channelLeftX: number;
       channelRightX: number;
       aspect: number;

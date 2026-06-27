@@ -150,9 +150,17 @@ export interface NoteBurst {
   readonly object: Object3D;
   /**
    * 発火。指定位置に消滅エフェクトを1つ生成する。空きが無いとき（同時上限超過）は生成せず偽を返す。
-   * phase は方向の基準角度（ノーツごとに決定的）、maxRadius は波紋の最大半径、coreRadius はノーツの芯の半径。
+   * phase は方向の基準角度（ノーツごとに決定的）、maxRadius は波紋の最大半径、coreRadius はノーツの芯の半径、
+   * color はそのレーンの固有色（各チャンネル0..1）。
    */
-  spawn(input: { x: number; y: number; phase: number; coreRadius: number; maxRadius: number }): boolean;
+  spawn(input: {
+    x: number;
+    y: number;
+    phase: number;
+    coreRadius: number;
+    maxRadius: number;
+    color: readonly [number, number, number];
+  }): boolean;
   /** 経過時間で更新する。寿命を過ぎたバーストを消す。 */
   update(deltaSeconds: number): void;
   /** 活動中のバーストの数。 */
@@ -269,6 +277,10 @@ export function createNoteBurst(options: { capacity: number; renderOrder: number
       slot.maxRadius = input.maxRadius;
       slot.group.visible = true;
       slot.sparkMaterial.uniforms.uPhase.value = input.phase;
+      // 波紋としぶきの色をそのレーンの固有色にする。
+      const [r, g, b] = input.color;
+      (slot.ringMaterial.uniforms.uColor.value as Color).setRGB(r, g, b);
+      (slot.sparkMaterial.uniforms.uColor.value as Color).setRGB(r, g, b);
       // しぶきの最大飛距離は波紋の最大半径の0.9倍、粒の大きさは芯の半径の0.6倍。
       slot.sparkMaterial.uniforms.uMaxDistance.value = input.maxRadius * 0.9;
       slot.sparkMaterial.uniforms.uSparkSize.value = input.coreRadius * 0.6;

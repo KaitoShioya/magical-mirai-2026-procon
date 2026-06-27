@@ -72,11 +72,11 @@ async function runDiagnosticChecks() {
   const at250 = await probe(250);
   const at2000 = await probe(2000);
 
-  // 拡大量0.12（倍率1.12）で立ち上がる。
-  if (approx(at0.scale, 1.12, 0.001)) {
-    ok(`拡大の立ち上がりが倍率1.12（実測 ${at0.scale}）`);
+  // 拡大量0.09（倍率1.09）で立ち上がる。
+  if (approx(at0.scale, 1.09, 0.001)) {
+    ok(`拡大の立ち上がりが倍率1.09（実測 ${at0.scale}）`);
   } else {
-    fail(`拡大の立ち上がりが倍率1.12でない（実測 ${at0.scale}）`);
+    fail(`拡大の立ち上がりが倍率1.09でない（実測 ${at0.scale}）`);
   }
   // 時定数250ミリ秒で 1/e へ下がる。
   const decayRatio = (at250.scale - 1) / (at0.scale - 1);

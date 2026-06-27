@@ -47,4 +47,14 @@ export interface CharacterModelConfig {
   readonly credit: CharacterCredit;
   /** 来歴。AIが生成したモデルでないことの記録（例: VRoid Studio で人間が自作）。 */
   readonly provenance: string;
+  /**
+   * 固定ポーズを与えるVRMアニメーション（拡張子 .vrma）の配信先（public/ 直下を基準とするパス）。
+   * 省略時はモデル読み込み時の既定姿勢（バインドポーズ）のままとする。
+   */
+  readonly poseAnimationUrl?: string;
+  /**
+   * 固定ポーズとして据える時刻（秒。VRMアニメーションを再生するミキサーの時間の単位）。
+   * 省略時は0とする。
+   */
+  readonly poseFreezeTimeSec?: number;
 }

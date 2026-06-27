@@ -8,8 +8,12 @@
 //   ?reflectMiku=0: 反射からミクを外す（centerFigureReflected が偽）。反射そのものは有効のまま。
 //   全体: WebGL が利用でき、ページ例外・コンソールエラーが無い。
 //
+// あわせて、固定ポーズのVRMアニメーションが本番経路で適用されたこと（centerFigureMotionMode=posed）と、適用後の
+// 人体ボーンがバインドポーズから明確に回転したこと（全人体ボーンの最大回転角が確定ゲートを満たすこと）を確かめる。
+//
 // VRM の読み込み完了（centerFigureStatus=loaded）を待つ上限を20000ミリ秒とする。採用理由を先に述べる。
-// VRM ファイル（約16メガバイト）の読み込みと解析に数秒を要し、舞台土台スモークが同じ上限で安定している。
+// VRM ファイル（新モデル miku-plane-ver3.0.vrm は約15メガバイト、固定ポーズのVRMアニメーション
+// miku-ver3-posed.vrma は約60キロバイト）の読み込みと解析に数秒を要し、舞台土台スモークが同じ上限で安定している。
 // VRM の読み込みと解析は中央処理装置の処理であり画像処理装置を必要としないため、画像処理装置の無い
 // 継続的インテグレーション環境（ソフトウェア描画）でも loaded へ達する。VRM 資産はリポジトリに登録済みで、
 // public 配下のため検証用ビルドで dist へ複製され配信される。
@@ -21,6 +25,22 @@ import { chromium } from "playwright";
 const BASE = process.env.BASE || "http://127.0.0.1:4173";
 // VRM の読み込み完了を待つ上限（ミリ秒）。理由はファイル冒頭に記す。
 const LOAD_TIMEOUT_MS = 20000;
+
+// 姿勢が適用されたと判定する確定ゲート（度）。検査対象を「全人体ボーンの回転角の最大値」とする理由を先に述べる。
+// createVRMAnimationClip はVRMアニメーションの姿勢を対象モデルの正規化空間へ再ターゲットするため、特定の1ボーン
+// （例: 腰）の回転は小さくなりうる（実測で腰は約3度）。一方で姿勢が適用されていれば必ずいずれかのボーンが大きく
+// 回転する（この作成ポーズでは左肘が約160度）。最大角はどのボーンが大きく回るかに依らず姿勢適用を頑健に表す。
+// しきい値10度の根拠を先に述べる。バインドポーズは全ボーンが無回転で最大角0度であり、この作成ポーズの最大角160度は
+// 10度を大きく超える。10度は計算上の微小な誤差より十分大きく、かつバインドの0度から十分離れているため、両者を確実に
+// 分けられる。
+const POSE_APPLIED_MIN_MAX_ANGLE_DEG = 10;
+// 回帰ガードの期待値（度）。初回スモークで実測した最大回転角を固定し、この特定の作成ポーズからの逸脱を捕まえる。
+// 実測値を用いる理由を先に述べる。createVRMAnimationClip は正規化空間へ再ターゲットするため、読み戻す角がVRM
+// アニメーションの元の値と完全一致する保証は無く、実行時に実際に得られる値を基準にする方が確実である。
+const EXPECTED_POSE_MAX_ANGLE_DEG = 160.1;
+// 回帰ガードの許容差（度）。姿勢は全フレーム同一で固定時刻0秒に補間が無いため最大角は実行ごとに安定し、2度は
+// 計算上の僅かな差を吸収しつつ、確定ゲート（10度）やバインド（0度）から十分離れた値であり特定の姿勢を固定できる。
+const POSE_MAX_ANGLE_REGRESSION_TOLERANCE_DEG = 2;
 
 const errors = [];
 let failed = false;
@@ -82,6 +102,39 @@ try {
           (base.centerFigureError ? `, error=${base.centerFigureError}` : "") +
           "）"
       );
+    }
+    // 固定ポーズのVRMアニメーションが本番経路で適用されたこと。
+    if (base.centerFigureMotionMode === "posed") {
+      console.log("確認: 固定ポーズのVRMアニメーションが適用されました（centerFigureMotionMode=posed）");
+    } else {
+      fail(`固定ポーズが適用されませんでした（centerFigureMotionMode=${base.centerFigureMotionMode}）`);
+    }
+    // 適用後の人体ボーンがバインドポーズから明確に回転したこと（確定ゲート。再ターゲットに依存しない最大回転角）。
+    const maxAngleDeg = base.centerFigurePoseMaxAngleDeg;
+    if (typeof maxAngleDeg !== "number") {
+      fail(`人体ボーンの最大回転角を読み戻せませんでした（centerFigurePoseMaxAngleDeg=${maxAngleDeg}）`);
+    } else {
+      console.log(`測定: 全人体ボーンの最大回転角 = ${maxAngleDeg.toFixed(2)} 度`);
+      if (maxAngleDeg > POSE_APPLIED_MIN_MAX_ANGLE_DEG) {
+        console.log(
+          `確認: 人体ボーンがバインドから明確に回転しています（最大角=${maxAngleDeg.toFixed(2)}度 > ${POSE_APPLIED_MIN_MAX_ANGLE_DEG}度）`
+        );
+      } else {
+        fail(
+          `人体ボーンがバインドから回転していません（最大角=${maxAngleDeg.toFixed(2)}度 <= ${POSE_APPLIED_MIN_MAX_ANGLE_DEG}度）`
+        );
+      }
+      // 回帰ガード。特定の作成ポーズからの逸脱を捕まえる。
+      const deviationDeg = Math.abs(maxAngleDeg - EXPECTED_POSE_MAX_ANGLE_DEG);
+      if (deviationDeg < POSE_MAX_ANGLE_REGRESSION_TOLERANCE_DEG) {
+        console.log(
+          `確認: 最大回転角が作成ポーズの実測値の近傍です（偏差=${deviationDeg.toFixed(2)}度 < ${POSE_MAX_ANGLE_REGRESSION_TOLERANCE_DEG}度）`
+        );
+      } else {
+        fail(
+          `最大回転角が作成ポーズの実測値から外れました（偏差=${deviationDeg.toFixed(2)}度 >= ${POSE_MAX_ANGLE_REGRESSION_TOLERANCE_DEG}度）`
+        );
+      }
     }
     if (base.reflectionEnabled) {
       console.log("確認: 平面反射が有効です（reflectionEnabled）");

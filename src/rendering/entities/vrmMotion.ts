@@ -9,6 +9,8 @@
 //     動作の区切りを作り、THREE.AnimationMixer を vrm.scene に対して進めて再生する。
 // いずれの方式でも、毎フレーム vrm.update を呼んでばねの揺れと表情の更新を進める（その呼び出しは vrmLoader が担う）。
 
+import { AnimationMixer } from "three";
+import { createVRMAnimationClip, type VRMAnimation } from "@pixiv/three-vrm-animation";
 import type { LoadedVrm } from "../loaders/vrmLoader";
 
 /** モーション層の取っ手。毎フレーム更新と後始末の2操作だけを持つ。 */
@@ -40,6 +42,48 @@ export function createFixedPoseMotion(): VrmMotion {
     },
     dispose(): void {
       // 保持資源が無いため何もしない。
+    },
+  };
+}
+
+/**
+ * VRMアニメーションの特定時刻の姿勢を固定する再生型モーション層を作る（第2の方式）。
+ * 生成時に createVRMAnimationClip でクリップを作り、AnimationMixer を vrm.scene に対して固定時刻へ据えて
+ * 姿勢を適用する。この一連は本関数の中で同期的に完了し、本関数が返る時点で人体ボーンへ姿勢が反映済みである。
+ * これにより、差し替えと姿勢適用の間に非同期待ちを入れない結線と併せて、最初の描画の前に姿勢が確定する。
+ * @param loaded 読み込み済みVRMの取っ手。
+ * @param vrmAnimation 固定ポーズを与えるVRMアニメーション。
+ * @param options.freezeTimeSec 固定する時刻（秒）。
+ */
+export function createPosedMotion(
+  loaded: LoadedVrm,
+  vrmAnimation: VRMAnimation,
+  options: { freezeTimeSec: number }
+): VrmMotion {
+  const clip = createVRMAnimationClip(vrmAnimation, loaded.vrm);
+  const mixer = new AnimationMixer(loaded.vrm.scene);
+  const action = mixer.clipAction(clip);
+  action.play();
+  // 固定時刻の姿勢を同期的に適用する。setTime は内部で時刻を進め評価し、人体ボーンへ書き込む。
+  mixer.setTime(options.freezeTimeSec);
+
+  return {
+    update(): void {
+      // 差分を0にして呼ぶ理由を先に述べる。固定時刻のまま姿勢を再評価して書き直し、時間に依らず一定の姿勢を
+      // 保つためである。本メソッドは vrm.update の前に呼ばれる（VrmMotion の契約）。先に固定姿勢の人体ボーンを
+      // 確定し、その後の vrm.update が確定した姿勢からばねの揺れを進める順になるため、髪・スカートのばね物理は
+      // 姿勢を起点に自然に揺れる。
+      mixer.update(0);
+    },
+    dispose(): void {
+      // 契約どおり、後始末の中で生じた例外を捕捉し、呼び出し側へ伝播させない。
+      try {
+        mixer.stopAllAction();
+        mixer.uncacheClip(clip);
+        mixer.uncacheRoot(loaded.vrm.scene);
+      } catch {
+        // 後始末中の例外は伝播させない。
+      }
     },
   };
 }

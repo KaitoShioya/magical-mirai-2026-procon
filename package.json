@@ -49,6 +49,7 @@
   },
   "dependencies": {
     "@pixiv/three-vrm": "3.5.4",
+    "@pixiv/three-vrm-animation": "3.5.4",
     "gsap": "^3.13.0",
     "textalive-app-api": "^0.4.0",
     "three": "^0.184.0",

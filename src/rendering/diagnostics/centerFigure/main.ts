@@ -57,6 +57,8 @@ async function run(): Promise<void> {
       webglAvailable: current.webglAvailable,
       centerFigureStatus: current.centerFigureStatus,
       centerFigureError: current.centerFigureError,
+      centerFigureMotionMode: current.centerFigureMotionMode,
+      centerFigurePoseMaxAngleDeg: current.centerFigurePoseMaxAngleDeg,
       reflectionEnabled: current.reflectionEnabled,
       centerFigureReflected: current.centerFigureReflected,
       cameraPosition: current.cameraPosition,

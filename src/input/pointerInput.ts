@@ -2,15 +2,15 @@
 // キーボードを受け、複数の指を識別番号で独立に管理し、画面座標を正規化して判定面写像関数へ通し、入力イベントを発行する。
 // 依存規則（docs/decisions/architecture.md §5）に従い、profiles・tools・rendering・three.js を import しない。
 // 3次元の交差判定（レイキャスト）もカメラ行列も参照しない（docs/decisions/app-overall-decisions.md §3.3）。
+// 音程はX軸の7レーンで選ぶ。タップの横位置がレーン、タップ時刻が判定の基準になる。
 
 import { PITCH_SLOT_COUNT_DEFAULT } from "../config/tuning";
+import { laneCenterNormalizedX } from "../utils/pitchHudLayout";
 import {
-  clamp01,
   inputSourceFromPointerType,
   mapToReactionCore,
   normalizePointerPosition,
   resolveSlotCount,
-  slotCenterNormalizedY,
   type PointerInputSource,
 } from "./coordinateMapping";
 
@@ -27,7 +27,7 @@ export interface Reaction {
   normalizedX: number;
   /** 0以上1以下の正規化Y。 */
   normalizedY: number;
-  /** 0以上 slotCount-1 以下の音程スロット番号（0が画面最上部の帯）。 */
+  /** 0以上 slotCount-1 以下の音程スロット番号（0が最も左のレーン）。 */
   slotIndex: number;
   /** 音程スロットの総数。 */
   slotCount: number;
@@ -53,22 +53,15 @@ export interface InputOptions {
 export interface Input {
   /** 入力受付の有効・無効を切り替える。現在値と同じ値で呼ぶと何もしない（冪等）。 */
   setActive(active: boolean): void;
-  /** 診断用の読み取り。追跡中の接触数とキーボード仮想カーソルのX位置を返す。 */
-  state(): { activePointerCount: number; keyboardColorX01: number };
+  /** 診断用の読み取り。追跡中の接触数を返す。 */
+  state(): { activePointerCount: number };
   /** 後始末。冪等。 */
   dispose(): void;
 }
 
-/**
- * キーボード仮想カーソルの1回の押下あたりの移動量。
- * 画面幅を10段階で刻むと色の変化を細かく試せるため、全幅の10分の1を動かす。
- * 単一の所有モジュールが定まる値は所有モジュールが定義するという src/config/tuning.ts の規則に従い、
- * 入力だけが参照するこの値は src/config/tuning.ts へ置かずここに置く。
- */
-const KEYBOARD_X_STEP = 0.1;
-
-/** キーボード仮想カーソルのX位置の初期値。既定を画面中央とする。 */
-const KEYBOARD_X_DEFAULT = 0.5;
+/** キーボードの数字キーで発火するときの正規化Y。採用理由を先に述べる。音程はXのレーンで決まりYは判定に使わないが、
+ * 入力イベントの正規化Yには値が要るため、診断の解釈を安定させる画面中央の0.5を入れる。 */
+const KEYBOARD_NORMALIZED_Y = 0.5;
 
 export function createInput(options: InputOptions): Input {
   const { target, onReaction } = options;
@@ -78,7 +71,6 @@ export function createInput(options: InputOptions): Input {
 
   // 追跡中のポインタ接触の識別番号。多指を独立に管理するための対応表である。
   const activePointers = new Set<number>();
-  let keyboardColorX01 = KEYBOARD_X_DEFAULT;
   let active = false;
   let disposed = false;
 
@@ -93,7 +85,7 @@ export function createInput(options: InputOptions): Input {
     normalizedY: number,
     eventTimeMs: number
   ): void {
-    const core = mapToReactionCore(normalizedX, normalizedY, slotCount);
+    const core = mapToReactionCore(normalizedX, slotCount);
     onReaction({
       source,
       pointerId,
@@ -133,17 +125,7 @@ export function createInput(options: InputOptions): Input {
 
   function handleKeyDown(event: KeyboardEvent): void {
     const key = event.key;
-    if (key === "a" || key === "ArrowLeft") {
-      event.preventDefault();
-      keyboardColorX01 = clamp01(keyboardColorX01 - KEYBOARD_X_STEP, KEYBOARD_X_DEFAULT);
-      return;
-    }
-    if (key === "d" || key === "ArrowRight") {
-      event.preventDefault();
-      keyboardColorX01 = clamp01(keyboardColorX01 + KEYBOARD_X_STEP, KEYBOARD_X_DEFAULT);
-      return;
-    }
-    // 数字キー1〜slotCount。対応する帯が無い番号は無視する。
+    // 数字キー1〜slotCount。対応するレーンが無い番号は無視する。
     if (key.length === 1 && key >= "1" && key <= "9") {
       const slotNumber = Number(key);
       if (slotNumber >= 1 && slotNumber <= slotCount) {
@@ -153,8 +135,9 @@ export function createInput(options: InputOptions): Input {
           return;
         }
         const slotIndex = slotNumber - 1;
-        const normalizedY = slotCenterNormalizedY(slotIndex, slotCount);
-        emit("keyboard", null, keyboardColorX01, normalizedY, event.timeStamp);
+        // 指定スロットのレーンの中央の正規化Xで発火する（タップで該当レーンを叩いたのと同等）。
+        const normalizedX = laneCenterNormalizedX(slotIndex, slotCount);
+        emit("keyboard", null, normalizedX, KEYBOARD_NORMALIZED_Y, event.timeStamp);
       }
     }
   }
@@ -173,8 +156,6 @@ export function createInput(options: InputOptions): Input {
         // キーボードは要素の焦点に依存せず受けるため window に登録する。
         window.addEventListener("keydown", handleKeyDown);
       }
-      // 各有効化の開始時にX位置を既定の中央へそろえ、前回の有効区間の操作が残らないようにする。
-      keyboardColorX01 = KEYBOARD_X_DEFAULT;
     } else {
       target.removeEventListener("pointerdown", handlePointerDown);
       target.removeEventListener("pointerup", handlePointerRelease);
@@ -198,7 +179,7 @@ export function createInput(options: InputOptions): Input {
   return {
     setActive,
     state() {
-      return { activePointerCount: activePointers.size, keyboardColorX01 };
+      return { activePointerCount: activePointers.size };
     },
     dispose() {
       if (disposed) {

@@ -53,6 +53,7 @@ const DISPLAY_PERIOD_MS = 7000;
 
 let startMs: number | null = null;
 let lastMs = 0;
+let prevGameTimeMs = 0;
 let rafHandle = 0;
 
 function frame(nowMs: number): void {
@@ -65,26 +66,41 @@ function frame(nowMs: number): void {
   lastMs = nowMs;
 
   lane.update({ gameTimeMs, aspect: currentAspect(), viewportPixelHeight: viewportPixelHeight() });
+
+  // 本ページにはプレイヤー入力が無いため、各テスト用ノーツが判定線へ到達する時刻（timeMs）でタップを擬似的に発生させる。
+  // 画面全体の波紋はプレイヤーのタップでのみ立つため、こうして擬似タップを与えて波紋を目視・検査できるようにする。
+  for (const note of TEST_NOTES) {
+    if (prevGameTimeMs < note.timeMs && gameTimeMs >= note.timeMs) {
+      lane.spawnTapRipple(note.slotIndex - 1);
+    }
+  }
+  prevGameTimeMs = gameTimeMs;
+
   renderRoot.update(deltaSeconds);
   renderRoot.render();
 
   hud.textContent =
-    `gameTime=${Math.round(gameTimeMs)}ms 可視=${lane.probe(gameTimeMs).length}\n` +
-    `targetY=${lane.targetY.toFixed(3)} topY=${lane.topY.toFixed(3)} groupX=${lane.currentGroupX().toFixed(3)}`;
+    `gameTime=${Math.round(gameTimeMs)}ms 可視=${lane.probe(gameTimeMs).length} 消滅エフェクト=${lane.burstActiveCount()} 波紋=${lane.rippleActiveCount()}\n` +
+    `topY=${lane.topY.toFixed(3)} 通路左=${lane.channelLeftX().toFixed(3)} 通路右=${lane.channelRightX().toFixed(3)}`;
 
   rafHandle = requestAnimationFrame(frame);
 }
 rafHandle = requestAnimationFrame(frame);
 
 window.__fallingLaneProbe = (gameTimeMs: number) => {
-  // 落下位置は副作用の無い純粋な問い合わせで計算する。横位置・縦横比・表示物数は描画状態を変えずに読む。
+  // 落下位置は副作用の無い純粋な問い合わせで計算する。通路の両端・縦横比・表示物数・消滅エフェクトは描画状態を変えずに読む。
   return {
     notes: lane.probe(gameTimeMs),
     topY: lane.topY,
-    targetY: lane.targetY,
-    groupX: lane.currentGroupX(),
+    judgmentLineY: lane.judgmentLineY,
+    channelLeftX: lane.channelLeftX(),
+    channelRightX: lane.channelRightX(),
     aspect: currentAspect(),
     overlayObjectCount: renderRoot.state().overlay?.objectCount ?? 0,
+    burstActiveCount: lane.burstActiveCount(),
+    burstSuppressedCount: lane.burstSuppressedCount(),
+    burstSample: lane.burstSample(),
+    rippleActiveCount: lane.rippleActiveCount(),
   };
 };
 

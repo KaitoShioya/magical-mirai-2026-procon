@@ -361,7 +361,6 @@ declare global {
      */
     __inputState?: () => {
       activePointerCount: number;
-      keyboardColorX01: number;
       touchAction: string;
     };
     /**
@@ -481,18 +480,24 @@ declare global {
       sourceIssues: readonly string[];
     };
     /**
-     * 判定UI 落下式レーン（Issue #57）の受け入れ診断ページ（falling-lane.html）だけが取り付ける。
-     * 指定したゲーム時刻における可視ノーツの計算値（識別子・音程番号・表示する数字・2次元層上の縦位置）と、
-     * 目標線y・上端y・横位置・縦横比・2次元層に載る表示物数を、描画状態を変えずに返す。
-     * scripts/rendering-falling-lane-smoke.mjs が取得する。共有型が rendering に依存しないよう素の構造で宣言する。
+     * 判定UI 落下式レーン（Issue #57・Issue #199・Issue #202）の受け入れ診断ページ（falling-lane.html）だけが取り付ける。
+     * 指定したゲーム時刻における可視ノーツの計算値（識別子・音程番号・縦位置・列の中心の横位置）と、出現する上端y・
+     * 単一判定線の縦位置・通路の左端と右端の横位置・縦横比・2次元層に載る表示物数・活動中の消滅エフェクトの数と標本・
+     * 活動中の画面全体の波紋の数を、描画状態を変えずに返す。scripts/rendering-falling-lane-smoke.mjs が取得する。
+     * 共有型が rendering に依存しないよう素の構造で宣言する。
      */
     __fallingLaneProbe?: (gameTimeMs: number) => {
-      notes: readonly { id: string; slotIndex: number; digit: number | null; y: number }[];
+      notes: readonly { id: string; slotIndex: number; y: number; x: number }[];
       topY: number;
-      targetY: number;
-      groupX: number;
+      judgmentLineY: number;
+      channelLeftX: number;
+      channelRightX: number;
       aspect: number;
       overlayObjectCount: number;
+      burstActiveCount: number;
+      burstSuppressedCount: number;
+      burstSample: { x: number; y: number; radius: number; intensity: number } | null;
+      rippleActiveCount: number;
     };
     /**
      * ランク専用ゲージ（Issue #65）の受け入れ診断ページ（rank-gauge.html）だけが取り付ける。

@@ -24,9 +24,9 @@ const OVERLAY_FAR = 2000;
  * renderOrder へ設定する（親のまとめ物体に設定しても子へは伝播しないため、子の各々に設定する）。
  */
 export const OVERLAY_RENDER_ORDER = {
-  /** 背景の補助表示。最背面。音程ガイド（Issue #58）の境界マークと番号がこの帯を使う。 */
+  /** 背景の補助表示。最背面。レーンガイド（Issue #58・Issue #202）のレーンの仕切り線と単一判定線がこの帯を使う。 */
   backgroundReference: 0,
-  /** 通常の操作情報。中間。落下式レーン（Issue #57）の軌道・目標線・音程番号がこの帯を使う。 */
+  /** 通常の操作情報。中間。落下式レーン（Issue #57・Issue #202）の落下ノーツと着水エフェクトがこの帯を使う。 */
   standardInformation: 10,
   /** 操作の即時反応。最前面。タップ反応の光点など即時の手応え表示がこの帯を使う。 */
   interactiveFeedback: 20,

@@ -1,6 +1,6 @@
 // ランク専用ゲージ（Issue #65）のランク文字図版。文字 C・B・A・S を canvas の2次元描画で1枚のテクスチャへ
 // 描き、各セルのテクスチャ座標を提供する。プログラミングによる動的描画であり、表示物にAI生成アセットを使わない
-// 規約（CLAUDE.md）に適合する。埋め込み画像は使わない。落下式レーンの数字図版（digitAtlas.ts）と同じ方式。
+// 規約（CLAUDE.md）に適合する。埋め込み画像は使わず、字形は端末標準のサンセリフ書体を canvas で描く。
 
 import { CanvasTexture, LinearFilter, SRGBColorSpace, type Texture } from "three";
 
@@ -40,8 +40,7 @@ export interface RankLetterAtlas {
 /**
  * ランク文字図版を生成する。
  * 透明な背景に、白の塗りと暗い縁取りで文字を描く。透明背景に白塗りと暗い縁取りで描くことで、明暗どちらの背景でも
- * 文字が分離して読める（digitAtlas.ts と同じ理由）。字形には端末標準のサンセリフ書体を用いる（プログラム描画の
- * ため規約に触れない）。
+ * 文字が分離して読める。字形には端末標準のサンセリフ書体を用いる（プログラム描画のため規約に触れない）。
  */
 export function createRankLetterAtlas(): RankLetterAtlas {
   const cellCount = RANK_LETTER_ATLAS_CELL_COUNT;

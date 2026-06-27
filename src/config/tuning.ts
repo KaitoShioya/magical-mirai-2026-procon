@@ -32,7 +32,7 @@ export const JUDGE_DECAY_OUTER_WINDOW_MS = 90;
 export const JUDGE_POINT_ESTIMATE_WINDOW_MS = 60;
 
 // --- 音程スロット ---
-// 画面の縦方向（Y軸）を分割し、その瞬間の和音の構成音を割り当てる数。コードトーン格子はエンジン中核であり曲非依存。
+// 画面左側の帯をX軸方向のレーンへ分割し、各レーンへその瞬間の和音の構成音を割り当てる数。コードトーン格子はエンジン中核であり曲非依存。
 // 安全付加音（長調は9度と6度、短調は♭7度と11度）の音高集合の表現は和音名パーサー（#35）と JUST 生成（#36）が定義する。
 // 出典: docs/research/07-feasibility-and-parameters.md §2.3、docs/idea/concept-final.md §4。
 // 消費Issue: #36（JUST音程7スロット自動生成）、#48、#49（軌跡上距離と時間の翻訳）。

@@ -1,6 +1,6 @@
-// 本編左端のY軸音程ガイド（Issue #58）の受け入れ診断ページ（pitch-axis.html の入口）。
-// 本番と同じ2次元層（createOverlayLayer の composite）の上へ音程ガイドを載せ、深夜色の背景の上で
-// 「左端に番号1〜slotCount と境界マークが薄く出る」「画面寸法の変更で位置と鮮明さが追従する」ことを目視確認する。
+// 本編左側のレーンガイド（Issue #58・Issue #202。レーンの仕切り線と単一判定線）の受け入れ診断ページ（pitch-axis.html の入口）。
+// 本番と同じ2次元層（createOverlayLayer の composite）の上へレーンガイドを載せ、深夜色の背景の上で
+// 「左側の帯に縦の仕切り線（slotCount+1 本）と横1本の判定線が薄く出る」「画面寸法の変更で位置が追従する」ことを目視確認する。
 // 本ページは本番ビルド（--mode app）では配信しない。
 
 import { Color, PerspectiveCamera, Scene, WebGLRenderer } from "three";
@@ -44,7 +44,7 @@ const camera = new PerspectiveCamera(
 camera.position.set(0, 0, 5);
 camera.lookAt(0, 0, 0);
 
-// 2次元層と音程ガイド。ガイドは本番と同じく2次元層へ載せ、視錐台と表示画素数で配置する。
+// 2次元層とレーンガイド。ガイドは本番と同じく2次元層へ載せ、視錐台と表示画素数で配置する。
 const overlay = createOverlayLayer({ displayWidth, displayHeight });
 const guide = createPitchAxisGuide({ slotCount: PITCH_SLOT_COUNT_DEFAULT });
 overlay.addObject(guide.object3d);
@@ -59,8 +59,8 @@ function applyLayout(): void {
 applyLayout();
 
 hud.textContent =
-  `pitch axis guide (slots ${PITCH_SLOT_COUNT_DEFAULT})\n` +
-  `左端に番号1〜${PITCH_SLOT_COUNT_DEFAULT}と境界マークが薄く出ることを確認`;
+  `lane guide (slots ${PITCH_SLOT_COUNT_DEFAULT})\n` +
+  `左側の帯に縦の仕切り線（${PITCH_SLOT_COUNT_DEFAULT + 1}本）と横1本の判定線が薄く出ることを確認`;
 
 // 連続描画。本番と同じ手順（3次元を描く → 深度のみ消す → 2次元層を最前面へ）で毎フレーム重ねる。
 function frame(): void {

@@ -7,9 +7,11 @@ import {
   isLaneProgressVisible,
   laneFallSpeedPerMs,
   visibleNoteRange,
-  digitCellIndex,
   maxConcurrentInWindow,
   lanePoolCapacity,
+  reachedNoteRange,
+  notePhaseRadians,
+  sparkDirectionRadians,
 } from "./fallingLaneLayout";
 
 // 検査用の固定値。レーンの実定数とは独立に、純粋関数の振る舞いだけを確かめる。
@@ -114,18 +116,6 @@ describe("visibleNoteRange（可視ノーツの添字区間。閉区間）", () 
   });
 });
 
-describe("digitCellIndex（数字図版のセル添字）", () => {
-  it("slotIndex 1〜9 をセル添字 0〜8 へ写す", () => {
-    expect(digitCellIndex(1, 9)).toBe(0);
-    expect(digitCellIndex(7, 9)).toBe(6);
-    expect(digitCellIndex(9, 9)).toBe(8);
-  });
-  it("1未満・セル数を越える slotIndex は null（表示対象から除く）", () => {
-    expect(digitCellIndex(0, 9)).toBeNull();
-    expect(digitCellIndex(10, 9)).toBeNull();
-    expect(digitCellIndex(-1, 9)).toBeNull();
-  });
-});
 
 describe("目標線通過後の表示時間が0の構成（円板が中心一致で消える）", () => {
   // 生産の落下式レーンは目標線通過後の表示時間を0にする（円板の中心が目標線に一致した時点で消える）。
@@ -174,5 +164,72 @@ describe("maxConcurrentInWindow と lanePoolCapacity（プール容量算出）"
 
   it("空のノーツ列でも余裕ぶんの容量を返す", () => {
     expect(lanePoolCapacity([], WINDOW, 4)).toBe(4);
+  });
+});
+
+describe("laneNoteY（スロットごとに異なる目標Yを与える）", () => {
+  it("上端Yは全段共通、目標Yは段ごとに異なり、進度0で各段の目標Yに一致する", () => {
+    const topY = 1;
+    // 段ごとに異なる目標Y（圧縮帯の各スロット中央を2次元層へ写した値の例）。
+    const targets = [0.821, 0.464, -0.25, -0.642];
+    for (const targetY of targets) {
+      expect(laneNoteY(0, { topY, targetY })).toBeCloseTo(targetY, 10);
+      expect(laneNoteY(1, { topY, targetY })).toBeCloseTo(topY, 10);
+    }
+  });
+});
+
+describe("reachedNoteRange（線分到達の瞬間の検出。半開区間 [前時刻, 現時刻)）", () => {
+  const notes = [
+    note("n0", 0),
+    note("n1", 1000),
+    note("n2", 2000),
+    note("n3", 3000),
+    note("n4", 5000),
+  ];
+
+  it("前時刻以上・現時刻未満に到達したノーツの添字区間を返す", () => {
+    // [900, 1500) に入るのは n1(1000) のみ。
+    expect(reachedNoteRange(notes, 900, 1500)).toEqual({ start: 1, end: 2 });
+  });
+
+  it("下端ちょうどの timeMs を含み、上端ちょうどの timeMs を含まない（半開区間）", () => {
+    // [1000, 2000) に入るのは n1(1000) のみ。n2(2000) は上端で除外。
+    expect(reachedNoteRange(notes, 1000, 2000)).toEqual({ start: 1, end: 2 });
+  });
+
+  it("現時刻が前時刻以下（停止・巻き戻し）のときは空区間を返す", () => {
+    expect(reachedNoteRange(notes, 2000, 2000)).toEqual({ start: 0, end: 0 });
+    expect(reachedNoteRange(notes, 2000, 1000)).toEqual({ start: 0, end: 0 });
+  });
+
+  it("時刻が有限でないときは空区間を返す", () => {
+    expect(reachedNoteRange(notes, Number.NaN, 1000)).toEqual({ start: 0, end: 0 });
+    expect(reachedNoteRange(notes, 0, Number.POSITIVE_INFINITY)).toEqual({ start: 0, end: 0 });
+  });
+});
+
+describe("notePhaseRadians と sparkDirectionRadians（消滅エフェクトの方向）", () => {
+  it("基準角度は 0 以上 2π 未満で、整数の種ごとに決定的", () => {
+    const twoPi = Math.PI * 2;
+    for (const seed of [0, 1, 2, 7, 100]) {
+      const phase = notePhaseRadians(seed);
+      expect(phase).toBeGreaterThanOrEqual(0);
+      expect(phase).toBeLessThan(twoPi);
+      // 同じ種では同じ値（決定的）。
+      expect(notePhaseRadians(seed)).toBe(phase);
+    }
+    // 種0は位相0。
+    expect(notePhaseRadians(0)).toBe(0);
+    // 非有限値は0へ丸める。
+    expect(notePhaseRadians(Number.NaN)).toBe(0);
+  });
+
+  it("しぶきの方向は等間隔角度に基準角度を足した値", () => {
+    const phase = 0.3;
+    const count = 5;
+    expect(sparkDirectionRadians(0, count, phase)).toBeCloseTo(phase, 10);
+    expect(sparkDirectionRadians(count, count, phase)).toBeCloseTo(phase + Math.PI * 2, 10);
+    expect(sparkDirectionRadians(2, count, phase)).toBeCloseTo(phase + (2 / count) * Math.PI * 2, 10);
   });
 });

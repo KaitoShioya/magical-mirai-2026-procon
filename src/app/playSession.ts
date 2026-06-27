@@ -21,6 +21,8 @@ import {
   applyDeploy,
   summarizeObjective,
   reactionStrength,
+  tapBaseScore,
+  TAP_SCORE_WEIGHTS,
   rankOrdinal,
   DEFAULT_OBJECTIVE_CONFIG,
   type ObjectiveConfig,
@@ -82,6 +84,11 @@ export interface PlaySessionDeps {
   cameraTrajectory: CameraTrajectory;
   operationSound: PlaySessionOperationSound;
   spawnReactionLight(input: ReactionLightInput): void;
+  /**
+   * 画面全体の水面の波紋を、得点が0でないタップ（ノーツに当たって素点を得たタップ）のレーンから立てる（Issue #202）。
+   * 任意の出口とし、未注入なら波紋を立てない（波紋を必要としない検証では省略できる）。
+   */
+  spawnTapRipple?(slotIndex0: number): void;
   /** 統括が毎フレーム更新する直近のフレーム時刻標本を読む。 */
   getFrameSample(): FrameTimeSample;
   /** プレイ開始時に読み直す較正値（ミリ秒）。 */
@@ -117,6 +124,7 @@ export function createPlaySession(deps: PlaySessionDeps): PlaySession {
     cameraTrajectory,
     operationSound,
     spawnReactionLight,
+    spawnTapRipple,
     getFrameSample,
     getCalibrationOffsetMs,
   } = deps;
@@ -267,6 +275,12 @@ export function createPlaySession(deps: PlaySessionDeps): PlaySession {
           lifeSeconds: REACTION_BUTTERFLY_LIFE_SECONDS,
         });
       }
+      // 画面全体の水面の波紋は、得点が0でないタップ（ノーツに当たって素点を得たタップ）のレーンからのみ立てる。
+      // 空打ち（対応ノーツ無し）は timingAccuracy も pitchAccuracy も0で素点が0になるため、波紋を立てない。
+      if (tapBaseScore(judgment, TAP_SCORE_WEIGHTS) > 0) {
+        spawnTapRipple?.(reaction.slotIndex);
+      }
+
       // 採点と投下の自動発動。
       objectiveState = applyTap(
         objectiveState,

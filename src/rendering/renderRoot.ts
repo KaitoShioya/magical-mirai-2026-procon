@@ -197,10 +197,11 @@ export interface RenderRoot {
   addOverlayObject(object: Object3D): void;
   /** 2次元層（Issue #15）から表示物を外す。WebGL が無く2次元層が無い端末では何もしない。 */
   removeOverlayObject(object: Object3D): void;
-  /** 本編左端のY軸音程ガイド（Issue #58）を2次元層へ表示する。slotCount は音程スロット数。既に表示中なら
-   *  何もしない。WebGL が無く2次元層が無い端末では何もしない。寸法・画素密度の変更には内部で追従する。 */
+  /** 本編左側のレーンガイド（Issue #58・Issue #202。レーンの仕切り線と単一判定線）を2次元層へ表示する。
+   *  slotCount は音程スロット数（レーン数）。既に表示中なら何もしない。WebGL が無く2次元層が無い端末では何もしない。
+   *  寸法の変更には内部で追従する。 */
   showPitchAxisGuide(slotCount: number): void;
-  /** Y軸音程ガイド（Issue #58）を非表示にし、その表示物の資源を解放する。表示していないとき・WebGL が無い
+  /** レーンガイド（Issue #58・Issue #202）を非表示にし、その表示物の資源を解放する。表示していないとき・WebGL が無い
    *  端末では何もしない。 */
   hidePitchAxisGuide(): void;
   /** 3次元表示ツリーの場面を返す（Issue #33・#59）。キネティック文字エンジン等が3D空間へ表示物を載せるための
@@ -416,11 +417,12 @@ export function createRenderRoot(
     });
   }
 
-  // 本編左端のY軸音程ガイド（Issue #58）。プレイ画面の表示中だけ載せ、それ以外では空に保つ。
-  // 視錐台・表示寸法・画素密度の変更追従は本モジュールが所有する（画面層は表示可否のみ指示する）。
+  // 本編左側のレーンガイド（Issue #58・Issue #202。レーンの仕切り線と単一判定線）。プレイ画面の表示中だけ載せ、
+  // それ以外では空に保つ。視錐台・表示寸法の変更追従は本モジュールが所有する（画面層は表示可否のみ指示する）。
   let pitchAxisGuide: PitchAxisGuide | null = null;
 
-  // 現在の表示縦画素数（表示寸法に画素密度倍率を掛けた実描画画素数）。Y軸音程ガイドの番号画像の解像度に使う。
+  // 現在の表示縦画素数（表示寸法に画素密度倍率を掛けた実描画画素数）。レーンガイドの配置接口へ渡す（線で描く
+  // 現行のレーンガイドは縦画素数を使わないが、配置接口の互換のため渡す）。
   function currentDevicePixelHeight(): number {
     return currentDisplayHeight * (renderer ? renderer.getPixelRatio() : 1);
   }
@@ -479,7 +481,7 @@ export function createRenderRoot(
       bloomComposer?.setSize(width, height);
       // 2次元層の正射影カメラの視錐台を新しい縦横比で組み直す（Issue #15）。
       overlay?.resize(width, height);
-      // Y軸音程ガイド（Issue #58）を新しい視錐台と表示画素数へ追従させる。
+      // レーンガイド（Issue #58・Issue #202）を新しい視錐台へ追従させる。
       if (overlay && pitchAxisGuide) {
         pitchAxisGuide.layout(overlay.frustum(), currentDevicePixelHeight());
       }
@@ -555,7 +557,7 @@ export function createRenderRoot(
       renderer.setSize(currentDisplayWidth, currentDisplayHeight);
       bloomComposer?.setSize(currentDisplayWidth, currentDisplayHeight);
       overlay?.resize(currentDisplayWidth, currentDisplayHeight);
-      // 画素密度倍率が変わると番号画像の目標画素数が変わりうるため、Y軸音程ガイド（Issue #58）も追従させる。
+      // 視錐台が変わるとレーンの仕切り線と判定線の横位置が変わりうるため、レーンガイド（Issue #58・Issue #202）も追従させる。
       if (overlay && pitchAxisGuide) {
         pitchAxisGuide.layout(overlay.frustum(), currentDevicePixelHeight());
       }
@@ -768,7 +770,7 @@ export function createRenderRoot(
       }
       const guide = createPitchAxisGuide({ slotCount });
       overlay.addObject(guide.object3d);
-      // 生成直後に現在の視錐台と表示画素数で初回配置する（位置と番号画像はこの時点で確定する）。
+      // 生成直後に現在の視錐台と表示画素数で初回配置する（仕切り線と判定線の位置はこの時点で確定する）。
       guide.layout(overlay.frustum(), currentDevicePixelHeight());
       pitchAxisGuide = guide;
     },
@@ -928,7 +930,7 @@ export function createRenderRoot(
         bloomComposer.dispose();
         bloomComposer = null;
       }
-      // Y軸音程ガイド（Issue #58）が残っていれば、表示停止と同じ手順で解放する（外す・資源解放・空へ戻す）。
+      // レーンガイド（Issue #58・Issue #202）が残っていれば、表示停止と同じ手順で解放する（外す・資源解放・空へ戻す）。
       // 2次元層の解放より前に行い、ガイドの表示物を確実に外してからGPU資源を解放する。
       if (pitchAxisGuide) {
         if (overlay) {

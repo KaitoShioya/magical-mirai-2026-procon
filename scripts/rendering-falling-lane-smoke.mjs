@@ -1,13 +1,15 @@
-// 判定UI 落下式レーン（Issue #57）の受け入れ基準のブラウザ統合検証。
+// 判定UI 落下式レーン（Issue #57・Issue #199）の受け入れ基準のブラウザ統合検証。
 // Playwright で診断ページ（falling-lane.html）を開き、副作用の無い問い合わせ window.__fallingLaneProbe の数値で
 // 次を確かめる。最初の可視ノーツに依存せず、識別子で取り出す特定ノーツで判定する。
-//   (a) ある時刻で対象ノーツが目標線より上に存在する。
+//   (a) ある時刻で対象ノーツが自分のスロットの線分（消滅高さ）より上に存在する。
 //   (b) ゲーム時刻を進めると同一ノーツの縦位置が下がり、その低下量が経過時間に比例する（落下速度一定）。
-//   (c) ゲーム時刻を対象ノーツの実時刻に合わせると、そのノーツの縦位置が目標線の値に一致する。
-//   (d) 円板は中心が目標線に一致した時点で消える（中心が線へ達する直前は可視で線より上、達した直後は不可視で線の下に残らない）。
-//   (e) 対象ノーツに割り当てた数字が音程番号（slotIndex）と一致する。
-//   (f) 表示物が2次元層へ載っており、横位置が画面右側で画面外へはみ出さず、可視ノーツがレーンの縦範囲に収まる。
-//   (g) ページ例外・コンソールエラーが無い。
+//   (c) ゲーム時刻を対象ノーツの実時刻に合わせると、そのノーツの縦位置が自分のスロットの線分の値に一致する。
+//   (d) 水滴は中心が自分の線分に一致した時点で消える（達する直前は可視で線分より上、達した直後は不可視で線分の下に残らない）。
+//   (e) ノーツは7列に並び、番号1のノーツが最も左、番号7のノーツが最も右で、横位置が番号順に単調に増える。
+//   (f) 表示物が2次元層へ載っており、可視ノーツの横位置が通路（番号の右端から通路の右端）に収まり、縦位置が線分から上端の範囲に収まる。
+//   (g) ノーツが線分に到達すると消滅エフェクトが湧き、その位置が通路の横範囲に収まる。
+//   (h) 消滅エフェクトのプール容量が十分で、同時上限超過による生成抑制が起きていない（抑制回数0）。
+//   (i) ページ例外・コンソールエラーが無い。
 // 採用理由を先に述べる。ソフトウェア描画でも安定する構造的事実を、画素サンプルでなく問い合わせの数値で検査する。
 // 接続先サーバは環境変数 BASE で指定する（既定 http://127.0.0.1:4173）。
 //   PowerShell:  $env:BASE='http://127.0.0.1:4173'; node scripts/rendering-falling-lane-smoke.mjs
@@ -66,26 +68,30 @@ async function run() {
   await page.waitForFunction(() => typeof window.__fallingLaneProbe === "function", undefined, {
     timeout: 15000,
   });
-  // 横位置は描画反復の更新で確定するため、最初のフレームが回るのを待つ。
-  await page.waitForFunction(() => window.__fallingLaneProbe(0).groupX > 0, undefined, {
-    timeout: 15000,
-  });
+  // 通路の横位置は描画反復の更新で確定するため、最初のフレームが回るのを待つ（通路の左端が右端より左になる）。
+  await page.waitForFunction(
+    () => {
+      const p = window.__fallingLaneProbe(0);
+      return p.channelLeftX < p.channelRightX;
+    },
+    undefined,
+    { timeout: 15000 }
+  );
 
   const probe = async (gameTimeMs) =>
     page.evaluate((g) => window.__fallingLaneProbe(g), gameTimeMs);
 
   // 対象ノーツ probe-a（実時刻1000ミリ秒・音程番号3）。
   const A_TIME = 1000;
-  const A_SLOT = 3;
 
   const state0 = await probe(0);
 
-  // (a) ある時刻で対象ノーツが目標線より上に存在する。
+  // (a) ある時刻で対象ノーツが単一の判定線より上に存在する。
   const a0 = findNote(state0, "probe-a");
-  if (a0 && a0.y > state0.targetY + Y_TOLERANCE && a0.y <= state0.topY + Y_TOLERANCE) {
-    ok(`時刻0で対象ノーツが目標線より上のレーン内に存在する（y=${a0.y.toFixed(4)}）`);
+  if (a0 && a0.y > state0.judgmentLineY + Y_TOLERANCE && a0.y <= state0.topY + Y_TOLERANCE) {
+    ok(`時刻0で対象ノーツが判定線より上に存在する（y=${a0.y.toFixed(4)} 判定線=${state0.judgmentLineY.toFixed(4)}）`);
   } else {
-    fail(`時刻0で対象ノーツが目標線より上に存在しない（${JSON.stringify(a0)}）`);
+    fail(`時刻0で対象ノーツが判定線より上に存在しない（${JSON.stringify(a0)}）`);
   }
 
   // (b) ゲーム時刻を進めると縦位置が下がり、低下量が経過時間に比例する（落下速度一定）。
@@ -108,62 +114,123 @@ async function run() {
     fail(`ゲーム時刻を進めても縦位置が単調に下がらない（${y0}, ${y300}, ${y600}）`);
   }
 
-  // (c) ゲーム時刻を対象ノーツの実時刻に合わせると縦位置が目標線に一致する。
+  // (c) ゲーム時刻を対象ノーツの実時刻に合わせると縦位置が単一の判定線に一致する。
   const stateAtA = await probe(A_TIME);
   const aAtTarget = findNote(stateAtA, "probe-a");
-  if (aAtTarget && Math.abs(aAtTarget.y - stateAtA.targetY) <= Y_TOLERANCE) {
-    ok(`実時刻で対象ノーツが目標線に一致する（y=${aAtTarget.y.toFixed(6)} 目標線=${stateAtA.targetY.toFixed(6)}）`);
+  if (aAtTarget && Math.abs(aAtTarget.y - stateAtA.judgmentLineY) <= Y_TOLERANCE) {
+    ok(`実時刻で対象ノーツが判定線に一致する（y=${aAtTarget.y.toFixed(6)} 判定線=${stateAtA.judgmentLineY.toFixed(6)}）`);
   } else {
-    fail(`実時刻で対象ノーツが目標線に一致しない（${JSON.stringify(aAtTarget)}）`);
+    fail(`実時刻で対象ノーツが判定線に一致しない（${JSON.stringify(aAtTarget)}）`);
   }
 
-  // (d) 円板は中心が目標線に一致した時点で消える。中心が線へ達する直前は可視で線より上、達した直後は不可視。
+  // (d) 水滴は中心が判定線に一致した時点で消える。直前は可視で判定線より上、達した直後は不可視。
   const beforeReach = await probe(A_TIME - 50);
   const aBefore = findNote(beforeReach, "probe-a");
-  if (aBefore && aBefore.y > beforeReach.targetY + Y_TOLERANCE) {
-    ok(`中心が目標線へ達する直前は可視で線より上にある（y=${aBefore.y.toFixed(4)}）`);
+  if (aBefore && aBefore.y > beforeReach.judgmentLineY + Y_TOLERANCE) {
+    ok(`中心が線分へ達する直前は可視で線分より上にある（y=${aBefore.y.toFixed(4)}）`);
   } else {
-    fail(`中心が目標線へ達する直前に可視でないか線より上にない（${JSON.stringify(aBefore)}）`);
+    fail(`中心が線分へ達する直前に可視でないか線分より上にない（${JSON.stringify(aBefore)}）`);
   }
   const afterReach = await probe(A_TIME + 50);
   const aAfter = findNote(afterReach, "probe-a");
   if (!aAfter) {
-    ok("中心が目標線を越えた直後は対象ノーツが不可視になる（線の下に残らない）");
+    ok("中心が線分を越えた直後は対象ノーツが不可視になる（線分の下に残らない）");
   } else {
-    fail(`中心が目標線を越えても対象ノーツが線の下に残る（${JSON.stringify(aAfter)}）`);
+    fail(`中心が線分を越えても対象ノーツが線分の下に残る（${JSON.stringify(aAfter)}）`);
   }
 
-  // (e) 割り当てた数字が音程番号と一致する。probe-a（番号3）と probe-b（番号7）で確かめる。
-  const aDigit = findNote(stateAtA, "probe-a");
-  const bDigit = findNote(stateAtA, "probe-b");
-  if (aDigit && aDigit.digit === A_SLOT && bDigit && bDigit.digit === 7) {
-    ok(`割り当てた数字が音程番号と一致する（probe-a=${aDigit.digit} probe-b=${bDigit.digit}）`);
+  // (e) ノーツは7列に並び、番号1が最も左、番号7が最も右で、横位置が番号順に単調に増える。
+  // 時刻1000で probe-a(番号3)・probe-b(番号7)・probe-c(番号1) が同時に可視。
+  const cNote = findNote(stateAtA, "probe-c"); // 番号1
+  const aNote = findNote(stateAtA, "probe-a"); // 番号3
+  const bNote = findNote(stateAtA, "probe-b"); // 番号7
+  if (cNote && aNote && bNote && cNote.x < aNote.x && aNote.x < bNote.x) {
+    ok(`番号順に横位置が単調に増える（番号1 x=${cNote.x.toFixed(3)} < 番号3 x=${aNote.x.toFixed(3)} < 番号7 x=${bNote.x.toFixed(3)}）`);
   } else {
-    fail(`割り当てた数字が音程番号と一致しない（${JSON.stringify(aDigit)} / ${JSON.stringify(bDigit)}）`);
+    fail(`番号順の横位置が単調に増えない（${JSON.stringify(cNote)} / ${JSON.stringify(aNote)} / ${JSON.stringify(bNote)}）`);
   }
 
-  // (f) 表示物が2次元層へ載り、横位置が画面右側で画面外へはみ出さず、可視ノーツがレーンの縦範囲に収まる。
+  // (f) 表示物が2次元層へ載り、可視ノーツの横位置が通路に収まり、縦位置が線分から上端の範囲に収まる。
   if (stateAtA.overlayObjectCount >= 1) {
     ok(`落下式レーンが2次元層へ載っている（表示物数 ${stateAtA.overlayObjectCount}）`);
   } else {
     fail("落下式レーンが2次元層へ載っていない");
   }
-  if (stateAtA.groupX > 0 && stateAtA.groupX < stateAtA.aspect) {
-    ok(`横位置が画面右側で画面外へはみ出さない（groupX=${stateAtA.groupX.toFixed(3)} aspect=${stateAtA.aspect.toFixed(3)}）`);
+  const left = stateAtA.channelLeftX;
+  const right = stateAtA.channelRightX;
+  if (left < right) {
+    ok(`通路の左端が右端より左にある（左=${left.toFixed(3)} 右=${right.toFixed(3)}）`);
   } else {
-    fail(`横位置が画面右側に収まらない（groupX=${stateAtA.groupX} aspect=${stateAtA.aspect}）`);
+    fail(`通路の左右が逆（左=${left} 右=${right}）`);
   }
-  // 可視ノーツの縦位置が、目標線（最も下）から上端までのレーン縦範囲に収まる（円板は線の下に残らない）。
-  const lowerLimit = stateAtA.targetY - Y_TOLERANCE;
-  const upperLimit = stateAtA.topY + Y_TOLERANCE;
-  const outOfRange = stateAtA.notes.filter((note) => note.y < lowerLimit || note.y > upperLimit);
-  if (outOfRange.length === 0) {
-    ok("可視ノーツがレーンの縦範囲に収まる");
+  const outOfChannel = stateAtA.notes.filter(
+    (note) => note.x < left - Y_TOLERANCE || note.x > right + Y_TOLERANCE
+  );
+  if (outOfChannel.length === 0) {
+    ok("可視ノーツの横位置が通路に収まる");
   } else {
-    fail(`レーンの縦範囲から外れる可視ノーツがある（${JSON.stringify(outOfRange)}）`);
+    fail(`通路から外れる可視ノーツがある（${JSON.stringify(outOfChannel)}）`);
+  }
+  const outOfVertical = stateAtA.notes.filter(
+    (note) => note.y < stateAtA.judgmentLineY - Y_TOLERANCE || note.y > stateAtA.topY + Y_TOLERANCE
+  );
+  if (outOfVertical.length === 0) {
+    ok("可視ノーツの縦位置が判定線から上端の範囲に収まる");
+  } else {
+    fail(`縦範囲から外れる可視ノーツがある（${JSON.stringify(outOfVertical)}）`);
   }
 
-  // (g) ページ例外・コンソールエラーが無い。
+  // (g) ノーツが線分に到達すると消滅エフェクトが湧く。診断ページは壁時計でノーツ列を巡回駆動するため、
+  // 数秒のあいだに少なくとも1回、活動中の消滅エフェクトが現れる。消滅エフェクトの寿命は短い（180ミリ秒）ため、
+  // 活動の検出と標本の取得を1回の評価で原子的に行い、頻繁に繰り返して捉える。湧いた標本の横位置が通路に収まることも確かめる。
+  let burstCaught = null;
+  for (let attempt = 0; attempt < 400 && burstCaught === null; attempt += 1) {
+    const captured = await page.evaluate(() => {
+      const p = window.__fallingLaneProbe(0);
+      if (p.burstActiveCount > 0 && p.burstSample) {
+        return {
+          sample: p.burstSample,
+          channelLeftX: p.channelLeftX,
+          channelRightX: p.channelRightX,
+          rippleActiveCount: p.rippleActiveCount,
+        };
+      }
+      return null;
+    });
+    if (captured !== null) {
+      burstCaught = captured;
+    } else {
+      await page.waitForTimeout(20);
+    }
+  }
+  if (burstCaught === null) {
+    fail("数秒のあいだに消滅エフェクトが湧かなかった");
+  } else {
+    const { sample, channelLeftX, channelRightX } = burstCaught;
+    if (sample.x >= channelLeftX - 0.05 && sample.x <= channelRightX + 0.05) {
+      ok(`消滅エフェクトが湧き、その位置が通路の横範囲に収まる（x=${sample.x.toFixed(3)}）`);
+    } else {
+      fail(`消滅エフェクトの標本が通路の横範囲に収まらない（${JSON.stringify(sample)}）`);
+    }
+    // 診断ページは各ノーツの到達時刻で擬似タップ（得点するタップ）を与えるため、着水を捉えた瞬間には、そのタップで立てた
+    // 画面全体の波紋が1つ以上活動している（波紋の寿命は消滅エフェクトより長い）。波紋はプレイヤーの得点タップでのみ立つ。
+    if (burstCaught.rippleActiveCount >= 1) {
+      ok(`得点タップ（擬似）で画面全体の波紋が立つ（活動中の波紋 ${burstCaught.rippleActiveCount}）`);
+    } else {
+      fail("得点タップ（擬似）の瞬間に画面全体の波紋が立っていない");
+    }
+  }
+
+  // (h) 消滅エフェクトのプール容量が十分で、同時上限超過による生成抑制（silent truncation）が起きていない。
+  // 検査用ノーツ列は最も密集する180ミリ秒窓の同時数に余裕を足した容量を確保するため、抑制回数は0であるべき。
+  const suppressed = (await probe(0)).burstSuppressedCount;
+  if (suppressed === 0) {
+    ok("消滅エフェクトの生成抑制（同時上限超過）が起きていない（抑制回数0）");
+  } else {
+    fail(`消滅エフェクトの生成が抑制された（抑制回数 ${suppressed}。プール容量が不足）`);
+  }
+
+  // (i) ページ例外・コンソールエラーが無い。
   if (errors.length > 0) {
     fail("診断ページでエラーを検出しました:\n" + errors.join("\n"));
   }

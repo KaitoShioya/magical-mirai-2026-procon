@@ -4,6 +4,16 @@
 
 import type { LaneNote } from "../types/judgmentLane";
 
+/** ノーツが出現する縦位置（2次元層の上端 +1）。全レーン共通。 */
+export const NOTE_TOP_OVERLAY_Y = 1;
+
+/** 単一判定線の正規化Y。採用理由を先に述べる。画面下部近くに置きつつ、画面下端の出典表記（2次元層の縦 −0.9以下）より
+ * 十分上に置いて重なりを避けるため0.80とする（★暫定）。three.js非依存の純粋モジュールに置き、非重なりを純粋関数で機械検証する。 */
+export const JUDGMENT_LINE_NORMALIZED_Y = 0.8;
+
+/** 単一判定線の2次元層上の縦位置。写像式 y = (0.5 − 正規化Y) × 2 による（0.80 → −0.60）。全レーン共通の目標Y。 */
+export const JUDGMENT_LINE_OVERLAY_Y = (0.5 - JUDGMENT_LINE_NORMALIZED_Y) * 2;
+
 /** レーンの時間窓。leadMs は出現から目標線到達まで、postTargetMs は目標線通過後の表示猶予（ともにミリ秒）。 */
 export interface LaneTimingWindow {
   readonly leadMs: number;
@@ -57,17 +67,6 @@ export function laneFallSpeedPerMs(geometry: LaneGeometryY, leadMs: number): num
 export function isLaneProgressVisible(progress: number, window: LaneTimingWindow): boolean {
   const lowerBound = -window.postTargetMs / window.leadMs;
   return progress >= lowerBound && progress <= 1;
-}
-
-/**
- * 数字図版のセル添字。slotIndex を 0 始まりのセル添字へ写す。
- * slotIndex が整数でない、1未満、またはセル数を越えるときは、対応するセルが無いため null を返す。
- */
-export function digitCellIndex(slotIndex: number, cellCount: number): number | null {
-  if (!Number.isInteger(slotIndex) || slotIndex < 1 || slotIndex > cellCount) {
-    return null;
-  }
-  return slotIndex - 1;
 }
 
 /** timeMs 昇順の列で、timeMs が value 以上になる最初の添字を返す（無ければ末尾の長さ）。 */
@@ -160,4 +159,59 @@ export function lanePoolCapacity(
 ): number {
   const windowMs = window.leadMs + window.postTargetMs;
   return maxConcurrentInWindow(sortedNotes, windowMs) + margin;
+}
+
+/**
+ * timeMs 昇順のノーツ列から、前フレームのゲーム時刻以上・現フレームのゲーム時刻未満に目標線へ到達した
+ * ノーツの添字区間を求める（半開区間 [prevGameTimeMs, currentGameTimeMs)）。
+ * 消滅エフェクトの発火（線分到達の瞬間の検出）に用いる。下端は「value 以上」、上端も「value 以上」で区切る。
+ * 採用理由を先に述べる。ノーツが線分へ到達する時刻は noteTimeMs（進度0の瞬間）であり、毎フレーム、前回処理した
+ * 時刻から現在時刻までに跨いだ noteTimeMs を1回だけ拾うため、両端とも「value 以上の最初の添字」で挟む。
+ * 時刻が有限でない、または現在時刻が前回以下（再生位置の停止・巻き戻し）のときは空区間を返す。
+ */
+export function reachedNoteRange(
+  sortedNotes: readonly LaneNote[],
+  prevGameTimeMs: number,
+  currentGameTimeMs: number
+): NoteIndexRange {
+  if (!Number.isFinite(prevGameTimeMs) || !Number.isFinite(currentGameTimeMs)) {
+    return { start: 0, end: 0 };
+  }
+  if (currentGameTimeMs <= prevGameTimeMs) {
+    return { start: 0, end: 0 };
+  }
+  const start = lowerBoundByTime(sortedNotes, prevGameTimeMs);
+  const end = lowerBoundByTime(sortedNotes, currentGameTimeMs);
+  return { start, end };
+}
+
+/** 消滅エフェクトの円周上の方向の総回転（ラジアン）。1周。 */
+const FULL_TURN_RADIANS = Math.PI * 2;
+
+/** 黄金角（ラジアン）。整数の種から、偏りの少ない角度を一意に散らすために用いる。 */
+const GOLDEN_ANGLE_RADIANS = Math.PI * (3 - Math.sqrt(5));
+
+/**
+ * ノーツごとの消滅エフェクトの基準角度（位相、ラジアン、0以上 2π 未満）を整数の種から決定的に返す。
+ * 採用理由を先に述べる。乱数を使わずノーツごとに角度をずらして、しぶきの向きが毎回同じに揃わないようにしつつ、
+ * 診断と検査を再現可能にするため、整数の種に黄金角を掛けて 2π で折り返す。
+ */
+export function notePhaseRadians(seed: number): number {
+  if (!Number.isFinite(seed)) {
+    return 0;
+  }
+  const value = (seed * GOLDEN_ANGLE_RADIANS) % FULL_TURN_RADIANS;
+  return value < 0 ? value + FULL_TURN_RADIANS : value;
+}
+
+/**
+ * しぶきの粒の飛ぶ方向（ラジアン）を返す。等間隔角度（1周を粒数で割った角度）に基準角度（位相）を足す。
+ * これにより各ノーツの粒は外向きに等間隔へ散り、ノーツごとに全体の向きがずれる。
+ */
+export function sparkDirectionRadians(
+  sparkIndex: number,
+  sparkCount: number,
+  phaseRadians: number
+): number {
+  return phaseRadians + (sparkIndex / sparkCount) * FULL_TURN_RADIANS;
 }

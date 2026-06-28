@@ -136,9 +136,13 @@ body {
 }
 
 /* 結果画面（Issue #74）。地を透過させ、プレイ中に配置された灯し（蝶・ひまわり）の3Dシーンを
-   背景の成果物プレビューとして見せる（成果物のPNG書き出し・撮影モード・楽曲終了後の灯し一括演出は別Issueの範囲）。 */
+   背景の成果物プレビューとして見せる（成果物のPNG書き出し・撮影モード・楽曲終了後の灯し一括演出は別Issueの範囲）。
+   下方向の余白を増やす理由を先に述べる。画面下端には初音ミクの出典バッジ（.attribution）が固定表示され（規約で常時表示）、
+   中央寄せの結果パネルがこれと重なり得る。出典バッジは小さな文字で折り返しても高々2〜3行（およそ48画素）であり、
+   安全領域（safe-area）を足して余白を確保すれば重ならないため、画面下端からの余白を出典バッジぶん広げる。 */
 .screen--result {
   background: transparent;
+  padding-bottom: calc(max(env(safe-area-inset-bottom), 12px) + 56px);
 }
 
 /* 得点群の半透明パネル。採用値の理由を先に述べる。深夜の湖の暗い背景の上で文字を読ませるため、地に対し
@@ -373,20 +377,28 @@ body {
   color: var(--accent);
 }
 
-/* 操作音ON/OFFの行。チェックボックスと説明文を横に並べ、片手でも押しやすい高さを保つ。 */
+/* 操作音の音量の行。説明文とつまみを横に並べ、片手でも操作しやすい高さを保つ。 */
 .settings-panel__row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-height: 44px;
   font-size: clamp(13px, 2.2vw, 16px);
   color: var(--text);
   cursor: pointer;
 }
 
-.settings-panel__checkbox {
-  width: 20px;
-  height: 20px;
+.settings-panel__row-text {
+  white-space: nowrap;
+}
+
+/* 音量つまみ。残りの幅へ広げ、上限で広がりすぎないようにする。つまみの色は世界観のシアンに合わせる。 */
+.settings-panel__slider {
+  flex: 1;
+  min-width: 120px;
+  max-width: 260px;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 .settings-panel__button {

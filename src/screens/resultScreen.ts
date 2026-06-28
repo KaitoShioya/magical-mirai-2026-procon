@@ -7,7 +7,7 @@
 // 保存に失敗した回が履歴へ混ざらないよう、両者を別の口から受け取る。
 //
 // 依存方針: 得点の論理は持たず、表示用の値・文言・表示部品だけを取り込む（src/screens/README.md の依存規則に整合）。
-// 百分位が作品内推定（固定分布）で実際のオンライン順位ではない旨（Issue #66）を明記する。文言は scoring が所有する
+// 百分位が、得点の理論端に照らした到達度であり実際のオンライン順位ではない旨（Issue #66）を明記する。文言は scoring が所有する
 // PERCENTILE_ESTIMATE_DISCLAIMER を取り込む。自己ベスト・成長履歴の表示部品 renderScoreHistory と百分位の整形 formatPercentile は
 // src/ui の表示部品を取り込む（scoreHistoryView は結果画面が載せることを前提に作られている）。
 
@@ -18,21 +18,25 @@ import { renderScoreHistory, formatPercentile } from "../ui/scoreHistoryView";
 // 数値が無い・非有限のときの代替表示。得点・ランク・百分位のいずれにも使う。
 const PLACEHOLDER = "—";
 
-// 1項目（見出しと値）の行を作る。見出しは小さく、値を大きく見せる。
+// 1項目（見出しと値）の行を作る。見出しは小さく、値を大きく見せる。labelText が空文字のときは見出しを置かず値だけにする
+// （百分位は「上位 N%」の値だけで意味が伝わるため見出しを付けない。本タスクのユーザー決定）。
 function statRow(labelText: string, valueText: string, valueRole: string): HTMLElement {
   const row = document.createElement("div");
   row.className = "result-stat";
 
-  const label = document.createElement("span");
-  label.className = "result-stat__label";
-  label.textContent = labelText;
+  if (labelText !== "") {
+    const label = document.createElement("span");
+    label.className = "result-stat__label";
+    label.textContent = labelText;
+    row.append(label);
+  }
 
   const value = document.createElement("span");
   value.className = "result-stat__value";
   value.dataset.role = valueRole;
   value.textContent = valueText;
 
-  row.append(label, value);
+  row.append(value);
   return row;
 }
 
@@ -57,7 +61,8 @@ export const createResultScreen: ScreenFactory = (context: ScreenContext): Scree
 
   const score = statRow("スコア", scoreText, "score");
   const rank = statRow("ランク", rankText, "rank");
-  const percentile = statRow("百分位", percentileText, "percentile");
+  // 百分位は「上位 N%」の値だけで意味が伝わるため、見出し（「百分位」）を付けない。
+  const percentile = statRow("", percentileText, "percentile");
 
   // 百分位の注意文言（Issue #66）。data-role はスモークが辿る契約のため維持する。
   const disclaimer = document.createElement("p");

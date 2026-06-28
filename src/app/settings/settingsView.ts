@@ -12,12 +12,12 @@ export interface SettingsView {
 
 /** 設定画面の注入依存。保存・反映・他画面を開く副作用を差し替え可能にする。 */
 export interface SettingsViewDeps {
-  /** 保存済みの操作音ON/OFFを読む（初期状態に使う）。 */
-  loadSoundEnabled(): boolean;
-  /** 操作音ON/OFFを保存する。 */
-  saveSoundEnabled(enabled: boolean): void;
-  /** 操作音ON/OFFを操作音エンジンへ反映する。 */
-  setSoundEnabled(enabled: boolean): void;
+  /** 保存済みの操作音の音量（0〜100）を読む（つまみの初期位置に使う）。 */
+  loadSoundVolume(): number;
+  /** 操作音の音量（0〜100）を保存する。 */
+  saveSoundVolume(volume: number): void;
+  /** 操作音の音量（0〜100）を操作音エンジンへ反映する。 */
+  setSoundVolume(volume: number): void;
   /** 較正を開く。 */
   openCalibration(): void;
   /** クレジットを開く。 */
@@ -58,18 +58,22 @@ export function createSettingsView(
   title.className = "settings-panel__title";
   title.textContent = "設定";
 
-  // 操作音のON/OFF。チェックを入れると鳴らす。初期状態は保存済みの選択を反映する。
+  // 操作音の音量つまみ。0で無音、100で最大。初期位置は保存済みの音量を反映する。0にできることで効果音のOFFを満たす。
   const soundRow = document.createElement("label");
   soundRow.className = "settings-panel__row";
-  const soundCheckbox = document.createElement("input");
-  soundCheckbox.type = "checkbox";
-  soundCheckbox.className = "settings-panel__checkbox";
-  soundCheckbox.dataset.role = "sound-enabled";
-  soundCheckbox.checked = deps.loadSoundEnabled();
   const soundText = document.createElement("span");
   soundText.className = "settings-panel__row-text";
-  soundText.textContent = "操作音を鳴らす";
-  soundRow.append(soundCheckbox, soundText);
+  soundText.textContent = "操作音の音量";
+  const soundSlider = document.createElement("input");
+  soundSlider.type = "range";
+  soundSlider.min = "0";
+  soundSlider.max = "100";
+  soundSlider.step = "1";
+  soundSlider.className = "settings-panel__slider";
+  soundSlider.dataset.role = "sound-volume";
+  soundSlider.value = String(deps.loadSoundVolume());
+  soundSlider.setAttribute("aria-label", "操作音の音量");
+  soundRow.append(soundText, soundSlider);
 
   // 較正のやり直し。設定パネルを閉じてから較正を開く（パネルの重なりを避けるため）。
   const calibrationButton = document.createElement("button");
@@ -116,10 +120,10 @@ export function createSettingsView(
   const onCloseClick = (): void => {
     close(true);
   };
-  const onSoundChange = (): void => {
-    const enabled = soundCheckbox.checked;
-    deps.saveSoundEnabled(enabled);
-    deps.setSoundEnabled(enabled);
+  const onSoundInput = (): void => {
+    const volume = Number(soundSlider.value);
+    deps.saveSoundVolume(volume);
+    deps.setSoundVolume(volume);
   };
   const onCalibrationClick = (): void => {
     // 設定パネルを閉じてから較正を開く。開いた較正がトグルへ焦点を移すため、設定トグルへ焦点を戻さない。
@@ -139,7 +143,7 @@ export function createSettingsView(
 
   toggle.addEventListener("click", onToggleClick);
   closeButton.addEventListener("click", onCloseClick);
-  soundCheckbox.addEventListener("change", onSoundChange);
+  soundSlider.addEventListener("input", onSoundInput);
   calibrationButton.addEventListener("click", onCalibrationClick);
   creditsButton.addEventListener("click", onCreditsClick);
   document.addEventListener("keydown", onKeyDown);
@@ -161,7 +165,7 @@ export function createSettingsView(
     dispose(): void {
       toggle.removeEventListener("click", onToggleClick);
       closeButton.removeEventListener("click", onCloseClick);
-      soundCheckbox.removeEventListener("change", onSoundChange);
+      soundSlider.removeEventListener("input", onSoundInput);
       calibrationButton.removeEventListener("click", onCalibrationClick);
       creditsButton.removeEventListener("click", onCreditsClick);
       document.removeEventListener("keydown", onKeyDown);

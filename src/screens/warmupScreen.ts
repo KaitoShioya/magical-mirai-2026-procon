@@ -14,23 +14,21 @@ export const createWarmupScreen: ScreenFactory = (context: ScreenContext): Scree
   element.className = "screen screen--warmup";
   element.dataset.screen = "warmup";
 
-  const heading = document.createElement("h1");
-  heading.className = "screen__title";
-  heading.textContent = "ウォームアップ";
-
+  // 見出し（「ウォームアップ」）や導入文言（「まもなく開始」）は置かない。カウントダウンの数字だけで導入を示す
+  // （本タスクのユーザー決定）。湖が暗から現れる導入とソナーの波紋は src/style.css の .screen--warmup が描く。
   const countdown = document.createElement("p");
   countdown.className = "screen__countdown";
 
-  element.append(heading, countdown);
+  element.append(countdown);
 
   let elapsedMs = 0;
   let requested = false;
 
-  // 経過時間からカウントインの表示文言を決める。
-  // 導入演出の間は導入文言、その後はカウントインの残り段数（3→2→1）を表示する。
+  // 経過時間からカウントインの表示を決める。
+  // 導入演出の間は何も表示せず、その後はカウントインの残り段数（3→2→1）を表示する。
   function render(): void {
     if (elapsedMs < WARMUP_INTRO_DURATION_MS) {
-      countdown.textContent = "まもなく開始";
+      countdown.textContent = "";
       return;
     }
     const stepIndex = Math.floor((elapsedMs - WARMUP_INTRO_DURATION_MS) / WARMUP_COUNTDOWN_STEP_MS);

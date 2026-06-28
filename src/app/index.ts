@@ -47,7 +47,7 @@ import { createInput } from "../input";
 import { createPlaySession } from "./playSession";
 import { createPauseController } from "./pauseController";
 import { createSettingsView, type SettingsView } from "./settings/settingsView";
-import { loadSoundEnabled, saveSoundEnabled } from "./settings/soundPreference";
+import { loadSoundVolume, saveSoundVolume } from "./settings/soundPreference";
 
 /** 統括の外部契約。後始末のみを公開する。 */
 export interface App {
@@ -181,8 +181,11 @@ export function createApp(
   // 持たないため画面遷移スモークの検証を妨げず、両モードで生成して warmup で unlock を呼ぶことで、画面遷移スモーク
   //（?smoke=1 で warmup を含む全状態を走破する）が起動結線で未捕捉例外が出ないことを自動検査できる。
   const operationSound = createOperationSoundEngine();
-  // 起動時に保存済みの操作音ON/OFFの選択を反映する（Issue #77）。記録が無い初回は既定で鳴らす。
-  operationSound.setEnabled(loadSoundEnabled());
+  // 起動時に保存済みの操作音の音量を反映する（Issue #77）。記録が無い初回は既定（最大）で鳴らす。
+  // 音量0のときは発音そのものを止め（無効化し）、それより大きいときは音量倍率（0〜1）をマスター音量へ反映する。
+  const initialSoundVolume = loadSoundVolume();
+  operationSound.setVolume(initialSoundVolume / 100);
+  operationSound.setEnabled(initialSoundVolume > 0);
 
   // レイテンシ較正（Issue #50）。題名画面から開く常設トグルのオーバーレイとして、入力の遅れの補正値を測り・保存する。
   // 副作用を持つ音エンジンと端末内保存は注入で渡す。基準音は較正専用の固定の短い音（playCalibrationCue。会話帯域より
@@ -198,9 +201,13 @@ export function createApp(
   // 設定画面（Issue #77）。操作音のON/OFF（再読込後も保持）、較正のやり直し、クレジット表示への到達を1つの常設トグルへまとめる。
   // 較正・クレジットは既存ビューを開く。両モードで生成し、トークン不要の診断経路（?smoke=1）でも存在と開閉を検査できるようにする。
   const settingsView: SettingsView = createSettingsView({
-    loadSoundEnabled: () => loadSoundEnabled(),
-    saveSoundEnabled: (enabled) => saveSoundEnabled(enabled),
-    setSoundEnabled: (enabled) => operationSound.setEnabled(enabled),
+    loadSoundVolume: () => loadSoundVolume(),
+    saveSoundVolume: (volume) => saveSoundVolume(volume),
+    setSoundVolume: (volume) => {
+      // 音量倍率（0〜1）をマスター音量へ反映し、0のときは発音そのものを止める（無効化する）。
+      operationSound.setVolume(volume / 100);
+      operationSound.setEnabled(volume > 0);
+    },
     openCalibration: () => calibrationView.open(),
     openCredits: () => creditsView.open(),
     // 設定パネルを開く前に、同じ重なり順の他の全画面パネル（クレジット・較正・使い方説明）を閉じて二重表示を防ぐ。

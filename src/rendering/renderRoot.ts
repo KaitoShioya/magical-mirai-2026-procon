@@ -19,6 +19,7 @@ import {
   CAMERA_FOV,
   CAMERA_NEAR,
   DEFAULT_REFLECTION_RESOLUTION,
+  FOG_COLOR,
   FOG_DENSITY,
   LANTERN_CAPACITY_DEFAULT,
   LANTERN_SUNFLOWER_BRIGHTNESS_MAX,
@@ -36,6 +37,7 @@ import { clampPixelRatio, computeAspect } from "./viewport";
 import { createWater, type Water } from "./water";
 import { createBloomComposer, type BloomComposer, type BloomState } from "./bloom";
 import { createNightLighting, type NightLighting } from "./lighting";
+import { createNeonNebulaSky, type NeonNebulaSky } from "./sky";
 import {
   createCenterFigure,
   type CenterFigure,
@@ -150,6 +152,9 @@ export interface RenderState {
   /** 持続配置の灯し（蝶＋ひまわり、本タスク）の現在の配置数。診断・目視確認のために読む（通しスモークの主検査には
    *  使わない。擬似再生では得点タップが保証されないため）。WebGL が無く灯しを作らない端末では0。 */
   placedLanternCount: number;
+  /** ネオン星雲の夜空（Issue #205）をシーンに組み込んだなら真。WebGL が無く夜空を作らない端末では偽。
+   *  夜空スモークが夜空の組み込みを直接確かめるために読む。 */
+  skyPresent: boolean;
 }
 
 /** 持続配置の灯し（蝶＋ひまわり、本タスク）を1組置く入力。蝶の配置点（前方オフセット適用済みのワールド座標）、
@@ -296,16 +301,24 @@ export function createRenderRoot(
     /** 持続配置の灯し（蝶＋ひまわり、本タスク）の収容上限。統括が曲プロファイルのノーツ数を渡す。
      *  省略時は曲非依存の安全側の既定 LANTERN_CAPACITY_DEFAULT を使う。 */
     lanternCapacity?: number;
+    placeholderGlowEnabled?: boolean;
   } = {}
 ): RenderRoot {
   const reflectionResolution = options.reflectionResolution ?? DEFAULT_REFLECTION_RESOLUTION;
   const bloomEnabled = options.bloomEnabled ?? true;
   const postEffectEnabled = options.postEffectEnabled ?? false;
   const lanternCapacity = options.lanternCapacity ?? LANTERN_CAPACITY_DEFAULT;
+  // 暫定発光点（Issue #9/#10 の反射確認用の固定の光点）を置くか。採用理由を先に述べる。既定は真として既存の
+  // 呼び出し・スモークの見えを変えない。夜空の受け入れ診断（Issue #205）は、評価の妨げになる暫定の光点を外して
+  // 夜空そのものを見るため偽を渡す。
+  const placeholderGlowEnabled = options.placeholderGlowEnabled ?? true;
 
   const scene = new Scene();
+  // 背景色は深夜色のまま残す（夜空ドームが視界を覆うため見えないが、ドーム生成失敗時の安全な下地として保つ）。
   scene.background = new Color(NIGHT_COLOR);
-  scene.fog = new FogExp2(NIGHT_COLOR, FOG_DENSITY);
+  // 霧の色は夜空の地平色（FOG_COLOR）にする（Issue #205）。遠景の陸地が黒でなく夜空の地平へ溶ける大気遠近を出す。
+  // 霧は本描画と反射の双方の地形に適用される（Reflector は scene を通常描画するため）。
+  scene.fog = new FogExp2(FOG_COLOR, FOG_DENSITY);
 
   const camera = new PerspectiveCamera(
     CAMERA_FOV,
@@ -395,17 +408,26 @@ export function createRenderRoot(
   let sunflower: SunflowerFigures | null = null;
   // 持続配置の灯しの現在数（蝶とひまわりで常に一致）。診断・目視で読む。
   let placedLanternCount = 0;
+  // ネオン星雲の夜空（Issue #205）。最背面に不透明で描き、使用中のカメラへ追従する。反射に映すためシーンへ加える。
+  let sky: NeonNebulaSky | null = null;
   // 2次元層（Issue #15）。3次元の合成の後に最前面へ重ねる正射影カメラと専用シーン。
   let overlay: OverlayLayer | null = null;
   if (renderer) {
     water = createWater({ reflectionResolution });
     scene.add(water.object3d);
-    // 暫定発光点（Issue #10 で発光点本実装へ置換）。反射に映る対象として置く。
-    placeholderGlow = createPlaceholderGlow();
-    scene.add(placeholderGlow.object3d);
-    // 夜の照明（Issue #64）。中心オブジェクトを深夜の背景から分離する淡い環境光とリムライト。
+    // 暫定発光点（Issue #10 で発光点本実装へ置換）。反射に映る対象として置く。夜空診断では外す（上記の理由）。
+    if (placeholderGlowEnabled) {
+      placeholderGlow = createPlaceholderGlow();
+      scene.add(placeholderGlow.object3d);
+    }
+    // 夜の照明（Issue #64・#205）。中心オブジェクトを背景から分離する環境光とリムライト、遠景の陸地を可視化する半球光。
     lighting = createNightLighting();
     scene.add(lighting.object3d);
+    // ネオン星雲の夜空（Issue #205）。シーンへ加えると反射（Reflector が scene を再描画）にも自動で映る。
+    // 重い星雲とグラデーションは方向別テクスチャへ一度だけ焼き込み、毎フレームは安価な標本化に保つ。
+    sky = createNeonNebulaSky();
+    sky.bake(renderer);
+    scene.add(sky.object3d);
     // 中心オブジェクト（Issue #64）。初期は光柱（fallback）を中心へ立て、VRM読み込み成功で差し替える。
     centerFigure = createCenterFigure();
     scene.add(centerFigure.object3d);
@@ -635,6 +657,8 @@ export function createRenderRoot(
     // 内部で軽く返る。統括は setCameraPose（カメラ姿勢更新）の後に本 update を呼ぶため、当該フレームの最新の
     // カメラ位置を読む。
     lanternButterfly?.update(camera.position);
+    // ネオン星雲の夜空（Issue #205）の星雲の漂いと星の瞬きの時刻を進める。
+    sky?.update(deltaSeconds);
   }
 
   async function mountCenterCharacter(config: CharacterModelConfig): Promise<boolean> {
@@ -947,6 +971,8 @@ export function createRenderRoot(
         toneMapping: renderer ? renderer.toneMapping : NoToneMapping,
         // 持続配置の灯し（本タスク）の配置数。灯しを作っていない（WebGL 不可）端末では0。
         placedLanternCount,
+        // ネオン星雲の夜空（Issue #205）をシーンに組み込んだか。WebGL 不可で夜空を作らない端末では偽。
+        skyPresent: sky !== null,
       };
     },
     dispose(): void {
@@ -997,6 +1023,12 @@ export function createRenderRoot(
         scene.remove(lighting.object3d);
         lighting.dispose();
         lighting = null;
+      }
+      // ネオン星雲の夜空（Issue #205）を場面から外し、ジオメトリ・マテリアルを解放する。
+      if (sky) {
+        scene.remove(sky.object3d);
+        sky.dispose();
+        sky = null;
       }
       if (bloomComposer) {
         bloomComposer.dispose();

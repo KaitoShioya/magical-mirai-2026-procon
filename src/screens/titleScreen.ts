@@ -70,6 +70,8 @@ function createSongItem(song: SongChoice): HTMLLIElement {
   if (song.implemented) {
     // 実装済み曲だけが開始操作を持つ。スモークテストはこの data-action="start" を辿る。
     button.dataset.action = "start";
+    // 開始は前進的な操作のため、ひまわりの灯しのオレンジで表す肯定操作とする（押下でソナーの波紋）。
+    button.classList.add("ui-button--primary");
   } else {
     // 未実装曲は押せない無効ボタンとし「準備中」を明示する。
     button.disabled = true;

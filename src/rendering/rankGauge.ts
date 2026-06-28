@@ -57,9 +57,23 @@ const LETTER_MAX_UNITS = 0.2;
 const RENDER_ORDER_BASE = OVERLAY_RENDER_ORDER.standardInformation;
 const RENDER_ORDER_TRACK = RENDER_ORDER_BASE;
 const RENDER_ORDER_FILL = RENDER_ORDER_BASE + 1;
+// 満ちの上端で光る水面の線（満ちた水位＝ソナーの探知が返る面）。満ちより手前、文字・暈より奥に置く。
+const RENDER_ORDER_SURFACE = RENDER_ORDER_BASE + 2;
 // ランク文字の背後の発光の暈（halo）。文字より奥（手前の文字を隠さない）に置く。
-const RENDER_ORDER_HALO = RENDER_ORDER_BASE + 2;
-const RENDER_ORDER_LETTER = RENDER_ORDER_BASE + 3;
+const RENDER_ORDER_HALO = RENDER_ORDER_BASE + 3;
+const RENDER_ORDER_LETTER = RENDER_ORDER_BASE + 4;
+
+// --- 水面の線（満ちの上端の発光、★暫定） ---
+// 採用理由を先に述べる。ゲージを単色の棒でなく「満ちていく光の水位」に見せるため、満ちの上端に細く光る線を置き、
+// 満ちと一緒に上昇させる。色は満ちと同じランク色にし、加算合成で画面のブルームに拾わせて柔らかくにじませる。
+/** 水面の線の高さ（2次元層の単位）。満ちの上端に細く乗せる光の線にする。採用理由を先に述べる。最も満ちが低い
+ *  検証点（百分位12.5＝満ち0.125）でも、満ちの中心（色の正確さを測る点）に発光が届かないよう、満ちの上端と中心の
+ *  間隔（約0.031）より小さい0.035に収め、満ちの本体の色は正確なランク色のまま保つ。 */
+const SURFACE_HEIGHT = 0.035;
+/** 水面の線の横幅（ゲージ幅に対する倍率）。両脇へ少しはみ出して発光させる。 */
+const SURFACE_WIDTH_SCALE = 1.5;
+/** 水面の線の不透明度。白飛びを避け上品な発光に留める。 */
+const SURFACE_OPACITY = 0.85;
 
 // --- ランクが上がるほど豊かにする発光の暈（halo）の量（★暫定。実機調整で確定） ---
 // 採用理由を先に述べる。ランク表示を C→S で次第に華やかにするため、ランク文字の背後にランク色の発光の暈を置き、
@@ -249,6 +263,25 @@ export function createRankGauge(): RankGauge {
   halo.visible = false;
   group.add(halo);
 
+  // 満ちの上端で光る水面の線。放射状の発光テクスチャを横長・薄く伸ばし、満ちと同じランク色で加算合成する。
+  // 満ちと一緒に上昇させ、単色の棒を「満ちていく光の水位」に見せる。初期は不可視（update で確定）。
+  const surfaceMaterial = new MeshBasicMaterial({
+    map: glowTexture,
+    color: 0xffffff,
+    transparent: true,
+    opacity: SURFACE_OPACITY,
+    blending: AdditiveBlending,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const surfaceGeometry = new PlaneGeometry(1, 1);
+  const surface = new Mesh(surfaceGeometry, surfaceMaterial);
+  surface.scale.set(GAUGE_WIDTH * SURFACE_WIDTH_SCALE, SURFACE_HEIGHT, 1);
+  surface.renderOrder = RENDER_ORDER_SURFACE;
+  surface.visible = false;
+  group.add(surface);
+
   // ランク文字。
   const letter = new Mesh(letterGeometries[0], letterMaterial);
   letter.position.set(0, LETTER_CENTER_Y, 0);
@@ -289,8 +322,9 @@ export function createRankGauge(): RankGauge {
       const t = fillFractionFromPercentile(percentile);
       currentFillFraction = t;
       if (t <= 0) {
-        // 満ち量0は退化（高さ0）になるため隠す。上端は下端と同じ。
+        // 満ち量0は退化（高さ0）になるため隠す。上端は下端と同じ。水面の線も隠す。
         fill.visible = false;
+        surface.visible = false;
         currentFillTopY = TRACK_BOTTOM_Y;
       } else {
         const filledHeight = TRACK_HEIGHT * t;
@@ -304,6 +338,10 @@ export function createRankGauge(): RankGauge {
         const [r, g, b] = rankGaugeColorAt(t);
         fillColor.setRGB(r, g, b, SRGBColorSpace);
         fillMaterial.color.copy(fillColor);
+        // 水面の線を満ちの上端へ置き、満ちと同じランク色で光らせる。
+        surface.visible = true;
+        surface.position.set(0, currentFillTopY, 0);
+        surfaceMaterial.color.copy(fillColor);
       }
 
       // ランク文字。rankIndex を整数・範囲内へ丸めて図版のセルを選ぶ。
@@ -357,6 +395,8 @@ export function createRankGauge(): RankGauge {
       disposed = true;
       trackGeometry.dispose();
       fillGeometry.dispose();
+      surfaceGeometry.dispose();
+      surfaceMaterial.dispose();
       haloGeometry.dispose();
       for (const geometry of letterGeometries) {
         geometry.dispose();

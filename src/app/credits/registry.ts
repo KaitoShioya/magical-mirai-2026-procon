@@ -7,7 +7,10 @@ import { AI_PROVENANCE_STATEMENT } from "../../config/credits";
 import type { Song } from "../../config/songs";
 import { LAKE_STAGE } from "../../config/stage";
 // 出典の値だけを直接取り込み、文字エンジン本体や three.js を巻き込まない。
-import { ZEN_KAKU_GOTHIC_NEW_CREDIT } from "../../typography/kineticText/fontCredits";
+import {
+  MPLUS_1_CREDIT,
+  ZEN_KAKU_GOTHIC_NEW_CREDIT,
+} from "../../typography/kineticText/fontCredits";
 import type { CreditRegistry } from "../../types/credits";
 
 /**
@@ -20,7 +23,7 @@ export function buildCreditRegistry(
 ): CreditRegistry {
   return {
     character: PCL_CREDIT,
-    fonts: [ZEN_KAKU_GOTHIC_NEW_CREDIT],
+    fonts: [ZEN_KAKU_GOTHIC_NEW_CREDIT, MPLUS_1_CREDIT],
     songs: [
       {
         title: song.title,

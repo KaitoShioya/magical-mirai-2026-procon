@@ -50,7 +50,7 @@ export function createSettingsView(
 
   const closeButton = document.createElement("button");
   closeButton.type = "button";
-  closeButton.className = "settings-panel__close";
+  closeButton.className = "settings-panel__close ui-button--secondary";
   closeButton.textContent = "閉じる";
   closeButton.setAttribute("aria-label", "設定を閉じる");
 
@@ -79,14 +79,14 @@ export function createSettingsView(
   // 較正のやり直し。設定パネルを閉じてから較正を開く（パネルの重なりを避けるため）。
   const calibrationButton = document.createElement("button");
   calibrationButton.type = "button";
-  calibrationButton.className = "settings-panel__button";
+  calibrationButton.className = "settings-panel__button ui-button--secondary";
   calibrationButton.dataset.action = "open-calibration";
   calibrationButton.textContent = "タイミング較正をやり直す";
 
   // クレジット表示への到達。設定パネルを閉じてからクレジットを開く。
   const creditsButton = document.createElement("button");
   creditsButton.type = "button";
-  creditsButton.className = "settings-panel__button";
+  creditsButton.className = "settings-panel__button ui-button--secondary";
   creditsButton.dataset.action = "open-credits";
   creditsButton.textContent = "クレジットを見る";
 

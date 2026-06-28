@@ -58,7 +58,7 @@ export function createOverlays(host: HTMLElement = document.body): Overlays {
   const errorMessage = document.createElement("p");
   errorMessage.className = "overlay__text";
   const retryButton = document.createElement("button");
-  retryButton.className = "overlay__button";
+  retryButton.className = "overlay__button ui-button--primary";
   retryButton.type = "button";
   retryButton.dataset.action = "retry-load";
   retryButton.textContent = "再試行";
@@ -90,6 +90,24 @@ export function createOverlays(host: HTMLElement = document.body): Overlays {
   };
   tapToPlay.addEventListener("click", onTapClick);
 
+  // 「触れて再生」はクリックを受ける覆い（div）であり、そのままではキーボードで到達・操作できない。
+  // ボタンとして扱えるよう役割と入力順を与え、Enter と Space で再生を始める。
+  tapToPlay.setAttribute("role", "button");
+  tapToPlay.tabIndex = 0;
+  tapToPlay.setAttribute("aria-label", "触れて再生");
+  const onTapKeydown = (event: KeyboardEvent): void => {
+    // 表示されていない間はキーに反応しない。理由を先に述べる。隠れている覆いがキーボードに反応すると別画面の操作と誤作動するため。
+    if (tapToPlay.hidden) {
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      // Space の既定動作は画面の縦スクロールで、押下が再生開始と二重に作用する。既定動作を止めてキーを再生開始だけに限定する。
+      event.preventDefault();
+      onTapClick();
+    }
+  };
+  tapToPlay.addEventListener("keydown", onTapKeydown);
+
   return {
     render(state, handlers) {
       retryHandler = handlers.onRetry;
@@ -120,6 +138,8 @@ export function createOverlays(host: HTMLElement = document.body): Overlays {
     showTapToPlay(onTap) {
       tapHandler = onTap;
       tapToPlay.hidden = false;
+      // キーボード利用者がそのまま Enter・Space で再生を始められるよう、表示と同時に覆いへ焦点を移す。
+      tapToPlay.focus();
     },
     hideTapToPlay() {
       tapToPlay.hidden = true;
@@ -127,6 +147,7 @@ export function createOverlays(host: HTMLElement = document.body): Overlays {
     dispose() {
       retryButton.removeEventListener("click", onRetryClick);
       tapToPlay.removeEventListener("click", onTapClick);
+      tapToPlay.removeEventListener("keydown", onTapKeydown);
       loading.remove();
       error.remove();
       tapToPlay.remove();

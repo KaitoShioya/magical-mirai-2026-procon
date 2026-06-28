@@ -2,11 +2,73 @@
    本格的な画面のスタイルは各担当Issue（題名・プレイ・結果など）で追加する。 */
 
 :root {
-  --bg: #0a0a14;
-  --accent: #7ec8e3;
-  --accent2: #ff79c6;
-  --text: #e2e8f0;
-  --text-dim: #7f8ea3;
+  /* プリミティブ層: 場面の物理色。確定パレット「夜の静謐＋灯しの暖色」。
+     色値はここだけで定義し、用途名（セマンティック層）から参照する。色の調整はこの層の差し替えで全画面へ伝播する。 */
+  --c-night: #0a0a14; /* 深い夜・最暗部 */
+  --c-haze: #2a2150; /* 夜空の菫・パネル上部のかすみ */
+  --c-iris: #9d7cff; /* 見出しグラデーションの第二色に使う、視認できる明るさの菫。逸脱色だったピンクの置換先 */
+  --c-cyan: #7ec8e3; /* シアン・構造／情報の細線と発光 */
+  --c-amber: #ff9a3c; /* オレンジ・肯定操作／達成の灯し */
+  --c-ink: #e2e8f0; /* 文字 */
+  /* 淡い文字。閾値4.5:1の根拠は歌詞の可読性方針との統一（プラン参照）。最悪条件のパネル上部色 #2a2150 に対し
+     旧値 #7f8ea3 は約4.40:1で不足したため、約5.0:1を満たす #8a99ae へ上げる。 */
+  --c-ink-dim: #8a99ae;
+
+  /* セマンティック層: 各クラスはこちらを参照する。既存名（--bg・--accent・--text・--text-dim）は温存する。 */
+  --bg: var(--c-night);
+  --accent: var(--c-cyan);
+  --accent-warm: var(--c-amber); /* 肯定的操作の灯し */
+  --accent-gradient-2: var(--c-iris); /* 見出しグラデーションの第二色 */
+  --accent-highlight: var(--c-amber); /* 成長グラフの最高記録の棒 */
+  --text: var(--c-ink);
+  --text-dim: var(--c-ink-dim);
+
+  /* 面（パネル）の下地。上＝夜空の菫→下＝深い水の縦グラデーション。背面の湖をすりガラス越しに透かすため、
+     不透明度をやや下げ、パネル側で backdrop-filter のぼかしを併用して背面を「霞んだ光」に変える（読みやすさは確保）。 */
+  --surface-panel: linear-gradient(180deg, rgba(28, 23, 58, 0.82) 0%, rgba(8, 9, 20, 0.88) 100%);
+  --surface-panel-soft: rgba(8, 7, 18, 0.55); /* 結果スコア欄など、背面の情景を透かす下地 */
+  --surface-scrim: rgba(8, 7, 18, 0.92); /* 全画面の暗幕（読込・失敗の覆い） */
+  --surface-scrim-soft: rgba(8, 7, 18, 0.6); /* 弱い暗幕（一時停止・触れて再生。背面の湖を透かす） */
+  --surface-glass: rgba(20, 18, 46, 0.5); /* タイトル曲札の薄いガラス */
+  --surface-glass-hover: rgba(30, 27, 64, 0.65);
+  --surface-toggle: rgba(8, 7, 18, 0.7); /* 切替ボタンの下地 */
+
+  --border-soft: rgba(126, 200, 227, 0.55); /* 水際の細線。発光を抑えたシアン */
+  --glow-accent: rgba(126, 200, 227, 0.45); /* シアンの発光にじみ */
+  --glow-warm: rgba(255, 154, 60, 0.5); /* オレンジの発光にじみ */
+  --text-outline: 0 1px 2px rgba(0, 0, 0, 0.7); /* 可読性のための縁取りの影 */
+
+  /* 見出し・タイトル用の表示書体。先頭は M PLUS 1（電子的な幾何学ゴシック）、続けてシステムフォントへ退避する。
+     本文・小ラベルはシステムフォントのままとし、見出しだけ電子的な字形にして静謐な本文との対比を作る。 */
+  --font-display: "M PLUS 1 Subset", "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+
+  /* 操作の手応えの遷移時間。動きを減らす設定では下の指定でほぼ0へ倒し、移動・拡大を止める。 */
+  --ui-motion: 200ms;
+}
+
+/* 見出し用の表示書体（M PLUS 1、SIL Open Font License 1.1）。UIに現れる見出しの文字だけへ絞ったサブセット
+   （scripts/build-ui-font-subset.mjs が生成）。font-display: swap で読み込み中も本文を即時に見せ、読み込み後に差し替える。 */
+@font-face {
+  font-family: "M PLUS 1 Subset";
+  src: url(/fonts/m-plus-1-ui-subset.woff2) format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 見出し・タイトル・カウントイン数字・一時停止の見出しに表示書体を当てる。本文・小ラベル・長文はシステムフォントのまま。 */
+.screen__title,
+.screen__countdown,
+.pause-overlay__countdown,
+.pause-overlay__message,
+.settings-panel__title,
+.credits-panel__heading,
+.calibration-panel__heading,
+.howto-panel__title,
+.howto-panel__heading {
+  font-family: var(--font-display);
+  /* 表示書体に少し字間を与え、電子的で落ち着いた見出しにする。 */
+  letter-spacing: 0.04em;
 }
 
 * {
@@ -101,7 +163,7 @@ body {
   font-size: clamp(20px, 4vw, 40px);
   font-weight: 700;
   color: #fff;
-  text-shadow: 0 0 20px var(--accent), 0 0 60px var(--accent2);
+  text-shadow: 0 0 20px var(--accent), 0 0 60px var(--accent-gradient-2);
 }
 
 .screen__text {
@@ -188,13 +250,13 @@ body {
 .result-history .score-history__bar {
   width: 8px;
   min-height: 2px;
-  background: rgba(126, 200, 227, 0.4);
+  background: var(--glow-accent);
   border-radius: 2px;
 }
 
-/* 自己ベストに当たる棒だけを強調色（ピンク）にする。 */
+/* 自己ベストに当たる棒だけを強調色（ひまわりの灯しのオレンジ）にする。 */
 .result-history .score-history__bar--best {
-  background: var(--accent2);
+  background: var(--accent-highlight);
 }
 
 /* プレイ中の一時停止（Issue #112）。一時停止ボタンは実行中だけ左上に出す。配置の理由を先に述べる。
@@ -208,7 +270,7 @@ body {
   padding: 6px 12px;
   font-size: clamp(11px, 2vw, 13px);
   color: var(--text-dim);
-  background: rgba(5, 6, 10, 0.7);
+  background: var(--surface-toggle);
   border: 1px solid var(--accent);
   border-radius: 6px;
   cursor: pointer;
@@ -225,7 +287,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: clamp(12px, 3vh, 24px);
-  background: rgba(5, 6, 10, 0.6);
+  background: var(--surface-scrim-soft);
   color: var(--text);
 }
 
@@ -292,7 +354,7 @@ body {
   padding: 6px 12px;
   font-size: clamp(11px, 2vw, 13px);
   color: var(--text-dim);
-  background: rgba(5, 6, 10, 0.7);
+  background: var(--surface-toggle);
   border: 1px solid var(--accent);
   border-radius: 6px;
   cursor: pointer;
@@ -312,7 +374,7 @@ body {
     max(env(safe-area-inset-bottom), 24px)
     max(env(safe-area-inset-left), 24px);
   overflow-y: auto;
-  background: rgba(8, 9, 14, 0.96);
+  background: var(--surface-panel);
   color: var(--text);
 }
 
@@ -410,7 +472,7 @@ body[data-phase="play"] .settings-toggle {
 .screen__result-panel--top {
   position: relative;
   padding: clamp(10px, 2vh, 18px);
-  background: rgba(5, 6, 10, 0.55);
+  background: var(--surface-panel-soft);
   border-radius: 12px;
 }
 
@@ -442,7 +504,7 @@ body[data-phase="play"] .settings-toggle {
   min-height: 0;
   padding: 8px 16px;
   font-size: clamp(12px, 2vw, 14px);
-  background: rgba(5, 6, 10, 0.55);
+  background: var(--surface-panel-soft);
 }
 
 .screen__result-panel--bottom {
@@ -531,17 +593,23 @@ body[data-phase="play"] .settings-toggle {
   color: var(--text-dim);
 }
 
-/* タイトル画面の磨き（Issue #73）。背面の深夜の湖を主役に保ちつつ、見出しはネオンの二色（シアン→ピンク）で
+/* タイトル画面の磨き（Issue #73）。背面の深夜の湖を主役に保ちつつ、見出しは夜空の二色（シアン→菫）で
    にじませ、字間を整える。曲一覧は湖面に浮かぶ薄いガラスの札として、背面を透かしつつ可読性を上げる。 */
 .screen--title .screen__title {
-  letter-spacing: 0.04em;
-  background: linear-gradient(120deg, var(--accent), var(--accent2));
+  font-size: clamp(26px, 6.4vw, 54px);
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+  /* 日本語の語の途中で改行させず、語の区切り（空白）で折り返す。長い作品名がきれいに2行へ収まる。 */
+  word-break: keep-all;
+  overflow-wrap: normal;
+  /* 始まりを夜空の光（淡いシアン）にし、シアン→菫へ移る三段のグラデーションで湖に差す光の帯を作る。 */
+  background: linear-gradient(120deg, #bfe9f5 0%, var(--accent) 42%, var(--accent-gradient-2) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  /* グラデーション文字には文字影を載せず、代わりに発光のにじみで暗い湖から浮かせる。 */
+  /* グラデーション文字には文字影を載せず、近接のシアンのにじみと外周の菫のにじみの二重の発光で暗い湖から浮かせる。 */
   text-shadow: none;
-  filter: drop-shadow(0 0 18px rgba(126, 200, 227, 0.45));
+  filter: drop-shadow(0 0 10px var(--glow-accent)) drop-shadow(0 0 30px rgba(157, 124, 255, 0.42));
 }
 
 .screen--title .screen__text {
@@ -549,13 +617,23 @@ body[data-phase="play"] .settings-toggle {
 }
 
 /* 遊べる曲の札に、湖面に浮かぶ薄いガラスの地を敷く。未実装曲（disabled）には敷かず、押せないことの淡色表示を保つ。 */
+/* 曲札は「湖面に浮かぶ灯し札」。ピル形でなく札の角丸に戻し、灯し（オレンジ）の縁と発光で前進操作を示す。
+   文字は暗いガラスの上に置き、可読性を保つ（オレンジ塗りの上には置かない）。 */
 .screen--title .song-choice:not([disabled]) {
-  background: rgba(10, 14, 26, 0.5);
+  background: var(--surface-glass);
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px rgba(255, 154, 60, 0.35),
+    0 0 22px -6px var(--glow-warm),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .screen--title .song-choice:not([disabled]):hover {
-  background: rgba(16, 22, 38, 0.65);
-  box-shadow: 0 0 18px rgba(126, 200, 227, 0.4);
+  background: var(--surface-glass-hover);
+  box-shadow:
+    0 0 0 1px rgba(255, 154, 60, 0.55),
+    0 0 30px -4px var(--glow-warm),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 /* ウォームアップの磨き（Issue #72）。深夜の湖が暗から現れる導入と、ソナーレ（湖に響くソナー）を思わせる
@@ -677,7 +755,7 @@ body[data-phase="play"] .settings-toggle {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(10, 10, 20, 0.92);
+  background: var(--surface-scrim);
 }
 
 /* hidden 属性で出し入れする。display 指定があると hidden が効かないため、明示的に分岐する。 */
@@ -687,7 +765,7 @@ body[data-phase="play"] .settings-toggle {
 
 .overlay--tap-to-play {
   cursor: pointer;
-  background: rgba(10, 10, 20, 0.7);
+  background: var(--surface-scrim-soft);
 }
 
 .overlay__panel {
@@ -748,7 +826,7 @@ body[data-phase="play"] .settings-toggle {
     max(env(safe-area-inset-right), 8px)
     max(env(safe-area-inset-bottom), 4px)
     max(env(safe-area-inset-left), 8px);
-  background: rgba(5, 6, 10, 0.55);
+  background: var(--surface-panel-soft);
   text-align: center;
 }
 
@@ -779,7 +857,7 @@ body[data-phase="play"] .settings-toggle {
   padding: 6px 12px;
   font-size: clamp(11px, 2vw, 13px);
   color: var(--text-dim);
-  background: rgba(5, 6, 10, 0.7);
+  background: var(--surface-toggle);
   border: 1px solid var(--accent);
   border-radius: 6px;
   cursor: pointer;
@@ -799,7 +877,7 @@ body[data-phase="play"] .settings-toggle {
     max(env(safe-area-inset-bottom), 24px)
     max(env(safe-area-inset-left), 24px);
   overflow-y: auto;
-  background: rgba(8, 9, 14, 0.96);
+  background: var(--surface-panel);
   color: var(--text);
 }
 
@@ -856,7 +934,7 @@ body[data-phase="play"] .settings-toggle {
   padding: 6px 12px;
   font-size: clamp(11px, 2vw, 13px);
   color: var(--text-dim);
-  background: rgba(5, 6, 10, 0.7);
+  background: var(--surface-toggle);
   border: 1px solid var(--accent);
   border-radius: 6px;
   cursor: pointer;
@@ -876,7 +954,7 @@ body[data-phase="play"] .settings-toggle {
     max(env(safe-area-inset-bottom), 24px)
     max(env(safe-area-inset-left), 24px);
   overflow-y: auto;
-  background: rgba(8, 9, 14, 0.96);
+  background: var(--surface-panel);
   color: var(--text);
 }
 
@@ -1012,7 +1090,7 @@ body[data-phase="play"] .settings-toggle {
   padding: 6px 12px;
   font-size: clamp(11px, 2vw, 13px);
   color: var(--text-dim);
-  background: rgba(5, 6, 10, 0.7);
+  background: var(--surface-toggle);
   border: 1px solid var(--accent);
   border-radius: 6px;
   cursor: pointer;
@@ -1032,7 +1110,7 @@ body[data-phase="play"] .settings-toggle {
     max(env(safe-area-inset-bottom), 24px)
     max(env(safe-area-inset-left), 24px);
   overflow-y: auto;
-  background: rgba(8, 9, 14, 0.96);
+  background: var(--surface-panel);
   color: var(--text);
 }
 
@@ -1097,4 +1175,305 @@ body[data-phase="play"] .settings-toggle {
   flex-direction: column;
   gap: 8px;
   text-align: left;
+}
+
+/* ====== 操作ボタンの寒暖（湖のソナーレ） ======
+   肯定的・前進的な操作はひまわりの灯しのオレンジ、構造・情報・副次の操作は発光を抑えたシアンの細線で表す。
+   既存のボタン基底（.screen__button・.pause-overlay__resume・.overlay__button など）より後に置くことで、
+   同じ詳細度でも後勝ちで色を上書きする。各画面の描画側でこの修飾クラスを付与する。 */
+/* 肯定操作＝湖面の灯し。枠線を撤廃し、オレンジの塗りと多層の発光のにじみ（ブルーム）で縁を示す発光体にする。
+   形は角丸長方形をやめてピル（カプセル）形にし、汎用的なボタンの見た目から離す。 */
+.ui-button--primary {
+  position: relative;
+  overflow: hidden;
+  border: none;
+  border-radius: 999px;
+  color: #fff;
+  background: radial-gradient(130% 150% at 50% 0%, #ffb35c 0%, #ff9a3c 45%, #d2641f 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 154, 60, 0.45),
+    0 6px 20px -6px rgba(255, 154, 60, 0.6),
+    0 0 28px rgba(255, 154, 60, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: box-shadow var(--ui-motion) ease, transform var(--ui-motion) ease;
+}
+
+.ui-button--primary:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 1px rgba(255, 154, 60, 0.6),
+    0 8px 26px -6px rgba(255, 154, 60, 0.7),
+    0 0 40px rgba(255, 154, 60, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+/* 押下は「へこみ」と発光の収縮で物理的な手応えを表す。 */
+.ui-button--primary:active {
+  transform: translateY(0);
+  box-shadow:
+    0 0 0 1px rgba(255, 154, 60, 0.5),
+    inset 0 2px 6px rgba(120, 40, 0, 0.5),
+    0 0 18px rgba(255, 154, 60, 0.32);
+}
+
+/* 無効は「点いていない灯し」。彩度と発光を落とす。 */
+.ui-button--primary:disabled {
+  background: rgba(60, 50, 40, 0.5);
+  color: var(--text-dim);
+  box-shadow: inset 0 0 0 1px rgba(120, 130, 150, 0.25);
+}
+
+/* 副次操作＝水面の薄い光膜。縁を「線」でなく「光」で示す。塗りはシアンの極薄ガラス、縁取りはぼかした発光で、
+   くっきりした1pxの枠線（汎用的なアウトラインボタンの見た目）を使わない。 */
+.ui-button--secondary {
+  position: relative;
+  border: none;
+  border-radius: 999px;
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(126, 200, 227, 0.16) 0%, rgba(126, 200, 227, 0.05) 100%);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow:
+    0 0 16px -6px var(--glow-accent),
+    inset 0 1px 0 rgba(126, 200, 227, 0.3),
+    inset 0 0 14px rgba(126, 200, 227, 0.08);
+  transition: box-shadow var(--ui-motion) ease, transform var(--ui-motion) ease, background var(--ui-motion) ease;
+}
+
+.ui-button--secondary:hover {
+  color: #fff;
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(126, 200, 227, 0.26) 0%, rgba(126, 200, 227, 0.1) 100%);
+  box-shadow:
+    0 0 24px -4px var(--glow-accent),
+    inset 0 1px 0 rgba(126, 200, 227, 0.42),
+    inset 0 0 18px rgba(126, 200, 227, 0.12);
+}
+
+.ui-button--secondary:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 0 2px 8px rgba(0, 0, 0, 0.45),
+    inset 0 0 14px rgba(126, 200, 227, 0.08);
+}
+
+.ui-button--secondary:disabled {
+  color: var(--text-dim);
+  background: rgba(120, 130, 150, 0.08);
+  box-shadow: inset 0 0 12px rgba(120, 130, 150, 0.12);
+}
+
+/* キーボード操作時だけ可視のフォーカス枠。マウス押下では枠を出さないため :focus でなく :focus-visible を使う。 */
+.screen__button:focus-visible,
+.song-choice:focus-visible,
+.ui-button--primary:focus-visible,
+.ui-button--secondary:focus-visible,
+.pause-button:focus-visible,
+.pause-overlay__resume:focus-visible,
+.pause-overlay__return:focus-visible,
+.settings-toggle:focus-visible,
+.settings-panel__close:focus-visible,
+.settings-panel__button:focus-visible,
+.settings-panel__row:focus-visible,
+.settings-panel__slider:focus-visible,
+.credits-toggle:focus-visible,
+.credits-panel__close:focus-visible,
+.credits-panel__link:focus-visible,
+.calibration-toggle:focus-visible,
+.calibration-panel__close:focus-visible,
+.calibration-panel__button:focus-visible,
+.calibration-taparea:focus-visible,
+.calibration-slider:focus-visible,
+.howto-toggle:focus-visible,
+.howto-panel__close:focus-visible,
+.overlay__button:focus-visible,
+.overlay__link:focus-visible,
+.overlay--tap-to-play:focus-visible,
+.attribution__link:focus-visible,
+.screen__result-close:focus-visible,
+.screen__result-reopen:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ====== シグネチャー要素：ソナーの波紋 ======
+   テーマ「湖のソナーレ（湖に響くソナー）」とゲーム内のタップ水面波紋、既存のウォームアップ波紋を結ぶ。
+   汎用キーフレーム sonar-ping を、タイトルのヒーローと肯定操作ボタンの押下で再利用する。
+   周期2000msは既存のウォームアップ波紋（warmup-sonar）と速度感を合わせる。色はシアン（--accent）で水面の波紋を表す。 */
+@keyframes sonar-ping {
+  from {
+    transform: translate(-50%, -50%) scale(0.4);
+    opacity: 0.55;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* タイトルのヒーロー：中心から同心円の波紋が静かに広がる。背面（z-index:0）に置き、見出し・曲一覧は前面（z-index:1）。 */
+.screen--title {
+  position: relative;
+}
+
+.screen--title > * {
+  position: relative;
+  z-index: 1;
+}
+
+.screen--title::before,
+.screen--title::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(62vh, 440px);
+  height: min(62vh, 440px);
+  z-index: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: 50%;
+  /* リング自体をやわらかく光らせ、線でなく「水面に広がる光の輪」に見せる。 */
+  box-shadow: 0 0 24px -6px var(--glow-accent), inset 0 0 24px -10px var(--glow-accent);
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.35);
+  opacity: 0;
+  /* 大きくゆっくり広げ、深夜の湖に響くソナーの余韻を出す。 */
+  animation: sonar-ping 3600ms ease-out infinite;
+}
+
+/* 2本目のリングは1800ms遅らせ、1800msごとに新しい波紋が立つ穏やかな脈動にする。 */
+.screen--title::after {
+  animation-delay: 1800ms;
+}
+
+/* 肯定操作ボタンの押下波紋。疑似要素のみで描き、画像などの素材は使わない。
+   押下のたびに再生するため、描画側が is-pressed を一時付与し animationend で外す（document への委譲リスナー）。 */
+.ui-button--primary::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 120%;
+  aspect-ratio: 1;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.2);
+  opacity: 0;
+}
+
+.ui-button--primary.is-pressed::before {
+  animation: button-sonar 600ms ease-out;
+}
+
+/* 無効状態（保存・共有の処理中など）では波紋を出さない。 */
+.ui-button--primary:disabled::before {
+  content: none;
+}
+
+@keyframes button-sonar {
+  from {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0.7;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* 動きを減らす設定の利用者には、装飾の波紋を止める。較正の点滅・メーター針は補正値を測るための機能上の合図のため残す。 */
+@media (prefers-reduced-motion: reduce) {
+  .screen--title::before,
+  .screen--title::after {
+    animation: none;
+    display: none;
+  }
+  .ui-button--primary.is-pressed::before {
+    animation: none;
+  }
+  /* ボタンの移動・拡大も止め、状態変化は色と発光だけにする。 */
+  .ui-button--primary,
+  .ui-button--secondary {
+    transition: none;
+  }
+  .ui-button--primary:hover,
+  .ui-button--secondary:hover,
+  .ui-button--primary:active,
+  .ui-button--secondary:active {
+    transform: none;
+  }
+  /* パネルの浮かび上がりも止め、即座に表示する。 */
+  .settings-panel,
+  .credits-panel,
+  .calibration-panel,
+  .howto-panel {
+    animation: none;
+  }
+}
+
+/* 画面隅の常設トグル（設定・クレジット・これはなに・較正・一時停止）。枠線をやめ、すりガラスとシアンの発光縁で
+   夜空に馴染ませる。文字は読みやすい明るさにし、最小タップ域は既存の min-height とパディングで保つ。 */
+.credits-toggle,
+.settings-toggle,
+.calibration-toggle,
+.howto-toggle,
+.pause-button {
+  border: none;
+  border-radius: 999px;
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(126, 200, 227, 0.14) 0%, rgba(126, 200, 227, 0.04) 100%);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 0 16px -7px var(--glow-accent),
+    inset 0 1px 0 rgba(126, 200, 227, 0.25),
+    inset 0 0 12px rgba(126, 200, 227, 0.07);
+  transition: box-shadow var(--ui-motion) ease, background var(--ui-motion) ease;
+}
+
+.credits-toggle:hover,
+.settings-toggle:hover,
+.calibration-toggle:hover,
+.howto-toggle:hover,
+.pause-button:hover {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(126, 200, 227, 0.24) 0%, rgba(126, 200, 227, 0.08) 100%);
+  box-shadow:
+    0 0 20px -4px var(--glow-accent),
+    inset 0 1px 0 rgba(126, 200, 227, 0.38),
+    inset 0 0 16px rgba(126, 200, 227, 0.1);
+}
+
+/* パネルは開いている間、画面隅のトグルを覆って前面に出す。同じ重なり順（1100）だとトグルがパネルの閉じるボタンと
+   重なって見えるため、覆い（1000）・一時停止（1050）・トグル（1100）より上の1150へ置く。 */
+.settings-panel,
+.credits-panel,
+.calibration-panel,
+.howto-panel {
+  z-index: 1150;
+  /* 背面の湖・曲一覧を「霞んだ光」へぼかし、読みやすい面にする（すりガラス）。下地の不透明度と合わせて文字の可読性を保つ。 */
+  -webkit-backdrop-filter: blur(22px) saturate(1.1);
+  backdrop-filter: blur(22px) saturate(1.1);
+  /* 開くときに水面が立ち上がるように、わずかに浮かび上がりながら現れる。 */
+  animation: panel-rise 260ms ease-out both;
+}
+
+/* パネルの出現。不透明度0→1と、わずかな上方向の移動（10画素、水面へ浮かび上がる印象）を伴う。 */
+@keyframes panel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 結果画面のスコア欄を、上端の常設トグル（クレジット・設定、いずれも右上）より下へ下げる。
+   これで欄の右上にある閉じるボタン（✕）が右上のトグルと重ならない。下げ幅は、上端から縦に並ぶトグル
+   （クレジット約32画素＋間隔8画素＋設定約32画素）の高さを越える値として採る。 */
+.screen__result-panel--top {
+  margin-top: clamp(56px, 11vh, 84px);
 }

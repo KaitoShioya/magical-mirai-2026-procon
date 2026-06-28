@@ -43,3 +43,6 @@ desktop.ini
 
 # === セッション生ログのダンプ（機密混入リスク・巨大・提出物に不要）===
 docs/session_dump/
+
+# === Claude Code のローカル設定（各自の端末固有の設定で、提出物・共有リポジトリに含めない）===
+.claude/settings.local.json

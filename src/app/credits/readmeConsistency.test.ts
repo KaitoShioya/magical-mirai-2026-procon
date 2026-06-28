@@ -9,7 +9,10 @@ import { PCL_CREDIT } from "../../config/character";
 import { AI_PROVENANCE_STATEMENT } from "../../config/credits";
 import { DEFAULT_SONG_KEY, findSong } from "../../config/songs";
 import { LAKE_STAGE } from "../../config/stage";
-import { ZEN_KAKU_GOTHIC_NEW_CREDIT } from "../../typography/kineticText/fontCredits";
+import {
+  MPLUS_1_CREDIT,
+  ZEN_KAKU_GOTHIC_NEW_CREDIT,
+} from "../../typography/kineticText/fontCredits";
 
 describe("README のライセンス・出典がアプリ内の出典と一致する", () => {
   const song = findSong(DEFAULT_SONG_KEY);
@@ -28,6 +31,12 @@ describe("README のライセンス・出典がアプリ内の出典と一致す
     ZEN_KAKU_GOTHIC_NEW_CREDIT.sourceUrl,
     ZEN_KAKU_GOTHIC_NEW_CREDIT.license,
     ZEN_KAKU_GOTHIC_NEW_CREDIT.licenseFileUrl,
+    MPLUS_1_CREDIT.fontName,
+    MPLUS_1_CREDIT.author,
+    MPLUS_1_CREDIT.sourceLabel,
+    MPLUS_1_CREDIT.sourceUrl,
+    MPLUS_1_CREDIT.license,
+    MPLUS_1_CREDIT.licenseFileUrl,
     song.title,
     song.artist,
     song.songUrl,

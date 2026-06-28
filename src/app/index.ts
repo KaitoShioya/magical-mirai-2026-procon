@@ -290,6 +290,17 @@ export function createApp(
     pausePlayback: () => playback.pause(),
     resumePlayback: () => playback.play(),
     setInputActive: (active) => input.setActive(active),
+    // 一時停止の「トップに戻る」。プレイを中断し、プレイ局面の後始末をして後始末専用の再挑戦状態を経て題名へ戻す。
+    // 楽曲は一時停止中で止まっており、得点は記録しない（中断のため）。次のプレイ開始（enterPlay）で再生・灯し・採点は初期化される。
+    returnToTitle: () => {
+      inPlayPhase = false;
+      pauseController.setPlayPhase(false);
+      delete document.body.dataset.phase;
+      input.setActive(false);
+      overlays.hideTapToPlay();
+      tapToPlayShown = false;
+      machine.requestTransition("retry");
+    },
   });
 
   // 結果画面（Issue #74）へ渡す確定データ。プレイ終了時に確定し、結果画面の表示中だけ参照される。

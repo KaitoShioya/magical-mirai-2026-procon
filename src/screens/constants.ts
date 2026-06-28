@@ -24,11 +24,13 @@ export const SCREEN_KEYS: readonly ScreenKey[] = [
  * 結果から「ウォームアップ」へ戻る経路を加える理由を先に述べる。結果画面（Issue #74）の
  * 「もう一度」は同じ曲を遊び直す再挑戦であり、題名（曲選択）を経由せずプレイの直前
  * （ウォームアップ）へ戻すのが意味に合う。「タイトルに戻る」は従来どおり結果→再挑戦→題名で戻す。
+ * プレイから「再挑戦」へ戻る経路を加える理由を先に述べる。一時停止の「トップに戻る」（Issue #112）は
+ * プレイを中断して題名へ戻す導線であり、結果（得点の記録）を経ずに後始末専用の再挑戦状態を経て題名へ戻す。
  */
 export const ALLOWED_TRANSITIONS: Readonly<Record<ScreenKey, readonly ScreenKey[]>> = {
   title: ["warmup"],
   warmup: ["play"],
-  play: ["result"],
+  play: ["result", "retry"],
   result: ["retry", "warmup"],
   retry: ["title"],
 };

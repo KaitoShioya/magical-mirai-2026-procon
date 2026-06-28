@@ -8,10 +8,13 @@ describe("ALLOWED_TRANSITIONS", () => {
     expect(ALLOWED_TRANSITIONS.result).toEqual(["retry", "warmup"]);
   });
 
-  it("結果以外の状態の遷移先は基本経路の一巡を保つ", () => {
+  it("プレイからは結果と、一時停止の中断（トップに戻る）のための再挑戦へ進める（Issue #112）", () => {
+    expect(ALLOWED_TRANSITIONS.play).toEqual(["result", "retry"]);
+  });
+
+  it("題名・ウォームアップ・再挑戦の遷移先は基本経路の一巡を保つ", () => {
     expect(ALLOWED_TRANSITIONS.title).toEqual(["warmup"]);
     expect(ALLOWED_TRANSITIONS.warmup).toEqual(["play"]);
-    expect(ALLOWED_TRANSITIONS.play).toEqual(["result"]);
     expect(ALLOWED_TRANSITIONS.retry).toEqual(["title"]);
   });
 

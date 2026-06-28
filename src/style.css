@@ -312,10 +312,24 @@ body {
   cursor: pointer;
 }
 
+/* 「トップに戻る」は中断の副ボタン。主操作の「再開」より控えめに、淡色の細い枠で出す。 */
+.pause-overlay__return {
+  min-width: 160px;
+  min-height: 44px;
+  padding: 10px 24px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--text-dim);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 /* 覆いの中の表示物は局面に応じて出し入れする。hidden 属性で隠す。 */
 .pause-overlay__message[hidden],
 .pause-overlay__countdown[hidden],
-.pause-overlay__resume[hidden] {
+.pause-overlay__resume[hidden],
+.pause-overlay__return[hidden] {
   display: none;
 }
 

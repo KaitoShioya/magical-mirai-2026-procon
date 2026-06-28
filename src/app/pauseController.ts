@@ -23,8 +23,11 @@ export interface PauseController {
   dispose(): void;
 }
 
-/** 副作用の出口。楽曲再生の停止・再開と入力の有効無効を注入で受け取る。 */
-export type PauseControllerDeps = PauseStateDeps;
+/** 副作用の出口。楽曲再生の停止・再開と入力の有効無効に加え、一時停止からの中断（題名へ戻す）を注入で受け取る。 */
+export interface PauseControllerDeps extends PauseStateDeps {
+  /** 一時停止からプレイを中断して題名へ戻す（覆いの「トップに戻る」が呼ぶ）。 */
+  returnToTitle(): void;
+}
 
 export function createPauseController(
   deps: PauseControllerDeps,
@@ -61,7 +64,14 @@ export function createPauseController(
   resumeButton.textContent = "再開";
   resumeButton.setAttribute("aria-label", "再開する");
 
-  overlay.append(message, countdown, resumeButton);
+  // プレイを中断して題名へ戻すボタン。停止中だけ出す（再開ボタンと同じ局面）。
+  const returnButton = document.createElement("button");
+  returnButton.type = "button";
+  returnButton.className = "pause-overlay__return";
+  returnButton.textContent = "トップに戻る";
+  returnButton.setAttribute("aria-label", "トップ（題名）に戻る");
+
+  overlay.append(message, countdown, resumeButton, returnButton);
   host.append(pauseButton, overlay);
 
   // 状態の見え方を表示へ反映する。実行中は覆いを隠し一時停止ボタンを（プレイ中だけ）出す。停止中は停止中表示と再開ボタンを、
@@ -73,6 +83,7 @@ export function createPauseController(
     const counting = view.phase === "countingIn";
     message.hidden = counting;
     resumeButton.hidden = counting;
+    returnButton.hidden = counting;
     countdown.hidden = !counting;
     countdown.textContent = counting ? String(view.countdownRemaining) : "";
   }
@@ -87,9 +98,15 @@ export function createPauseController(
     state.beginResumeCountIn();
     render();
   };
+  // 覆いの「トップに戻る」ボタンは、プレイを中断して題名へ戻す。中断の後始末（プレイ局面の解除・覆いの非表示）は
+  // 統括が returnToTitle の中で setPlayPhase(false) を呼んで行うため、ここでは中断を依頼するだけにする。
+  const onReturnClick = (): void => {
+    deps.returnToTitle();
+  };
 
   pauseButton.addEventListener("click", onPauseClick);
   resumeButton.addEventListener("click", onResumeClick);
+  returnButton.addEventListener("click", onReturnClick);
 
   render();
 
@@ -121,6 +138,7 @@ export function createPauseController(
     dispose(): void {
       pauseButton.removeEventListener("click", onPauseClick);
       resumeButton.removeEventListener("click", onResumeClick);
+      returnButton.removeEventListener("click", onReturnClick);
       pauseButton.remove();
       overlay.remove();
     },

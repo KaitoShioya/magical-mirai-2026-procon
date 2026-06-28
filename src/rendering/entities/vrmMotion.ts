@@ -14,7 +14,6 @@ import { createVRMAnimationClip, type VRMAnimation } from "@pixiv/three-vrm-anim
 import type { VRMSpringBoneJoint } from "@pixiv/three-vrm";
 import type { LoadedVrm } from "../loaders/vrmLoader";
 import type { CharacterDynamicsConfig } from "../../types/character";
-import { twinTailWind, type TwinTailWindParams } from "../../utils/twinTailWind";
 
 /** モーション層の取っ手。毎フレーム更新と後始末の2操作だけを持つ。 */
 export interface VrmMotion {
@@ -94,8 +93,6 @@ export function createPosedMotion(
 /** 風で操作するスプリングジョイントと、復元のために退避した元設定。 */
 interface SavedSpringJoint {
   readonly joint: VRMSpringBoneJoint;
-  /** 揺らぎの位相差（左右で異なる）。 */
-  readonly phase: number;
   /** 元の重力方向（Vector3 のため参照共有を避けて複製で保存）。 */
   readonly gravityDir: Vector3;
   readonly gravityPower: number;
@@ -137,8 +134,6 @@ export function createDynamicPosedMotion(
       }
       savedJoints.push({
         joint,
-        // 2本目（名前に _11 を含む）へ位相差を与え、左右が同じ動きで固まらないようにする。
-        phase: joint.bone.name.includes("_11") ? dynamics.twinTail.chainPhaseOffset : 0,
         gravityDir: joint.settings.gravityDir.clone(),
         gravityPower: joint.settings.gravityPower,
         stiffness: joint.settings.stiffness,
@@ -156,33 +151,33 @@ export function createDynamicPosedMotion(
     }
   }
 
-  const windParams: TwinTailWindParams = {
-    baseDirectionLocal: dynamics.twinTail.baseDirectionLocal,
-    power: dynamics.twinTail.power,
-    oscillationAmplitude: dynamics.twinTail.oscillationAmplitude,
-    oscillationFrequencyHz: dynamics.twinTail.oscillationFrequencyHz,
-  };
+  // 風の方向（ミク局所、後方かつ上向き）を正規化して持つ。揺らぎを与えず一定方向とする理由を先に述べる。
+  // 方向に直交する揺らぎを加えると、ツインテールが流れの方向に対して垂直に振動して見えるためである。一定方向にすると、
+  // ツインテールは振動せず一方向へ流れる。
+  const windDirLocal = new Vector3(
+    dynamics.twinTail.baseDirectionLocal.x,
+    dynamics.twinTail.baseDirectionLocal.y,
+    dynamics.twinTail.baseDirectionLocal.z
+  ).normalize();
+  const windPower = dynamics.twinTail.power;
 
   const figureQuat = new Quaternion();
-  let elapsedSeconds = 0;
+  const windDirWorld = new Vector3();
 
   return {
     update(deltaSeconds: number): void {
       // 固定ポーズを再評価して人体姿勢を確定する（物理の前）。
       posed.update(deltaSeconds);
-      elapsedSeconds += deltaSeconds;
       if (savedJoints.length === 0) {
         return;
       }
-      // ミクのワールド向きを最新化し、局所の風方向をワールドへ変換するための四元数を得る。
+      // ミクのワールド向きを最新化し、局所の一定の風方向をワールドへ変換する（重力方向はワールド空間で解釈される）。
       loaded.object3d.updateWorldMatrix(true, false);
       loaded.object3d.getWorldQuaternion(figureQuat);
+      windDirWorld.copy(windDirLocal).applyQuaternion(figureQuat);
       for (const saved of savedJoints) {
-        const wind = twinTailWind(elapsedSeconds, windParams, saved.phase);
-        // 局所方向をワールドへ変換して重力方向に設定する（重力方向はワールド空間で解釈される）。
-        wind.directionLocal.applyQuaternion(figureQuat);
-        saved.joint.settings.gravityDir.copy(wind.directionLocal);
-        saved.joint.settings.gravityPower = wind.power;
+        saved.joint.settings.gravityDir.copy(windDirWorld);
+        saved.joint.settings.gravityPower = windPower;
       }
     },
     dispose(): void {

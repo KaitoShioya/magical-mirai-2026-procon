@@ -5,7 +5,7 @@
 // 時刻評価は呼び出し側（utils の拍バースト包絡）が行い、ここは色収差強度の値を受け取って uniform へ渡すだけである。
 
 import type { Camera, Scene, WebGLRenderer } from "three";
-import { Vector2 } from "three";
+import { Vector2, WebGLRenderTarget, UnsignedByteType, RGBAFormat } from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
@@ -248,6 +248,99 @@ export function createBloomComposer(
       postEffectPass.dispose();
       outputPass.dispose();
       composer.dispose();
+    },
+  };
+}
+
+/** 成果物画像のキャプチャ用合成器の外部契約（成果物タスク #69）。 */
+export interface ArtifactCaptureComposer {
+  /** 出力解像度で1枚描いて読み戻し、8ビットの画素（赤緑青と不透明度の並び、左下原点）を返す。 */
+  capturePixels(): Uint8Array;
+  /** GPU資源（描画対象・各パス・合成器）を解放する。 */
+  dispose(): void;
+}
+
+/**
+ * 成果物画像のキャプチャ用合成器を作る（成果物タスク #69）。本編と同じパスの並び（シーン描画→ブルーム→周縁減光と色収差→
+ * 最終出力）を、画面へ出さず固定の出力解像度で組み立て、読取バッファから8ビットの画素を読み戻す。
+ * 本編の合成器（createBloomComposer）と1つのファイルにまとめる理由を先に述べる。ブルームの定数とパスの並びを別々に
+ * 書くと、本編を変えたとき成果物の見えがずれる（ドリフト）。同じファイルで同じ定数を使い、見えを揃える。
+ *
+ * 画面へ出さない設定にする理由を先に述べる。最終出力パスを画面でなく合成器の内部バッファへ描くことで、描いた結果を
+ * 画素として読み戻せる。
+ *
+ * 読取対象を8ビット整数（UnsignedByteType・RGBAFormat）にする理由を先に述べる。three.js の既定では合成器の内部
+ * 描画対象が半精度浮動小数で作られ、Uint8Array へ読み戻すと型が食い違い読み戻せない。最終出力パスがトーンマッピングと
+ * 線形からsRGBへの変換を済ませた結果は0から1に収まるため、8ビット整数の対象へ書けば情報を失わず可搬に読み戻せる。
+ *
+ * 呼び出し側（renderRoot.captureArtifact）は、本合成器を作る前にレンダラの画素密度倍率を1へ退避し、作った後に
+ * 本合成器を破棄してから倍率と表示寸法を元へ戻す。倍率を1にする理由を先に述べる。合成器は構築時のレンダラ倍率で
+ * 内部バッファの実画素数を決めるため、倍率1で作れば width×height の実画素数になり、読み戻す寸法が出力解像度と一致する。
+ */
+export function createArtifactCaptureComposer(
+  renderer: WebGLRenderer,
+  scene: Scene,
+  camera: Camera,
+  options: {
+    width: number;
+    height: number;
+    bloomEnabled: boolean;
+    postEffectEnabled: boolean;
+  }
+): ArtifactCaptureComposer {
+  const { width, height, bloomEnabled, postEffectEnabled } = options;
+
+  // 8ビット整数の読取対象。深度バッファは既定で持つ（シーン描画の深度に使う）。色空間は既定（変換を重ねない）にする。
+  // 重ねない理由を先に述べる。最終出力パスが既にsRGBへ変換しているため、読取対象側で再度の色変換を入れると二重に
+  // なる。読み戻した8ビットの並びをそのまま2次元キャンバスへ載せれば画面と同じ色になる。
+  const captureTarget = new WebGLRenderTarget(width, height, {
+    type: UnsignedByteType,
+    format: RGBAFormat,
+  });
+
+  const composer = new EffectComposer(renderer, captureTarget);
+  // 画面へ出さない。これにより最終出力パスは画面でなく合成器の内部バッファへ描き、結果を読み戻せる。
+  composer.renderToScreen = false;
+  composer.setSize(width, height);
+
+  const renderPass = new RenderPass(scene, camera);
+  const bloomPass = new UnrealBloomPass(new Vector2(1, 1), BLOOM_STRENGTH, BLOOM_RADIUS, BLOOM_THRESHOLD);
+  bloomPass.enabled = bloomEnabled;
+  // ブルームのぼかしの入力解像度を本編と同じ規則（表示寸法×倍率）で縮小する。本編と同じ見えにするため同じ規則を使う。
+  const bloomResolution = computeBloomResolution(width, height, BLOOM_RESOLUTION_SCALE);
+  bloomPass.setSize(bloomResolution.x, bloomResolution.y);
+
+  const postEffectPass = new ShaderPass(VIGNETTE_CHROMA_SHADER);
+  postEffectPass.enabled = postEffectEnabled;
+  postEffectPass.uniforms.vignetteStrength.value = POST_VIGNETTE_BASE_STRENGTH;
+  // 静止画のため拍同期の色収差は出さない（強度0）。
+  postEffectPass.uniforms.chromaOffset.value = 0;
+  postEffectPass.uniforms.resolution.value.set(Math.max(1, width), Math.max(1, height));
+
+  const outputPass = new OutputPass();
+
+  composer.addPass(renderPass);
+  composer.addPass(bloomPass);
+  composer.addPass(postEffectPass);
+  composer.addPass(outputPass);
+  // addPass は各パスへ描画バッファ全解像度を設定するため、ブルームの縮小解像度をパス追加の後に再適用する。
+  bloomPass.setSize(bloomResolution.x, bloomResolution.y);
+
+  return {
+    capturePixels(): Uint8Array {
+      // 画面へ出さない設定のため、描画の往復の後に最終結果が読取バッファ（readBuffer）に入る。
+      composer.render();
+      const buffer = new Uint8Array(width * height * 4);
+      renderer.readRenderTargetPixels(composer.readBuffer, 0, 0, width, height, buffer);
+      return buffer;
+    },
+    dispose(): void {
+      renderPass.dispose();
+      bloomPass.dispose();
+      postEffectPass.dispose();
+      outputPass.dispose();
+      composer.dispose();
+      captureTarget.dispose();
     },
   };
 }

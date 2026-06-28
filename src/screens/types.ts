@@ -100,6 +100,44 @@ export interface PlayWiring {
 }
 
 /**
+ * 結果画面が表示する確定スコアの写し（成果物タスク #71）。
+ * 画面層は得点の論理を持たないため、得点型そのものでなく統括（src/app）が整形して渡す表示用の値だけを受け取る。
+ * 値は楽曲終了の地点で一度だけ確定（凍結）したもので、撮影や共有のたびに再計算しない。
+ */
+export interface ResultSnapshot {
+  /** 総合得点。 */
+  readonly totalScore: number;
+  /** ランク（C・B・A・S のいずれか）。文字として扱い、画面層は帯分けの論理を持たない。 */
+  readonly rank: string;
+  /** 百分位（0以上100以下、値が大きいほど上位）。 */
+  readonly percentile: number;
+}
+
+/**
+ * 結果画面の結線（成果物タスク #71・#69・#70・#68）。統括（src/app）が確定スコア・作品情報・撮影・画像化・共有を解決して渡す。
+ * 結果画面はこれを用いてスコア表示・成果物プレビュー・撮影操作・保存共有を組み立てる。
+ * 画面層が得点・描画・共有の論理を持たないための窓口で、論理はすべて統括側にある。
+ */
+export interface ResultWiring {
+  /** 楽曲終了時に凍結した確定スコアの写しを返す。確定前（異常時）は null を返す。 */
+  getFinalResult(): ResultSnapshot | null;
+  /** 作品名（成果物画像の見出し・共有文に使う）。 */
+  readonly appTitle: string;
+  /** 曲名。 */
+  readonly songTitle: string;
+  /** 作者名。 */
+  readonly songArtist: string;
+  /** 撮影モード（#68）を始める。結果画面へ入ったときに呼ぶ。 */
+  beginPhotoMode(): void;
+  /** 撮影モードを終える。結果画面から抜けるときに呼ぶ。 */
+  endPhotoMode(): void;
+  /** 現在のカメラ構図で成果物画像を作って返す（#69）。描画できない端末では null を返す。 */
+  captureArtifact(): Promise<Blob | null>;
+  /** 成果物画像を共有または保存する（#70）。画像が無い端末ではテキストのみで成立させる。 */
+  shareArtifact(blob: Blob | null): Promise<void>;
+}
+
+/**
  * 各画面へ渡す文脈。
  * 画面は遷移先のキーを要求するだけで、他の画面や機械の内部実装を知らない。
  */
@@ -110,6 +148,8 @@ export interface ScreenContext {
   requestTransition(to: ScreenKey): void;
   /** プレイ画面の本編表示の結線（Issue #33）。診断・本番の双方で統括が渡す。 */
   readonly play?: PlayWiring;
+  /** 結果画面の結線（成果物タスク #71）。統括が渡す。 */
+  readonly result?: ResultWiring;
 }
 
 /** 状態へ進入するたびに新しい画面を生成する関数。 */

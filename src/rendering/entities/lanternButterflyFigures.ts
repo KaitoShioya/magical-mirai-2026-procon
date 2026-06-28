@@ -33,6 +33,11 @@ import {
 } from "../constants";
 import { createButterflyGeometry } from "./butterflyGeometry";
 import { createButterflyMaterial } from "./butterflyShader";
+import {
+  finaleLocalProgress,
+  finaleBrightnessMultiplier,
+  type FinaleParams,
+} from "../../utils/finaleReveal";
 
 /** 持続配置の蝶を1個追加する入力。大きさ強度・輝度強度は反応強度の0以上1以下の素の数値で、得点層の型は受け取らない。 */
 export interface LanternButterflyAddInput {
@@ -60,6 +65,12 @@ export interface LanternButterflyFigures {
   add(input: LanternButterflyAddInput): boolean;
   /** 近距離フェード対象の個体の輝度を、カメラ位置との距離に応じて更新する（色のみ反映）。対象が無ければ何もしない。 */
   update(cameraPosition: { x: number; y: number; z: number }): void;
+  /**
+   * 楽曲終了後の灯し立ち上げ演出（Issue #63）を適用する。先頭から count 個の各個体へ、配置順に時間差を付けた
+   * 点灯の盛り上がり（輝度の一過性の増加）を、保持した基準輝度に乗じて反映する（色のみ。位置・姿勢は変えない）。
+   * 完了時（局所進行が1）は基準輝度へ戻る。立ち上げ中は近距離フェードより本演出を優先する。
+   */
+  applyFinale(elapsedSec: number, count: number, params: FinaleParams): void;
   /** 設定を GPU へ反映する（行列・色・位相の更新通知）。 */
   commit(): void;
   /** 現在の追加済み個体数（内部件数）。 */
@@ -253,6 +264,22 @@ export function createLanternButterflyFigures(options: { capacity: number }): La
     }
   }
 
+  function applyFinale(elapsedSec: number, finaleCount: number, params: FinaleParams): void {
+    if (disposed) {
+      return;
+    }
+    const limit = Math.min(finaleCount, count);
+    for (let i = 0; i < limit; i += 1) {
+      const local = finaleLocalProgress(elapsedSec, i, limit, params);
+      const multiplier = finaleBrightnessMultiplier(local, params.brightnessOvershoot);
+      // 立ち上げ中は近距離フェードより優先し、基準輝度に倍率を乗じて書く（距離による減光は適用しない）。
+      writeColor(i, baseBrightness[i] * multiplier);
+    }
+    if (limit > 0 && object.instanceColor) {
+      object.instanceColor.needsUpdate = true;
+    }
+  }
+
   function reset(): void {
     positions.length = 0;
     baseBrightness.length = 0;
@@ -277,6 +304,7 @@ export function createLanternButterflyFigures(options: { capacity: number }): La
     capacity,
     add,
     update,
+    applyFinale,
     commit: markNeedsUpdate,
     activeCount: () => count,
     reset,

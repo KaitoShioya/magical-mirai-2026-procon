@@ -1,6 +1,14 @@
 // screens サブシステムの公開窓口。統括（src/app）がファクトリ対応表と機械を組み立てるために用いる。
 
-export type { Screen, ScreenContext, ScreenFactory, ScreenKey, SongChoice } from "./types";
+export type {
+  Screen,
+  ScreenContext,
+  ScreenFactory,
+  ScreenKey,
+  SongChoice,
+  ResultSnapshot,
+  ResultWiring,
+} from "./types";
 export { createScreenMachine } from "./machine";
 export type { ScreenMachine } from "./machine";
 export { createTitleScreen } from "./titleScreen";

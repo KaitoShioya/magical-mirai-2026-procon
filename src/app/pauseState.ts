@@ -35,8 +35,14 @@ export interface PauseStateView {
 export interface PauseState {
   /** プレイ進行の開始・終了で切り替える。終了（偽）にすると実行中へ戻し累積を0にする。 */
   setPlayPhase(active: boolean): void;
-  /** 一時停止する。実行中・カウントイン中のどちらからでも停止中へ移し累積を0へ戻す。停止中の再呼び出しは無作用。 */
-  pause(): void;
+  /**
+   * 一時停止する。実行中・カウントイン中のどちらからでも停止中へ移し累積を0へ戻す。停止中の再呼び出しは無作用。
+   * automatic は停止の契機を表す。true はタブ離脱など自動の停止で、タブ復帰で自動的に再開（カウントイン）してよい。
+   * false は利用者の操作による停止で、利用者が再開を指示するまで停止を保つ。停止中の再呼び出しでは最初の契機を保つ。
+   */
+  pause(automatic: boolean): void;
+  /** タブ復帰で自動的に再開してよいか。自動の停止（automatic=true）で停止中のときだけ真。 */
+  shouldAutoResume(): boolean;
   /** 停止中からカウントインを最初（3）から開始する。停止中以外では何もしない。 */
   beginResumeCountIn(): void;
   /** 毎フレーム呼ぶ。カウントイン中だけ実経過を累積し、全体尺に達したら楽曲再生を戻し入力を有効化する。 */
@@ -55,6 +61,8 @@ export function createPauseState(deps: PauseStateDeps): PauseState {
   let phase: PausePhase = "running";
   let accumulatedMs = 0;
   let playPhaseActive = false;
+  // 停止の契機がタブ復帰で自動再開してよい自動の停止か。停止へ移るときに記録し、タブ復帰の自動再開の可否に使う。
+  let resumeAutomatically = false;
 
   function isHalted(): boolean {
     return phase === "paused" || phase === "countingIn";
@@ -70,14 +78,19 @@ export function createPauseState(deps: PauseStateDeps): PauseState {
       }
     },
 
-    pause(): void {
+    pause(automatic: boolean): void {
       if (phase === "paused") {
         return;
       }
       phase = "paused";
       accumulatedMs = 0;
+      resumeAutomatically = automatic;
       deps.pausePlayback();
       deps.setInputActive(false);
+    },
+
+    shouldAutoResume(): boolean {
+      return phase === "paused" && resumeAutomatically;
     },
 
     beginResumeCountIn(): void {

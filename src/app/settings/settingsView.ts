@@ -22,6 +22,8 @@ export interface SettingsViewDeps {
   openCalibration(): void;
   /** クレジットを開く。 */
   openCredits(): void;
+  /** 他の全画面パネル（クレジット・較正・使い方説明）を閉じる。設定パネルを開く前に呼び、同じ重なり順のパネルの二重表示を防ぐ。 */
+  closeOtherPanels(): void;
 }
 
 /**
@@ -86,26 +88,33 @@ export function createSettingsView(
   panel.append(closeButton, title, soundRow, calibrationButton, creditsButton);
 
   function open(): void {
+    // 同じ重なり順の他のパネルが開いていれば閉じてから開き、パネルの二重表示を防ぐ。
+    deps.closeOtherPanels();
     panel.hidden = false;
     toggle.setAttribute("aria-expanded", "true");
     closeButton.focus();
   }
 
-  function close(): void {
+  // focusToggle が真のときだけトグルへ焦点を戻す（利用者がトグル・閉じる・Esc で閉じたとき）。
+  // 偽のときはトグルへ焦点を戻さない（プレイ突入時の自動クローズではトグルがCSSで非表示になり得るため、非表示要素へ
+  // 焦点を残さない）。
+  function close(focusToggle: boolean): void {
     panel.hidden = true;
     toggle.setAttribute("aria-expanded", "false");
-    toggle.focus();
+    if (focusToggle) {
+      toggle.focus();
+    }
   }
 
   const onToggleClick = (): void => {
     if (panel.hidden) {
       open();
     } else {
-      close();
+      close(true);
     }
   };
   const onCloseClick = (): void => {
-    close();
+    close(true);
   };
   const onSoundChange = (): void => {
     const enabled = soundCheckbox.checked;
@@ -113,17 +122,18 @@ export function createSettingsView(
     deps.setSoundEnabled(enabled);
   };
   const onCalibrationClick = (): void => {
-    close();
+    // 設定パネルを閉じてから較正を開く。開いた較正がトグルへ焦点を移すため、設定トグルへ焦点を戻さない。
+    close(false);
     deps.openCalibration();
   };
   const onCreditsClick = (): void => {
-    close();
+    close(false);
     deps.openCredits();
   };
   // Escキーは、開いている間だけ閉じる。閉じている間はゲームの操作を妨げない。
   const onKeyDown = (event: KeyboardEvent): void => {
     if (event.key === "Escape" && !panel.hidden) {
-      close();
+      close(true);
     }
   };
 
@@ -138,9 +148,14 @@ export function createSettingsView(
 
   return {
     close(): void {
-      // 開いているときだけ閉じる。閉じているときに焦点を奪わないため、内部の close は呼ばない。
+      // 開いているときだけ閉じる。プレイ突入時の自動クローズのため、トグルへ焦点を戻さず（close(false)）、
+      // パネル内に焦点があれば外す（CSSで非表示になり得る背面へ焦点を残さない）。
       if (!panel.hidden) {
-        close();
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && panel.contains(active)) {
+          active.blur();
+        }
+        close(false);
       }
     },
     dispose(): void {

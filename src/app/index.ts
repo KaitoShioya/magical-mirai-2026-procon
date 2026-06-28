@@ -203,6 +203,12 @@ export function createApp(
     setSoundEnabled: (enabled) => operationSound.setEnabled(enabled),
     openCalibration: () => calibrationView.open(),
     openCredits: () => creditsView.open(),
+    // 設定パネルを開く前に、同じ重なり順の他の全画面パネル（クレジット・較正・使い方説明）を閉じて二重表示を防ぐ。
+    closeOtherPanels: () => {
+      creditsView.close();
+      calibrationView.close();
+      howToView.close();
+    },
   });
 
   // 画面拡大・減衰揺れ（Issue #76）。ノーツの消滅（目標線到達）に同期して画面を一瞬拡大し減衰させる演出を結線する。
@@ -497,7 +503,13 @@ export function createApp(
         renderRoot.setCameraPose(pose.position, pose.target);
         session.updateFrame(musicTimeMs);
       }
-      machine.update(realDeltaMs);
+      // 一時停止中・カウントイン中（isHalted）は、プレイ画面の文字エンジンの実時間進行も止める（Issue #112）。
+      // 理由を先に述べる。machine.update は現在の画面の onUpdate を呼び、プレイ画面は経過時間で文字の寿命・変形を
+      // 進めるため、楽曲が止まっていても経過時間を渡すと文字が動き続け「止まる」体験が崩れる。停止中は経過時間を0で
+      // 渡して文字の時間進行を止める（覆いとカウントインの表示は pauseController が別に更新する）。停止は本編プレイ中
+      // だけ起きるため、他の画面の進行には影響しない。
+      const screenDeltaMs = inPlayPhase && pauseController.isHalted() ? 0 : realDeltaMs;
+      machine.update(screenDeltaMs);
       tickPlay(realDeltaMs);
       // 画面拡大・減衰揺れ（Issue #76）。プレイ進行中だけノーツの消滅へ反応させ、それ以外は恒等へ戻す。
       // 一時停止中・カウントイン中（isHalted）も恒等へ戻す（Issue #112。停止中は揺らさない）。

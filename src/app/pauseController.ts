@@ -11,9 +11,9 @@ import { createPauseState, type PauseStateDeps } from "./pauseState";
 export interface PauseController {
   /** プレイ進行の開始・終了で一時停止ボタンの表示可否を切り替える。 */
   setPlayPhase(active: boolean): void;
-  /** 利用者操作またはタブ離脱で一時停止する。 */
+  /** タブ離脱など自動の契機で一時停止する（タブ復帰で自動的に再開してよい停止）。利用者操作による停止は一時停止ボタンが担う。 */
   pause(): void;
-  /** タブ復帰または「再開」操作でカウントインを最初から開始する。 */
+  /** タブ復帰でカウントインを最初から開始する。ただし自動の停止で停止中のときだけ行い、手動で停止中なら何もしない。 */
   beginResumeCountIn(): void;
   /** 毎フレーム呼ぶ。カウントインの実時間進行を進め、表示を更新する。 */
   tick(realDeltaMs: number): void;
@@ -77,10 +77,12 @@ export function createPauseController(
     countdown.textContent = counting ? String(view.countdownRemaining) : "";
   }
 
+  // 一時停止ボタンは利用者の操作による停止（automatic=false）。利用者が再開を指示するまで停止を保つ。
   const onPauseClick = (): void => {
-    state.pause();
+    state.pause(false);
     render();
   };
+  // 覆いの「再開」ボタンは利用者の明示の再開のため、常にカウントインを開始する。
   const onResumeClick = (): void => {
     state.beginResumeCountIn();
     render();
@@ -97,12 +99,17 @@ export function createPauseController(
       render();
     },
     pause(): void {
-      state.pause();
+      // タブ離脱など自動の停止（automatic=true）。タブ復帰で自動的に再開してよい。
+      state.pause(true);
       render();
     },
     beginResumeCountIn(): void {
-      state.beginResumeCountIn();
-      render();
+      // タブ復帰の自動再開は、自動の停止で停止中のときだけ行う。利用者が手動で停止したまま離脱・復帰した場合は
+      // 勝手に再開せず停止を保つ（利用者は覆いの「再開」ボタンで再開する）。
+      if (state.shouldAutoResume()) {
+        state.beginResumeCountIn();
+        render();
+      }
     },
     tick(realDeltaMs: number): void {
       state.tick(realDeltaMs);

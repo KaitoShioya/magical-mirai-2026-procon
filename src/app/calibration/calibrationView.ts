@@ -433,22 +433,27 @@ export function createCalibrationView(
     closeButton.focus();
   }
 
-  function close(): void {
+  // focusToggle が真のときだけトグルへ焦点を戻す（利用者がトグル・閉じる・Esc で閉じたとき）。
+  // 偽のときはトグルへ焦点を戻さない（プレイ突入時の自動クローズではトグルがCSSで非表示になり得るため、非表示要素へ
+  // 焦点を残さない）。
+  function close(focusToggle: boolean): void {
     panel.hidden = true;
     toggle.setAttribute("aria-expanded", "false");
     enterIdle();
-    toggle.focus();
+    if (focusToggle) {
+      toggle.focus();
+    }
   }
 
   const onToggleClick = (): void => {
     if (panel.hidden) {
       open();
     } else {
-      close();
+      close(true);
     }
   };
   const onCloseClick = (): void => {
-    close();
+    close(true);
   };
   const onStartClick = (): void => {
     // 最初の操作で音エンジンを起動する（冪等）。起動の成否が確定した後に音声出力の遅れの目安を更新する。
@@ -479,7 +484,7 @@ export function createCalibrationView(
   // Escキーは、開いている間だけ閉じる。閉じている間はゲームの操作を妨げない。
   const onKeyDown = (event: KeyboardEvent): void => {
     if (event.key === "Escape" && !panel.hidden) {
-      close();
+      close(true);
     }
   };
 
@@ -500,9 +505,14 @@ export function createCalibrationView(
       open();
     },
     close(): void {
-      // 開いているときだけ閉じる。閉じているときに焦点を奪わないため、内部の close は呼ばない。
+      // 開いているときだけ閉じる。プレイ突入時の自動クローズのため、トグルへ焦点を戻さず（close(false)）、
+      // パネル内に焦点があれば外す（CSSで非表示になり得る背面へ焦点を残さない）。
       if (!panel.hidden) {
-        close();
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && panel.contains(active)) {
+          active.blur();
+        }
+        close(false);
       }
     },
     dispose(): void {

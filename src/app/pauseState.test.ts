@@ -18,7 +18,7 @@ describe("createPauseState", () => {
     const deps = makeDeps();
     const state = createPauseState(deps);
 
-    state.pause();
+    state.pause(false);
 
     expect(deps.pausePlayback).toHaveBeenCalledTimes(1);
     expect(deps.setInputActive).toHaveBeenCalledTimes(1);
@@ -31,7 +31,7 @@ describe("createPauseState", () => {
     const deps = makeDeps();
     const state = createPauseState(deps);
 
-    state.pause();
+    state.pause(false);
     state.beginResumeCountIn();
 
     state.tick(COUNT_IN_TOTAL_MS - 1);
@@ -61,9 +61,9 @@ describe("createPauseState", () => {
     const deps = makeDeps();
     const state = createPauseState(deps);
 
-    state.pause();
-    state.pause();
-    state.pause();
+    state.pause(false);
+    state.pause(false);
+    state.pause(false);
 
     expect(deps.pausePlayback).toHaveBeenCalledTimes(1);
     expect(deps.setInputActive).toHaveBeenCalledTimes(1);
@@ -73,11 +73,11 @@ describe("createPauseState", () => {
     const deps = makeDeps();
     const state = createPauseState(deps);
 
-    state.pause();
+    state.pause(true);
     state.beginResumeCountIn();
     state.tick(COUNT_IN_TOTAL_MS - 1); // あと1ミリ秒で完了する手前まで進める
 
-    state.pause(); // タブ離脱で停止へ戻す
+    state.pause(true); // タブ離脱で停止へ戻す
     expect(state.isHalted()).toBe(true);
     expect(state.view().phase).toBe("paused");
 
@@ -89,11 +89,35 @@ describe("createPauseState", () => {
     expect(deps.resumePlayback).toHaveBeenCalledTimes(1);
   });
 
+  it("自動の停止（automatic=true）は shouldAutoResume が真、手動の停止（false）は偽", () => {
+    const autoState = createPauseState(makeDeps());
+    autoState.pause(true);
+    expect(autoState.shouldAutoResume()).toBe(true);
+
+    const manualState = createPauseState(makeDeps());
+    manualState.pause(false);
+    expect(manualState.shouldAutoResume()).toBe(false);
+  });
+
+  it("手動停止のままタブ離脱（自動停止の再呼び出し）が来ても、最初の手動の契機を保ち自動再開しない", () => {
+    const state = createPauseState(makeDeps());
+
+    state.pause(false); // 利用者が手動で停止
+    state.pause(true); // タブ離脱の自動停止が来る（停止中のため冪等で契機は変えない）
+
+    expect(state.shouldAutoResume()).toBe(false);
+  });
+
+  it("実行中は shouldAutoResume が偽", () => {
+    const state = createPauseState(makeDeps());
+    expect(state.shouldAutoResume()).toBe(false);
+  });
+
   it("カウントインの残り段数は3から1へ減る", () => {
     const deps = makeDeps();
     const state = createPauseState(deps);
 
-    state.pause();
+    state.pause(false);
     state.beginResumeCountIn();
     expect(state.view().countdownRemaining).toBe(WARMUP_COUNTDOWN_STEPS);
 
@@ -108,7 +132,7 @@ describe("createPauseState", () => {
     const deps = makeDeps();
     const state = createPauseState(deps);
 
-    state.pause();
+    state.pause(false);
     state.setPlayPhase(false);
 
     expect(state.isHalted()).toBe(false);

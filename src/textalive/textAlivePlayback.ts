@@ -75,6 +75,7 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
       beginFromStart() {},
       pause() {},
       play() {},
+      setVolume() {},
       hasStarted: () => false,
       hasEnded: () => false,
       retry() {},
@@ -98,6 +99,10 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
   let stopped = false;
   // プレイ開始時に、先頭付近での再生を確認してから音量を再生用音量へ戻すための保留状態。
   let volumeRestorePending = false;
+  // 利用者のマスター音量倍率（0以上1以下）。基準再生音量 BGM_PLAYBACK_VOLUME へ掛ける。既定は1（基準音量）。
+  let masterVolumeFactor = 1;
+  // 現在 player.volume が再生音量に復元されている（無音化していない）か。音量つまみの即時反映の可否に使う。
+  let volumeRestored = false;
 
   const mediaElement = document.getElementById(MEDIA_ELEMENT_ID);
   const player = new Player({
@@ -113,7 +118,10 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
   // バランスが悪い。本アプリはホスト管理ではなく自前で楽曲を読み込むため、再生音量を明示的に目標値へ定めるのが正しい。
   // プレイヤーの現在値（既定の100）を読むのではなく目標値を用いることで楽曲音量を確実に下げる。
   // この値は、許可確立（primeAudioPermission）とプレイ開始時に0へ無音化したあと、再生開始の観測時に戻す復元処理が用いる。
-  const playbackVolume = BGM_PLAYBACK_VOLUME;
+  // 利用者のマスター音量倍率を掛けた、実際に戻す再生音量を求める。倍率0で無音、1で基準再生音量になる。
+  function targetPlaybackVolume(): number {
+    return BGM_PLAYBACK_VOLUME * masterVolumeFactor;
+  }
 
   const isReady = (): boolean => machine.getState().status === "ready";
 
@@ -136,8 +144,9 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
       player.isPlaying &&
       currentPositionMs() <= VOLUME_RESTORE_MAX_POSITION_MS
     ) {
-      player.volume = playbackVolume;
+      player.volume = targetPlaybackVolume();
       volumeRestorePending = false;
+      volumeRestored = true;
     }
   }
 
@@ -204,6 +213,7 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
       started = false;
       stopped = false;
       volumeRestorePending = true;
+      volumeRestored = false;
       player.volume = 0;
       player.requestMediaSeek(0);
       player.requestPlay();
@@ -213,6 +223,22 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
     },
     play() {
       player.requestPlay();
+    },
+    setVolume(volumePercent: number) {
+      // 0以上100以下へ丸めて倍率（0以上1以下）に直す。非有限は基準（1）へ倒す。
+      const clampedPercent = !Number.isFinite(volumePercent)
+        ? 100
+        : volumePercent < 0
+          ? 0
+          : volumePercent > 100
+            ? 100
+            : volumePercent;
+      masterVolumeFactor = clampedPercent / 100;
+      // 再生音量に復元済み（音漏れ防止の無音化中でない）ときだけ即時反映する。無音化中（許可確立・先頭移動の途中）は
+      // 倍率を覚えるだけにし、復元時に targetPlaybackVolume が反映する（途中位置の音漏れを防ぐ）。
+      if (volumeRestored) {
+        player.volume = targetPlaybackVolume();
+      }
     },
     hasStarted() {
       // 現在の再生状態を観測して掛け金を更新したうえで返す（純粋な取得ではなく観測の副作用を持つ）。

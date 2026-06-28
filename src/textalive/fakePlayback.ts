@@ -121,6 +121,8 @@ export function createFakePlayback(): Playback {
       resumeEpochMs = now();
       playing = true;
     },
+    // 擬似再生は音声を持たないため、音量設定は何もしない（診断・スモークでの結線整合のためにだけ用意する）。
+    setVolume() {},
     hasStarted: () => started,
     hasEnded() {
       return isSongEnded({

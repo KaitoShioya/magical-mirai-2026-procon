@@ -12,11 +12,11 @@ export interface SettingsView {
 
 /** 設定画面の注入依存。保存・反映・他画面を開く副作用を差し替え可能にする。 */
 export interface SettingsViewDeps {
-  /** 保存済みの操作音の音量（0〜100）を読む（つまみの初期位置に使う）。 */
+  /** 保存済みの音量（0〜100。楽曲と操作音のマスター音量）を読む（つまみの初期位置に使う）。 */
   loadSoundVolume(): number;
-  /** 操作音の音量（0〜100）を保存する。 */
+  /** 音量（0〜100）を保存する。 */
   saveSoundVolume(volume: number): void;
-  /** 操作音の音量（0〜100）を操作音エンジンへ反映する。 */
+  /** 音量（0〜100）を楽曲と操作音の両方へ反映する（マスター音量）。 */
   setSoundVolume(volume: number): void;
   /** 較正を開く。 */
   openCalibration(): void;
@@ -58,21 +58,22 @@ export function createSettingsView(
   title.className = "settings-panel__title";
   title.textContent = "設定";
 
-  // 操作音の音量つまみ。0で無音、100で最大。初期位置は保存済みの音量を反映する。0にできることで効果音のOFFを満たす。
+  // 音量つまみ（楽曲音量と操作音のマスター音量）。0で無音、100で最大。初期位置は保存済みの音量を反映する。
+  // 0にできることで効果音のOFFを満たす。
   const soundRow = document.createElement("label");
   soundRow.className = "settings-panel__row";
   const soundText = document.createElement("span");
   soundText.className = "settings-panel__row-text";
-  soundText.textContent = "操作音の音量";
+  soundText.textContent = "音量";
   const soundSlider = document.createElement("input");
   soundSlider.type = "range";
   soundSlider.min = "0";
   soundSlider.max = "100";
   soundSlider.step = "1";
   soundSlider.className = "settings-panel__slider";
-  soundSlider.dataset.role = "sound-volume";
+  soundSlider.dataset.role = "master-volume";
   soundSlider.value = String(deps.loadSoundVolume());
-  soundSlider.setAttribute("aria-label", "操作音の音量");
+  soundSlider.setAttribute("aria-label", "音量");
   soundRow.append(soundText, soundSlider);
 
   // 較正のやり直し。設定パネルを閉じてから較正を開く（パネルの重なりを避けるため）。

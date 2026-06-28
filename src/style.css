@@ -242,6 +242,91 @@ body {
   display: none;
 }
 
+/* 設定（Issue #77）。配置の理由を先に述べる。クレジットは右上、較正は左上、使い方は下部を占めるため、
+   設定トグルは右上のクレジットの直下へ縦に並べる。クレジットトグルの高さ32画素と間隔8画素のぶん（合計40画素）
+   下げた位置に置くことで、右上で縦に並んで重ならない。重なり順は既存トグルと同じ1100。 */
+.settings-toggle {
+  position: fixed;
+  top: calc(max(env(safe-area-inset-top), 8px) + 40px);
+  right: max(env(safe-area-inset-right), 8px);
+  z-index: 1100;
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: clamp(11px, 2vw, 13px);
+  color: var(--text-dim);
+  background: rgba(5, 6, 10, 0.7);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.settings-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding:
+    max(env(safe-area-inset-top), 24px)
+    max(env(safe-area-inset-right), 24px)
+    max(env(safe-area-inset-bottom), 24px)
+    max(env(safe-area-inset-left), 24px);
+  overflow-y: auto;
+  background: rgba(8, 9, 14, 0.96);
+  color: var(--text);
+}
+
+/* hidden 属性で出し入れする。display 指定があると hidden が効かないため、明示的に分岐する。 */
+.settings-panel[hidden] {
+  display: none;
+}
+
+.settings-panel__close {
+  align-self: flex-end;
+  min-height: 40px;
+  padding: 8px 20px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  color: var(--text);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.settings-panel__title {
+  font-size: clamp(16px, 3vw, 22px);
+  color: var(--accent);
+}
+
+/* 操作音ON/OFFの行。チェックボックスと説明文を横に並べ、片手でも押しやすい高さを保つ。 */
+.settings-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.settings-panel__checkbox {
+  width: 20px;
+  height: 20px;
+}
+
+.settings-panel__button {
+  min-height: 44px;
+  padding: 10px 20px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  color: var(--text);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 /* プレイ中は、較正・使い方説明・設定のトグルを隠して画面を整える（Issue #112）。クレジットは規約で常時表示のため除外する。 */
 body[data-phase="play"] .calibration-toggle,
 body[data-phase="play"] .howto-toggle,

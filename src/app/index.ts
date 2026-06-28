@@ -46,6 +46,8 @@ import { createCameraTrajectory } from "../utils/cameraTrajectory";
 import { createInput } from "../input";
 import { createPlaySession } from "./playSession";
 import { createPauseController } from "./pauseController";
+import { createSettingsView, type SettingsView } from "./settings/settingsView";
+import { loadSoundEnabled, saveSoundEnabled } from "./settings/soundPreference";
 
 /** 統括の外部契約。後始末のみを公開する。 */
 export interface App {
@@ -179,6 +181,8 @@ export function createApp(
   // 持たないため画面遷移スモークの検証を妨げず、両モードで生成して warmup で unlock を呼ぶことで、画面遷移スモーク
   //（?smoke=1 で warmup を含む全状態を走破する）が起動結線で未捕捉例外が出ないことを自動検査できる。
   const operationSound = createOperationSoundEngine();
+  // 起動時に保存済みの操作音ON/OFFの選択を反映する（Issue #77）。記録が無い初回は既定で鳴らす。
+  operationSound.setEnabled(loadSoundEnabled());
 
   // レイテンシ較正（Issue #50）。題名画面から開く常設トグルのオーバーレイとして、入力の遅れの補正値を測り・保存する。
   // 副作用を持つ音エンジンと端末内保存は注入で渡す。基準音は較正専用の固定の短い音（playCalibrationCue。会話帯域より
@@ -189,6 +193,16 @@ export function createApp(
     unlockAudio: () => operationSound.unlock(),
     loadOffsetMs: () => loadCalibrationOffsetMs(),
     saveOffsetMs: (offsetMs: number) => saveCalibrationOffsetMs(offsetMs),
+  });
+
+  // 設定画面（Issue #77）。操作音のON/OFF（再読込後も保持）、較正のやり直し、クレジット表示への到達を1つの常設トグルへまとめる。
+  // 較正・クレジットは既存ビューを開く。両モードで生成し、トークン不要の診断経路（?smoke=1）でも存在と開閉を検査できるようにする。
+  const settingsView: SettingsView = createSettingsView({
+    loadSoundEnabled: () => loadSoundEnabled(),
+    saveSoundEnabled: (enabled) => saveSoundEnabled(enabled),
+    setSoundEnabled: (enabled) => operationSound.setEnabled(enabled),
+    openCalibration: () => calibrationView.open(),
+    openCredits: () => creditsView.open(),
   });
 
   // 画面拡大・減衰揺れ（Issue #76）。ノーツの消滅（目標線到達）に同期して画面を一瞬拡大し減衰させる演出を結線する。
@@ -290,6 +304,7 @@ export function createApp(
     howToView.close();
     creditsView.close();
     calibrationView.close();
+    settingsView.close();
     document.body.dataset.phase = "play";
     pauseController.setPlayPhase(true);
   }
@@ -581,6 +596,7 @@ export function createApp(
       creditsView.dispose();
       howToView.dispose();
       calibrationView.dispose();
+      settingsView.dispose();
       operationSound.dispose();
       // 一時停止（Issue #112）の表示要素を取り除き、プレイ局面の印を消す。
       pauseController.dispose();

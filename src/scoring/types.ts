@@ -23,7 +23,7 @@ export interface JudgmentNote {
 }
 
 /** 判定の入力となる1回のタップ。呼び出し側（#59）が入力イベント（Reaction）とフレーム時刻標本から組み立てる。
- *  musicTimeMs は tapMusicTimeMs で音楽時刻へ変換済みの値、slot0 は0始まりのタップ音程スロット（Reaction.slotIndex をそのまま使う）。
+ *  musicTimeMs は tapMusicTimeMs で音楽時刻へ変換済みの値、slot0 は0始まりのタップしたレーン（Reaction.slotIndex をそのまま使う）。
  *  reliableMusicTime は §8 の信頼性前提（再生中かつ準備完了かつ非再同期フレーム）を満たすときだけ真。
  *  偽のときは音楽時刻の復元が信頼できないため、judgeTap は床のタップとして返す。 */
 export interface TapSample {
@@ -45,7 +45,7 @@ export interface FrameTimeSample {
 }
 
 /** 判定結果。下流が必要とする判定の出力だけを持つ。
- *  入力側の値（音程スロット・色・座標）は元の Reaction が保持するため重複させない（呼び出し側が Reaction と対にして下流へ渡す）。
+ *  入力側の値（レーン・色・座標）は元の Reaction が保持するため重複させない（呼び出し側が Reaction と対にして下流へ渡す）。
  *  boundNoteId が null かつ isFloor が真のとき床のタップ（対応ノーツ無し、または音楽時刻が信頼できないフレーム）。
  *  床のタップでは centeredDiffMs は非数（対応ノーツが無く差が定義できないため）、各精度は0、各JUSTは偽。
  *  timingAccuracy・pitchAccuracy は #51 反応強度が消費し、timingJust・pitchJust は #54 ゲージと #55 スコアが消費する。 */

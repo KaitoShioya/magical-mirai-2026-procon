@@ -165,11 +165,11 @@ export function createApp(
   const operationSound = createOperationSoundEngine();
 
   // レイテンシ較正（Issue #50）。題名画面から開く常設トグルのオーバーレイとして、入力の遅れの補正値を測り・保存する。
-  // 副作用を持つ音エンジンと端末内保存は注入で渡す。基準音は明瞭に聞こえる高めの固定音高1つを用いる
-  //（音高番号81＝880ヘルツ。会話帯域より高く、点滅の合図として聞き取りやすい）。生きた判定への結線は #59 が担う。
+  // 副作用を持つ音エンジンと端末内保存は注入で渡す。基準音は較正専用の固定の短い音（playCalibrationCue。会話帯域より
+  // 高く、点滅の合図として聞き取りやすい）を用いる。操作音を水滴音へ変えても較正の基準音は一定に保つ。生きた判定への結線は #59 が担う。
   const calibrationView: CalibrationView = createCalibrationView({
     getOutputLatencyMs: () => operationSound.outputLatencyMs,
-    playReferenceTone: () => operationSound.playNote(81),
+    playReferenceTone: () => operationSound.playCalibrationCue(),
     unlockAudio: () => operationSound.unlock(),
     loadOffsetMs: () => loadCalibrationOffsetMs(),
     saveOffsetMs: (offsetMs: number) => saveCalibrationOffsetMs(offsetMs),

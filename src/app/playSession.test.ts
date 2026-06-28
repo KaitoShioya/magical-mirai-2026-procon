@@ -35,7 +35,6 @@ function makeFrame(musicPositionMs: number, reliableMusicTime = true): FrameTime
 interface Harness {
   deps: PlaySessionDeps;
   setFrame(frame: FrameTimeSample): void;
-  setSlotPitches: ReturnType<typeof vi.fn>;
   playSlot: ReturnType<typeof vi.fn>;
   setDeployTimbre: ReturnType<typeof vi.fn>;
   spawn: ReturnType<typeof vi.fn>;
@@ -44,7 +43,6 @@ interface Harness {
 
 function makeHarness(profile: SongProfile, config = DEFAULT_OBJECTIVE_CONFIG): Harness {
   let frame: FrameTimeSample = makeFrame(0);
-  const setSlotPitches = vi.fn<(midiNotes: readonly number[] | null) => void>();
   const playSlot = vi.fn<(slotIndex: number) => void>();
   const setDeployTimbre = vi.fn<(active: boolean) => void>();
   const spawn = vi.fn<(input: ReactionLightInput) => void>();
@@ -52,7 +50,7 @@ function makeHarness(profile: SongProfile, config = DEFAULT_OBJECTIVE_CONFIG): H
   const deps: PlaySessionDeps = {
     profile,
     cameraTrajectory: createCameraTrajectory(profile.camera),
-    operationSound: { setSlotPitches, playSlot, setDeployTimbre },
+    operationSound: { playSlot, setDeployTimbre },
     spawnReactionLight: spawn,
     spawnTapRipple: tapRipple,
     getFrameSample: () => frame,
@@ -64,7 +62,6 @@ function makeHarness(profile: SongProfile, config = DEFAULT_OBJECTIVE_CONFIG): H
     setFrame: (next) => {
       frame = next;
     },
-    setSlotPitches,
     playSlot,
     setDeployTimbre,
     spawn,
@@ -105,7 +102,7 @@ describe("createPlaySession", () => {
   });
 
   describe("失敗のない床", () => {
-    it("判定窓外のタップでも例外なく協和音と光点を1回ずつ生む", () => {
+    it("判定窓外のタップでも例外なく操作音と光点を1回ずつ生む", () => {
       const h = makeHarness(minimalValidProfile);
       const session = createPlaySession(h.deps);
       session.reset();
@@ -116,7 +113,7 @@ describe("createPlaySession", () => {
       expect(h.spawn).toHaveBeenCalledTimes(1);
     });
 
-    it("再生位置が信頼できないフレームのタップでも例外なく協和音と光点を生む", () => {
+    it("再生位置が信頼できないフレームのタップでも例外なく操作音と光点を生む", () => {
       const h = makeHarness(minimalValidProfile);
       const session = createPlaySession(h.deps);
       session.reset();
@@ -146,34 +143,21 @@ describe("createPlaySession", () => {
       // どのノーツ（拍格子時刻 310・653）からも判定窓外端90ミリ秒を超えて離れた時刻。対応ノーツが無く素点が0になる。
       h.setFrame(makeFrame(5000));
       session.onReaction(makeReaction(4));
-      // 協和音は床として鳴る一方、波紋は素点0のため立てない。
+      // 操作音は床として鳴る一方、波紋は素点0のため立てない。
       expect(h.playSlot).toHaveBeenCalledTimes(1);
       expect(h.tapRipple).not.toHaveBeenCalled();
     });
   });
 
-  describe("協和音のスロット音高", () => {
-    it("プレイ開始直後にフレーム更新を経ずタップが来ても、スロット音高は反映済みで発音される", () => {
+  describe("水滴音の発音", () => {
+    it("タップが来たら、そのレーン番号で水滴音を1回発音する", () => {
       const h = makeHarness(minimalValidProfile);
       const session = createPlaySession(h.deps);
-      // reset の時点のフレーム時刻のスロット音高を反映する。時刻1500は区間 [1000,2500) で pitches=[53..]。
-      h.setFrame(makeFrame(1500));
       session.reset();
-      expect(h.setSlotPitches).toHaveBeenCalledWith([53, 56, 60, 65, 68, 72, 77]);
-      // フレーム更新を経ずにタップ。音高は反映済みで発音される。
+      // フレーム更新を経ずにタップしても、水滴音が発音される（音はどのレーンでも同じ）。
       session.onReaction(makeReaction(3));
       expect(h.playSlot).toHaveBeenCalledTimes(1);
-    });
-
-    it("フレームの時刻がスロット区間を跨ぐと、その区間の音高へ更新する", () => {
-      const h = makeHarness(minimalValidProfile);
-      const session = createPlaySession(h.deps);
-      h.setFrame(makeFrame(0));
-      session.reset();
-      h.setSlotPitches.mockClear();
-      // 区間 [0,1000) → [2500,4019) へ跨ぐと、後者の pitches=[56,60,63,68,72,75,80] へ更新する。
-      session.updateFrame(3000);
-      expect(h.setSlotPitches).toHaveBeenCalledWith([56, 60, 63, 68, 72, 75, 80]);
+      expect(h.playSlot).toHaveBeenCalledWith(3);
     });
   });
 

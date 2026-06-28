@@ -2,18 +2,9 @@
 // AudioContext には依存しない（標本列の計算のみ）。AudioBuffer への積み込みと配線は voiceGraph.ts が担う。
 // 規約により人工知能生成音源や権利のある録音を組み込めないため、減衰する擬似雑音をコードで作って応答特性とする。
 // すべて標本（サンプル）単位で扱い、時刻は標本番号を標本化周波数で割って秒へ直す。
+// 決定的な疑似乱数は random.ts と共有する（打楽器の雑音と同じ仕組みで再現可能にするため）。
 
-// 決定的な疑似乱数を返す関数を作る。同じ種からは常に同じ数列が出るため、実機でも単体テストでも同じ応答特性を再現できる。
-// 戻り値は0以上1未満の数を返す関数。広く用いられる mulberry32 という小さな疑似乱数の式を使う。
-function createSeededRandom(seed: number): () => number {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+import { createSeededRandom } from "./random";
 
 /** 標本列の二乗平均平方根（全体の大きさの指標）を求める。空配列は0を返す。 */
 export function rootMeanSquare(samples: Float32Array): number {

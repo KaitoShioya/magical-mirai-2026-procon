@@ -118,80 +118,53 @@ try {
   fail("30音同時の検査で上限維持または収束が確認できない");
 }
 
-// 5. 投下時に明るく聞こえる（投下時の周波数重心が通常時より高い）。倍音を1層重ねることで重心が上がることを、
-//    共有出力グラフを通したオフライン描画で測って確認する。基準1.05は、見積もり上昇率約9パーセントより十分低く、
-//    測定・数値計算の誤差より十分高い余裕として採る。
+// 5. 水滴音の客観測定（クリップしないこと・直流の偏りが小さいこと・単音の大きさの記録）。
+//    共有出力グラフ（残響・圧縮・ソフトクリップ込み）を通してオフライン描画した測定値を読む。
+// 最大振幅の上限。0.95を採る理由を先に述べる。最終段の柔らかい飽和制限の天井0.99により出力は構造的に1.0未満に収まるが、
+// 合否はそれより低い0.95に置く。これにより、現在の最悪値が余裕をもって合格しつつ、将来の音量や残響などの調整で頂点が
+// 0.95へ近づいた時点で（実際にクリップする前に）検査が捕捉できる。
+const CLIP_PEAK_MAX = 0.95;
+// 直流の偏りの上限（最大振幅に対する比）。0.1を採る理由を先に述べる。短い水滴音の波形は非対称な過渡で平均が
+// わずかに偏るのは正常であり、その正常な偏りが合格する余裕として0.1を採る。配線の誤りなどによる持続的な直流の偏りは
+// これを大きく超えるため、正常を許しつつ誤りを捕捉できる。
+const DC_RATIO_MAX = 0.1;
 try {
-  const brightness = await page.evaluate(() => window.__audioBrightness());
-  if (
-    !brightness ||
-    brightness.normalCentroid === null ||
-    brightness.deployCentroid === null
-  ) {
-    fail("明るさ測定に失敗: " + (brightness && brightness.error ? brightness.error : "結果なし"));
-  } else if (!(brightness.deployCentroid > brightness.normalCentroid * 1.05)) {
-    fail(
-      `投下時の周波数重心が通常時の1.05倍を超えない: 通常${brightness.normalCentroid.toFixed(1)}Hz ` +
-        `投下${brightness.deployCentroid.toFixed(1)}Hz`
-    );
+  const stats = await page.evaluate(() => window.__audioPercussionStats());
+  if (!stats || stats.manyPeak === null) {
+    fail("水滴音測定に失敗: " + (stats && stats.error ? stats.error : "結果なし"));
   } else {
-    ok(
-      `投下時の周波数重心が通常時より高い: 通常${brightness.normalCentroid.toFixed(1)}Hz ` +
-        `投下${brightness.deployCentroid.toFixed(1)}Hz`
-    );
+    // 多数同時（同時発音上限ぶん）の重なりの最悪条件でクリップしない（合否条件）。
+    if (!(stats.manyPeak <= CLIP_PEAK_MAX)) {
+      fail(`多数同時の最大振幅が上限を超える: 最大振幅${stats.manyPeak.toFixed(3)}（${CLIP_PEAK_MAX}以下が必要）`);
+    } else {
+      ok(`多数同時でクリップしない: 最大振幅${stats.manyPeak.toFixed(3)}`);
+    }
+    // 直流の偏りが小さい（合否条件）。
+    if (!(stats.manyDcRatio <= DC_RATIO_MAX)) {
+      fail(`直流の偏りが大きい: 比${stats.manyDcRatio.toFixed(3)}（${DC_RATIO_MAX}以下が必要）`);
+    } else {
+      ok(`直流の偏りが小さい: 比${stats.manyDcRatio.toFixed(3)}`);
+    }
+    // 単音の最大振幅・二乗平均平方根は記録（参考）に留め、合否条件にはしない（聞き取りやすさの音量調整の材料）。
+    console.log(`記録（参考）単音: 振幅${stats.singlePeak.toFixed(3)}/大きさ${stats.singleRms.toFixed(4)}`);
   }
 } catch (error) {
-  fail("明るさ測定の呼び出しで例外: " + error.message);
+  fail("水滴音測定の呼び出しで例外: " + error.message);
 }
 
-// 6. 遅延に頑健な音作りの確認（立ち上がりの緩やかさ・余韻の収束・クリップしないこと）。実機と同じ音量包絡・
-//    出力グラフでオフライン描画した測定値を読む。
-// 立ち上がりが緩やかと判定する最小の立ち上がり時間（ミリ秒）。10を採る理由を先に述べる。鋭い打撃（数ミリ秒未満）の
-// 立ち上がりは知覚される打点が鋭く定まり遅延が目立つ一方、立ち上がりが長いほど打点が曖昧になり遅延に寛容になる。
-// 鋭い打撃と明確に区別できる下限として10ミリ秒以上を緩やかとみなす。
-const MIN_RISE_MS = 10;
-// 余韻が収束するべき上限（ミリ秒）。900を採る理由を先に述べる。直接音の停止（立ち上がり20＋減衰250＋末尾20＝約290
-// ミリ秒）に残響の長さ（350ミリ秒）を足した約640ミリ秒に余裕を見た値であり、これを超える余韻は長すぎるとみなす。
-const MAX_CONVERGENCE_MS = 900;
-// 最悪同時発音の最大振幅の上限。0.95を採る理由を先に述べる。最終段の柔らかい飽和制限の天井0.99により出力は構造的に
-// 1.0未満に収まるが、合否はそれより低い0.95に置く。これにより、現在の最悪値（約0.91）が余裕（約0.04）をもって合格しつつ、
-// 将来の音量や残響などの調整で頂点が0.95へ近づいた時点で（実際にクリップする前に）検査が捕捉できる。
-const CLIP_PEAK_MAX = 0.95;
+// 6. 較正音が鳴る（同時発音管理に1音が加わる）。較正音は操作音の有効・無効に関わらず鳴ることを確認する。
 try {
-  const stats = await page.evaluate(() => window.__audioWaveformStats());
-  if (!stats || stats.peak24 === null) {
-    fail("波形測定に失敗: " + (stats && stats.error ? stats.error : "結果なし"));
+  await waitActiveZero();
+  // 操作音を無効にしてから較正音を鳴らし、直後の発音中の数が増えることを同期に確認する（鳴り終わりとの競合を避ける）。
+  await page.getByText("操作音 OFF/ON").click();
+  const sounding = await page.evaluate(() => window.__audioPlayCalibrationCue());
+  if (!(sounding >= 1)) {
+    fail(`較正音を鳴らしても発音中が増えない（操作音が無効）: 発音中${sounding}`);
   } else {
-    // クリップしない（合否条件）。最終段の柔らかい飽和制限の天井0.99より低い CLIP_PEAK_MAX を上限にする。
-    if (!(stats.peak24 <= CLIP_PEAK_MAX)) {
-      fail(`最悪同時発音の最大振幅が上限を超える: 最大振幅${stats.peak24.toFixed(3)}（${CLIP_PEAK_MAX}以下が必要）`);
-    } else {
-      ok(`最悪同時発音でクリップしない: 最大振幅${stats.peak24.toFixed(3)}`);
-    }
-    // 立ち上がりが緩やか（合否条件）。
-    if (!(stats.riseTimeMs >= MIN_RISE_MS)) {
-      fail(
-        `立ち上がりが緩やかでない: 立ち上がり時間${stats.riseTimeMs.toFixed(1)}ミリ秒（${MIN_RISE_MS}ミリ秒以上が必要）`
-      );
-    } else {
-      ok(`立ち上がりが緩やか: 立ち上がり時間${stats.riseTimeMs.toFixed(1)}ミリ秒`);
-    }
-    // 余韻が想定時間内に収束（合否条件）。
-    if (!(stats.tailConvergenceMs <= MAX_CONVERGENCE_MS)) {
-      fail(
-        `余韻が長すぎる: 収束時刻${stats.tailConvergenceMs.toFixed(0)}ミリ秒（${MAX_CONVERGENCE_MS}ミリ秒以内が必要）`
-      );
-    } else {
-      ok(`余韻が想定時間内に収束: 収束時刻${stats.tailConvergenceMs.toFixed(0)}ミリ秒`);
-    }
-    // 24音時の大きさと171ミリ秒残留は記録（参考）に留め、合否条件にはしない（調整を詰まらせないため）。過圧縮の最終確認は実機試聴。
-    console.log(
-      `記録（参考）: 24音時の二乗平均平方根${(stats.rms24 ?? 0).toFixed(3)} ` +
-        `171ミリ秒残留割合${(stats.residualAt171Ratio ?? 0).toFixed(3)}`
-    );
+    ok("較正音が鳴る（操作音が無効でも発音中に加わる）");
   }
 } catch (error) {
-  fail("波形測定の呼び出しで例外: " + error.message);
+  fail("較正音の確認で例外: " + error.message);
 }
 
 await browser.close();

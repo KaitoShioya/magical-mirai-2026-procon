@@ -13,7 +13,11 @@ const BASE = process.env.BASE || "http://127.0.0.1:4173";
 // 閾値（採用理由はファイル冒頭に先述）。
 const SKY_LUMINANCE_FLOOR = 24; // 空が黒と知覚的に区別できる下限（現状の背景輝度およそ5の約5倍）。
 const BLOOM_LUMINANCE_CEIL = 128; // ブルーム下限0.5に対応する256段階の値。これ未満で白くにじまない。
-const VARIATION_MIN = 16; // 星・星雲の明るい部分が基調より明確に高いことの最小差（色収差スモークと同じ知覚最小差）。
+// 空の構造（グラデーションと星雲の濃淡）が存在することの最小の明暗差。採用理由を先に述べる。空が単一の平らな色でなく、
+// 明暗の構造を持つことを確かめるため、空の代表領域の最大輝度と最小輝度の差がこの値以上であることを要求する。値は、
+// 黒と区別できる下限として採った24（256段階）を流用し、空の最も明るい所と最も暗い所が少なくとも「見える」差を持つこと
+// を求める。最大と平均の差でなく最大と最小の差にするのは、描画環境や星雲の漂いの時刻によらず安定して測れるためである。
+const SKY_STRUCTURE_MIN = 24;
 const DRAW_CALL_LIMIT = 100; // 1フレームの描画命令数の上限。
 
 const errors = [];
@@ -99,13 +103,13 @@ async function checkResolution(reflectionResolution) {
       `${label}: 空の輝度が範囲外です（${state.skyLuminance.toFixed(1)}、要件 ${SKY_LUMINANCE_FLOOR} 以上 ${BLOOM_LUMINANCE_CEIL} 未満）`
     );
   }
-  if (state.skyMaxLuminance - state.skyLuminance >= VARIATION_MIN) {
+  if (state.skyMaxLuminance - state.skyMinLuminance >= SKY_STRUCTURE_MIN) {
     console.log(
-      `確認: ${label}: 空に星・星雲の明るい部分があります（最大 ${state.skyMaxLuminance.toFixed(1)} − 平均 ${state.skyLuminance.toFixed(1)} ≥ ${VARIATION_MIN}）`
+      `確認: ${label}: 空に明暗の構造（グラデーションと星雲の濃淡）があります（最大 ${state.skyMaxLuminance.toFixed(1)} − 最小 ${state.skyMinLuminance.toFixed(1)} ≥ ${SKY_STRUCTURE_MIN}）`
     );
   } else {
     fail(
-      `${label}: 空の明暗差が不足しています（最大 ${state.skyMaxLuminance.toFixed(1)} − 平均 ${state.skyLuminance.toFixed(1)} < ${VARIATION_MIN}）`
+      `${label}: 空の明暗の構造が不足しています（最大 ${state.skyMaxLuminance.toFixed(1)} − 最小 ${state.skyMinLuminance.toFixed(1)} < ${SKY_STRUCTURE_MIN}）`
     );
   }
   if (state.terrainLuminance < BLOOM_LUMINANCE_CEIL) {

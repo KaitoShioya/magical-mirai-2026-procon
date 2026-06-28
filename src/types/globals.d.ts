@@ -578,6 +578,7 @@ declare global {
       drawCalls: number;
       skyLuminance: number;
       skyMaxLuminance: number;
+      skyMinLuminance: number;
       terrainLuminance: number;
     };
   }

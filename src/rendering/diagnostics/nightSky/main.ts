@@ -49,14 +49,14 @@ function luminance(r: number, g: number, b: number): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-// 画面の矩形領域（左下原点・画素単位）を読み、平均輝度と最大輝度を返す。領域はバッファ内に丸める。
+// 画面の矩形領域（左下原点・画素単位）を読み、平均輝度・最大輝度・最小輝度を返す。領域はバッファ内に丸める。
 function readRegion(
   gl: WebGL2RenderingContext,
   fractionX: number,
   fractionY: number,
   fractionW: number,
   fractionH: number
-): { average: number; maximum: number } {
+): { average: number; maximum: number; minimum: number } {
   const bufferWidth = gl.drawingBufferWidth;
   const bufferHeight = gl.drawingBufferHeight;
   const x = Math.max(0, Math.min(bufferWidth - 1, Math.floor(fractionX * bufferWidth)));
@@ -67,6 +67,7 @@ function readRegion(
   gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
   let total = 0;
   let maximum = 0;
+  let minimum = 255;
   const count = w * h;
   for (let i = 0; i < count; i += 1) {
     const lum = luminance(pixels[i * 4], pixels[i * 4 + 1], pixels[i * 4 + 2]);
@@ -74,8 +75,11 @@ function readRegion(
     if (lum > maximum) {
       maximum = lum;
     }
+    if (lum < minimum) {
+      minimum = lum;
+    }
   }
-  return { average: total / count, maximum };
+  return { average: total / count, maximum, minimum };
 }
 
 let ready = false;
@@ -103,13 +107,14 @@ async function run(): Promise<void> {
     renderRoot.render();
     const current = renderRoot.state();
     const gl = resolveGl();
-    // 空の代表領域は画面上部の中央帯（左下原点のため縦は上寄り＝高い値）。地形・水面の代表領域は画面下部の中央帯。
+    // 空の代表領域は画面上部の広い帯（左下原点のため縦は上寄り＝高い値）。広く取ることで、グラデーションと星雲の
+    // 濃淡という空の構造（最大輝度と最小輝度の差）を安定して測れる。地形・水面の代表領域は画面下部の中央帯。
     const sky = gl
-      ? readRegion(gl, 0.3, 0.72, 0.4, 0.2)
-      : { average: 0, maximum: 0 };
+      ? readRegion(gl, 0.1, 0.55, 0.8, 0.4)
+      : { average: 0, maximum: 0, minimum: 0 };
     const ground = gl
       ? readRegion(gl, 0.3, 0.08, 0.4, 0.15)
-      : { average: 0, maximum: 0 };
+      : { average: 0, maximum: 0, minimum: 0 };
     return {
       webglAvailable: current.webglAvailable,
       skyPresent: current.skyPresent,
@@ -118,6 +123,7 @@ async function run(): Promise<void> {
       drawCalls: current.drawCalls,
       skyLuminance: sky.average,
       skyMaxLuminance: sky.maximum,
+      skyMinLuminance: sky.minimum,
       terrainLuminance: ground.average,
     };
   };

@@ -138,6 +138,9 @@ export function createFakePlayback(): Playback {
     retry() {
       // 擬似再生は失敗しないため、再試行で行うことはない。
     },
+    loadSong() {
+      // 擬似再生は曲非依存の固定データで動くため、曲の差し替えで行うことはない。
+    },
     primeAudioPermission() {
       // 擬似再生は実際の音声を持たないため、許可の確立は不要。
     },

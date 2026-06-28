@@ -55,7 +55,9 @@ export interface TextAlivePlaybackOptions {
  * 実行時の再試行では復旧せず、また API を呼ばないことでライフサイクル由来のエラーを出さないため。
  */
 export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Playback {
-  const { song, token } = options;
+  const { token } = options;
+  // 現在読み込む課題曲。題名画面の曲選択で loadSong により別の曲へ差し替える（同一プレイヤーで読み込み直す）。
+  let currentSong = options.song;
 
   // ---- トークン未設定: プレイヤーを生成せず設定エラー ----
   if (token === undefined || token.trim() === "") {
@@ -79,6 +81,8 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
       hasStarted: () => false,
       hasEnded: () => false,
       retry() {},
+      // 設定エラーでは曲を読み込めないため、曲の差し替えも何もしない。
+      loadSong() {},
       primeAudioPermission() {},
       // 設定エラーでは音楽地図を供給できない。準備完了を常に偽とし、空の値を返す（呼び出し側は isReady で弾く）。
       musicMap: (): MusicMapSource => ({
@@ -103,6 +107,17 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
   let masterVolumeFactor = 1;
   // 現在 player.volume が再生音量に復元されている（無音化していない）か。音量つまみの即時反映の可否に使う。
   let volumeRestored = false;
+  // 確定の試行照合に使う2つの観測。理由を先に述べる。曲を読み込み直したとき、古い曲の確定通知が新しい曲の
+  // 読み込み中に届いて誤って確定するのを、外部ライブラリの挙動に頼らず状態機械側でも防ぐためである。
+  // playerTimerReady は再生タイマーが一度でも使えるようになったか（プレイヤーの能力）。一度真になったら戻さない。
+  // 戻さない理由を先に述べる。読み込みごとに偽へ戻すと、古い曲の遅延した onTimerReady が偽を真へ戻し、新しい曲の
+  // 映像解決と重なって新しい曲のタイマー準備前に誤って確定する余地が生まれる。タイマーはプレイヤー単位の能力として
+  // 一度きりの観測にし、曲ごとの確定可否は試行番号付きの映像解決（latestResolvedAttempt）で判断する。
+  // latestResolvedAttempt は最後に映像が用意できた試行番号で、createFromSongUrl が返す約束（その呼び出し＝その試行に固有）の
+  // 解決時に記録する。確定は「タイマーが使える」かつ「最新の試行の映像が解決済み」のときだけ行う。順序のどちらが先でも
+  // 取りこぼさないよう、両方の観測点（onTimerReady と約束の解決）から照合する。
+  let playerTimerReady = false;
+  let latestResolvedAttempt = -1;
 
   const mediaElement = document.getElementById(MEDIA_ELEMENT_ID);
   const player = new Player({
@@ -155,10 +170,24 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
     isReady
   );
 
-  // 渡された試行番号で同一プレイヤーに楽曲を読み込む。読み込み失敗の遅延結果は試行番号で取り違えを防ぐ。
+  // 「タイマーが使える」かつ「最新試行の映像が解決済み」のときだけ確定する。読み込み中以外では markReady が無視するため、
+  // 確定・エラー後に届いた遅延通知は反映されない。
+  function settleReady(): void {
+    if (playerTimerReady && machine.isLatestAttempt(latestResolvedAttempt)) {
+      machine.markReady();
+    }
+  }
+
+  // 渡された試行番号で同一プレイヤーに楽曲を読み込む。映像準備の成否は試行番号で取り違えを防ぐ。確定は最新試行の
+  // 映像解決とタイマー準備が揃ったときだけ行う（settleReady）。
   function runLoad(attempt: number): void {
     player
-      .createFromSongUrl(song.songUrl, { video: song.video })
+      .createFromSongUrl(currentSong.songUrl, { video: currentSong.video })
+      .then(() => {
+        // この試行の映像が用意できた（ライフサイクル上 onTimerReady より前に解決する）。最新試行であれば確定の前提が整う。
+        latestResolvedAttempt = attempt;
+        settleReady();
+      })
       .catch((error: unknown) => {
         if (machine.isLatestAttempt(attempt)) {
           machine.markLoadError(error instanceof Error ? error.message : String(error));
@@ -179,8 +208,10 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
       }
     },
     onTimerReady() {
-      // 読み込み中のときだけ確定にする。
-      machine.markReady();
+      // 再生タイマーが使えるようになった（プレイヤーの能力。一度きりの観測として持続させる）。最新試行の映像解決と
+      // 揃ったときだけ確定する（古い曲の確定通知を弾く）。
+      playerTimerReady = true;
+      settleReady();
     },
     onPlay() {
       started = true;
@@ -262,6 +293,12 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
       if (attempt !== null) {
         runLoad(attempt);
       }
+    },
+    loadSong(nextSong) {
+      // 別の課題曲を同一プレイヤーで読み込み直す。試行番号を更新して読み込み中へ戻し、新しい曲を読み込む。
+      // 時間源は同一プレイヤーの再生位置を読むため有効なまま保たれ、再生開始の先頭移動は beginFromStart が担う。
+      currentSong = nextSong;
+      runLoad(machine.beginAttempt());
     },
     primeAudioPermission() {
       // 題名の操作の最中に音声再生の許可を確立する最善努力。

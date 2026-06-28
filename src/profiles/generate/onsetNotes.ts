@@ -339,20 +339,16 @@ export function generateOnsetNotes(input: OnsetInput, options?: Partial<OnsetOpt
   if (chorusRegionIndices.length > 0) {
     // 先頭サビを基準にテンプレートを作る。
     const firstChorus = input.regions[chorusRegionIndices[0]];
-    const firstChorusBeats = (beatsByRegion.get(chorusRegionIndices[0]) ?? []).slice();
-    // 横展開の防御。サビ共有テンプレートは全反復が同一拍数であることを前提に、同一の相対拍位置集合を各反復へ写す。
-    // 拍数が異なると相対位置が反復間でずれて beatOffset 集合が一致せず、多様性逓減（基準G）が無言で壊れるため、
-    // 一致しない場合は発生源で文脈付き例外を投げて止める。TAKEOVER は各サビ64拍で一致し、この例外は起きない。
-    const firstChorusBeatCount = firstChorusBeats.length;
-    for (const ri of chorusRegionIndices) {
-      const count = (beatsByRegion.get(ri) ?? []).length;
-      if (count !== firstChorusBeatCount) {
-        throw new Error(
-          `サビ反復の拍数が一致しません（区間[${ri}]は${count}拍、先頭サビは${firstChorusBeatCount}拍）。` +
-            `サビ共有テンプレートは全反復が同一拍数であることを前提とします`,
-        );
-      }
-    }
+    const firstChorusBeatsFull = (beatsByRegion.get(chorusRegionIndices[0]) ?? []).slice();
+    // 横展開の対応。サビ反復の拍数は曲により異なる（本曲は16拍と17拍が混在する）。共有テンプレートは同一の相対拍位置集合を
+    // 各反復へ写すため、テンプレートを「全サビ反復に共通して存在する拍数（最小拍数）」の範囲だけで作る。理由を先に述べる。
+    // 最小拍数の範囲に限れば、選ばれる相対拍位置（offset）は全反復に確実に存在し、各反復が同一の offset 集合のノーツを持つ。
+    // これにより多様性逓減（基準G）の反復間整列が保たれる。最小拍数を超える末尾の拍にはテンプレートのノーツを置かない。
+    // TAKEOVER は全サビ64拍で一致するため最小拍数=64となり、従来と同一の結果になる。
+    const minChorusBeatCount = Math.min(
+      ...chorusRegionIndices.map((ri) => (beatsByRegion.get(ri) ?? []).length),
+    );
+    const firstChorusBeats = firstChorusBeatsFull.slice(0, minChorusBeatCount);
     // 反復不変の相対コード変化（先頭サビ基準）。各サビへ写すときは「そのサビの開始 + 相対」で復元する。
     const relChordChanges = input.chordChangeTimesMs
       .filter((t) => t >= firstChorus.startMs && t < firstChorus.endMs)

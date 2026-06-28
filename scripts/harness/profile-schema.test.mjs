@@ -7,6 +7,8 @@ import {
   SONG_PROFILE_SCHEMA,
   TAKEOVER_PROFILE_PATH,
   TAKEOVER_PROFILE_CHECK_KEY,
+  AFTER_THE_CURTAIN_PROFILE_PATH,
+  AFTER_THE_CURTAIN_PROFILE_CHECK_KEY,
   registerProfileSchemas,
 } from "./profile-schema.mjs";
 
@@ -64,22 +66,26 @@ describe("registerProfileSchemas（曲プロファイル検査の登録・冪等
     resetRegistry();
   });
 
-  test("検査キー song-profile-takeover を登録する", () => {
+  test("両曲の検査キーとプロファイルパスを登録する", () => {
+    // 件数だけを固定せず、登録キーとパスの対応を明示して確かめる。理由を先に述べる。件数のみの固定は、別の曲の登録漏れや
+    // 取り違えを見逃しやすいためである。
     registerProfileSchemas();
     const checks = listRegisteredChecks();
-    expect(checks).toHaveLength(1);
-    expect(checks[0].key).toBe(TAKEOVER_PROFILE_CHECK_KEY);
-    expect(checks[0].file).toBe(TAKEOVER_PROFILE_PATH);
+    const byKey = new Map(checks.map((c) => [c.key, c.file]));
+    expect(byKey.get(TAKEOVER_PROFILE_CHECK_KEY)).toBe(TAKEOVER_PROFILE_PATH);
+    expect(byKey.get(AFTER_THE_CURTAIN_PROFILE_CHECK_KEY)).toBe(AFTER_THE_CURTAIN_PROFILE_PATH);
   });
 
-  test("2回呼んでも登録は1件のまま（冪等）", () => {
+  test("2回呼んでも登録は重複しない（冪等）", () => {
     registerProfileSchemas();
+    const firstCount = listRegisteredChecks().length;
     registerProfileSchemas();
-    expect(listRegisteredChecks()).toHaveLength(1);
+    expect(listRegisteredChecks()).toHaveLength(firstCount);
   });
 });
 
 // 絶対パスが実在ファイルを指すことを確かめる（起動位置に依存しない解決の確認）。
-test("TAKEOVER_PROFILE_PATH が実在ファイルを指す", () => {
+test("各曲のプロファイルパスが実在ファイルを指す", () => {
   expect(() => readFileSync(TAKEOVER_PROFILE_PATH, "utf8")).not.toThrow();
+  expect(() => readFileSync(AFTER_THE_CURTAIN_PROFILE_PATH, "utf8")).not.toThrow();
 });

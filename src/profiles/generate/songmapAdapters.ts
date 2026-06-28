@@ -189,12 +189,23 @@ function deriveEmotionStepMs(vaCurve: RawSongmap["vaCurve"]): number {
   return step;
 }
 
-/** 感情曲線をスキーマの EmotionCurve 型へ変換する。各点を {tMs, valence, arousal} へ写し、中央値は valenceArousal.median を使う。 */
+/** 0以上1以下へ丸める。理由を先に述べる。TextAlive の感情値（valence・arousal）はモデルの出力で、わずかに0未満や1超の
+ *  値になることがある（本曲は arousal が最小マイナス0.132）。スキーマは0以上1以下を要求し、感情値は色・動きへの写像の入力で
+ *  あって、範囲外の極値を境界へ丸めても写像の連続性を損なわないため、境界へクランプする。 */
+function clampUnit(value: number): number {
+  return value < 0 ? 0 : value > 1 ? 1 : value;
+}
+
+/** 感情曲線をスキーマの EmotionCurve 型へ変換する。各点を {tMs, valence, arousal} へ写し、中央値は valenceArousal.median を使う。
+ *  valence・arousal は0以上1以下へクランプする（範囲外になり得る理由は clampUnit の注記に述べる）。 */
 export function toEmotionCurve(songmap: RawSongmap): EmotionCurve {
   return {
     stepMs: deriveEmotionStepMs(songmap.vaCurve),
-    points: songmap.vaCurve.map((p) => ({ tMs: p.t, valence: p.v, arousal: p.a })),
-    median: songmap.valenceArousal.median,
+    points: songmap.vaCurve.map((p) => ({ tMs: p.t, valence: clampUnit(p.v), arousal: clampUnit(p.a) })),
+    median: {
+      valence: clampUnit(songmap.valenceArousal.median.valence),
+      arousal: clampUnit(songmap.valenceArousal.median.arousal),
+    },
   };
 }
 

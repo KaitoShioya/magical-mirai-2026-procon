@@ -117,6 +117,36 @@ try {
     console.log("確認: 準備中の曲は5個ですべて無効");
   }
 
+  // 1.6 「これはなに？」常設トグル（使い方説明）の確認。読み込みが終わった題名画面でトグルが見え、
+  //     押すとパネルが開き、Escキーで閉じることを確認する（ロード中の非表示はトークンを使う実機経路で確認する）。
+  const howToToggleVisible = await page.evaluate(() => {
+    const toggle = document.querySelector(".howto-toggle");
+    return Boolean(toggle) && toggle.hidden === false;
+  });
+  if (!howToToggleVisible) {
+    fail("題名画面で「これはなに？」トグルが見えていません");
+  } else {
+    await page.click(".howto-toggle");
+    const opened = await page.evaluate(() => {
+      const panel = document.querySelector(".howto-panel");
+      return Boolean(panel) && panel.hidden === false;
+    });
+    if (!opened) {
+      fail("「これはなに？」トグルを押してもパネルが開きません");
+    } else {
+      await page.keyboard.press("Escape");
+      const closed = await page.evaluate(() => {
+        const panel = document.querySelector(".howto-panel");
+        return Boolean(panel) && panel.hidden === true;
+      });
+      if (!closed) {
+        fail("Escキーで「これはなに？」パネルが閉じません");
+      } else {
+        console.log("確認: 「これはなに？」トグルが表示・開閉できる");
+      }
+    }
+  }
+
   // 2. 「はじめる」でウォームアップへ。
   await page.click('[data-action="start"]');
   await waitForScreen(page, "warmup");

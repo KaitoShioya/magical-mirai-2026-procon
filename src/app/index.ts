@@ -25,6 +25,7 @@ import { createAttributionBadge, type AttributionBadge } from "./attribution";
 import { buildCreditRegistry } from "./credits/registry";
 import { createCreditsView, type CreditsView } from "./credits/creditsView";
 import { createCalibrationView, type CalibrationView } from "./calibration/calibrationView";
+import { createHowToView, type HowToView } from "./howTo/howToView";
 import { createOperationSoundEngine } from "../audio";
 import { loadCalibrationOffsetMs, saveCalibrationOffsetMs, type FrameTimeSample } from "../scoring";
 import {
@@ -118,6 +119,11 @@ export function createApp(
   // これにより、トークン不要の診断経路（?smoke=1）でも表示を検証できる。
   const creditsView: CreditsView = createCreditsView(buildCreditRegistry(song));
 
+  // 使い方説明の「これはなに？」常設トグル（世界観・操作方法・成果物）。クレジットと同じく両モードで生成し、
+  // トークン不要の診断経路（?smoke=1）でも存在と開閉を検査できるようにする。楽曲の読み込み中はトグルを隠し、
+  // 読み込みが終わってから renderOverlays が見せる（ロード中は同じ説明をロード覆いに出すため）。
+  const howToView: HowToView = createHowToView();
+
   // 診断モード（?smoke=1）はトークン非依存の擬似再生、通常はトークンで実プレイヤーを使う。
   const playback: Playback = options.diagnostics
     ? createFakePlayback()
@@ -134,6 +140,10 @@ export function createApp(
     } else {
       root.setAttribute("inert", "");
     }
+    // 「これはなに？」トグルは、楽曲の読み込みが終わってから見せる。ロード中は同じ説明をロード覆いに出すため、
+    // トグルは出さない。読み込みが終わって以外（読み込み失敗）でも出さない。setToggleVisible(false) は、
+    // パネルが開いていれば閉じ、操作不能になり得る画面表示領域へ焦点を移さない。
+    howToView.setToggleVisible(state.status === "ready");
   };
   const unsubscribe = playback.subscribe(renderOverlays);
   renderOverlays();
@@ -155,11 +165,11 @@ export function createApp(
   const operationSound = createOperationSoundEngine();
 
   // レイテンシ較正（Issue #50）。題名画面から開く常設トグルのオーバーレイとして、入力の遅れの補正値を測り・保存する。
-  // 副作用を持つ音エンジンと端末内保存は注入で渡す。基準音は明瞭に聞こえる高めの固定音高1つを用いる
-  //（音高番号81＝880ヘルツ。会話帯域より高く、点滅の合図として聞き取りやすい）。生きた判定への結線は #59 が担う。
+  // 副作用を持つ音エンジンと端末内保存は注入で渡す。基準音は較正専用の固定の短い音（playCalibrationCue。会話帯域より
+  // 高く、点滅の合図として聞き取りやすい）を用いる。操作音を水滴音へ変えても較正の基準音は一定に保つ。生きた判定への結線は #59 が担う。
   const calibrationView: CalibrationView = createCalibrationView({
     getOutputLatencyMs: () => operationSound.outputLatencyMs,
-    playReferenceTone: () => operationSound.playNote(81),
+    playReferenceTone: () => operationSound.playCalibrationCue(),
     unlockAudio: () => operationSound.unlock(),
     loadOffsetMs: () => loadCalibrationOffsetMs(),
     saveOffsetMs: (offsetMs: number) => saveCalibrationOffsetMs(offsetMs),
@@ -500,6 +510,7 @@ export function createApp(
       overlays.dispose();
       attribution?.dispose();
       creditsView.dispose();
+      howToView.dispose();
       calibrationView.dispose();
       operationSound.dispose();
       // 入力（Issue #59）の待ち受けを解除する。

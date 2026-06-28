@@ -540,3 +540,104 @@ body {
 .calibration-panel__button[hidden] {
   display: none;
 }
+
+/* 使い方説明の「これはなに？」常設トグルとパネル（世界観・操作方法・成果物）。
+   既存のクレジット（右上）・較正（左上）・出典バッジ（下端の全幅帯）と重ならないよう、トグルは右下に置き、
+   出典バッジの帯の上へ持ち上げる（bottom に帯ぶんの余白を足す）。重なり順は覆い（z-index:1000）より上の
+   z-index:1100 にそろえる。楽曲の読み込み中はトグルを隠す（表示の切り替えは src/app/howTo/howToView.ts の
+   setToggleVisible と src/app/index.ts の renderOverlays が担う）。最終的な重なりの有無は実機で目視確認する。 */
+.howto-toggle {
+  position: fixed;
+  right: max(env(safe-area-inset-right), 8px);
+  bottom: calc(max(env(safe-area-inset-bottom), 8px) + 32px);
+  z-index: 1100;
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: clamp(11px, 2vw, 13px);
+  color: var(--text-dim);
+  background: rgba(5, 6, 10, 0.7);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.howto-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding:
+    max(env(safe-area-inset-top), 24px)
+    max(env(safe-area-inset-right), 24px)
+    max(env(safe-area-inset-bottom), 24px)
+    max(env(safe-area-inset-left), 24px);
+  overflow-y: auto;
+  background: rgba(8, 9, 14, 0.96);
+  color: var(--text);
+}
+
+/* hidden 属性で出し入れする。display 指定があると hidden が効かないため、明示的に分岐する。 */
+.howto-panel[hidden] {
+  display: none;
+}
+
+.howto-panel__close {
+  align-self: flex-end;
+  min-height: 40px;
+  padding: 8px 20px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  color: var(--text);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.howto-panel__title {
+  margin: 4px 0;
+  font-size: clamp(18px, 3vw, 22px);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* 節（見出し＋本文）。ロード中の覆いと「これはなに？」パネルが同じクラスを共有して使う。 */
+.howto-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 640px;
+}
+
+.howto-panel__heading {
+  margin: 12px 0 4px;
+  font-size: clamp(14px, 2.6vw, 18px);
+  color: var(--accent);
+}
+
+.howto-panel__text {
+  font-size: clamp(12px, 2vw, 15px);
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* ロード中の覆いに出す使い方説明。読み込み文言（.overlay__text）は固定で見せ、説明（.overlay__howto）だけを
+   スクロール領域に入れて、縦長の小さな画面でも読み込み文言・再試行導線が埋もれないようにする（src/app/overlay.ts）。
+   覆いのパネルは画面高さで頭打ちにし、説明の部分だけが内部で縦スクロールする。 */
+.overlay__panel {
+  width: 100%;
+  max-height: 100%;
+}
+
+.overlay__howto {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}

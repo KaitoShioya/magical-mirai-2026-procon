@@ -404,7 +404,9 @@ export function createRenderRoot(
     lighting = createNightLighting();
     scene.add(lighting.object3d);
     // ネオン星雲の夜空（Issue #205）。シーンへ加えると反射（Reflector が scene を再描画）にも自動で映る。
+    // 重い星雲とグラデーションは方向別テクスチャへ一度だけ焼き込み、毎フレームは安価な標本化に保つ。
     sky = createNeonNebulaSky();
+    sky.bake(renderer);
     scene.add(sky.object3d);
     // 中心オブジェクト（Issue #64）。初期は光柱（fallback）を中心へ立て、VRM読み込み成功で差し替える。
     centerFigure = createCenterFigure();

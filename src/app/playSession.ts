@@ -8,9 +8,17 @@
 // Note.slotIndex は1始まりであり、判定用ノーツを作るときに note.slotIndex - 1 で変換する。多様性索引は
 // buildDiversityIndex が1始まりの slotIndex を受け取り内部で0始まりへ変換するため、ノーツをそのまま渡す。
 
-import type { SongProfile, Note } from "../profiles/schema";
+import type { SongProfile } from "../profiles/schema";
 import type { Reaction } from "../input";
 import type { CameraTrajectory } from "../utils/cameraTrajectory";
+import {
+  LANTERN_BUTTERFLY_FORWARD_OFFSET,
+  LANTERN_SUNFLOWER_MIN_SPACING,
+  LANTERN_SUNFLOWER_RADIUS_MAX,
+  LANTERN_SUNFLOWER_RADIUS_MIN,
+  LANTERN_SUNFLOWER_RING_COUNT,
+} from "../config/tuning";
+import { createSunflowerRingPlacement } from "../utils/sunflowerRingPlacement";
 import {
   judgeTap,
   DEFAULT_JUDGMENT_WINDOWS,
@@ -35,24 +43,25 @@ import {
   type ScoreBoundsInput,
 } from "../scoring";
 
-/** 一過性の蝶（演奏中の光点）の寿命秒。採用理由を先に述べる。ハメた瞬間に舞って消える短い余韻として、
- *  拍の数倍に収まり残像が散らからない約1.2秒とする。★実機調整で確定する暫定値。 */
-export const REACTION_BUTTERFLY_LIFE_SECONDS = 1.2;
-
-/** 床タップ（対応ノーツ無し）の光点を、カメラ注視点の周りへ散らす世界座標の幅。採用理由を先に述べる。
- *  カメラ注視点の近傍に収まり、密集時も重なりにくい控えめな幅として世界座標2単位とする。
- *  ★実機調整で確定する暫定値。 */
-const REACTION_FLOOR_SCATTER = 2;
-
-/** 反応光点（蝶）を1個出す入力。描画基盤の spawnReactionButterfly と構造一致（型結合を避け構造で受け渡す）。 */
-export interface ReactionLightInput {
-  position: { x: number; y: number; z: number };
+/** 持続配置の灯し（蝶＋ひまわり）を1組置く入力。描画基盤の placeLantern と構造一致（型結合を避け構造で受け渡す）。
+ *  蝶の配置点（前方オフセット適用済みのワールド座標）、ひまわりの水平位置（ミク中心の放射状リング配置で算出した
+ *  x・z。水面の高さは描画層が水面領域から与える）、反応強度、退化時の近距離フェード旗を渡す。 */
+export interface PlaceLanternInput {
+  butterflyPosition: { x: number; y: number; z: number };
+  /** ひまわりの水平位置X（ミク中心の放射状リング配置で算出）。 */
+  sunflowerX: number;
+  /** ひまわりの水平位置Z（ミク中心の放射状リング配置で算出）。 */
+  sunflowerZ: number;
+  /** 蝶の向き（軌道＝カメラ進行方向）の水平成分X。0,0のときは向き無し（既定姿勢）。 */
+  headingX: number;
+  /** 蝶の向き（軌道＝カメラ進行方向）の水平成分Z。0,0のときは向き無し（既定姿勢）。 */
+  headingZ: number;
   /** タイミング精度（0以上1以下）。大きさへ写す。 */
   sizeStrength: number;
   /** 音程精度（0以上1以下）。輝度へ写す。 */
   brightnessStrength: number;
-  /** 寿命秒。 */
-  lifeSeconds: number;
+  /** 近距離フェードの対象か（退化時の配置で真）。 */
+  nearFade: boolean;
 }
 
 /** ランクゲージの現在入力（百分位とランク添字）。screens/types.ts の RankGaugeInput と構造一致。 */
@@ -82,7 +91,8 @@ export interface PlaySessionDeps {
   profile: SongProfile;
   cameraTrajectory: CameraTrajectory;
   operationSound: PlaySessionOperationSound;
-  spawnReactionLight(input: ReactionLightInput): void;
+  /** 持続配置の灯し（蝶＋ひまわり、本タスク）を1組置く。得点が出たタップ（素点が0より大きいタップ）でのみ呼ぶ。 */
+  placeLantern(input: PlaceLanternInput): void;
   /**
    * 画面全体の水面の波紋を、得点が0でないタップ（ノーツに当たって素点を得たタップ）のレーンから立てる（Issue #202）。
    * 任意の出口とし、未注入なら波紋を立てない（波紋を必要としない検証では省略できる）。
@@ -122,7 +132,7 @@ export function createPlaySession(deps: PlaySessionDeps): PlaySession {
     profile,
     cameraTrajectory,
     operationSound,
-    spawnReactionLight,
+    placeLantern,
     spawnTapRipple,
     getFrameSample,
     getCalibrationOffsetMs,
@@ -138,8 +148,6 @@ export function createPlaySession(deps: PlaySessionDeps): PlaySession {
     }
     return { id: note.id, timeMs: beat.startTimeMs, slot0: note.slotIndex - 1 };
   });
-
-  const noteById = new Map<string, Note>(profile.notes.map((note) => [note.id, note]));
 
   const showcases: ShowcaseWindow[] = profile.showcases.map((showcase) => ({
     index: showcase.index,
@@ -157,6 +165,17 @@ export function createPlaySession(deps: PlaySessionDeps): PlaySession {
   let objectiveState: ObjectiveState = createObjectiveState(context);
   let calibrationOffsetMs = getCalibrationOffsetMs();
   let playSlotCallCount = 0;
+
+  // 持続配置のひまわりの放射状リング配置（本タスク）。中心は初音ミク（湖の中心＝原点。src/config/character.ts の
+  // position が原点）。反応の正確さに応じて中心からの半径を決め、帯ごとの上限と外向きの送りで自然な疎密にする。
+  const sunflowerRing = createSunflowerRingPlacement({
+    centerX: 0,
+    centerZ: 0,
+    radiusMin: LANTERN_SUNFLOWER_RADIUS_MIN,
+    radiusMax: LANTERN_SUNFLOWER_RADIUS_MAX,
+    ringCount: LANTERN_SUNFLOWER_RING_COUNT,
+    minSpacing: LANTERN_SUNFLOWER_MIN_SPACING,
+  });
 
   // ゲージ満タンかつ適用中の投下が無いとき、見せ場区間内で自動発動する。区間外・倍率1以下では状態不変。
   function tryAutoDeploy(state: ObjectiveState, atMusicTimeMs: number): ObjectiveState {
@@ -179,23 +198,59 @@ export function createPlaySession(deps: PlaySessionDeps): PlaySession {
     );
   }
 
-  // 反応光点の位置。対応ノーツがあればその軌跡位置、床タップはカメラ注視点にタップ画面位置由来の小さな散らしを足す。
-  function reactionLightPosition(
-    reaction: Reaction,
-    boundNoteId: string | null,
-    musicTimeMs: number,
-  ): { x: number; y: number; z: number } {
-    if (boundNoteId !== null) {
-      const note = noteById.get(boundNoteId);
-      if (note !== undefined) {
-        return note.trajectoryPosition;
-      }
+  // 持続灯しの蝶の配置点と近距離フェード旗を求める。蝶はカメラ位置（カメラワークの軌道上の通過点）から視線方向
+  // （カメラ位置→注視点の単位ベクトル）へ前方オフセットだけずらした点に置く。前方へずらすのは、カメラ位置そのものへ
+  // 置くと配置の瞬間にカメラ近傍（近接面0.1の内側）でクリップ・過大表示になるためである。視線方向が定まらない退化時
+  // （カメラ位置と注視点が一致して長さ0）はオフセットを足さずカメラ位置に置き、近距離フェードの対象（nearFade=true）に
+  // して、カメラが離れるにつれ現す。
+  function lanternButterflyPlacement(musicTimeMs: number): {
+    butterflyPosition: { x: number; y: number; z: number };
+    nearFade: boolean;
+    headingX: number;
+    headingZ: number;
+  } {
+    const pose = cameraTrajectory.poseAt(musicTimeMs);
+    // 蝶の向き（軌道＝カメラの進行方向）の水平成分。前後の微小時刻のカメラ位置の差から接線を求め、x・z へ射影して
+    // 正規化する。微小時刻は約1フレーム（16ミリ秒）とし、軌跡の範囲内へ収める。接線の水平成分がほぼ0（停止・真上下移動）
+    // のときは向き無し（0,0）として、描画層は既定の姿勢のままにする。
+    const tangentHalfStepMs = 16;
+    const beforeMs = Math.max(cameraTrajectory.startTimeMs, musicTimeMs - tangentHalfStepMs);
+    const afterMs = Math.min(cameraTrajectory.endTimeMs, musicTimeMs + tangentHalfStepMs);
+    const beforePos = cameraTrajectory.poseAt(beforeMs).position;
+    const afterPos = cameraTrajectory.poseAt(afterMs).position;
+    let headingX = afterPos.x - beforePos.x;
+    let headingZ = afterPos.z - beforePos.z;
+    const headingLength = Math.sqrt(headingX * headingX + headingZ * headingZ);
+    if (headingLength > 0) {
+      headingX /= headingLength;
+      headingZ /= headingLength;
+    } else {
+      headingX = 0;
+      headingZ = 0;
     }
-    const target = cameraTrajectory.poseAt(musicTimeMs).target;
+
+    const vx = pose.target.x - pose.position.x;
+    const vy = pose.target.y - pose.position.y;
+    const vz = pose.target.z - pose.position.z;
+    const length = Math.sqrt(vx * vx + vy * vy + vz * vz);
+    if (length > 0) {
+      const k = LANTERN_BUTTERFLY_FORWARD_OFFSET / length;
+      return {
+        butterflyPosition: {
+          x: pose.position.x + vx * k,
+          y: pose.position.y + vy * k,
+          z: pose.position.z + vz * k,
+        },
+        nearFade: false,
+        headingX,
+        headingZ,
+      };
+    }
     return {
-      x: target.x + (reaction.normalizedX - 0.5) * REACTION_FLOOR_SCATTER,
-      y: target.y + (0.5 - reaction.normalizedY) * REACTION_FLOOR_SCATTER,
-      z: target.z,
+      butterflyPosition: { x: pose.position.x, y: pose.position.y, z: pose.position.z },
+      nearFade: true,
+      headingX,
+      headingZ,
     };
   }
 
@@ -204,6 +259,8 @@ export function createPlaySession(deps: PlaySessionDeps): PlaySession {
       objectiveState = createObjectiveState(context);
       calibrationOffsetMs = getCalibrationOffsetMs();
       playSlotCallCount = 0;
+      // 持続配置のひまわりのリング配置状態を初期化する（リトライで前回の疎密を持ち越さない）。
+      sunflowerRing.reset();
     },
 
     onReaction(reaction: Reaction): void {
@@ -217,25 +274,37 @@ export function createPlaySession(deps: PlaySessionDeps): PlaySession {
       // 心地よい水滴音。どのタップも必ず発音する（床でも鳴らす。音はどのレーンでも同じ）。
       operationSound.playSlot(reaction.slotIndex);
       playSlotCallCount += 1;
-      // 一過性の蝶（光点）。精度→大きさ・輝度の強度を渡す（世界座標への写像は描画層が担う）。
+      // 反応強度（精度→大きさ・輝度）。世界座標・大きさ・輝度への写像は描画層が担う。
       const strength = reactionStrength(judgment);
-      const position = reactionLightPosition(reaction, judgment.boundNoteId, musicTimeMs);
-      if (
-        Number.isFinite(position.x) &&
-        Number.isFinite(position.y) &&
-        Number.isFinite(position.z)
-      ) {
-        spawnReactionLight({
-          position,
-          sizeStrength: strength.size,
-          brightnessStrength: strength.brightness,
-          lifeSeconds: REACTION_BUTTERFLY_LIFE_SECONDS,
-        });
-      }
-      // 画面全体の水面の波紋は、得点が0でないタップ（ノーツに当たって素点を得たタップ）のレーンからのみ立てる。
-      // 空打ち（対応ノーツ無し）は timingAccuracy も pitchAccuracy も0で素点が0になるため、波紋を立てない。
+      // 画面全体の水面の波紋と、持続配置の灯し（蝶＋ひまわり）は、得点が0でないタップ（ノーツに当たって素点を得た
+      // タップ）のみ行う。空打ち（対応ノーツ無し）は timingAccuracy も pitchAccuracy も0で素点が0になるため、いずれも
+      // 行わない。タップ位置の手応えは画面全体の水面の波紋（spawnTapRipple）が担う（本タスク以前の挙動。要望により
+      // タップ箇所の一過性蝶は波紋と重複するため設けない）。
       if (tapBaseScore(judgment, TAP_SCORE_WEIGHTS) > 0) {
         spawnTapRipple?.(reaction.slotIndex);
+        const { butterflyPosition, nearFade, headingX, headingZ } = lanternButterflyPlacement(musicTimeMs);
+        // ひまわりは蝶（カメラ通過点）とは独立に、ミク中心の放射状リングへ配置する。反応の正確さは、タイミング精度
+        // （大きさ強度）と音程精度（輝度強度）の平均で表し、正確なほど中心に近い半径へ置く。
+        const accuracy = (strength.size + strength.brightness) / 2;
+        const sunflower = sunflowerRing.place(accuracy);
+        if (
+          Number.isFinite(butterflyPosition.x) &&
+          Number.isFinite(butterflyPosition.y) &&
+          Number.isFinite(butterflyPosition.z) &&
+          Number.isFinite(sunflower.x) &&
+          Number.isFinite(sunflower.z)
+        ) {
+          placeLantern({
+            butterflyPosition,
+            sunflowerX: sunflower.x,
+            sunflowerZ: sunflower.z,
+            headingX,
+            headingZ,
+            sizeStrength: strength.size,
+            brightnessStrength: strength.brightness,
+            nearFade,
+          });
+        }
       }
 
       // 採点と投下の自動発動。

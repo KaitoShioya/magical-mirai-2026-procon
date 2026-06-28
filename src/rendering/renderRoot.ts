@@ -21,6 +21,12 @@ import {
   DEFAULT_REFLECTION_RESOLUTION,
   FOG_COLOR,
   FOG_DENSITY,
+  LANTERN_CAPACITY_DEFAULT,
+  LANTERN_SUNFLOWER_BRIGHTNESS_MAX,
+  LANTERN_SUNFLOWER_BRIGHTNESS_MIN,
+  LANTERN_SUNFLOWER_SCALE_MAX,
+  LANTERN_SUNFLOWER_SCALE_MIN,
+  LANTERN_SUNFLOWER_WATER_LIFT,
   MAX_PIXEL_RATIO,
   NIGHT_COLOR,
   NIGHT_COLOR_HEX,
@@ -37,8 +43,11 @@ import {
   type CenterFigure,
   type CenterFigureStatus,
 } from "./entities/centerFigure";
-import { createButterflyFigures, type ButterflyFigures } from "./entities/butterflyFigures";
-import { reactionToScale, reactionToBrightness } from "./entities/butterflyReactionMapping";
+import {
+  createLanternButterflyFigures,
+  type LanternButterflyFigures,
+} from "./entities/lanternButterflyFigures";
+import { createSunflowerFigures, type SunflowerFigures } from "./entities/sunflowerFigures";
 import { loadVrm } from "./loaders/vrmLoader";
 import { loadVrmAnimation } from "./loaders/vrmAnimationLoader";
 import { createPosedMotion } from "./entities/vrmMotion";
@@ -66,12 +75,6 @@ export type WaterSource = "placeholder-plane" | "stage-mesh";
 // 描かないため、暫定視点を水面（高さ0）より上に固定する。
 const PLACEHOLDER_CAMERA_POSITION = { x: 0, y: 14, z: 34 } as const;
 const PLACEHOLDER_CAMERA_TARGET = { x: 0, y: 1, z: 0 } as const;
-
-// 反応の蝶（演奏中の一過性の光点、Issue #59）の同時生存上限。採用理由を先に述べる。蝶の寿命は約1.2秒で、
-// その間に重なりうる演奏中の蝶を収める余裕として64とする。満タン容量がおよそ50タップ相当の操作密度でも、
-// 寿命の短さから同時生存はこの範囲に収まり、容量超過で生成が失敗して「どのタップも光点」が崩れることを
-// 避けられる上限である。★実機調整で確定する暫定値。
-const REACTION_BUTTERFLY_CAPACITY = 64;
 
 /** 診断・検証用の描画状態（window.__renderState が返す素の構造）。 */
 export interface RenderState {
@@ -146,25 +149,33 @@ export interface RenderState {
   /** レンダラのトーンマッピング方式の数値。現状はトーンマッピング無し（NoToneMapping）を明示設定し検証する。
    *  レンダラが無い端末では NoToneMapping の値を返す。 */
   toneMapping: number;
-  /** 反応の蝶（演奏中の一過性の光点、Issue #59）の現在の活動個体数。通しスモークが「タップが光点を生む」
-   *  供給経路を確かめるために読む。WebGL が無く蝶を作らない端末では0。 */
-  reactionButterflyActiveCount: number;
+  /** 持続配置の灯し（蝶＋ひまわり、本タスク）の現在の配置数。診断・目視確認のために読む（通しスモークの主検査には
+   *  使わない。擬似再生では得点タップが保証されないため）。WebGL が無く灯しを作らない端末では0。 */
+  placedLanternCount: number;
   /** ネオン星雲の夜空（Issue #205）をシーンに組み込んだなら真。WebGL が無く夜空を作らない端末では偽。
    *  夜空スモークが夜空の組み込みを直接確かめるために読む。 */
   skyPresent: boolean;
 }
 
-/** 反応の蝶（演奏中の一過性の光点、Issue #59）を1個出す入力。位置と、0以上1以下の反応強度（タイミング精度→大きさ、
- *  音程精度→輝度）と寿命秒を受け取る。世界座標の大きさ・輝度への写像は描画層（butterflyReactionMapping）が担うため、
- *  呼び出し側（統括）は強度をそのまま渡す（既存の sunflowerFigures.setInstance と同じ受け渡し）。 */
-export interface ReactionButterflyInput {
-  position: { x: number; y: number; z: number };
+/** 持続配置の灯し（蝶＋ひまわり、本タスク）を1組置く入力。蝶の配置点（前方オフセット適用済みのワールド座標）、
+ *  ひまわりの水平位置（ミク中心の放射状リング配置で上流が算出した x・z。水面の高さは描画層が現在の水面領域から
+ *  与える）、0以上1以下の反応強度（タイミング精度→大きさ、音程精度→輝度）、退化時の近距離フェード旗を受け取る。 */
+export interface PlaceLanternInput {
+  butterflyPosition: { x: number; y: number; z: number };
+  /** ひまわりの水平位置X（ミク中心の放射状リング配置）。 */
+  sunflowerX: number;
+  /** ひまわりの水平位置Z（ミク中心の放射状リング配置）。 */
+  sunflowerZ: number;
+  /** 蝶の向き（軌道＝カメラ進行方向）の水平成分X。0,0のときは向き無し（既定姿勢）。 */
+  headingX: number;
+  /** 蝶の向き（軌道＝カメラ進行方向）の水平成分Z。0,0のときは向き無し（既定姿勢）。 */
+  headingZ: number;
   /** タイミング精度（0以上1以下）。大きさへ写す。 */
   sizeStrength: number;
   /** 音程精度（0以上1以下）。輝度へ写す。 */
   brightnessStrength: number;
-  /** 寿命秒（出現から消滅まで）。正。 */
-  lifeSeconds: number;
+  /** 近距離フェードの対象か（退化時の配置で真）。 */
+  nearFade: boolean;
 }
 
 /** applyPerformanceLevel の戻り値。段階適用で描画上の何が実際に変わったかを示す（Issue #18）。 */
@@ -237,10 +248,12 @@ export interface RenderRoot {
    *  減衰で0へ向かう。値を橋渡しするだけで時刻ロジックは持たない。後処理パスが無効（既定）の端末では効果は出ない。
    *  本編での有効化は #59 が createRenderRoot({ postEffectEnabled: true }) で行う。WebGL が無い端末では何もしない。 */
   setChromaBurstIntensity(intensity: number): void;
-  /** 反応の蝶（演奏中の一過性の光点、Issue #59）を1個発生させる。判定論理は持たず、位置と反応強度（0以上1以下）と
-   *  寿命だけを受け取り、強度から世界座標の大きさ・輝度へ写してから蝶エンティティへ委譲する（依存規則 §5、scoring を
-   *  import しない）。WebGL が無く蝶を作らない端末、または容量に空きが無いときは何もしない。 */
-  spawnReactionButterfly(input: ReactionButterflyInput): void;
+  /** 持続配置の灯し（蝶＋ひまわり、本タスク）を1組置く。蝶は受け取った配置点へ、ひまわりはその x/z の真下の水面へ
+   *  置き、楽曲終了まで残す。判定論理は持たず、配置点・強度・近距離フェード旗だけを受け取る（依存規則 §5）。
+   *  WebGL が無く灯しを作らない端末、または容量に空きが無いときは何もしない。 */
+  placeLantern(input: PlaceLanternInput): void;
+  /** 持続配置の灯しを全て消去し0から積み直せるようにする（リトライ用）。WebGL が無い端末では何もしない。 */
+  resetLanterns(): void;
   /** 診断・検証用の現在状態を返す。 */
   state(): RenderState;
   /** 後始末。リサイズ待ち受けの解除・GPU資源の解放・canvas の取り外しを行う。冪等。 */
@@ -285,12 +298,16 @@ export function createRenderRoot(
     reflectionResolution?: number;
     bloomEnabled?: boolean;
     postEffectEnabled?: boolean;
+    /** 持続配置の灯し（蝶＋ひまわり、本タスク）の収容上限。統括が曲プロファイルのノーツ数を渡す。
+     *  省略時は曲非依存の安全側の既定 LANTERN_CAPACITY_DEFAULT を使う。 */
+    lanternCapacity?: number;
     placeholderGlowEnabled?: boolean;
   } = {}
 ): RenderRoot {
   const reflectionResolution = options.reflectionResolution ?? DEFAULT_REFLECTION_RESOLUTION;
   const bloomEnabled = options.bloomEnabled ?? true;
   const postEffectEnabled = options.postEffectEnabled ?? false;
+  const lanternCapacity = options.lanternCapacity ?? LANTERN_CAPACITY_DEFAULT;
   // 暫定発光点（Issue #9/#10 の反射確認用の固定の光点）を置くか。採用理由を先に述べる。既定は真として既存の
   // 呼び出し・スモークの見えを変えない。夜空の受け入れ診断（Issue #205）は、評価の妨げになる暫定の光点を外して
   // 夜空そのものを見るため偽を渡す。
@@ -386,10 +403,13 @@ export function createRenderRoot(
   // 夜の照明と中心オブジェクト（Issue #64）。標準マテリアルのモデルを照らす光源と、中心に常在する造形。
   let lighting: NightLighting | null = null;
   let centerFigure: CenterFigure | null = null;
+  // 持続配置の灯し（本タスク）。得点タップごとに add で蝶＋ひまわりを1組ずつ積み上げ、楽曲終了まで残す。
+  let lanternButterfly: LanternButterflyFigures | null = null;
+  let sunflower: SunflowerFigures | null = null;
+  // 持続配置の灯しの現在数（蝶とひまわりで常に一致）。診断・目視で読む。
+  let placedLanternCount = 0;
   // ネオン星雲の夜空（Issue #205）。最背面に不透明で描き、使用中のカメラへ追従する。反射に映すためシーンへ加える。
   let sky: NeonNebulaSky | null = null;
-  // 反応の蝶（演奏中の一過性の光点、Issue #59）。spawn 方式の寿命プールを持ち、毎フレーム update で進める。
-  let reactionButterfly: ButterflyFigures | null = null;
   // 2次元層（Issue #15）。3次元の合成の後に最前面へ重ねる正射影カメラと専用シーン。
   let overlay: OverlayLayer | null = null;
   if (renderer) {
@@ -411,9 +431,11 @@ export function createRenderRoot(
     // 中心オブジェクト（Issue #64）。初期は光柱（fallback）を中心へ立て、VRM読み込み成功で差し替える。
     centerFigure = createCenterFigure();
     scene.add(centerFigure.object3d);
-    // 反応の蝶（Issue #59）。spawn 方式の寿命プールを3次元の場面へ載せ、update で羽ばたきと寿命を進める。
-    reactionButterfly = createButterflyFigures({ capacity: REACTION_BUTTERFLY_CAPACITY });
-    scene.add(reactionButterfly.object);
+    // 持続配置の灯し（本タスク）。蝶（空中）とひまわり（水面）を3次元の場面へ載せ、得点タップごとに積み上げる。
+    lanternButterfly = createLanternButterflyFigures({ capacity: lanternCapacity });
+    scene.add(lanternButterfly.object);
+    sunflower = createSunflowerFigures({ capacity: lanternCapacity });
+    scene.add(sunflower.object);
     // 暫定カメラ視点（Issue #13 で置換）。湖面と発光点を画面に収め、映り込みを目視できるようにする。
     camera.position.set(
       PLACEHOLDER_CAMERA_POSITION.x,
@@ -631,8 +653,10 @@ export function createRenderRoot(
       return;
     }
     centerFigure?.update(deltaSeconds);
-    // 反応の蝶（Issue #59）の羽ばたき時間と寿命を進める。活動個体が無いときは内部で軽く返る。
-    reactionButterfly?.update(deltaSeconds);
+    // 持続配置の蝶（本タスク）の近距離フェードを現在のカメラ位置で更新する。近距離フェード対象が無いときは
+    // 内部で軽く返る。統括は setCameraPose（カメラ姿勢更新）の後に本 update を呼ぶため、当該フレームの最新の
+    // カメラ位置を読む。
+    lanternButterfly?.update(camera.position);
     // ネオン星雲の夜空（Issue #205）の星雲の漂いと星の瞬きの時刻を進める。
     sky?.update(deltaSeconds);
   }
@@ -818,19 +842,62 @@ export function createRenderRoot(
       // 値を橋渡しするだけ（時刻ロジックは持たない）。WebGL が無く合成器が無い端末では何もしない。
       bloomComposer?.setChromaBurstIntensity(intensity);
     },
-    spawnReactionButterfly(input: ReactionButterflyInput): void {
-      if (!reactionButterfly) {
+    placeLantern(input: PlaceLanternInput): void {
+      if (!lanternButterfly || !sunflower) {
         return;
       }
-      // 反応強度（0以上1以下）を世界座標の大きさ・輝度へ写してから発生させる（写像は描画層の責務）。
-      // 容量に空きが無いとき spawn は false を返すが、戻り値は使わない（音は別経路で鳴り、光点が出ないだけで
-      // 演出は破綻しないため）。
-      reactionButterfly.spawn({
-        position: input.position,
-        scale: reactionToScale(input.sizeStrength),
-        brightness: reactionToBrightness(input.brightnessStrength),
-        lifeSeconds: input.lifeSeconds,
+      // 満杯なら何もしない（蝶もひまわりも追加せず数も増やさない。蝶とひまわりの個数を常に一致させる）。
+      // 件数を増やす前にここで打ち切ることで、容量到達後の不作為を保証する。
+      if (lanternButterfly.activeCount() >= lanternButterfly.capacity) {
+        return;
+      }
+      // 蝶とひまわりに割り当てる共通の索引（追加前の現在数。蝶の add も内部でこの索引へ書く）。
+      const index = lanternButterfly.activeCount();
+      // ひまわりは、上流（playSession）がミク中心の放射状リング配置で算出した水平位置（sunflowerX・sunflowerZ）の水面へ
+      // 置く。水面の高さは現在の水面領域から取り、わずかに持ち上げる（暫定平面時は原点0）。
+      const waterY = (currentWaterRegion?.y ?? 0) + LANTERN_SUNFLOWER_WATER_LIFT;
+      // ひまわりの大きさと輝度は、舞台に対する実寸スケール（花直径約20cm相当）と、上品な発光のための抑えた輝度を
+      // 明示で与える（反応強度を0以上1以下へ丸めて線形補間する）。明示指定のため診断ページの強度写像とは独立する。
+      const sizeT = input.sizeStrength <= 0 ? 0 : input.sizeStrength >= 1 ? 1 : input.sizeStrength;
+      const brightnessT =
+        input.brightnessStrength <= 0 ? 0 : input.brightnessStrength >= 1 ? 1 : input.brightnessStrength;
+      const sunflowerScale =
+        LANTERN_SUNFLOWER_SCALE_MIN + (LANTERN_SUNFLOWER_SCALE_MAX - LANTERN_SUNFLOWER_SCALE_MIN) * sizeT;
+      const sunflowerBrightness =
+        LANTERN_SUNFLOWER_BRIGHTNESS_MIN +
+        (LANTERN_SUNFLOWER_BRIGHTNESS_MAX - LANTERN_SUNFLOWER_BRIGHTNESS_MIN) * brightnessT;
+      // 書き込み順序の理由を先に述べる。setInstance と add の内部は有限値・索引の検査で例外を投げうる。これらを
+      // 件数を増やす前に先に行い、件数を増やす操作（add の可視数増加とひまわりの可視数同期）は最後にまとめて行う。
+      // こうすると、万一どちらかの書き込みで例外が出ても、その時点で件数はまだ増えておらず、蝶とひまわりの個数が
+      // 食い違った中途半端な状態を構造的に作らない（ひまわりの setInstance は可視数を変えないため、書いた索引は
+      // 可視数を上げるまで描画されない）。
+      sunflower.setInstance(index, {
+        position: { x: input.sunflowerX, y: waterY, z: input.sunflowerZ },
+        sizeStrength: input.sizeStrength,
+        brightnessStrength: input.brightnessStrength,
+        scale: sunflowerScale,
+        brightness: sunflowerBrightness,
       });
+      // 蝶を同じ索引へ追加して件数を1増やす（容量は上で確認済みのため true を返す）。
+      lanternButterfly.add({
+        position: input.butterflyPosition,
+        headingX: input.headingX,
+        headingZ: input.headingZ,
+        sizeStrength: input.sizeStrength,
+        brightnessStrength: input.brightnessStrength,
+        nearFade: input.nearFade,
+      });
+      // ひまわりの可視数を蝶の件数へ合わせて確定し、両者を反映する。
+      sunflower.setVisibleCount(lanternButterfly.activeCount());
+      lanternButterfly.commit();
+      sunflower.commit();
+      placedLanternCount = lanternButterfly.activeCount();
+    },
+    resetLanterns(): void {
+      // リトライで前回の灯しを持ち越さない。蝶は内部状態も完全初期化、ひまわりは可視数を0へ戻す。
+      lanternButterfly?.reset();
+      sunflower?.setVisibleCount(0);
+      placedLanternCount = 0;
     },
     resize,
     applyPerformanceLevel,
@@ -902,8 +969,8 @@ export function createRenderRoot(
         // 色管理の明示設定（レンダラが無い端末では既定値を返す）。後処理を線形空間で作用させる前提を診断で確かめる。
         outputColorSpace: renderer ? renderer.outputColorSpace : SRGBColorSpace,
         toneMapping: renderer ? renderer.toneMapping : NoToneMapping,
-        // 反応の蝶（Issue #59）の活動個体数。蝶を作っていない（WebGL 不可）端末では0。
-        reactionButterflyActiveCount: reactionButterfly ? reactionButterfly.activeCount() : 0,
+        // 持続配置の灯し（本タスク）の配置数。灯しを作っていない（WebGL 不可）端末では0。
+        placedLanternCount,
         // ネオン星雲の夜空（Issue #205）をシーンに組み込んだか。WebGL 不可で夜空を作らない端末では偽。
         skyPresent: sky !== null,
       };
@@ -940,11 +1007,16 @@ export function createRenderRoot(
         centerFigure.dispose();
         centerFigure = null;
       }
-      // 反応の蝶（Issue #59）を場面から外し、形状・材質を解放する。
-      if (reactionButterfly) {
-        scene.remove(reactionButterfly.object);
-        reactionButterfly.dispose();
-        reactionButterfly = null;
+      // 持続配置の灯し（本タスク）を場面から外し、形状・材質を解放する。
+      if (lanternButterfly) {
+        scene.remove(lanternButterfly.object);
+        lanternButterfly.dispose();
+        lanternButterfly = null;
+      }
+      if (sunflower) {
+        scene.remove(sunflower.object);
+        sunflower.dispose();
+        sunflower = null;
       }
       // 夜の照明を解放する。
       if (lighting) {

@@ -5,7 +5,7 @@ export type {
   RenderRoot,
   RenderState,
   PerformanceLevelApplyResult,
-  ReactionButterflyInput,
+  PlaceLanternInput,
 } from "./renderRoot";
 export type { BloomState } from "./bloom";
 export type { CenterFigureStatus } from "./entities/centerFigure";

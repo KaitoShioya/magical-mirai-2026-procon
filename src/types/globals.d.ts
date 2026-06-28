@@ -156,7 +156,7 @@ declare global {
       screenTransform: { scale: number; offsetX: number; offsetY: number };
       outputColorSpace: string;
       toneMapping: number;
-      reactionButterflyActiveCount: number;
+      placedLanternCount: number;
       skyPresent: boolean;
     };
     /**

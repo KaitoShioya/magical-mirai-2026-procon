@@ -119,10 +119,17 @@ export interface FallingLane {
 export function createFallingLane(options: {
   notes: readonly LaneNote[];
   slotCount?: number;
+  /**
+   * ノーツが判定線を自動で通過したときに消滅エフェクト（burst）を発火するか。既定は true。
+   * 本編プレイは false にし、得点が出たタップのときだけ spawnTapRipple 経由で burst を発火する（得点が0でない反応のみ
+   * 弾けるエフェクトを出す、本タスクのユーザー決定）。診断ページは既定 true で自動通過時の burst の描画を検証する。
+   */
+  burstOnNoteArrival?: boolean;
 }): FallingLane {
   // スロット数は入力側（src/input）と同じ正典 resolveSlotCount で検証して確定する。0・非整数・非有限が混入しても
   // レーン幅が無限大や非整数の刻みにならず、既定値へ丸めて表示を続ける（失敗のない床）。
   const slotCount = resolveSlotCount(options.slotCount, PITCH_SLOT_COUNT_DEFAULT);
+  const burstOnNoteArrival = options.burstOnNoteArrival ?? true;
   const sortedNotes = sortLaneNotesByTime(options.notes);
   const capacity = lanePoolCapacity(sortedNotes, TIMING_WINDOW, POOL_MARGIN);
   const burstCapacity = maxConcurrentInWindow(sortedNotes, NOTE_BURST_LIFETIME_MS) + BURST_MARGIN;
@@ -151,6 +158,11 @@ export function createFallingLane(options: {
   let lastAspect = 1;
   let currentChannelLeftX = 0;
   let currentChannelRightX = 0;
+  // 直近フレームで算出した消滅エフェクトの芯半径・最大半径。得点タップ時（spawnTapRipple）の burst 発火に使う。
+  let lastCoreRadius = 0;
+  let lastMaxRadius = 0;
+  // 得点タップで発火する burst の位相を散らすための連番。
+  let tapBurstCounter = 0;
   let disposed = false;
 
   function laneWidthOverlay(aspect: number): number {
@@ -195,6 +207,9 @@ export function createFallingLane(options: {
       const laneWidth = laneWidthOverlay(lastAspect);
       const coreRadius = computeCoreRadius(laneWidth, viewportPixelHeight);
       const maxRadius = laneWidth * RING_MAX_RADIUS_OVER_LANE_WIDTH;
+      // 得点タップ時の burst 発火に使うため、直近の半径を保持する。
+      lastCoreRadius = coreRadius;
+      lastMaxRadius = maxRadius;
 
       // 画面全体の波紋を視錐台（縦横比）へ合わせる。
       ripple.layout(lastAspect);
@@ -206,8 +221,10 @@ export function createFallingLane(options: {
         ripple.update(deltaSeconds);
       }
 
-      // 判定線へ到達したノーツ（前回時刻以上・現在時刻未満）で消滅エフェクトを発火する。
-      if (lastGameTimeMs !== null) {
+      // 判定線へ到達したノーツ（前回時刻以上・現在時刻未満）で消滅エフェクトを発火する。本編プレイでは
+      // burstOnNoteArrival=false とし、自動通過では発火しない（得点が出たタップのみ spawnTapRipple 経由で発火する）。
+      // 診断ページは既定 true で自動通過時の burst の描画を検証する。
+      if (burstOnNoteArrival && lastGameTimeMs !== null) {
         const reached = reachedNoteRange(sortedNotes, lastGameTimeMs, gameTimeMs);
         for (let i = reached.start; i < reached.end; i += 1) {
           const note = sortedNotes[i];
@@ -256,13 +273,26 @@ export function createFallingLane(options: {
     },
     spawnTapRipple(slotIndex0: number): void {
       // タップしたレーンの中心・判定線の高さから波紋を立てる。レーン番号は安全のため帯の端へ丸める（失敗のない床）。
+      // 本受け口は得点が0でないタップ（統括が tapBaseScore>0 のときだけ呼ぶ）でのみ呼ばれるため、画面全体の波紋と
+      // 局所の消滅エフェクト（burst＝弾けるエフェクト）の双方をここで発火する。これにより burst は得点が出たタップの
+      // ときだけ表示される（本タスクのユーザー決定）。
       let s = Math.floor(slotIndex0);
       if (!Number.isFinite(s) || s < 0) {
         s = 0;
       } else if (s > slotCount - 1) {
         s = slotCount - 1;
       }
-      ripple.spawn(columnCenterX(s, slotCount, lastAspect), JUDGMENT_LINE_OVERLAY_Y);
+      const centerX = columnCenterX(s, slotCount, lastAspect);
+      ripple.spawn(centerX, JUDGMENT_LINE_OVERLAY_Y);
+      burst.spawn({
+        x: centerX,
+        y: JUDGMENT_LINE_OVERLAY_Y,
+        phase: notePhaseRadians(tapBurstCounter),
+        coreRadius: lastCoreRadius,
+        maxRadius: lastMaxRadius,
+        color: laneColor(s),
+      });
+      tapBurstCounter += 1;
     },
     channelLeftX(): number {
       return currentChannelLeftX;

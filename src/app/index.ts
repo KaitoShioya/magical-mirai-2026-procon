@@ -74,6 +74,9 @@ export function createApp(
   const renderRoot = createRenderRoot(options.stageRoot, {
     reflectionResolution: options.reflectionResolution,
     bloomEnabled: options.bloomEnabled,
+    // 持続配置の灯し（本タスク）の収容上限は、得点が出たタップ（各ノーツが最大1回バインド）の上限であるノーツ数を
+    // 渡す（データ駆動。描画層は profiles を import しないため、統括が数値で渡す）。
+    lanternCapacity: takeoverProfile.notes.length,
   });
 
   // 演出カメラ軌跡（Issue #13・#59）。曲プロファイルのキーフレームから評価器を作り、プレイ中に毎フレーム駆動する。
@@ -224,7 +227,8 @@ export function createApp(
     profile: takeoverProfile,
     cameraTrajectory,
     operationSound,
-    spawnReactionLight: (reactionLight) => renderRoot.spawnReactionButterfly(reactionLight),
+    // 得点が出たタップで、持続配置の灯し（蝶＝カメラ通過点・ひまわり＝その真下の水面、本タスク）を1組置く。
+    placeLantern: (lanternInput) => renderRoot.placeLantern(lanternInput),
     // 得点が0でないタップ（ノーツに当たったタップ）のレーンから、画面全体の水面の波紋を立てる（Issue #202）。
     // 受け口（tapRippleSink）はプレイ画面が落下式レーンの spawnTapRipple を登録する。未登録のあいだは何もしない。
     spawnTapRipple: (slotIndex0) => tapRippleSink?.(slotIndex0),
@@ -247,6 +251,8 @@ export function createApp(
     // プレイ開始ごとに画面拡大・減衰揺れの状態を初期化する（再挑戦で前回の拍・余韻を持ち越さない）。
     beatScheduler.reset();
     screenShake.reset();
+    // プレイ開始ごとに持続配置の灯し（本タスク）を全消去し、前回の蝶・ひまわりを持ち越さない。
+    renderRoot.resetLanterns();
     // プレイ進行の判定・採点・音・光のセッションを初期化し、入力を有効化する（Issue #59）。
     session.reset();
     input.setActive(true);

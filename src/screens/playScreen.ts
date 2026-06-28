@@ -187,7 +187,9 @@ export const createPlayScreen: ScreenFactory = (context: ScreenContext): Screen 
       conductor = result.conductor;
       // 落下式レーンを生成して2次元層へ載せる。準備待ちの再試行で重複生成しないよう、この一度きりの
       // 組み立ての中（built が偽の間のみ到達）で生成する。
-      lane = createFallingLane({ notes: play.laneNotes });
+      // 本編プレイでは消滅エフェクト（弾けるエフェクト）をノーツの自動通過では出さず、得点が出たタップのときだけ出す
+      // （burstOnNoteArrival=false。得点が0でないタップで spawnTapRipple 経由で波紋とともに発火する。本タスクのユーザー決定）。
+      lane = createFallingLane({ notes: play.laneNotes, burstOnNoteArrival: false });
       play.addOverlayObject(lane.object);
       // タップした瞬間に画面全体の波紋を立てる受け口として、このレーンの spawnTapRipple を統括へ登録する（Issue #202）。
       play.registerTapRipple((slotIndex0) => lane?.spawnTapRipple(slotIndex0));

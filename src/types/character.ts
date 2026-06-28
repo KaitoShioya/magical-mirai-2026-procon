@@ -29,6 +29,38 @@ export interface CharacterCredit {
 }
 
 /**
+ * ツインテールへ与える常時の風なびきの設定（コードによる動的表現）。
+ * 各値の意味と計算は src/utils/twinTailWind.ts を参照する。
+ */
+export interface CharacterTwinTailWindConfig {
+  /** 対象ジョイントを選ぶボーン名の正規表現（文字列）。2本のツインテールの全ジョイントに一致させる。 */
+  readonly boneNamePattern: string;
+  /** 風の基本方向（ミク局所座標）。垂れる方向の反対へ流すため後方かつ上向きを与える。 */
+  readonly baseDirectionLocal: CharacterPosition;
+  /** 流れの強さ（スプリングボーンの gravityPower に与える値）。 */
+  readonly power: number;
+  /** 方向の揺らぎ量（0以上1未満）。 */
+  readonly oscillationAmplitude: number;
+  /** 揺らぎの周波数（ヘルツ）。 */
+  readonly oscillationFrequencyHz: number;
+  /** 2本目のツインテールへ与える位相差（ラジアン）。左右が同じ動きで固まらないようにする。 */
+  readonly chainPhaseOffset: number;
+  /** 任意。揺れの戻し力（stiffness）。流れが不足する場合に下げる補助調整。 */
+  readonly stiffness?: number;
+  /** 任意。揺らぎの収まり（dragForce）。 */
+  readonly dragForce?: number;
+}
+
+/**
+ * 中心キャラクターへ実行時に与える躍動（コードによる動的表現の生成）。省略時は適用しない。
+ * ポーズ資産（VRMアニメーション）は変更せず、コードでスプリングボーンの外力を操作する。
+ */
+export interface CharacterDynamicsConfig {
+  /** ツインテールの常時の風なびき。 */
+  readonly twinTail: CharacterTwinTailWindConfig;
+}
+
+/**
  * 中心キャラクターのモデル設定。差し替えの単一地点として、配信先・配置・出典・来歴を1つに束ねる。
  * 差し替えはこの設定値の変更と、配信ディレクトリ（public/models/）のファイル置換だけで完結させる。
  */
@@ -57,4 +89,9 @@ export interface CharacterModelConfig {
    * 省略時は0とする。
    */
   readonly poseFreezeTimeSec?: number;
+  /**
+   * 実行時に与える躍動（コードによる動的表現の生成）。省略時は固定ポーズのみで躍動を適用しない。
+   * 指定時は固定ポーズに加えてツインテールの風なびきとスカート右端の右手固定を適用する。
+   */
+  readonly dynamics?: CharacterDynamicsConfig;
 }

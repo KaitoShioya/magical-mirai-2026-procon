@@ -59,6 +59,7 @@ async function run(): Promise<void> {
       centerFigureError: current.centerFigureError,
       centerFigureMotionMode: current.centerFigureMotionMode,
       centerFigurePoseMaxAngleDeg: current.centerFigurePoseMaxAngleDeg,
+      centerFigureTwinTailFlowAlignment: current.centerFigureTwinTailFlowAlignment,
       reflectionEnabled: current.reflectionEnabled,
       centerFigureReflected: current.centerFigureReflected,
       cameraPosition: current.cameraPosition,

@@ -9,9 +9,12 @@
 //     動作の区切りを作り、THREE.AnimationMixer を vrm.scene に対して進めて再生する。
 // いずれの方式でも、毎フレーム vrm.update を呼んでばねの揺れと表情の更新を進める（その呼び出しは vrmLoader が担う）。
 
-import { AnimationMixer } from "three";
+import { AnimationMixer, Quaternion, Vector3 } from "three";
 import { createVRMAnimationClip, type VRMAnimation } from "@pixiv/three-vrm-animation";
+import type { VRMSpringBoneJoint } from "@pixiv/three-vrm";
 import type { LoadedVrm } from "../loaders/vrmLoader";
+import type { CharacterDynamicsConfig } from "../../types/character";
+import { twinTailWind, type TwinTailWindParams } from "../../utils/twinTailWind";
 
 /** モーション層の取っ手。毎フレーム更新と後始末の2操作だけを持つ。 */
 export interface VrmMotion {
@@ -84,6 +87,118 @@ export function createPosedMotion(
       } catch {
         // 後始末中の例外は伝播させない。
       }
+    },
+  };
+}
+
+/** 風で操作するスプリングジョイントと、復元のために退避した元設定。 */
+interface SavedSpringJoint {
+  readonly joint: VRMSpringBoneJoint;
+  /** 揺らぎの位相差（左右で異なる）。 */
+  readonly phase: number;
+  /** 元の重力方向（Vector3 のため参照共有を避けて複製で保存）。 */
+  readonly gravityDir: Vector3;
+  readonly gravityPower: number;
+  readonly stiffness: number;
+  readonly dragForce: number;
+}
+
+/**
+ * 固定ポーズに加えて、ツインテールの常時の風なびきを実行時に与える躍動付きのモーション層を作る。
+ *
+ * 固定ポーズは createPosedMotion を内部で用いて再利用し、これに風を足す。
+ *   風（update、物理の前）: 対象ツインテールのスプリングジョイントの重力方向と強さを毎フレーム書き換える。重力方向は
+ *     ミク局所の基本方向を中心表示オブジェクトのワールド回転で変換して与える（スプリングの重力方向はワールド空間のため）。
+ * 後始末では、風で書き換えた設定（重力方向・強さ・戻し力・抵抗）を元へ戻してから固定ポーズの後始末を行う。元へ戻す理由を
+ * 先に述べる。モーション層を差し替えた際に、書き換えた風設定が次のモーションへ残らないようにするためである。
+ *
+ * @param loaded 読み込み済みVRMの取っ手。
+ * @param vrmAnimation 固定ポーズを与えるVRMアニメーション。
+ * @param options.freezeTimeSec 固定する時刻（秒）。
+ * @param options.dynamics 風の設定。
+ */
+export function createDynamicPosedMotion(
+  loaded: LoadedVrm,
+  vrmAnimation: VRMAnimation,
+  options: { freezeTimeSec: number; dynamics: CharacterDynamicsConfig }
+): VrmMotion {
+  const { dynamics } = options;
+  // 固定ポーズは既存の再生型モーションをそのまま使う（人体姿勢の毎フレーム再確定）。
+  const posed = createPosedMotion(loaded, vrmAnimation, { freezeTimeSec: options.freezeTimeSec });
+
+  // 風で操作するツインテールのジョイントを名前で選び、元設定を退避する。
+  const windPattern = new RegExp(dynamics.twinTail.boneNamePattern);
+  const savedJoints: SavedSpringJoint[] = [];
+  const joints = loaded.vrm.springBoneManager?.joints;
+  if (joints) {
+    for (const joint of joints) {
+      if (!windPattern.test(joint.bone.name)) {
+        continue;
+      }
+      savedJoints.push({
+        joint,
+        // 2本目（名前に _11 を含む）へ位相差を与え、左右が同じ動きで固まらないようにする。
+        phase: joint.bone.name.includes("_11") ? dynamics.twinTail.chainPhaseOffset : 0,
+        gravityDir: joint.settings.gravityDir.clone(),
+        gravityPower: joint.settings.gravityPower,
+        stiffness: joint.settings.stiffness,
+        dragForce: joint.settings.dragForce,
+      });
+    }
+  }
+  // 任意の補助調整（戻し力・抵抗）は一定値のため生成時に一度だけ適用する。
+  for (const saved of savedJoints) {
+    if (dynamics.twinTail.stiffness !== undefined) {
+      saved.joint.settings.stiffness = dynamics.twinTail.stiffness;
+    }
+    if (dynamics.twinTail.dragForce !== undefined) {
+      saved.joint.settings.dragForce = dynamics.twinTail.dragForce;
+    }
+  }
+
+  const windParams: TwinTailWindParams = {
+    baseDirectionLocal: dynamics.twinTail.baseDirectionLocal,
+    power: dynamics.twinTail.power,
+    oscillationAmplitude: dynamics.twinTail.oscillationAmplitude,
+    oscillationFrequencyHz: dynamics.twinTail.oscillationFrequencyHz,
+  };
+
+  const figureQuat = new Quaternion();
+  let elapsedSeconds = 0;
+
+  return {
+    update(deltaSeconds: number): void {
+      // 固定ポーズを再評価して人体姿勢を確定する（物理の前）。
+      posed.update(deltaSeconds);
+      elapsedSeconds += deltaSeconds;
+      if (savedJoints.length === 0) {
+        return;
+      }
+      // ミクのワールド向きを最新化し、局所の風方向をワールドへ変換するための四元数を得る。
+      loaded.object3d.updateWorldMatrix(true, false);
+      loaded.object3d.getWorldQuaternion(figureQuat);
+      for (const saved of savedJoints) {
+        const wind = twinTailWind(elapsedSeconds, windParams, saved.phase);
+        // 局所方向をワールドへ変換して重力方向に設定する（重力方向はワールド空間で解釈される）。
+        wind.directionLocal.applyQuaternion(figureQuat);
+        saved.joint.settings.gravityDir.copy(wind.directionLocal);
+        saved.joint.settings.gravityPower = wind.power;
+      }
+    },
+    dispose(): void {
+      // 契約どおり、後始末の中で生じた例外を捕捉し、呼び出し側へ伝播させない。
+      try {
+        // 風で書き換えた設定を元へ戻す（差し替え時に次のモーションへ残らないようにする）。
+        for (const saved of savedJoints) {
+          saved.joint.settings.gravityDir.copy(saved.gravityDir);
+          saved.joint.settings.gravityPower = saved.gravityPower;
+          saved.joint.settings.stiffness = saved.stiffness;
+          saved.joint.settings.dragForce = saved.dragForce;
+        }
+      } catch {
+        // 後始末中の例外は伝播させない。
+      }
+      posed.dispose();
     },
   };
 }

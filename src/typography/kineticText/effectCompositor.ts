@@ -9,7 +9,6 @@ import type {
   AttributeContribution,
   OperatedAttributes,
   EffectTargetUnit,
-  DeformContribution,
   DuplicationContribution,
 } from "./effectElement";
 import { findContributionIssues } from "./effectElement";
@@ -240,6 +239,10 @@ export function composeGlyphState(input: ComposeInput, directive?: DegradeDirect
     const droppedGeometricContributions = contributions.filter((e) =>
       hasGeometricChannel(e.contribution)
     ).length;
+    // 塊配置を解決する。寄与が塊配置を持たないときは基準位置・等倍を補い、適用層が分岐なく反映できるようにする。
+    const massPlacement = deformValue.massPlacement;
+    const massPosition = massPlacement?.position ?? basePosition;
+    const massScale = massPlacement?.scale ?? ONE;
     return {
       position: basePosition,
       rotation: null,
@@ -248,8 +251,9 @@ export function composeGlyphState(input: ComposeInput, directive?: DegradeDirect
       color: finalColor,
       opacity,
       glowing,
-      deform: deformValue as DeformContribution,
+      deform: { kind: deformValue.kind, params: deformValue.params, massPosition, massScale },
       duplication: null,
+      clip: null,
       readability: null,
       droppedGeometricContributions,
       droppedLetterSpacing: 0,
@@ -308,6 +312,9 @@ export function composeGlyphState(input: ComposeInput, directive?: DegradeDirect
     }
   }
 
+  // 切り抜き（最高優先度の1件を採用）。
+  const clip = pickMain(contributions, (c) => c.clip) ?? null;
+
   return {
     position,
     rotation,
@@ -318,6 +325,7 @@ export function composeGlyphState(input: ComposeInput, directive?: DegradeDirect
     glowing,
     deform: null,
     duplication,
+    clip,
     readability,
     droppedGeometricContributions: 0,
     droppedLetterSpacing,

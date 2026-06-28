@@ -62,6 +62,7 @@ export default defineConfig(({ mode }) => {
         charSmash: "char-smash.html",
         spatial: "spatial.html",
         effectComposition: "effect-composition.html",
+        motionSets: "motion-sets.html",
         displaySync: "display-sync.html",
         audio: "audio.html",
         performance: "performance.html",

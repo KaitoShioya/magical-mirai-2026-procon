@@ -106,12 +106,67 @@ export type {
 } from "./effectBudget";
 export { createCompositionTarget } from "./effectCompositionApplier";
 export type { CompositionTarget, CompositionTargetDeps } from "./effectCompositionApplier";
+// 単位別の演出駆動と費用ループ（仮合成→accountBudget→planDegrade→再合成→applyComposed）。
+// 本編結線（#33・#59）が、役分離・配置・割付で決めた単位群を渡して駆動する機構。
+export { createUnitEffectDriver } from "./unitEffectDriver";
+export type {
+  UnitEffectDriver,
+  UnitEffectDriverDeps,
+  DriveUnit,
+  DriveEffect,
+  UnitDriveDiagnostics,
+} from "./unitEffectDriver";
+// 切り抜きの純粋計算（部首分解の相補矩形・縦横ブラインドのN分割）。clip 経路の演出が使う。
+export { computeSplitRects, computeBlindRects } from "./clipSplit";
+export type { ClipRect, ClipAxis } from "./clipSplit";
+export type { ClipContribution } from "./effectElement";
 // プール枯渇の検出。複製の写しの確保失敗を駆動・診断側が判定するために使う（#131 の適用層へ null で渡す）。
 export { isPlaceholderHandle } from "./engine";
 
 // 個別演出（#130 の基盤の上に登録する実演出）。Issue #23 1文字1拍スマッシュ。
 // 本番レジストリへの登録は割付（#132）・譜面（#33）が行うため、ここでは演出要素を公開するにとどめる。
 export { charSmash } from "./effects/charSmash";
+
+// イージング基盤（設計書付録Aの全41系統＋合成器）。差し替え可能なモーションセットが使う純粋関数群。
+export { easingByNumber, easingByName, resolveEasing, composeEasing, outIn } from "./easing";
+export type { EasingFn, EasingName, EasingRef } from "./easing";
+// モーションセット抽象（イージング＋モーション＝差し替え可能な1セット）。
+export { createMotionSetEffect } from "./motionSet";
+export type {
+  MotionSetConfig,
+  MotionTimeWindow,
+  MotionPhaseEasing,
+  TransformMotionConfig,
+  ScalarMotionConfig,
+  JitterMotionConfig,
+  SquareWaveMotionConfig,
+} from "./motionSet";
+// 差し替え可能なモーションセットのライブラリ（19セット）と一括登録。指揮者（#33/#59）がレジストリへ登録する。
+export { buildMotionSetLibrary, registerMotionSetLibrary } from "./effects/motionSetCatalog";
+// 個別のモーションセット（割付・譜面・指揮が識別名で参照する実演出）。
+export { letterSpacingSpread } from "./effects/letterSpacingSpread";
+export { circularMultiply } from "./effects/circularMultiply";
+export { verticalStretchSwirl } from "./effects/verticalStretchSwirl";
+export { afterimageTrail } from "./effects/afterimageTrail";
+export { fadeBlackout } from "./effects/fadeBlackout";
+export { emotionLoudness } from "./effects/emotionLoudness";
+export { depthFlight } from "./effects/depthFlight";
+export { swirlDeform, waveDeform, vortexScatterTransition } from "./effects/deformVortex";
+export {
+  axisMove,
+  scaleSoftSmash,
+  squashStretch,
+  blink,
+  floatJitter,
+  wordRotation,
+  unitOpacity,
+  initialFlash,
+} from "./effects/extraMotionSets";
+// コマ落ち（時刻量子化）。激しい動きの直後に演出へ渡す時刻を一定刻みへ丸める。
+export { quantizeTimeMs } from "./quantizeTime";
+// 変形塊配置の解決済み合成結果（適用層が変形取っ手へ反映する）。
+export type { ComposedDeformState } from "./composedGlyphState";
+export type { DeformMassPlacement } from "./effectElement";
 export type {
   FontCredit,
   FontEntry,

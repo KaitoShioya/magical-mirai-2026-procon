@@ -261,6 +261,15 @@ export interface RenderRoot {
    *  減衰で0へ向かう。値を橋渡しするだけで時刻ロジックは持たない。後処理パスが無効（既定）の端末では効果は出ない。
    *  本編での有効化は #59 が createRenderRoot({ postEffectEnabled: true }) で行う。WebGL が無い端末では何もしない。 */
   setChromaBurstIntensity(intensity: number): void;
+  /** 句読点の色反転の度合いを注入する（0から1）。曲の切れ目でインパルス駆動する。値を橋渡しするだけで時刻ロジックは
+   *  持たない。後処理パスが無効（既定）の端末では効果は出ない。本編での有効化は #59。WebGL が無い端末では何もしない。 */
+  setInvertIntensity(intensity: number): void;
+  /** グリッチの強度を注入する（0から1）。場面転換のアクセントで駆動する。値を橋渡しするだけ。グリッチパスが無効
+   *  （既定）の端末では効果は出ない。WebGL が無い端末では何もしない。 */
+  setGlitchIntensity(intensity: number): void;
+  /** グリッチの時刻（秒、量子化済み）を注入する。乱数を使わず時刻だけで決めるためシークで同じ画素になる。
+   *  WebGL が無い端末では何もしない。 */
+  setGlitchTimeSec(seconds: number): void;
   /** 持続配置の灯し（蝶＋ひまわり、本タスク）を1組置く。蝶は受け取った配置点へ、ひまわりはその x/z の真下の水面へ
    *  置き、楽曲終了まで残す。判定論理は持たず、配置点・強度・近距離フェード旗だけを受け取る（依存規則 §5）。
    *  WebGL が無く灯しを作らない端末、または容量に空きが無いときは何もしない。 */
@@ -888,6 +897,15 @@ export function createRenderRoot(
     setChromaBurstIntensity(intensity: number): void {
       // 値を橋渡しするだけ（時刻ロジックは持たない）。WebGL が無く合成器が無い端末では何もしない。
       bloomComposer?.setChromaBurstIntensity(intensity);
+    },
+    setInvertIntensity(intensity: number): void {
+      bloomComposer?.setInvertIntensity(intensity);
+    },
+    setGlitchIntensity(intensity: number): void {
+      bloomComposer?.setGlitchIntensity(intensity);
+    },
+    setGlitchTimeSec(seconds: number): void {
+      bloomComposer?.setGlitchTimeSec(seconds);
     },
     placeLantern(input: PlaceLanternInput): void {
       if (!lanternButterfly || !sunflower) {

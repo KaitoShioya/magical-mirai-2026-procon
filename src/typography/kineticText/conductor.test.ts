@@ -11,6 +11,8 @@ import { buildReadingSpansByPhrase } from "./readingLayout";
 import type { ReadingPlacementResolved } from "./readingLayout";
 import { EFFECT_ID } from "./effectAssignment";
 import type { ResolvedAssignmentPlan, ResolvedEffectAssignment } from "./typographyChartResolve";
+import { charSmash } from "./effects/charSmash";
+import type { EffectElement } from "./effectElement";
 
 // ---- 擬似の取っ手とエンジン ----
 
@@ -243,6 +245,43 @@ describe("conductor 読ませる役へのスマッシュ適用", () => {
     if (scale !== null) {
       expect(scale.x).toBeCloseTo(1);
     }
+  });
+});
+
+describe("conductor 汎用駆動（resolveEffect 供給時）", () => {
+  // 演出識別名から実演出を引く解決。スマッシュだけを返す。
+  function resolveSmash(effectId: string): EffectElement | null {
+    return effectId === EFFECT_ID.smash ? charSmash : null;
+  }
+
+  it("active な演出を合成経路で読ませる役へ反映し、出現直後に拡大する（倍率1超）", () => {
+    const engine = makeEngine();
+    const deps = { ...makeDeps(engine, planWithSmash()), resolveEffect: resolveSmash, bloomThreshold: 0.8 };
+    const c = createConductor(deps);
+    c.update(10);
+    const scale = engine.phraseSpawns[0].handle.lastScale;
+    expect(scale).not.toBeNull();
+    expect(scale!.x).toBeGreaterThan(1);
+  });
+
+  it("active な演出が無ければ落ち着き寸法（倍率1）で出す", () => {
+    const engine = makeEngine();
+    const deps = { ...makeDeps(engine, planWithoutSmash()), resolveEffect: resolveSmash, bloomThreshold: 0.8 };
+    const c = createConductor(deps);
+    c.update(10);
+    const scale = engine.phraseSpawns[0].handle.lastScale;
+    // 大きさ寄与が無いので合成結果は等倍。
+    expect(scale!.x).toBeCloseTo(1, 6);
+  });
+
+  it("登録に無い識別名は飛ばし、例外を出さない", () => {
+    const engine = makeEngine();
+    // どの識別名も解決できない resolver。
+    const deps = { ...makeDeps(engine, planWithSmash()), resolveEffect: () => null, bloomThreshold: 0.8 };
+    const c = createConductor(deps);
+    expect(() => c.update(10)).not.toThrow();
+    // 大きさ寄与が無いので等倍。
+    expect(engine.phraseSpawns[0].handle.lastScale!.x).toBeCloseTo(1, 6);
   });
 });
 

@@ -12,6 +12,7 @@ import {
   CHAR_SMASH_SETTLE_SCALE,
   CHAR_SMASH_SETTLE_FRACTION,
   CHAR_SMASH_DECAY_EXPONENT,
+  CHAR_SMASH_DECAY_MS,
 } from "./charSmash";
 import { validateEffectElement, findContributionIssues } from "../effectElement";
 import type { EffectContext, AttributeContribution } from "../effectElement";
@@ -139,14 +140,15 @@ describe("Issue #23 遅延描画の保証（1フレーム遅れでも打撃を�
     const span = 720; // 表示時間を2拍ぶん（拍間隔360ミリ秒×2）とする。
     const beatTimeMs = 1000;
     const gameTimeMs = beatTimeMs + FRAME_MS; // 発火が1フレーム遅れた時点。
-    const progress = FRAME_MS / span;
+    // 進行は固定の減衰時間で正規化される（表示窓 span ではない）。期待値も同じ固定時間で算出する。
+    const progress = FRAME_MS / CHAR_SMASH_DECAY_MS;
     const scale = scaleX(charSmash.evaluate(charCtx(beatTimeMs, beatTimeMs + span, gameTimeMs)));
 
     // 式追従の期待値: 係数から導いた式と一致する（係数調整に追従し、暫定値を固定焼き込みしない）。
     expect(scale).toBeCloseTo(charSmashScaleAt(progress), 10);
 
     // 品質最低保証その1（減衰の形の下限）: 打撃の保持割合は山倍率の絶対値に依存しない。
-    // 採用理由: 1フレーム（16.67ミリ秒）は表示時間720ミリ秒のごく一部であり、打撃の過半を保つのが妥当なため、下限を0.5とする。
+    // 採用理由: 1フレーム（16.67ミリ秒）は減衰時間300ミリ秒のごく一部であり、打撃の過半を保つのが妥当なため、下限を0.5とする。
     const retention = (scale - CHAR_SMASH_SETTLE_SCALE) / (CHAR_SMASH_PEAK_SCALE - CHAR_SMASH_SETTLE_SCALE);
     expect(retention).toBeGreaterThanOrEqual(0.5);
 

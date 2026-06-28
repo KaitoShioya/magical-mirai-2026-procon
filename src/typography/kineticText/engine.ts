@@ -492,6 +492,14 @@ export function createKineticTextEngine(
       setOrientation: (policy): void => {
         entry.orientation = policy;
       },
+      setClipRect: (minX, minY, maxX, maxY): void => {
+        text.clipRect = [minX, minY, maxX, maxY];
+        text.sync();
+      },
+      clearClip: (): void => {
+        text.clipRect = null;
+        text.sync();
+      },
       release: (): void => releaseSingle(entry),
     };
   }

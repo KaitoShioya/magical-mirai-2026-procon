@@ -177,11 +177,14 @@ try {
     if (renderAfter === null) {
       fail("window.__renderState が取得できませんでした");
     } else {
-      // 光点: 反応の蝶がタップぶん生まれる（寿命約1.2秒・容量64未満のためプレイ窓内では満了せず注入回数と一致）。
+      // 描画側の灯しの検査について。タップの手応えは画面全体の水面の波紋（得点が出たタップのみ）で、持続配置の灯し
+      // （placedLanternCount）も得点が出たタップのみ積み上がる。擬似再生では合成タップが得点に至るかが保証されないため、
+      // 描画側の灯し数は通しスモークの主検査に用いない（配置の呼び分けの厳密検査は単体テスト playSession.test.ts が担う）。
+      // ここでは描画状態が取得でき例外が無いことと、下記カメラ駆動の成立のみを確かめる。
       check(
-        renderAfter.reactionButterflyActiveCount === injected,
-        `反応の蝶の生存数が注入回数と一致する（${renderAfter.reactionButterflyActiveCount} 個）`,
-        `反応の蝶の生存数 ${renderAfter.reactionButterflyActiveCount} が注入回数 ${injected} と一致しません`
+        Number.isFinite(renderAfter.placedLanternCount) && renderAfter.placedLanternCount >= 0,
+        `持続配置の灯し数が有限・非負（${renderAfter.placedLanternCount}）`,
+        `持続配置の灯し数が不正です（${renderAfter.placedLanternCount}）`
       );
       // カメラ: 軌跡駆動の適用拒否が無い。
       check(

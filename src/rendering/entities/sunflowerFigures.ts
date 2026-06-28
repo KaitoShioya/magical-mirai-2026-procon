@@ -20,10 +20,16 @@ import { reactionToBrightness, reactionToScale } from "./sunflowerReactionMappin
 export interface SunflowerSetInput {
   /** 配置位置（湖を基準とする3次元座標）。 */
   position: { x: number; y: number; z: number };
-  /** 大きさ強度（タイミング精度由来、0以上1以下）。reactionToScale で大きさへ写像する。 */
+  /** 大きさ強度（タイミング精度由来、0以上1以下）。reactionToScale で大きさへ写像する。scale を渡したときはそちらを優先する。 */
   sizeStrength: number;
-  /** 輝度強度（音程精度由来、0以上1以下）。reactionToBrightness で輝度へ写像する。 */
+  /** 輝度強度（音程精度由来、0以上1以下）。reactionToBrightness で輝度へ写像する。brightness を渡したときはそちらを優先する。 */
   brightnessStrength: number;
+  /** 等方スケールの明示指定（任意）。渡したときは sizeStrength の写像でなくこの値をそのまま大きさに用いる。
+   *  本タスクの灯し配置が、舞台に対する実寸スケールを直接与えるために使う（0以上）。 */
+  scale?: number;
+  /** 輝度の明示指定（任意）。渡したときは brightnessStrength の写像でなくこの値をそのまま輝度に用いる。
+   *  本タスクの灯し配置が、上品な発光のための輝度を直接与えるために使う（0以上）。 */
+  brightness?: number;
 }
 
 /** ひまわりの幾何メトリクス（検査・配置で参照する）。 */
@@ -77,8 +83,10 @@ export function createSunflowerFigures(options: {
   let disposed = false;
 
   function setInstance(index: number, input: SunflowerSetInput): void {
-    const scale = reactionToScale(input.sizeStrength);
-    const brightness = reactionToBrightness(input.brightnessStrength);
+    // scale・brightness の明示指定があればそれを優先し、無ければ反応強度から写像する（既存の診断呼び出しは
+    // 強度のみを渡すため従来どおり）。本タスクの灯し配置は実寸スケールと上品な輝度を明示で渡す。
+    const scale = input.scale ?? reactionToScale(input.sizeStrength);
+    const brightness = input.brightness ?? reactionToBrightness(input.brightnessStrength);
     // 基準色は白（[1,1,1]）で渡す。図形内の橙の階調は頂点色が持ち、ここでは個体ごとの輝度だけを与える。
     glow.setInstance(index, { position: input.position, scale, colorRgb: [1, 1, 1], brightness });
   }

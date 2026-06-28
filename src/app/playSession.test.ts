@@ -3,13 +3,29 @@
 // 基に、各シナリオで必要なフィールドだけを上書きして用いる。
 
 import { describe, it, expect, vi } from "vitest";
-import { createPlaySession, type PlaySessionDeps, type ReactionLightInput } from "./playSession";
+import { createPlaySession, type PlaySessionDeps, type PlaceLanternInput } from "./playSession";
 import { minimalValidProfile } from "../profiles/schema/fixtures/minimalValidProfile";
 import { createCameraTrajectory } from "../utils/cameraTrajectory";
 import { DEFAULT_OBJECTIVE_CONFIG, DEFAULT_GAUGE_CONFIG } from "../scoring";
+import { LANTERN_BUTTERFLY_FORWARD_OFFSET, LANTERN_SUNFLOWER_RADIUS_MAX } from "../config/tuning";
 import type { SongProfile } from "../profiles/schema";
 import type { Reaction } from "../input";
 import type { FrameTimeSample } from "../scoring";
+
+// フィクスチャ（minimalValidProfile）の固定値を直書きすると、フィクスチャ変更時に各テストが分かりにくく壊れる。
+// これを避けるため、JUST 一致の基準値をフィクスチャから導出する。判定基準時刻は各ノーツの拍格子時刻
+// beats[note.beatIndex].startTimeMs、判定スロット（slot0）は note.slotIndex - 1（判定の slot0 は0始まり、プロファイルの
+// slotIndex は1始まり）。前提が崩れたら一目で分かるよう、これらが従来の前提値と一致することを下の確認テストで固定する。
+const FIXTURE_NOTE_0 = minimalValidProfile.notes[0];
+const FIXTURE_NOTE_1 = minimalValidProfile.notes[1];
+const N0_JUST_TIME_MS = minimalValidProfile.beats[FIXTURE_NOTE_0.beatIndex].startTimeMs;
+const N0_JUST_SLOT0 = FIXTURE_NOTE_0.slotIndex - 1;
+const N1_JUST_TIME_MS = minimalValidProfile.beats[FIXTURE_NOTE_1.beatIndex].startTimeMs;
+const N1_JUST_SLOT0 = FIXTURE_NOTE_1.slotIndex - 1;
+// 音程がずれる（JUST 不一致の）スロット番号。n0 のスロットと必ず異なるレーンにする。
+const OFF_SLOT0 = N0_JUST_SLOT0 === 0 ? 1 : 0;
+// どのノーツの判定窓（外端は拍格子時刻の前後90ミリ秒）からも十分に離れた時刻。空打ち（素点0）を作るために用いる。
+const NO_NOTE_TIME_MS = 5000;
 
 function makeReaction(
   slotIndex: number,
@@ -38,7 +54,7 @@ interface Harness {
   setSlotPitches: ReturnType<typeof vi.fn>;
   playSlot: ReturnType<typeof vi.fn>;
   setDeployTimbre: ReturnType<typeof vi.fn>;
-  spawn: ReturnType<typeof vi.fn>;
+  placeLantern: ReturnType<typeof vi.fn>;
   tapRipple: ReturnType<typeof vi.fn>;
 }
 
@@ -47,13 +63,13 @@ function makeHarness(profile: SongProfile, config = DEFAULT_OBJECTIVE_CONFIG): H
   const setSlotPitches = vi.fn<(midiNotes: readonly number[] | null) => void>();
   const playSlot = vi.fn<(slotIndex: number) => void>();
   const setDeployTimbre = vi.fn<(active: boolean) => void>();
-  const spawn = vi.fn<(input: ReactionLightInput) => void>();
+  const placeLantern = vi.fn<(input: PlaceLanternInput) => void>();
   const tapRipple = vi.fn<(slotIndex0: number) => void>();
   const deps: PlaySessionDeps = {
     profile,
     cameraTrajectory: createCameraTrajectory(profile.camera),
     operationSound: { setSlotPitches, playSlot, setDeployTimbre },
-    spawnReactionLight: spawn,
+    placeLantern,
     spawnTapRipple: tapRipple,
     getFrameSample: () => frame,
     getCalibrationOffsetMs: () => 0,
@@ -67,20 +83,32 @@ function makeHarness(profile: SongProfile, config = DEFAULT_OBJECTIVE_CONFIG): H
     setSlotPitches,
     playSlot,
     setDeployTimbre,
-    spawn,
+    placeLantern,
     tapRipple,
   };
 }
 
 describe("createPlaySession", () => {
+  describe("フィクスチャ前提（直書き値依存の脆さを防ぐ確認）", () => {
+    it("最小プロファイルから導出した JUST 基準が従来の前提値と一致する", () => {
+      // フィクスチャが変わって各テストの前提が崩れたら、ここで一目で検知できる。
+      expect(N0_JUST_TIME_MS).toBe(310);
+      expect(N0_JUST_SLOT0).toBe(2);
+      expect(N1_JUST_TIME_MS).toBe(653);
+      expect(N1_JUST_SLOT0).toBe(4);
+      // 音程ずれのスロットは JUST のスロットと必ず異なる。
+      expect(OFF_SLOT0).not.toBe(N0_JUST_SLOT0);
+    });
+  });
+
   describe("スロット番号の起点変換", () => {
     it("1始まりのノーツのスロットに対し、0始まりへ変換したタップで音程一致（JUST）になり得点が増える", () => {
       // n0 は beatIndex 0（拍格子時刻 310）・slotIndex 3（1始まり）。判定の slot0 は 3-1=2。
       const h = makeHarness(minimalValidProfile);
       const session = createPlaySession(h.deps);
       session.reset();
-      h.setFrame(makeFrame(310));
-      session.onReaction(makeReaction(2, { eventTimeMs: 0 }));
+      h.setFrame(makeFrame(N0_JUST_TIME_MS));
+      session.onReaction(makeReaction(N0_JUST_SLOT0, { eventTimeMs: 0 }));
       // 得点が正になる（JUST 一致でスコアが積まれる）。
       expect(session.finalResult().totalScore).toBeGreaterThan(0);
     });
@@ -89,14 +117,14 @@ describe("createPlaySession", () => {
       const just = makeHarness(minimalValidProfile);
       const justSession = createPlaySession(just.deps);
       justSession.reset();
-      just.setFrame(makeFrame(310));
+      just.setFrame(makeFrame(N0_JUST_TIME_MS));
       justSession.onReaction(makeReaction(2));
 
       const off = makeHarness(minimalValidProfile);
       const offSession = createPlaySession(off.deps);
       offSession.reset();
-      off.setFrame(makeFrame(310));
-      offSession.onReaction(makeReaction(0));
+      off.setFrame(makeFrame(N0_JUST_TIME_MS));
+      offSession.onReaction(makeReaction(OFF_SLOT0));
 
       expect(justSession.finalResult().totalScore).toBeGreaterThan(
         offSession.finalResult().totalScore,
@@ -105,25 +133,25 @@ describe("createPlaySession", () => {
   });
 
   describe("失敗のない床", () => {
-    it("判定窓外のタップでも例外なく協和音と光点を1回ずつ生む", () => {
+    it("判定窓外のタップでも例外なく協和音を1回鳴らし、持続灯しは置かない", () => {
       const h = makeHarness(minimalValidProfile);
       const session = createPlaySession(h.deps);
       session.reset();
-      // どのノーツ（拍格子時刻 310・653）からも判定窓外端90ミリ秒を超えて離れた時刻。
-      h.setFrame(makeFrame(5000));
+      // どのノーツ（拍格子時刻 310・653）からも判定窓外端90ミリ秒を超えて離れた時刻。素点0の空打ちになる。
+      h.setFrame(makeFrame(NO_NOTE_TIME_MS));
       expect(() => session.onReaction(makeReaction(4))).not.toThrow();
       expect(h.playSlot).toHaveBeenCalledTimes(1);
-      expect(h.spawn).toHaveBeenCalledTimes(1);
+      // 素点0のため持続灯しは置かない（波紋も立てない）。
+      expect(h.placeLantern).not.toHaveBeenCalled();
     });
 
-    it("再生位置が信頼できないフレームのタップでも例外なく協和音と光点を生む", () => {
+    it("再生位置が信頼できないフレームのタップでも例外なく協和音を鳴らす", () => {
       const h = makeHarness(minimalValidProfile);
       const session = createPlaySession(h.deps);
       session.reset();
-      h.setFrame(makeFrame(310, false));
+      h.setFrame(makeFrame(N0_JUST_TIME_MS, false));
       expect(() => session.onReaction(makeReaction(2))).not.toThrow();
       expect(h.playSlot).toHaveBeenCalledTimes(1);
-      expect(h.spawn).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -133,10 +161,10 @@ describe("createPlaySession", () => {
       const session = createPlaySession(h.deps);
       session.reset();
       // n0（拍格子時刻310・slot0=2）に JUST 一致するタップ。素点が正になる。
-      h.setFrame(makeFrame(310));
-      session.onReaction(makeReaction(2, { eventTimeMs: 0 }));
+      h.setFrame(makeFrame(N0_JUST_TIME_MS));
+      session.onReaction(makeReaction(N0_JUST_SLOT0, { eventTimeMs: 0 }));
       expect(h.tapRipple).toHaveBeenCalledTimes(1);
-      expect(h.tapRipple).toHaveBeenCalledWith(2);
+      expect(h.tapRipple).toHaveBeenCalledWith(N0_JUST_SLOT0);
     });
 
     it("得点0のタップ（判定窓外の空打ち）では波紋を立てない", () => {
@@ -144,11 +172,84 @@ describe("createPlaySession", () => {
       const session = createPlaySession(h.deps);
       session.reset();
       // どのノーツ（拍格子時刻 310・653）からも判定窓外端90ミリ秒を超えて離れた時刻。対応ノーツが無く素点が0になる。
-      h.setFrame(makeFrame(5000));
+      h.setFrame(makeFrame(NO_NOTE_TIME_MS));
       session.onReaction(makeReaction(4));
       // 協和音は床として鳴る一方、波紋は素点0のため立てない。
       expect(h.playSlot).toHaveBeenCalledTimes(1);
       expect(h.tapRipple).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("持続灯しの配置（得点タップのみ）", () => {
+    // 既知の定数カメラ軌跡を持つプロファイル。位置 {0,0,0}・注視点 {0,0,10}（+z を向く）で、視線方向の単位ベクトルは
+    // (0,0,1) になる。得点タップの蝶の配置点は カメラ位置 + 単位ベクトル × 前方オフセット = (0,0,前方オフセット) になる。
+    const forwardCameraProfile: SongProfile = {
+      ...minimalValidProfile,
+      camera: [
+        { timeMs: 0, position: { x: 0, y: 0, z: 0 }, target: { x: 0, y: 0, z: 10 } },
+        { timeMs: 100000, position: { x: 0, y: 0, z: 0 }, target: { x: 0, y: 0, z: 10 } },
+      ],
+    };
+    // 退化カメラ軌跡（位置と注視点が一致して視線方向が定まらない）。
+    const degenerateCameraProfile: SongProfile = {
+      ...minimalValidProfile,
+      camera: [
+        { timeMs: 0, position: { x: 5, y: 5, z: 5 }, target: { x: 5, y: 5, z: 5 } },
+        { timeMs: 100000, position: { x: 5, y: 5, z: 5 }, target: { x: 5, y: 5, z: 5 } },
+      ],
+    };
+
+    it("得点が0でないタップでのみ持続灯しを置く（空打ちでは置かない）", () => {
+      const h = makeHarness(forwardCameraProfile);
+      const session = createPlaySession(h.deps);
+      session.reset();
+      // 空打ち（素点0）では置かない。
+      h.setFrame(makeFrame(NO_NOTE_TIME_MS));
+      session.onReaction(makeReaction(4));
+      expect(h.placeLantern).not.toHaveBeenCalled();
+      // 得点が出るタップ（JUST 一致）では1回置く。
+      h.setFrame(makeFrame(N0_JUST_TIME_MS));
+      session.onReaction(makeReaction(N0_JUST_SLOT0, { eventTimeMs: 0 }));
+      expect(h.placeLantern).toHaveBeenCalledTimes(1);
+    });
+
+    it("得点タップで持続灯しを1組置き、蝶の配置点はカメラ位置に前方オフセットを足した点（注視点基準でもカメラ位置そのものでもない）", () => {
+      const h = makeHarness(forwardCameraProfile);
+      const session = createPlaySession(h.deps);
+      session.reset();
+      // n0（拍格子時刻310・slot0=2）に JUST 一致するタップ。素点が正になる。
+      h.setFrame(makeFrame(N0_JUST_TIME_MS));
+      session.onReaction(makeReaction(N0_JUST_SLOT0, { eventTimeMs: 0 }));
+      expect(h.placeLantern).toHaveBeenCalledTimes(1);
+      const arg = h.placeLantern.mock.calls[0][0] as PlaceLanternInput;
+      // 視線方向 (0,0,1) × 前方オフセット を カメラ位置 (0,0,0) に足した点。
+      expect(arg.butterflyPosition.x).toBeCloseTo(0, 5);
+      expect(arg.butterflyPosition.y).toBeCloseTo(0, 5);
+      expect(arg.butterflyPosition.z).toBeCloseTo(LANTERN_BUTTERFLY_FORWARD_OFFSET, 5);
+      // カメラ位置そのもの（z=0）ではない。注視点基準（z=10）でもない。
+      expect(arg.butterflyPosition.z).not.toBeCloseTo(0, 3);
+      expect(arg.butterflyPosition.z).not.toBeCloseTo(10, 3);
+      expect(arg.nearFade).toBe(false);
+      // ひまわりは蝶の真下ではなく、ミク中心（原点）の放射状リング上に置かれる。中心からの距離は最大半径以内で、
+      // 蝶の x/z（前方オフセットで z=前方オフセット）とは独立である。
+      const sunflowerRadius = Math.hypot(arg.sunflowerX, arg.sunflowerZ);
+      expect(sunflowerRadius).toBeGreaterThan(0);
+      expect(sunflowerRadius).toBeLessThanOrEqual(LANTERN_SUNFLOWER_RADIUS_MAX + 1e-6);
+    });
+
+    it("退化カメラ（視線方向が定まらない）でも得点タップで持続灯しを置き、配置点はカメラ位置・近距離フェード対象", () => {
+      const h = makeHarness(degenerateCameraProfile);
+      const session = createPlaySession(h.deps);
+      session.reset();
+      h.setFrame(makeFrame(N0_JUST_TIME_MS));
+      session.onReaction(makeReaction(N0_JUST_SLOT0, { eventTimeMs: 0 }));
+      expect(h.placeLantern).toHaveBeenCalledTimes(1);
+      const arg = h.placeLantern.mock.calls[0][0] as PlaceLanternInput;
+      // オフセットを足さずカメラ位置 (5,5,5) に置き、近距離フェードの対象にする。
+      expect(arg.butterflyPosition.x).toBeCloseTo(5, 5);
+      expect(arg.butterflyPosition.y).toBeCloseTo(5, 5);
+      expect(arg.butterflyPosition.z).toBeCloseTo(5, 5);
+      expect(arg.nearFade).toBe(true);
     });
   });
 
@@ -186,7 +287,7 @@ describe("createPlaySession", () => {
       const h = makeHarness(profile);
       const session = createPlaySession(h.deps);
       session.reset();
-      h.setFrame(makeFrame(310));
+      h.setFrame(makeFrame(N0_JUST_TIME_MS));
       session.onReaction(makeReaction(2));
       session.onReaction(makeReaction(2));
       expect(session.diagnostics().tapCount).toBe(1);
@@ -196,13 +297,13 @@ describe("createPlaySession", () => {
       const h = makeHarness(minimalValidProfile);
       const session = createPlaySession(h.deps);
       session.reset();
-      h.setFrame(makeFrame(310));
+      h.setFrame(makeFrame(N0_JUST_TIME_MS));
       session.onReaction(makeReaction(2));
       const afterOne = session.rankGaugeState().percentile;
       const scoreOne = session.finalResult().totalScore;
-      // n1（拍格子時刻 653・slotIndex 5→slot0 4）にも JUST 一致。
-      h.setFrame(makeFrame(653));
-      session.onReaction(makeReaction(4));
+      // n1（フィクスチャの2つ目のノーツ）にも JUST 一致。
+      h.setFrame(makeFrame(N1_JUST_TIME_MS));
+      session.onReaction(makeReaction(N1_JUST_SLOT0));
       expect(session.rankGaugeState().percentile).toBeGreaterThanOrEqual(afterOne);
       expect(session.finalResult().totalScore).toBeGreaterThan(scoreOne);
     });

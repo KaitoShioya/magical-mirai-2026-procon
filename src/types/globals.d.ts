@@ -156,7 +156,7 @@ declare global {
       screenTransform: { scale: number; offsetX: number; offsetY: number };
       outputColorSpace: string;
       toneMapping: number;
-      reactionButterflyActiveCount: number;
+      placedLanternCount: number;
     };
     /**
      * 検証用の舞台土台診断アクセサ。舞台土台の受け入れ診断ページ（stage.html）だけが取り付ける。

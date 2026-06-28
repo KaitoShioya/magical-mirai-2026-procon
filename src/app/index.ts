@@ -74,6 +74,10 @@ export function createApp(
   const renderRoot = createRenderRoot(options.stageRoot, {
     reflectionResolution: options.reflectionResolution,
     bloomEnabled: options.bloomEnabled,
+    // 暫定発光点（Issue #9/#10 の反射確認用の固定の光点）は本編では出さない。これは灯し（蝶・ひまわり）が
+    // 未結線だった頃の反射確認用のダミーであり、得点タップで蝶とひまわりを置く現在の本編では不要で、湖面に
+    // 散らばる素性のない光点として見えてしまうため外す（反射確認は spatial.html 診断が引き続き用いる）。
+    placeholderGlowEnabled: false,
     // 持続配置の灯し（本タスク）の収容上限は、得点が出たタップ（各ノーツが最大1回バインド）の上限であるノーツ数を
     // 渡す（データ駆動。描画層は profiles を import しないため、統括が数値で渡す）。
     lanternCapacity: takeoverProfile.notes.length,

@@ -60,7 +60,7 @@ import {
 import { createSunflowerFigures, type SunflowerFigures } from "./entities/sunflowerFigures";
 import { loadVrm } from "./loaders/vrmLoader";
 import { loadVrmAnimation } from "./loaders/vrmAnimationLoader";
-import { createPosedMotion } from "./entities/vrmMotion";
+import { createDynamicPosedMotion, createPosedMotion } from "./entities/vrmMotion";
 import type { CharacterModelConfig } from "../types/character";
 import { createOverlayLayer, type OverlayLayer } from "./overlay";
 import { createPitchAxisGuide, type PitchAxisGuide } from "./pitchAxisGuide";
@@ -126,6 +126,9 @@ export interface RenderState {
   /** 診断専用。全ての正規化した人体ボーンの回転角のうち最大の角（度。読み込み済みVRMが無ければ null）。
    *  固定ポーズがバインドポーズ（最大角0度）から明確に回転したかをスモークが直接確かめるために用いる。 */
   centerFigurePoseMaxAngleDeg: number | null;
+  /** 診断専用。2本のツインテール先端方向と意図した風方向との内積の平均（躍動設定が無い、または読み込み済みVRMが
+   *  無ければ null）。ツインテールが垂れず意図した向きへ流れているか（達成基準A2）をスモークが確かめるために用いる。 */
+  centerFigureTwinTailFlowAlignment: number | null;
   /** 中心オブジェクト（常在ミク）を湖面反射に含める意図の値（Issue #92）。既定は真（concept-final §10）。
    *  反射そのものの有無は reflectionEnabled（実効値）で別に表す。両者は別概念であり混同しないこと。
    *  WebGL が無く中心オブジェクト・水面を作らない端末でも、診断の値としては意図の値を返す。 */
@@ -737,8 +740,15 @@ export function createRenderRoot(
       if (posed) {
         const vrmAnimation = posed.vrmAnimation;
         const freezeTimeSec = config.poseFreezeTimeSec ?? 0;
+        // 躍動設定があれば、固定ポーズに加えてツインテールの風なびきとスカート右端の右手固定を与える躍動付きの
+        // モーション層を用いる。無ければ従来どおり固定ポーズのみとする。いずれも固定ポーズを保つため判定モードは "posed"。
+        const dynamics = config.dynamics;
         try {
-          centerFigure.setMotion((loaded2) => createPosedMotion(loaded2, vrmAnimation, { freezeTimeSec }));
+          centerFigure.setMotion((loaded2) =>
+            dynamics
+              ? createDynamicPosedMotion(loaded2, vrmAnimation, { freezeTimeSec, dynamics })
+              : createPosedMotion(loaded2, vrmAnimation, { freezeTimeSec })
+          );
           centerFigureMotionMode = "posed";
         } catch {
           // クリップ生成などの失敗は致命ではない。既定の固定（バインド）ポーズを保つ（縮退）。
@@ -1027,6 +1037,8 @@ export function createRenderRoot(
         centerFigureMotionMode: centerFigure ? centerFigureMotionMode : "fixed",
         // 診断専用。全ての正規化した人体ボーンの回転角のうち最大の角（度。読み込み済みVRMが無ければ null）。
         centerFigurePoseMaxAngleDeg: centerFigure ? centerFigure.debugMaxNormalizedBoneAngleDeg() : null,
+        // 診断専用。ツインテール先端方向と意図した風方向との内積の平均（A2）。中心オブジェクトが無ければ null。
+        centerFigureTwinTailFlowAlignment: centerFigure ? centerFigure.debugTwinTailFlowAlignment() : null,
         // 中心オブジェクトを反射に含める意図の値（Issue #92）。実効値 reflectionEnabled とは別概念。
         centerFigureReflected,
         // 2次元層（Issue #15）。作っていない（WebGL 不可）なら null。視錐台と載っている表示物の数を返す。

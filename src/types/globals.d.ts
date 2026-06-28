@@ -128,6 +128,7 @@ declare global {
       centerFigureError: string | null;
       centerFigureMotionMode: "fixed" | "posed";
       centerFigurePoseMaxAngleDeg: number | null;
+      centerFigureTwinTailFlowAlignment: number | null;
       centerFigureReflected: boolean;
       overlay: {
         objectCount: number;
@@ -238,6 +239,7 @@ declare global {
       centerFigureError: string | null;
       centerFigureMotionMode: "fixed" | "posed";
       centerFigurePoseMaxAngleDeg: number | null;
+      centerFigureTwinTailFlowAlignment: number | null;
       reflectionEnabled: boolean;
       centerFigureReflected: boolean;
       cameraPosition: { x: number; y: number; z: number };

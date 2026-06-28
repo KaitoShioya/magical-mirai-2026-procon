@@ -12,6 +12,8 @@ import {
   Group,
   Mesh,
   MeshBasicMaterial,
+  Quaternion,
+  Vector3,
   type Object3D,
 } from "three";
 import type { VRMHumanBoneName } from "@pixiv/three-vrm";
@@ -62,6 +64,10 @@ export interface CenterFigure {
    *  なりうるが、姿勢が適用されていれば必ずいずれかのボーンが大きく回転する。最大角はどのボーンが大きく回るかに
    *  依らず「姿勢が適用された」を頑健に表す。 */
   debugMaxNormalizedBoneAngleDeg(): number | null;
+  /** 診断専用。躍動設定があり読み込み済みVRMがあれば、2本のツインテール先端方向と、意図した風方向（ワールド変換後の
+   *  基本方向）との内積の平均を返す。無ければ null。ツインテールが垂れず意図した向きへ流れているか（達成基準A2）を
+   *  確かめるために用いる。 */
+  debugTwinTailFlowAlignment(): number | null;
   /** 後始末。光柱と（あれば）VRMとモーションを解放する。冪等。 */
   dispose(): void;
 }
@@ -97,11 +103,19 @@ export function createCenterFigure(): CenterFigure {
   group.add(pillar);
 
   let loadedVrm: LoadedVrm | null = null;
+  // 差し替え時のモデル設定。診断（ピン対象ボーン名・ツインテールの基本方向など）が参照する。
+  let modelConfig: CharacterModelConfig | null = null;
   // ミクのモーション層（Issue #93）。VRM読み込み後に保持し、毎フレーム vrm.update の前に進める。
   let motion: VrmMotion | null = null;
   let status: CenterFigureStatus = "fallback";
   let pulseElapsedSeconds = 0;
   let disposed = false;
+
+  // 診断の計算で使い回す一時オブジェクト（毎回の生成を避ける）。
+  const _tipWorld = new Vector3();
+  const _tipParentWorld = new Vector3();
+  const _intendedDir = new Vector3();
+  const _figureQuat = new Quaternion();
 
   function disposePillar(): void {
     if (pillar) {
@@ -122,6 +136,7 @@ export function createCenterFigure(): CenterFigure {
     const oldLoaded = loadedVrm;
     motion = null;
     loadedVrm = null;
+    modelConfig = null;
     oldMotion?.dispose();
     if (oldLoaded) {
       group.remove(oldLoaded.object3d);
@@ -170,6 +185,7 @@ export function createCenterFigure(): CenterFigure {
       disposePillar();
       // 新しい状態を確定する。差し替え後の既定のモーション層は固定ポーズ（Issue #93）。
       loadedVrm = loaded;
+      modelConfig = config;
       status = "loaded";
       motion = createFixedPoseMotion();
     },
@@ -212,6 +228,57 @@ export function createCenterFigure(): CenterFigure {
         }
       }
       return maxAngleDeg;
+    },
+    debugTwinTailFlowAlignment(): number | null {
+      // 躍動設定が無い、またはVRM未読み込みなら測れないため null を返す。
+      if (!loadedVrm || !modelConfig?.dynamics) {
+        return null;
+      }
+      const joints = loadedVrm.vrm.springBoneManager?.joints;
+      if (!joints) {
+        return null;
+      }
+      // 意図した風方向（ワールド）= 基本方向（ミク局所）を図形のワールド回転で変換した単位ベクトル。
+      const base = modelConfig.dynamics.twinTail.baseDirectionLocal;
+      loadedVrm.object3d.updateWorldMatrix(true, false);
+      loadedVrm.object3d.getWorldQuaternion(_figureQuat);
+      _intendedDir.set(base.x, base.y, base.z).applyQuaternion(_figureQuat).normalize();
+      // 各ツインテールの「根→先端」の全体ベクトルの向きと、意図方向との内積を取り平均する。
+      // 全体ベクトルで測る理由を先に述べる。最深の _end マーカーは直前の節とほぼ同位置（ほぼゼロ長）で1節分では向きが
+      // 定まらないため、根から先端までの長いベクトルで尾の向きを安定に表す。
+      // 先端は親子をたどって得る理由を先に述べる。スプリングの管理が持つジョイントは子を持つ節のみで、子を持たない
+      // 末端（_end）はジョイントに含まれないため、ジョイント名から先端を探せない。根のボーンからシーンの子を末端まで
+      // たどって先端ノードを得る。
+      let sum = 0;
+      let count = 0;
+      for (const chainId of ["10", "11"]) {
+        const rootName = "J_Sec_Hair1_" + chainId;
+        let root: Object3D | null = null;
+        for (const joint of joints) {
+          if (joint.bone.name === rootName) {
+            root = joint.bone;
+            break;
+          }
+        }
+        if (!root) {
+          continue;
+        }
+        // 線形のチェーンの末端まで子をたどる。
+        let tip: Object3D = root;
+        while (tip.children.length > 0) {
+          tip = tip.children[0];
+        }
+        tip.getWorldPosition(_tipWorld);
+        root.getWorldPosition(_tipParentWorld);
+        _tipWorld.sub(_tipParentWorld);
+        if (_tipWorld.lengthSq() < 1e-12) {
+          continue;
+        }
+        _tipWorld.normalize();
+        sum += _tipWorld.dot(_intendedDir);
+        count += 1;
+      }
+      return count > 0 ? sum / count : null;
     },
     dispose(): void {
       if (disposed) {

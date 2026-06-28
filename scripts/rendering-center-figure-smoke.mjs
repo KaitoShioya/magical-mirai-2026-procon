@@ -42,6 +42,18 @@ const EXPECTED_POSE_MAX_ANGLE_DEG = 160.1;
 // 計算上の僅かな差を吸収しつつ、確定ゲート（10度）やバインド（0度）から十分離れた値であり特定の姿勢を固定できる。
 const POSE_MAX_ANGLE_REGRESSION_TOLERANCE_DEG = 2;
 
+// ツインテールの常時の風なびきの確認しきい値。
+// スプリングの遷移が落ち着くまで読み直す総時間と間隔（ミリ秒）。採用理由を先に述べる。スプリングは開始直後の
+// 数十フレームで初期姿勢から目標へ遷移する。継続的インテグレーションのソフトウェア描画は毎秒のフレームが少なく
+// 定常へ達するのに数秒かかるため、固定の短い待ちでは遷移途中を読んでしまう。1秒ごとに読み直し、基準を満たした
+// 時点で打ち切る。総時間12秒は、毎秒数フレームでも定常に達するのに十分で、かつ読み込み上限20秒の内側に収まる。
+const SETTLE_POLL_TOTAL_MS = 12000;
+const SETTLE_POLL_INTERVAL_MS = 1000;
+// ツインテールの流れの下限内積。採用理由を先に述べる。先端が真下（垂れ）なら意図方向との内積は0以下になる。
+// 0.15は数値誤差や僅かな揺らぎより十分大きい正の値であり、明確に意図方向へ流れていることを表す。見た目の最終の
+// 合否は目視を主とし、ここでは「垂れていない」ことを確認する下限とする。
+const TWINTAIL_FLOW_MIN_ALIGNMENT = 0.15;
+
 const errors = [];
 let failed = false;
 function fail(message) {
@@ -145,6 +157,42 @@ try {
       console.log("確認: 既定で中心オブジェクトを反射に含めます（centerFigureReflected が真）");
     } else {
       fail(`既定で中心オブジェクトが反射に含まれません（centerFigureReflected=${base.centerFigureReflected}）`);
+    }
+
+    // 躍動（ツインテールの常時の風なびき）。スプリングの遷移が落ち着くまで読み直す。
+    let settled = null;
+    for (let waited = 0; waited <= SETTLE_POLL_TOTAL_MS; waited += SETTLE_POLL_INTERVAL_MS) {
+      await page.waitForTimeout(SETTLE_POLL_INTERVAL_MS);
+      settled = await page.evaluate(() =>
+        typeof window.__centerFigureState === "function" ? window.__centerFigureState() : null
+      );
+      if (
+        settled &&
+        typeof settled.centerFigureTwinTailFlowAlignment === "number" &&
+        settled.centerFigureTwinTailFlowAlignment > TWINTAIL_FLOW_MIN_ALIGNMENT
+      ) {
+        break;
+      }
+    }
+    if (!settled) {
+      fail("躍動の診断値を読み戻せませんでした");
+    } else {
+      // ツインテール先端が真下（垂れ）でなく意図した風方向へ流れていること。
+      const alignment = settled.centerFigureTwinTailFlowAlignment;
+      if (typeof alignment !== "number") {
+        fail(`ツインテールの流れの内積を読み戻せませんでした（centerFigureTwinTailFlowAlignment=${alignment}）`);
+      } else {
+        console.log(`測定: ツインテール先端方向と意図風方向の内積 = ${alignment.toFixed(3)}`);
+        if (alignment > TWINTAIL_FLOW_MIN_ALIGNMENT) {
+          console.log(
+            `確認: ツインテールが意図方向へ流れています（内積=${alignment.toFixed(3)} > ${TWINTAIL_FLOW_MIN_ALIGNMENT}）`
+          );
+        } else {
+          fail(
+            `ツインテールが意図方向へ流れていません（内積=${alignment.toFixed(3)} <= ${TWINTAIL_FLOW_MIN_ALIGNMENT}）`
+          );
+        }
+      }
     }
   }
 

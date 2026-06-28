@@ -19,6 +19,11 @@ declare module "troika-three-text" {
     strokeOpacity: number;
     /** 文字間隔（em単位）。単一 Text 内の字間を広げる。 */
     letterSpacing: number;
+    /**
+     * 矩形の切り抜き [最小X, 最小Y, 最大X, 最大Y]（ローカル座標）。範囲外を描かない。
+     * 部首分解・縦横ブラインド近似に使う（Issue #26 派生・設計書§5.3/§5.5）。null で切り抜き解除。
+     */
+    clipRect: [number, number, number, number] | null;
     // 影（outline）。文字の背面に重ねる複製。ずれとぼかしで影、ずれなしで縁取りの代替に使う（Issue #31）。
     outlineWidth: number | string;
     outlineColor: number | string | Color;

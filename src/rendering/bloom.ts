@@ -19,7 +19,8 @@ import {
   POST_CHROMA_MAX_OFFSET,
   POST_VIGNETTE_BASE_STRENGTH,
 } from "./constants";
-import { VIGNETTE_CHROMA_SHADER } from "./postEffectShader";
+import { VIGNETTE_CHROMA_SHADER, GLITCH_SHADER } from "./postEffectShader";
+import { GLITCH_MAX_OFFSET } from "./glitchMath";
 import { computeBloomResolution } from "./viewport";
 
 /** 診断・検証用のブルーム状態（window.__renderState 内の bloom が返す素の構造）。 */
@@ -48,6 +49,12 @@ export interface BloomState {
   vignetteStrength: number;
   /** 色収差バーストの現在強度（0から1）。uniform chromaOffset を最大ずれ量で割り戻した値。強拍直後に最大、減衰で0。 */
   chromaIntensity: number;
+  /** 句読点の色反転の現在度合い（0から1）。uniform uInvert の現在値。曲の切れ目で立ち上がり減衰で0。 */
+  invertIntensity: number;
+  /** グリッチパスが有効なら真。自動劣化（Issue #18）で実行時に切り替わる。 */
+  glitchEnabled: boolean;
+  /** グリッチの現在強度（0から1）。uniform uGlitchIntensity の現在値。場面転換で立ち上がり減衰で0。 */
+  glitchIntensity: number;
 }
 
 /** ブルーム合成の外部契約。 */
@@ -74,6 +81,22 @@ export interface BloomComposer {
    * だけで、後処理パスの有効・無効は変えない（有効・無効は生成時の postEffectEnabled が唯一の決定点）。
    */
   setChromaBurstIntensity(intensity: number): void;
+  /**
+   * 句読点の色反転の度合いを注入する（0から1）。曲の切れ目でインパルス駆動する。非有限値は0に、範囲外は0から1へ
+   * 丸める。uniform 値を更新するだけで後処理パスの有効・無効は変えない（色収差パスと同じ枠組み）。
+   */
+  setInvertIntensity(intensity: number): void;
+  /**
+   * グリッチの強度を注入する（0から1）。場面転換のアクセントでインパルス駆動する。非有限値は0に、範囲外は丸める。
+   */
+  setGlitchIntensity(intensity: number): void;
+  /** グリッチの時刻（秒、量子化済み）を注入する。乱数を使わず時刻だけで決めるためシークで同じ画素になる。 */
+  setGlitchTimeSec(seconds: number): void;
+  /**
+   * グリッチパスの有効・無効を実行時に切り替える（自動劣化制御 Issue #18。グリッチはブルームより先に無効化する）。
+   * 有効状態が実際に変わったら true を返す。
+   */
+  setGlitchEnabled(enabled: boolean): boolean;
   /** 診断・検証用の現在状態を返す。 */
   state(): BloomState;
   /** 後始末。各パスと合成器のGPU資源を解放する。 */
@@ -97,6 +120,7 @@ export function createBloomComposer(
     displayWidth: number;
     displayHeight: number;
     postEffectEnabled?: boolean;
+    glitchEnabled?: boolean;
   }
 ): BloomComposer {
   const composer = new EffectComposer(renderer);
@@ -123,8 +147,17 @@ export function createBloomComposer(
   // ポストエフェクトの resolution uniform を表示寸法から設定する。寸法を1以上に丸める理由を先に述べる。
   // シェーダは縦横比を resolution.x / resolution.y で求めるため、非表示タブや異常なリサイズで高さが0になると
   // 縦横比が発散し描画が壊れる。0除算を未然に防ぐため、注入する寸法を最小1に丸める。
+  // グリッチパス（横スライスずらし＋色ずれ）。独立した ShaderPass として周縁減光・色収差の後・最終出力の前に
+  // 挟む。自動劣化で単独に無効化できるよう、有効・無効は実行時に切り替える（設計書§5.2）。既定は無効で、
+  // 既存の見えを変えない。本編での有効化と駆動は #59 が行う。
+  const glitchPass = new ShaderPass(GLITCH_SHADER);
+  glitchPass.enabled = options.glitchEnabled ?? false;
+  glitchPass.uniforms.uGlitchIntensity.value = 0;
+  glitchPass.uniforms.uGlitchTimeSec.value = 0;
+
   function applyPostEffectResolution(displayWidth: number, displayHeight: number): void {
     postEffectPass.uniforms.resolution.value.set(Math.max(1, displayWidth), Math.max(1, displayHeight));
+    glitchPass.uniforms.resolution.value.set(Math.max(1, displayWidth), Math.max(1, displayHeight));
   }
   applyPostEffectResolution(options.displayWidth, options.displayHeight);
 
@@ -133,6 +166,7 @@ export function createBloomComposer(
   composer.addPass(renderPass);
   composer.addPass(bloomPass);
   composer.addPass(postEffectPass);
+  composer.addPass(glitchPass);
   composer.addPass(outputPass);
 
   // 適用済みの画素密度倍率を保持する。採用理由を先に述べる。EffectComposer は構築時の画素密度倍率を内部に
@@ -197,6 +231,24 @@ export function createBloomComposer(
       const safe = Number.isFinite(intensity) ? Math.min(1, Math.max(0, intensity)) : 0;
       postEffectPass.uniforms.chromaOffset.value = safe * POST_CHROMA_MAX_OFFSET;
     },
+    setInvertIntensity(intensity: number): void {
+      const safe = Number.isFinite(intensity) ? Math.min(1, Math.max(0, intensity)) : 0;
+      postEffectPass.uniforms.uInvert.value = safe;
+    },
+    setGlitchIntensity(intensity: number): void {
+      const safe = Number.isFinite(intensity) ? Math.min(1, Math.max(0, intensity)) : 0;
+      glitchPass.uniforms.uGlitchIntensity.value = safe;
+    },
+    setGlitchTimeSec(seconds: number): void {
+      glitchPass.uniforms.uGlitchTimeSec.value = Number.isFinite(seconds) ? seconds : 0;
+    },
+    setGlitchEnabled(enabled: boolean): boolean {
+      if (glitchPass.enabled === enabled) {
+        return false;
+      }
+      glitchPass.enabled = enabled;
+      return true;
+    },
     setResolutionScale(scale: number): boolean {
       // 不正な倍率（非有限・0以下・1超）は無視する。1超を弾くのは、ブルームのぼかしは表示寸法以下で行う後処理で
       // あり、表示寸法を超える入力解像度は意味が無く負荷だけ増えるためである。
@@ -235,6 +287,9 @@ export function createBloomComposer(
         vignetteStrength: postEffectPass.uniforms.vignetteStrength.value,
         // uniform は最大ずれ量を掛けた後の値のため、割り戻して0から1の強度として返す。
         chromaIntensity: postEffectPass.uniforms.chromaOffset.value / POST_CHROMA_MAX_OFFSET,
+        invertIntensity: postEffectPass.uniforms.uInvert.value,
+        glitchEnabled: glitchPass.enabled,
+        glitchIntensity: glitchPass.uniforms.uGlitchIntensity.value,
       };
     },
     dispose(): void {
@@ -246,6 +301,7 @@ export function createBloomComposer(
       renderPass.dispose();
       bloomPass.dispose();
       postEffectPass.dispose();
+      glitchPass.dispose();
       outputPass.dispose();
       composer.dispose();
     },

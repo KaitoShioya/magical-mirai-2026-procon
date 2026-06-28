@@ -92,6 +92,7 @@ function state(overrides: Partial<ComposedGlyphState> = {}): ComposedGlyphState 
     glowing: false,
     deform: null,
     duplication: null,
+    clip: null,
     readability: null,
     droppedGeometricContributions: 0,
     droppedLetterSpacing: 0,
@@ -161,7 +162,12 @@ describe("1回反映の呼び出し", () => {
     const target = createCompositionTarget({ spawnPrimary: () => primary.handle, spawnCopy: () => null });
     target.applyComposed(
       state({
-        deform: { kind: "swirl", params: { strength: 0.8, speed: 1, spatialFreq: 1, phaseOffset: 0 } },
+        deform: {
+          kind: "swirl",
+          params: { strength: 0.8, speed: 1, spatialFreq: 1, phaseOffset: 0 },
+          massPosition: { x: 0, y: 0, z: 0 },
+          massScale: { x: 1, y: 1, z: 1 },
+        },
         color: 0x445566,
         opacity: 0.9,
       })
@@ -169,6 +175,74 @@ describe("1回反映の呼び出し", () => {
     expect(primary.record.deformParams).toHaveLength(1);
     expect(primary.record.colors).toEqual([0x445566]);
     expect(primary.record.opacities).toEqual([0.9]);
+  });
+
+  it("切り抜き寄与が対応する取っ手の setClipRect へ届き、無ければ clearClip を呼ぶ", () => {
+    const clips: Array<[number, number, number, number]> = [];
+    let clearCount = 0;
+    const base = recordingHandle();
+    const handle: GlyphHandle = {
+      ...base.handle,
+      setClipRect: (minX, minY, maxX, maxY): void => {
+        clips.push([minX, minY, maxX, maxY]);
+      },
+      clearClip: (): void => {
+        clearCount += 1;
+      },
+    };
+    const target = createCompositionTarget({ spawnPrimary: () => handle, spawnCopy: () => null });
+    target.applyComposed(state({ clip: { minX: -1, minY: -2, maxX: 1, maxY: 0 } }));
+    expect(clips).toEqual([[-1, -2, 1, 0]]);
+    // 切り抜きが無いときは解除する。
+    target.applyComposed(state());
+    expect(clearCount).toBe(1);
+  });
+
+  it("切り抜き有りの通常状態から変形状態へ遷移すると主取っ手の切り抜きを解除する", () => {
+    // 主取っ手は単位の間で使い回すため、前フレームの切り抜きが変形状態に持ち越されないことを検証する。
+    // 変形は全文1枚で1文字ごとの切り抜きを持たず、合成器は変形時に clip を null にする。
+    let clearCount = 0;
+    const base = recordingHandle();
+    const handle: GlyphHandle = {
+      ...base.handle,
+      setClipRect: (): void => {},
+      clearClip: (): void => {
+        clearCount += 1;
+      },
+    };
+    const target = createCompositionTarget({ spawnPrimary: () => handle, spawnCopy: () => null });
+    // 通常状態で切り抜きを設定する（このフレームでは解除されない）。
+    target.applyComposed(state({ clip: { minX: -1, minY: -1, maxX: 1, maxY: 1 } }));
+    expect(clearCount).toBe(0);
+    // 変形状態へ遷移する。変形分岐が切り抜きを解除する。
+    target.applyComposed(
+      state({
+        deform: {
+          kind: "swirl",
+          params: { strength: 0.5, speed: 1, spatialFreq: 1, phaseOffset: 0 },
+          massPosition: { x: 0, y: 0, z: 0 },
+          massScale: { x: 1, y: 1, z: 1 },
+        },
+      })
+    );
+    expect(clearCount).toBe(1);
+  });
+
+  it("変形単位の塊配置（位置・大きさ）が変形取っ手の setPosition・setScale3 へ届く", () => {
+    const primary = deformingHandle();
+    const target = createCompositionTarget({ spawnPrimary: () => primary.handle, spawnCopy: () => null });
+    target.applyComposed(
+      state({
+        deform: {
+          kind: "swirl",
+          params: { strength: 0.5, speed: 1, spatialFreq: 1, phaseOffset: 0 },
+          massPosition: { x: 4, y: 5, z: 6 },
+          massScale: { x: 0.3, y: 0.3, z: 1 },
+        },
+      })
+    );
+    expect(primary.record.positions).toEqual([[4, 5, 6]]);
+    expect(primary.record.scale3).toEqual([[0.3, 0.3, 1]]);
   });
 });
 

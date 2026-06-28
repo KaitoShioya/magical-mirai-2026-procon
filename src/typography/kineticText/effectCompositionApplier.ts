@@ -55,9 +55,16 @@ export function createCompositionTarget(deps: CompositionTargetDeps): Compositio
   function applyComposed(state: ComposedGlyphState): void {
     if (released) return;
 
-    // 変形単位: 主取っ手は変形取っ手。幾何・複製・可読性補正は持たない（合成器が保証）。
+    // 変形単位: 主取っ手は変形取っ手。1文字ごとの幾何・複製・可読性補正は持たない（合成器が保証）。
+    // 塊全体の配置（位置・大きさ）は、合成器が解決した塊配置を変形取っ手へ反映する（設計書§2.3.4）。
     if (state.deform) {
       reconcileCopyCount(0);
+      // 変形は全文1枚として描き1文字ごとの切り抜きを持たない（合成器が変形時に clip を null にする）。
+      // 主取っ手は単位の間で使い回すため、前フレームで通常状態として設定した切り抜きが残らないよう解除する。
+      primary.clearClip?.();
+      const { massScale, massPosition } = state.deform;
+      primary.setScale3(massScale.x, massScale.y, massScale.z);
+      primary.setPosition(massPosition.x, massPosition.y, massPosition.z);
       primary.setColor(state.color);
       primary.setOpacity(state.opacity);
       if (isDeformingHandle(primary)) {
@@ -74,6 +81,12 @@ export function createCompositionTarget(deps: CompositionTargetDeps): Compositio
     primary.setPosition(state.position.x, state.position.y, state.position.z);
     if (state.letterSpacing !== null) {
       primary.setLetterSpacing(state.letterSpacing);
+    }
+    // 切り抜き（部首分解・縦横ブラインド近似）。対応する取っ手だけが反映する（任意メソッド）。
+    if (state.clip) {
+      primary.setClipRect?.(state.clip.minX, state.clip.minY, state.clip.maxX, state.clip.maxY);
+    } else {
+      primary.clearClip?.();
     }
 
     // 読ませる役は applyReadability の後に setColor を呼ぶ（合成色を保ち、縁取り・影は可読性補正から）。

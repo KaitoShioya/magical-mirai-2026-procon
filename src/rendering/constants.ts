@@ -435,6 +435,12 @@ export interface PerfLevelSetting {
   bloomResolutionScale: number;
   /** この段階でブルームを有効にするか。 */
   bloomEnabled: boolean;
+  /**
+   * この段階でグリッチ後処理を許すか（設計書§5.2の自動劣化）。グリッチはブルームより先に無効化する装飾のため、
+   * 負荷が逼迫する段階（3以降）で偽にする。本編でグリッチを実際に有効化・駆動するのは #59 で、この旗は
+   * グリッチを使う場合に段階ごとの許可を表す。
+   */
+  glitchEnabled: boolean;
 }
 
 // 劣化段階のラダー（段階0が最高画質、段階が上がるほど軽い）。採用理由を先に述べる。各遷移の差を一つの操作だけに
@@ -449,11 +455,11 @@ export interface PerfLevelSetting {
 // 再確保を避けるためである。画素密度上限の下限を1にするのは、等倍未満が画面より粗い拡大になり文字やUIが
 // 破綻するためである。
 export const PERF_LEVELS: readonly PerfLevelSetting[] = [
-  { reflectCenterFigure: true, pixelRatioCap: MAX_PIXEL_RATIO, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true },
-  { reflectCenterFigure: false, pixelRatioCap: MAX_PIXEL_RATIO, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true },
-  { reflectCenterFigure: false, pixelRatioCap: 1, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true },
-  { reflectCenterFigure: false, pixelRatioCap: 1, bloomResolutionScale: 0.25, bloomEnabled: true },
-  { reflectCenterFigure: false, pixelRatioCap: 1, bloomResolutionScale: 0.25, bloomEnabled: false },
+  { reflectCenterFigure: true, pixelRatioCap: MAX_PIXEL_RATIO, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true, glitchEnabled: true },
+  { reflectCenterFigure: false, pixelRatioCap: MAX_PIXEL_RATIO, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true, glitchEnabled: true },
+  { reflectCenterFigure: false, pixelRatioCap: 1, bloomResolutionScale: BLOOM_RESOLUTION_SCALE, bloomEnabled: true, glitchEnabled: true },
+  { reflectCenterFigure: false, pixelRatioCap: 1, bloomResolutionScale: 0.25, bloomEnabled: true, glitchEnabled: false },
+  { reflectCenterFigure: false, pixelRatioCap: 1, bloomResolutionScale: 0.25, bloomEnabled: false, glitchEnabled: false },
 ];
 
 // 最大の段階番号（段階総数から1を引いた値）。判定（performanceBudget.ts）は描画設定を知らずにこの整数だけを

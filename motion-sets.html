@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>テキストモーションセット ショーケース motion-sets（M3）</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #05060a;
+        overflow: hidden;
+      }
+      #app {
+        position: fixed;
+        inset: 0;
+      }
+      /* 画面全体の暗転（fadeBlackout）を表す黒の覆い。合成した不透明度から駆動する。 */
+      #blackout {
+        position: fixed;
+        inset: 0;
+        z-index: 5;
+        background: #000;
+        opacity: 0;
+        pointer-events: none;
+      }
+      #hud {
+        position: fixed;
+        left: 8px;
+        top: 8px;
+        z-index: 10;
+        color: #9ffbd0;
+        font: 12px/1.5 monospace;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 6px 10px;
+        border-radius: 4px;
+        pointer-events: none;
+        white-space: pre;
+      }
+      #controls {
+        position: fixed;
+        left: 8px;
+        bottom: 8px;
+        z-index: 10;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        color: #9ffbd0;
+        font: 12px/1.4 monospace;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 6px 10px;
+        border-radius: 4px;
+      }
+      #controls button,
+      #controls select {
+        font: 12px/1.4 monospace;
+        background: #0c1420;
+        color: #9ffbd0;
+        border: 1px solid #2a3b50;
+        border-radius: 4px;
+        padding: 3px 8px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="blackout"></div>
+    <div id="hud">loading…</div>
+    <div id="controls">
+      <button id="prev" type="button">← 前</button>
+      <button id="next" type="button">次 →</button>
+      <button id="replay" type="button">再生やり直し</button>
+      <select id="picker"></select>
+    </div>
+    <script type="module" src="/src/typography/kineticText/diagnostics/motionSets.ts"></script>
+  </body>
+</html>

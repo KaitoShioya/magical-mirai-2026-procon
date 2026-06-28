@@ -27,7 +27,15 @@ import { createCreditsView, type CreditsView } from "./credits/creditsView";
 import { createCalibrationView, type CalibrationView } from "./calibration/calibrationView";
 import { createHowToView, type HowToView } from "./howTo/howToView";
 import { createOperationSoundEngine } from "../audio";
-import { loadCalibrationOffsetMs, saveCalibrationOffsetMs, type FrameTimeSample } from "../scoring";
+import {
+  loadCalibrationOffsetMs,
+  saveCalibrationOffsetMs,
+  recordPlay,
+  loadScoreHistory,
+  type FrameTimeSample,
+  type ScoreResult,
+  type ScoreHistory,
+} from "../scoring";
 import {
   takeoverTypographyChart,
   TAKEOVER_DEFAULT_READING_PIXEL_HEIGHT,
@@ -246,6 +254,11 @@ export function createApp(
     onReaction: (reaction) => session.onReaction(reaction),
   });
 
+  // 結果画面（Issue #74）へ渡す確定データ。プレイ終了時に確定し、結果画面の表示中だけ参照される。
+  // 「今回の結果」は最終スコア要約、「自己ベスト・成長履歴」は端末内に保存後に読み直した内容を保持する。
+  let lastResult: ScoreResult | null = null;
+  let lastHistory: ScoreHistory | null = null;
+
   function enterPlay(): void {
     inPlayPhase = true;
     playStartElapsedMs = 0;
@@ -318,6 +331,11 @@ export function createApp(
       // ランク添字（rankFromPercentile・rankOrdinal 由来）を供給する。
       currentRankGaugeState: () => session.rankGaugeState(),
     },
+    // 結果画面の表示データの結線（Issue #74）。プレイ終了時に確定した今回の結果と保存済み履歴を読ませる。
+    result: {
+      getFinalResult: () => lastResult,
+      getScoreHistory: () => lastHistory,
+    },
   };
 
   machine.start("title", context);
@@ -354,9 +372,15 @@ export function createApp(
     if (playback.hasEnded()) {
       inPlayPhase = false;
       overlays.hideTapToPlay();
-      // 入力を無効化する（結果画面ではタップを判定・採点へ流さない）。最終スコアは session.finalResult() で
-      // 取得でき、結果画面への引き渡しは結果画面の実装（Issue #74）が結線する。
+      // 入力を無効化する（結果画面ではタップを判定・採点へ流さない）。
       input.setActive(false);
+      // 最終スコアを確定し、端末内の自己ベスト履歴へ記録する（Issue #74・#67）。
+      // 「今回の結果」は最終スコア要約（保存の可否に依存しない）、「自己ベスト・成長履歴」は記録後に読み直して
+      // 端末内に実際に保存された内容を反映する。保存に失敗した回が履歴へ混ざらないよう、記録の後に読み直す。
+      const finalResult = session.finalResult();
+      recordPlay(DEFAULT_SONG_KEY, finalResult);
+      lastResult = finalResult;
+      lastHistory = loadScoreHistory(DEFAULT_SONG_KEY);
       machine.requestTransition("result");
     }
   }

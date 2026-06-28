@@ -20,13 +20,16 @@ export const SCREEN_KEYS: readonly ScreenKey[] = [
 /**
  * 許可する遷移表。各状態から進める先のキーを列挙する。
  * 表に無い遷移要求は機械が不正として例外を投げる。
- * 経路: 題名→ウォームアップ→プレイ→結果→再挑戦→題名 の一巡。
+ * 基本経路: 題名→ウォームアップ→プレイ→結果→再挑戦→題名 の一巡。
+ * 結果から「ウォームアップ」へ戻る経路を加える理由を先に述べる。結果画面（Issue #74）の
+ * 「もう一度」は同じ曲を遊び直す再挑戦であり、題名（曲選択）を経由せずプレイの直前
+ * （ウォームアップ）へ戻すのが意味に合う。「タイトルに戻る」は従来どおり結果→再挑戦→題名で戻す。
  */
 export const ALLOWED_TRANSITIONS: Readonly<Record<ScreenKey, readonly ScreenKey[]>> = {
   title: ["warmup"],
   warmup: ["play"],
   play: ["result"],
-  result: ["retry"],
+  result: ["retry", "warmup"],
   retry: ["title"],
 };
 

@@ -5,6 +5,8 @@ import type { Scene, PerspectiveCamera, Object3D } from "three";
 import type { MusicMapSource } from "../textalive/musicMap";
 import type { TypographyChart, TypographyDisplayRegion, ReadingDisplayUnit } from "../types/typography";
 import type { LaneNote } from "../types/judgmentLane";
+import type { ScoreResult } from "../scoring/scoreResult";
+import type { ScoreHistory } from "../scoring/scoreHistoryStore";
 
 /** 5つの画面状態を表すキー。題名・ウォームアップ・プレイ・結果・再挑戦。 */
 export type ScreenKey = "title" | "warmup" | "play" | "result" | "retry";
@@ -100,6 +102,17 @@ export interface PlayWiring {
 }
 
 /**
+ * 結果画面が表示する確定データの読取口（Issue #74）。統括（src/app）がプレイ終了時に解決して渡す。
+ * 得点の論理は持たず、表示に要る値だけを scoring から受け取る（依存規則 src/screens/README.md）。
+ */
+export interface ResultWiring {
+  /** 直近プレイの今回の最終スコア要約。プレイ未完了の異常時は null。 */
+  getFinalResult(): ScoreResult | null;
+  /** 端末内に保存済みの自己ベストと直近履歴。記録が無い・保存できない環境では null。 */
+  getScoreHistory(): ScoreHistory | null;
+}
+
+/**
  * 各画面へ渡す文脈。
  * 画面は遷移先のキーを要求するだけで、他の画面や機械の内部実装を知らない。
  */
@@ -110,6 +123,8 @@ export interface ScreenContext {
   requestTransition(to: ScreenKey): void;
   /** プレイ画面の本編表示の結線（Issue #33）。診断・本番の双方で統括が渡す。 */
   readonly play?: PlayWiring;
+  /** 結果画面の表示データの結線（Issue #74）。統括がプレイ終了時に渡す。 */
+  readonly result?: ResultWiring;
 }
 
 /** 状態へ進入するたびに新しい画面を生成する関数。 */

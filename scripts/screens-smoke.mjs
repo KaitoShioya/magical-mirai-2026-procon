@@ -7,8 +7,19 @@ import { chromium } from "playwright";
 
 const BASE = process.env.BASE || "http://127.0.0.1:4173";
 
-// 進入順の期待値。再挑戦状態を含む5状態の走破を機械的に確認する。
-const EXPECTED_HISTORY = ["title", "warmup", "play", "result", "retry", "title"];
+// 進入順の期待値。基本の一巡に加え、結果画面の「もう一度」によるウォームアップへの再挑戦経路（Issue #74）も走破する。
+// 経路: 題名→ウォームアップ→プレイ→結果→（もう一度）ウォームアップ→プレイ→結果→（タイトルに戻る）再挑戦→題名。
+const EXPECTED_HISTORY = [
+  "title",
+  "warmup",
+  "play",
+  "result",
+  "warmup",
+  "play",
+  "result",
+  "retry",
+  "title",
+];
 
 // ウォームアップ完了待ちの上限（ミリ秒）。
 // 完了判定は上限100ミリ秒でクランプした時間差の累積で行うため、実フレーム率が毎秒10フレームを下回ると
@@ -176,12 +187,56 @@ try {
     console.log("確認: 結果画面に百分位の注意文言が明記されている");
   }
 
+  // 4.6 結果画面が今回のスコア・ランク・百分位・自己ベスト履歴を表示している（Issue #74 受け入れ基準）。
+  //     各値は data-role="score" / "rank" / "percentile" の要素で、自己ベスト履歴は .result-history に描かれる。
+  const resultContent = await page.evaluate(() => {
+    const root = document.querySelector('[data-screen="result"]');
+    if (!root) {
+      return null;
+    }
+    const text = (role) => {
+      const element = root.querySelector(`[data-role="${role}"]`);
+      return element ? element.textContent : null;
+    };
+    return {
+      score: text("score"),
+      rank: text("rank"),
+      percentile: text("percentile"),
+      hasHistory: Boolean(root.querySelector(".result-history")),
+      hasReplay: Boolean(root.querySelector('[data-action="replay"]')),
+    };
+  });
+  if (!resultContent) {
+    fail("結果画面の要素が見つかりません");
+  } else if (
+    resultContent.score === null ||
+    resultContent.rank === null ||
+    resultContent.percentile === null
+  ) {
+    fail(`結果画面のスコア・ランク・百分位の表示が欠けています: ${JSON.stringify(resultContent)}`);
+  } else if (!resultContent.hasHistory) {
+    fail("結果画面に自己ベスト履歴の表示領域（.result-history）がありません");
+  } else if (!resultContent.hasReplay) {
+    fail('結果画面に「もう一度」（data-action="replay"）がありません');
+  } else {
+    console.log("確認: 結果画面がスコア・ランク・百分位・自己ベスト履歴・再挑戦を表示している");
+  }
+
+  // 4.7 「もう一度」でウォームアップへ戻り、再びプレイ・結果へ自動進行する（Issue #74 再挑戦経路）。
+  await page.click('[data-action="replay"]');
+  await waitForScreen(page, "warmup");
+  await assertScreen(page, "warmup");
+  await waitForScreen(page, "play");
+  await waitForScreen(page, "result");
+  await assertScreen(page, "result");
+  console.log("確認: 「もう一度」でウォームアップ→プレイ→結果の再挑戦経路を走破する");
+
   // 5. 「タイトルに戻る」で再挑戦を経て題名へ戻る。
   await page.click('[data-action="return-title"]');
   await waitForScreen(page, "title");
   await assertScreen(page, "title");
 
-  // 6. 状態履歴が5状態の走破を示す。
+  // 6. 状態履歴が基本の一巡と再挑戦経路の走破を示す。
   const history = await page.evaluate(() =>
     typeof window.__screenHistory === "function" ? window.__screenHistory() : null
   );
@@ -190,7 +245,7 @@ try {
   } else if (JSON.stringify(history) !== JSON.stringify(EXPECTED_HISTORY)) {
     fail(`状態履歴が期待と一致しません: ${JSON.stringify(history)}`);
   } else {
-    console.log("確認: 状態履歴が5状態を走破している");
+    console.log("確認: 状態履歴が基本の一巡と再挑戦経路を走破している");
   }
 
   // 7. 診断モードでない通常構成では診断アクセサが公開されていない。

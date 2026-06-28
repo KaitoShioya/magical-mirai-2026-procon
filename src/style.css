@@ -118,6 +118,61 @@ body {
   box-shadow: 0 0 16px var(--accent);
 }
 
+/* 結果画面（Issue #74）。地を透過させ、プレイ中に配置された灯し（蝶・ひまわり）の3Dシーンを
+   背景の成果物プレビューとして見せる（成果物のPNG書き出し・撮影モード・楽曲終了後の灯し一括演出は別Issueの範囲）。 */
+.screen--result {
+  background: transparent;
+}
+
+/* 得点群の半透明パネル。採用値の理由を先に述べる。深夜の湖の暗い背景の上で文字を読ませるため、地に対し
+   不透明度0.55の暗色面を敷く（0.55は、背景の情景を透かしつつ文字の可読性を保つ均衡として採る）。3Dの情景を
+   完全には隠さないよう最大幅を640px（クレジットパネルの本文最大幅と同値で既存の読み幅に揃える）に収め、中央へ置く。 */
+.result-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(8px, 1.6vh, 14px);
+  width: 100%;
+  max-width: 640px;
+  padding: clamp(16px, 3vh, 28px) clamp(16px, 4vw, 32px);
+  background: rgba(8, 12, 24, 0.55);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+}
+
+/* スコア・ランク・百分位の1項目。見出しは小さく、値を大きく見せる。 */
+.result-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.result-stat__label {
+  font-size: clamp(11px, 1.8vw, 14px);
+  color: var(--text-dim);
+}
+
+.result-stat__value {
+  font-size: clamp(24px, 5vw, 44px);
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 16px var(--accent2);
+}
+
+/* 自己ベスト・成長履歴の差し込み先。表示部品（src/ui/scoreHistoryView）が内側を描く。 */
+.result-history {
+  width: 100%;
+}
+
+/* 「もう一度」「タイトルに戻る」を横に並べ、狭い幅では縦に折り返す。 */
+.result-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(8px, 2vw, 16px);
+}
+
 /* 題名画面の課題曲一覧（Issue #5）。題名画面だけが使うクラスのため、ここの変更は他画面に波及しない。
    幅に応じて列数が変わる適応グリッド。縦長の携帯では1列、幅が広いほど2〜3列になり、6曲が少ない行数で
    可視領域に収まる。min(100%, 14rem) により、極端に狭い幅でも列が100%に縮んで横はみ出しを防ぐ。 */

@@ -144,6 +144,56 @@ try {
   fail("明るさ測定の呼び出しで例外: " + error.message);
 }
 
+// 6. 遅延に頑健な音作りの確認（立ち上がりの緩やかさ・余韻の収束・クリップしないこと）。実機と同じ音量包絡・
+//    出力グラフでオフライン描画した測定値を読む。
+// 立ち上がりが緩やかと判定する最小の立ち上がり時間（ミリ秒）。10を採る理由を先に述べる。鋭い打撃（数ミリ秒未満）の
+// 立ち上がりは知覚される打点が鋭く定まり遅延が目立つ一方、立ち上がりが長いほど打点が曖昧になり遅延に寛容になる。
+// 鋭い打撃と明確に区別できる下限として10ミリ秒以上を緩やかとみなす。
+const MIN_RISE_MS = 10;
+// 余韻が収束するべき上限（ミリ秒）。900を採る理由を先に述べる。直接音の停止（立ち上がり20＋減衰250＋末尾20＝約290
+// ミリ秒）に残響の長さ（350ミリ秒）を足した約640ミリ秒に余裕を見た値であり、これを超える余韻は長すぎるとみなす。
+const MAX_CONVERGENCE_MS = 900;
+// 最悪同時発音の最大振幅の上限。0.95を採る理由を先に述べる。最終段の柔らかい飽和制限の天井0.99により出力は構造的に
+// 1.0未満に収まるが、合否はそれより低い0.95に置く。これにより、現在の最悪値（約0.91）が余裕（約0.04）をもって合格しつつ、
+// 将来の音量や残響などの調整で頂点が0.95へ近づいた時点で（実際にクリップする前に）検査が捕捉できる。
+const CLIP_PEAK_MAX = 0.95;
+try {
+  const stats = await page.evaluate(() => window.__audioWaveformStats());
+  if (!stats || stats.peak24 === null) {
+    fail("波形測定に失敗: " + (stats && stats.error ? stats.error : "結果なし"));
+  } else {
+    // クリップしない（合否条件）。最終段の柔らかい飽和制限の天井0.99より低い CLIP_PEAK_MAX を上限にする。
+    if (!(stats.peak24 <= CLIP_PEAK_MAX)) {
+      fail(`最悪同時発音の最大振幅が上限を超える: 最大振幅${stats.peak24.toFixed(3)}（${CLIP_PEAK_MAX}以下が必要）`);
+    } else {
+      ok(`最悪同時発音でクリップしない: 最大振幅${stats.peak24.toFixed(3)}`);
+    }
+    // 立ち上がりが緩やか（合否条件）。
+    if (!(stats.riseTimeMs >= MIN_RISE_MS)) {
+      fail(
+        `立ち上がりが緩やかでない: 立ち上がり時間${stats.riseTimeMs.toFixed(1)}ミリ秒（${MIN_RISE_MS}ミリ秒以上が必要）`
+      );
+    } else {
+      ok(`立ち上がりが緩やか: 立ち上がり時間${stats.riseTimeMs.toFixed(1)}ミリ秒`);
+    }
+    // 余韻が想定時間内に収束（合否条件）。
+    if (!(stats.tailConvergenceMs <= MAX_CONVERGENCE_MS)) {
+      fail(
+        `余韻が長すぎる: 収束時刻${stats.tailConvergenceMs.toFixed(0)}ミリ秒（${MAX_CONVERGENCE_MS}ミリ秒以内が必要）`
+      );
+    } else {
+      ok(`余韻が想定時間内に収束: 収束時刻${stats.tailConvergenceMs.toFixed(0)}ミリ秒`);
+    }
+    // 24音時の大きさと171ミリ秒残留は記録（参考）に留め、合否条件にはしない（調整を詰まらせないため）。過圧縮の最終確認は実機試聴。
+    console.log(
+      `記録（参考）: 24音時の二乗平均平方根${(stats.rms24 ?? 0).toFixed(3)} ` +
+        `171ミリ秒残留割合${(stats.residualAt171Ratio ?? 0).toFixed(3)}`
+    );
+  }
+} catch (error) {
+  fail("波形測定の呼び出しで例外: " + error.message);
+}
+
 await browser.close();
 
 if (failed) {

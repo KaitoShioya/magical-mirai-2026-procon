@@ -1,7 +1,7 @@
 # 実装チェックポイント 2026-06-29 ミクのツインテール常時風なびき
 
 ## 概要
-中心に常在する初音ミクのツインテールが重力で真下に垂れたままで躍動が無かったため、スプリングボーンの重力方向と強さを毎フレーム書き換えて後方へ流れる動きを与えた。固定ポーズ（人体姿勢）・出典表記・描画性能は維持し、コードの実行時処理のみで実現した。ブランチ `worktree-miku-dynamics-skirt-pin-twintail`（mainから分岐）。PR #215（base main、未マージ）。Codexによる設計レビュー（条件付きGo→Go）と実装レビュー（Go）を経た。
+中心に常在する初音ミクのツインテールが重力で真下に垂れたままで躍動が無かったため、スプリングボーンの重力方向と強さを毎フレーム書き換えて後方へ流れる動きを与えた。固定ポーズ（人体姿勢）・出典表記・描画性能は維持し、コードの実行時処理のみで実現した。**PR #215（base main、マージ済み）** がツインテール躍動の本体。Codexによる設計レビュー（条件付きGo→Go）・実装レビュー（Go）・マージ判定（Go）を経てマージした。その後、流れの方向に直交する揺らぎが垂直な振動として見える不具合を **PR #216（base main、ブランチ `fix-twintail-vibration`）** で解消した（追補の節を参照）。
 
 ## スコープの確定（重要な意思決定）
 当初は「手でスカートの裾を持つ」表現も含めて設計したが、目視確認の結果ユーザー判断で見送り、ツインテールの躍動のみを採用した。見送りの理由を先に述べる。現行のVRMアニメーション `miku-ver3-posed.vrma` は両腕が肩から頭の高さに上がった走る姿勢で、左右どちらの手もスカートの裾から約0.5ワールド単位（モデルは等方スケール3.9）上にある。裾を手へ追従させると約0.5ワールド単位ぶん垂直に引き伸ばされ不自然になる。自然に持つ姿にはVRMアニメーション側で手を裾の高さへ下ろす必要がある。スカート保持を加える場合は、手を裾に添えた姿勢の新VRMA（人間制作）が前提となる。
@@ -13,21 +13,23 @@
 - スプリングは開始直後の数十フレームで初期姿勢から目標へ遷移する。ソフトウェア描画（継続的インテグレーション環境）は毎秒のフレームが少なく、定常に達するのに数秒かかる。
 - スプリングボーンは生成時に各ボーンの `matrixAutoUpdate` を false にする（実装578行目）。スカート保持を後で加える場合、ボーンの局所 `position` を上書きした後に `updateMatrix` と `updateWorldMatrix` を明示的に呼ぶ必要がある。
 
-## 変更ファイル
-- `src/utils/twinTailWind.ts`（新規）＋ `twinTailWind.test.ts`: 経過秒・パラメータ・位相差から風の局所方向（後方かつ上向きの定常バイアスに直交方向の揺らぎを加えた単位ベクトル）と強さを返す純粋関数。
-- `src/rendering/entities/vrmMotion.ts`: `createDynamicPosedMotion` を追加。既存 `createPosedMotion` を内部利用して固定ポーズを保ち、対象ツインテール2本の `gravityDir`/`gravityPower` を毎フレーム書き換える（局所方向を中心表示オブジェクトのワールド回転で変換）。生成時に4設定（重力方向・強さ・戻し力・抵抗）を複製保存し dispose で復元。
-- `src/types/character.ts`・`src/config/character.ts`: 風のパラメータ `MIKU_CHARACTER.dynamics`（baseDirectionLocal=後方かつ上、power=2.5、stiffness=0.15、oscillation、chainPhaseOffset=π）。設定が無ければ固定ポーズのみ。判定モードは posed のまま。
-- `src/rendering/renderRoot.ts`: `config.dynamics` で `createDynamicPosedMotion` を選ぶ分岐。診断 `centerFigureTwinTailFlowAlignment` を `state()` に追加。
-- `src/rendering/entities/centerFigure.ts`: 診断 `debugTwinTailFlowAlignment`（先端方向と意図した風方向の内積の平均、読み取りのみ）。差し替えモデル設定を保持。
-- `src/rendering/diagnostics/centerFigure/main.ts`・`src/types/globals.d.ts`: 診断の公開。
+## 変更ファイル（PR #216 で振動修正を反映した現状）
+- `src/rendering/entities/vrmMotion.ts`: `createDynamicPosedMotion` を追加。既存 `createPosedMotion` を内部利用して固定ポーズを保ち、対象ツインテール2本の `gravityDir`/`gravityPower` を毎フレーム書き換える（局所の一定方向を中心表示オブジェクトのワールド回転で変換）。風は一定方向で揺らぎを与えない（揺らぎは垂直な振動として見えるため、PR #216 で除去）。生成時に4設定（重力方向・強さ・戻し力・抵抗）を複製保存し dispose で復元。
+- `src/types/character.ts`・`src/config/character.ts`: 風のパラメータ `MIKU_CHARACTER.dynamics`（baseDirectionLocal=後方かつ上、power=2.5、stiffness=0.15）。揺らぎの振幅・周波数・位相差は PR #216 で削除。設定が無ければ固定ポーズのみ。判定モードは posed のまま。
+- `src/rendering/renderRoot.ts`・`src/rendering/entities/centerFigure.ts`・`src/rendering/diagnostics/centerFigure/main.ts`・`src/types/globals.d.ts`: 診断 `centerFigureTwinTailFlowAlignment`（先端方向と意図した風方向の内積の平均、読み取りのみ。先端は根からシーンの子をたどった末端で算出）。
 - `scripts/rendering-center-figure-smoke.mjs`: ツインテールの流れの判定を追加（定常まで読み直す）。
 - `src/rendering/README.md`: 仕組みの追記。
+- 注: PR #215 で新設した純粋関数 `src/utils/twinTailWind.ts`（＋テスト）は、揺らぎの除去で処理が基本方向の正規化のみとなったため PR #216 で削除し `vrmMotion.ts` 内へ取り込んだ。
 
-## 検証結果（全て成功）
-- `npm run typecheck` 通過。`npm run test` 1834件成功。`npm run build`（診断込み）・`npm run build:app` 成功。
-- `npm run smoke:center-figure` 成功: 判定モード posed・人体ボーン最大回転角160.10度（偏差0.00度）・平面反射・ツインテール先端方向と意図した風方向の内積0.960。内積の下限0.15は、先端が真下を向く垂れ（内積0以下）と十分区別できる正の値として採る。
+## 振動の修正（追補・PR #216）
+PR #215 では風の方向に基本方向へ直交する正弦波の揺らぎ（左右2本へ逆位相）を加えていたが、これがツインテールを流れの方向に対して垂直に振動させて見えた。PR #216 で揺らぎを除去し、風を一定方向（基本方向のみ）に固定した。これによりツインテールは振動せず一方向へ流れる。揺らぎの計算が無くなったため `twinTailWind.ts`（＋テスト）を削除し、基本方向の正規化を `vrmMotion.ts` 内へ取り込んだ。揺らぎの設定項目（振幅・周波数・位相差）も削除した。
+
+## 検証結果（全て成功・PR #216 反映後の現状）
+- `npm run typecheck` 通過。`npm run test` 1829件成功（PR #215 時点の1834件から、削除した揺らぎ用テスト5件分が減）。`npm run build`（診断込み）・`npm run build:app` 成功。
+- `npm run smoke:center-figure` 成功: 判定モード posed・人体ボーン最大回転角160.10度（偏差0.00度）・平面反射・ツインテール先端方向と意図した風方向の内積0.997（一定方向で安定）。内積の下限0.15は、先端が真下を向く垂れ（内積0以下）と十分区別できる正の値として採る。
 - `npm run smoke:spatial` 成功。
-- 目視: ツインテールが頭上後方へ流れて垂れていないことを確認。
+- 振動の有無の確認: 旧来の揺らぎの周期である2.5秒だけ離して画面を2回撮影し、ツインテールが同一の位置にあることを確認した。2.5秒の間隔を採る理由は、揺らぎがあれば1周期で位相が一巡し位置が変わるため、この間隔で振動の有無を区別できることである。
+- 目視（3アングル）: ツインテールが後方かつ上向きへ安定して流れ、垂れず・振動せず・左右が平行であることをユーザーが確認・確定した。
 
 ## 復帰点
-本ファイル。実装の正典は PR #215 と本ブランチ。スカート保持を再開する場合は、手を裾の高さへ添えた新VRMA、または右腕・左腕を手続き的に下ろす実装が前提。
+本ファイル。実装の正典は PR #215（マージ済み）と PR #216。スカート保持を再開する場合は、手を裾の高さへ添えた新VRMA、または右腕・左腕を手続き的に下ろす実装が前提。

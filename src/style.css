@@ -173,6 +173,82 @@ body {
   gap: clamp(8px, 2vw, 16px);
 }
 
+/* プレイ中の一時停止（Issue #112）。一時停止ボタンは実行中だけ左上に出す。配置の理由を先に述べる。
+   右上はクレジット、下端は出典バッジが占めるため、プレイ中に隠す較正トグルが空ける左上へ置く。重なり順は既存トグルと同じ1100。 */
+.pause-button {
+  position: fixed;
+  top: max(env(safe-area-inset-top), 8px);
+  left: max(env(safe-area-inset-left), 8px);
+  z-index: 1100;
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: clamp(11px, 2vw, 13px);
+  color: var(--text-dim);
+  background: rgba(5, 6, 10, 0.7);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* 一時停止中・カウントイン中の覆い。重なり順の理由を先に述べる。停止が明確に伝わるよう画面UI（1）と既存の覆い（1000）
+   より前面へ出す一方、規約が求めるクレジットの常時到達を妨げないよう、クレジットトグル（1100）より下の1050に置く。 */
+.pause-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 3vh, 24px);
+  background: rgba(5, 6, 10, 0.6);
+  color: var(--text);
+}
+
+/* hidden 属性で出し入れする。display 指定があると hidden が効かないため、明示的に分岐する。 */
+.pause-overlay[hidden] {
+  display: none;
+}
+
+.pause-overlay__message {
+  font-size: clamp(16px, 3vw, 22px);
+  color: var(--text);
+}
+
+.pause-overlay__countdown {
+  font-size: clamp(40px, 12vw, 96px);
+  font-weight: 700;
+  color: var(--accent);
+  min-height: 1.2em;
+}
+
+.pause-overlay__resume {
+  min-width: 160px;
+  min-height: 48px;
+  padding: 12px 28px;
+  font-size: clamp(14px, 2.4vw, 18px);
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* 覆いの中の表示物は局面に応じて出し入れする。hidden 属性で隠す。 */
+.pause-overlay__message[hidden],
+.pause-overlay__countdown[hidden],
+.pause-overlay__resume[hidden] {
+  display: none;
+}
+
+/* プレイ中は、較正・使い方説明・設定のトグルを隠して画面を整える（Issue #112）。クレジットは規約で常時表示のため除外する。 */
+body[data-phase="play"] .calibration-toggle,
+body[data-phase="play"] .howto-toggle,
+body[data-phase="play"] .settings-toggle {
+  display: none;
+}
+
 /* 題名画面の課題曲一覧（Issue #5）。題名画面だけが使うクラスのため、ここの変更は他画面に波及しない。
    幅に応じて列数が変わる適応グリッド。縦長の携帯では1列、幅が広いほど2〜3列になり、6曲が少ない行数で
    可視領域に収まる。min(100%, 14rem) により、極端に狭い幅でも列が100%に縮んで横はみ出しを防ぐ。 */

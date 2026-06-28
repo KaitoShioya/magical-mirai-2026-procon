@@ -13,6 +13,8 @@ import { HOW_TO_CONTENT, type HowToContent, type HowToSection } from "./howToCon
 export interface HowToView {
   /** トグルの表示・非表示を切り替える。偽のときは、パネルが開いていれば閉じる。 */
   setToggleVisible(visible: boolean): void;
+  /** パネルが開いていれば閉じる（トグルの表示状態は変えない）。プレイ突入時に開いていれば閉じるため（Issue #112）。 */
+  close(): void;
   /** 後始末。生成した表示要素と取り付けた監視を取り除く。 */
   dispose(): void;
 }
@@ -138,6 +140,17 @@ export function createHowToView(
         close(false);
       }
       toggle.hidden = true;
+    },
+    close(): void {
+      // パネルが開いていれば閉じる。トグルの表示状態（hidden）は変えない（プレイ中の非表示はCSSが担う）。
+      // パネル内に焦点があれば外す（操作不能になり得る背面へ焦点を残さないため）。
+      if (!panel.hidden) {
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && (active === closeButton || panel.contains(active))) {
+          active.blur();
+        }
+        close(false);
+      }
     },
     dispose(): void {
       toggle.removeEventListener("click", onToggleClick);

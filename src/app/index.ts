@@ -45,6 +45,7 @@ import { takeoverProfile } from "../profiles/takeover/profile";
 import { createCameraTrajectory } from "../utils/cameraTrajectory";
 import { createInput } from "../input";
 import { createPlaySession } from "./playSession";
+import { createPauseController } from "./pauseController";
 
 /** 統括の外部契約。後始末のみを公開する。 */
 export interface App {
@@ -254,6 +255,14 @@ export function createApp(
     onReaction: (reaction) => session.onReaction(reaction),
   });
 
+  // プレイ中の一時停止（Issue #112）。一時停止で楽曲再生を止め入力を無効化し、再開は3-2-1カウントインの後に戻す。
+  // 画面状態は増やさず、覆い・ボタンは文書本体直下へ取り付ける。タブ離脱・復帰の自動一時停止・再開も同じ手順を共有する。
+  const pauseController = createPauseController({
+    pausePlayback: () => playback.pause(),
+    resumePlayback: () => playback.play(),
+    setInputActive: (active) => input.setActive(active),
+  });
+
   // 結果画面（Issue #74）へ渡す確定データ。プレイ終了時に確定し、結果画面の表示中だけ参照される。
   // 「今回の結果」は最終スコア要約、「自己ベスト・成長履歴」は端末内に保存後に読み直した内容を保持する。
   let lastResult: ScoreResult | null = null;
@@ -274,6 +283,15 @@ export function createApp(
     session.reset();
     input.setActive(true);
     playback.beginFromStart();
+    // プレイ突入時に、開いている説明・クレジット・較正のパネルを閉じる（Issue #112）。順序の理由を先に述べる。
+    // パネルを閉じる close は閉じる際にトグルへ焦点を戻すため、トグルを隠す body[data-phase="play"] を先に立てると
+    // 焦点が見えないトグルへ移る。これを避けるため、(1) 先にパネルを閉じ、(2) 次にプレイ局面の印を立て、(3) 最後に
+    // 一時停止ボタンを出す順にする。
+    howToView.close();
+    creditsView.close();
+    calibrationView.close();
+    document.body.dataset.phase = "play";
+    pauseController.setPlayPhase(true);
   }
 
   const context: ScreenContext = {
@@ -345,6 +363,11 @@ export function createApp(
     if (!inPlayPhase) {
       return;
     }
+    // 一時停止中・カウントイン中は、再生開始待ち・「触れて再生」表示・楽曲終了の検知をいずれも行わない（Issue #112）。
+    // 楽曲は止まっており終了しないため、これらを動かす意味が無く、一時停止覆いと「触れて再生」が競合するのも防ぐ。
+    if (pauseController.isHalted()) {
+      return;
+    }
     // 再生開始の成立確認。一定時間内に始まらなければ「触れて再生」表示を一度だけ出す。
     if (!playback.hasStarted()) {
       playStartElapsedMs += realDeltaMs;
@@ -372,6 +395,9 @@ export function createApp(
     if (playback.hasEnded()) {
       inPlayPhase = false;
       overlays.hideTapToPlay();
+      // プレイを抜けるため、一時停止ボタンの表示とプレイ局面の印を下ろす（Issue #112）。
+      pauseController.setPlayPhase(false);
+      delete document.body.dataset.phase;
       // 入力を無効化する（結果画面ではタップを判定・採点へ流さない）。
       input.setActive(false);
       // 最終スコアを確定し、端末内の自己ベスト履歴へ記録する（Issue #74・#67）。
@@ -443,10 +469,14 @@ export function createApp(
           }
         }
       }
+      // 一時停止のカウントインを実時間で進める（Issue #112）。カウントイン中以外は何もしない。完了で楽曲再生を戻し
+      // 入力を有効化するため、この後のプレイ進行更新の抑止判定（isHalted）より前に呼ぶ。
+      pauseController.tick(realDeltaMs);
       // カメラ軌跡駆動（Issue #13・#59）。プレイ進行中だけ、平滑化した音楽時刻でカメラ姿勢を更新する。
       // 文字配置（createCameraPlacement）がカメラ姿勢を毎フレーム読むため、文字駆動 machine.update より前に置く。
       // 投下区間判定・スロット音高の更新も同じ音楽時刻でセッションへ進める。
-      if (inPlayPhase) {
+      // 一時停止中・カウントイン中（isHalted）は止める（Issue #112）。楽曲が止まり時計が進まないため二重の保証になる。
+      if (inPlayPhase && !pauseController.isHalted()) {
         const musicTimeMs = engineState.gameTimeMs;
         const pose = cameraTrajectory.poseAt(musicTimeMs);
         renderRoot.setCameraPose(pose.position, pose.target);
@@ -455,9 +485,10 @@ export function createApp(
       machine.update(realDeltaMs);
       tickPlay(realDeltaMs);
       // 画面拡大・減衰揺れ（Issue #76）。プレイ進行中だけノーツの消滅へ反応させ、それ以外は恒等へ戻す。
+      // 一時停止中・カウントイン中（isHalted）も恒等へ戻す（Issue #112。停止中は揺らさない）。
       // 拍の時刻源はゲームの時計 world.gameTimeMs（再生位置の平滑化値）で、advanceFrame が onFrame より
       // 先にこれを更新するため当該フレームの最新値になる。画面寸法は canvas を載せた常在領域から毎フレーム読む。
-      if (inPlayPhase) {
+      if (inPlayPhase && !pauseController.isHalted()) {
         const gameTimeMs = world.gameTimeMs;
         // 再生位置の飛び（スタート直後の同期確立・タブ復帰・シーク）では、飛び区間の拍を一括発火させず基準を貼り直す。
         // 理由を先に述べる。一括発火は screenShake.trigger が最新拍だけを残すため飛び区間の手前のノーツの振動が失われ、
@@ -491,11 +522,14 @@ export function createApp(
       // 状態の更新後に1フレーム描く。タブ非表示中は loop が onFrame を呼ばないため描画も止まる。
       renderRoot.render();
     },
-    // タブ非表示・ページ退避で楽曲を止め、復帰で再開する（プレイ進行中のみ）。
-    // 再開時の3-2-1カウントインは設けない暫定挙動であり、Issue #112 がカウントインへ差し替える。
+    // タブ非表示・ページ退避で一時停止し、復帰で3-2-1カウントインを経て再開する（プレイ進行中のみ。Issue #112）。
+    // 手動の一時停止ボタン・再開ボタンと同じ手順を共有する。
     onPause: (): void => {
       if (inPlayPhase) {
-        playback.pause();
+        // 「触れて再生」が出ていれば消してから一時停止する（一時停止覆いと競合させない）。
+        overlays.hideTapToPlay();
+        tapToPlayShown = false;
+        pauseController.pause();
       }
     },
     onResume: (): void => {
@@ -503,7 +537,8 @@ export function createApp(
       // （段階は保持される）。プレイ進行の有無に依らず行う。
       perfBudget.reset();
       if (inPlayPhase) {
-        playback.play();
+        // 即座に再生せず、3-2-1カウントインを開始する（手動の一時停止からの再開と同じ手順）。
+        pauseController.beginResumeCountIn();
       }
     },
   });
@@ -547,6 +582,9 @@ export function createApp(
       howToView.dispose();
       calibrationView.dispose();
       operationSound.dispose();
+      // 一時停止（Issue #112）の表示要素を取り除き、プレイ局面の印を消す。
+      pauseController.dispose();
+      delete document.body.dataset.phase;
       // 入力（Issue #59）の待ち受けを解除する。
       input.dispose();
       playback.dispose();

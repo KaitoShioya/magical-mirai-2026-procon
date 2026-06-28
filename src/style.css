@@ -378,6 +378,8 @@ body[data-phase="play"] .calibration-toggle,
 body[data-phase="play"] .howto-toggle,
 body[data-phase="play"] .settings-toggle {
   display: none;
+}
+
 .screen__button:disabled {
   opacity: 0.5;
   cursor: progress;

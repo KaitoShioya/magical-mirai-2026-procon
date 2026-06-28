@@ -16,3 +16,17 @@ export const ZEN_KAKU_GOTHIC_NEW_CREDIT: FontCredit = {
   license: "SIL Open Font License 1.1",
   licenseFileUrl: "/fonts/zen-kaku-gothic-new-OFL.txt",
 };
+
+/**
+ * 見出し用フォントの出典。M PLUS 1 は SIL Open Font License 1.1 で配布され、
+ * 商用利用・改変（サブセット化）・Web埋め込み・再配布が認められる（単体販売のみ不可）。
+ * 配布元は Google Fonts に揃える（Zen Kaku Gothic New と同じ配布元にして出典の記載と入手経路を一致させる）。
+ */
+export const MPLUS_1_CREDIT: FontCredit = {
+  fontName: "M PLUS 1",
+  author: "Coji Morishita / M+ FONTS Project",
+  sourceLabel: "Google Fonts",
+  sourceUrl: "https://fonts.google.com/specimen/M+PLUS+1",
+  license: "SIL Open Font License 1.1",
+  licenseFileUrl: "/fonts/m-plus-1-OFL.txt",
+};

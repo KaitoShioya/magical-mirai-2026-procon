@@ -103,7 +103,7 @@ export function createCalibrationView(
 
   const closeButton = document.createElement("button");
   closeButton.type = "button";
-  closeButton.className = "calibration-panel__close";
+  closeButton.className = "calibration-panel__close ui-button--secondary";
   closeButton.textContent = "閉じる";
   closeButton.setAttribute("aria-label", "較正を閉じる");
 
@@ -138,7 +138,7 @@ export function createCalibrationView(
   hintRow.className = "calibration-panel__text";
   const useHintButton = document.createElement("button");
   useHintButton.type = "button";
-  useHintButton.className = "calibration-panel__button";
+  useHintButton.className = "calibration-panel__button ui-button--secondary";
   useHintButton.textContent = "目安をつまみに入れる";
 
   // 採用中の補正値の表示。
@@ -162,18 +162,18 @@ export function createCalibrationView(
   // 操作ボタン。段階に応じて出し入れする。
   const startButton = document.createElement("button");
   startButton.type = "button";
-  startButton.className = "calibration-panel__button";
+  startButton.className = "calibration-panel__button ui-button--primary";
   startButton.textContent = "較正をはじめる";
 
   const saveButton = document.createElement("button");
   saveButton.type = "button";
-  saveButton.className = "calibration-panel__button";
+  saveButton.className = "calibration-panel__button ui-button--primary";
   saveButton.textContent = "保存";
   saveButton.hidden = true;
 
   const redoButton = document.createElement("button");
   redoButton.type = "button";
-  redoButton.className = "calibration-panel__button";
+  redoButton.className = "calibration-panel__button ui-button--secondary";
   redoButton.textContent = "やり直し";
   redoButton.hidden = true;
 

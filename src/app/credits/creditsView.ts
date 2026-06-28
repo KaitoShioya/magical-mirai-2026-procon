@@ -114,7 +114,7 @@ export function createCreditsView(
 
   const closeButton = document.createElement("button");
   closeButton.type = "button";
-  closeButton.className = "credits-panel__close";
+  closeButton.className = "credits-panel__close ui-button--secondary";
   closeButton.textContent = "閉じる";
   closeButton.setAttribute("aria-label", "クレジットを閉じる");
 

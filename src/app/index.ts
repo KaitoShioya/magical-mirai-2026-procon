@@ -693,11 +693,35 @@ export function createApp(
       diagPerfHistory.slice();
   }
 
+  // 肯定操作ボタンの押下ソナー波紋（シグネチャー演出）。document への委譲で1回だけ結線する。
+  // 委譲にする理由を先に述べる。画面は遷移ごとに作り直され、常設パネルは別の親に一度だけ生成されるため、
+  // 各画面・各ビューで結線すると結線漏れや解除忘れが起きる。安定した document に1回結線すれば全ボタンを漏れなく扱える。
+  const triggerButtonSonar = (event: PointerEvent): void => {
+    const target = (event.target as Element | null)?.closest(
+      ".ui-button--primary:not(:disabled)"
+    );
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    // 連続押下でも毎回最初から再生するため、いったんクラスを外し、レイアウト再計算を挟んでから付け直す。
+    target.classList.remove("is-pressed");
+    target.getBoundingClientRect();
+    target.classList.add("is-pressed");
+    target.addEventListener(
+      "animationend",
+      () => target.classList.remove("is-pressed"),
+      { once: true }
+    );
+  };
+  document.addEventListener("pointerdown", triggerButtonSonar);
+
   return {
     dispose(): void {
       loop.dispose();
       machine.dispose();
       unsubscribe();
+      // 押下ソナー波紋の委譲リスナーを解除する。解除しないと作り直すたびに同じリスナーが重なって多重発火するため。
+      document.removeEventListener("pointerdown", triggerButtonSonar);
       overlays.dispose();
       attribution?.dispose();
       creditsView.dispose();

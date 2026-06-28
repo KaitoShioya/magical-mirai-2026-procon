@@ -119,6 +119,9 @@ BASE=http://localhost:5173 node scripts/prototype-fps.mjs
 # フォントのサブセット生成（assets/fonts-source/ の元フォントから public/fonts/ の .woff を作る。欠字があれば失敗する）
 npm run build:font-subset
 
+# UI見出し用フォント（M PLUS 1）のサブセット生成（assets/fonts-source/MPLUS1-VF.ttf から public/fonts/ の .woff2 を作る。欠字または上限超過で失敗する）
+npm run build:ui-font-subset
+
 # キネティック文字エンジンの性能検証（要 dev サーバ起動。ANGLE経由でGPU描画して受け入れ基準を判定する）
 BASE=http://localhost:5173 npm run typography:fps
 ```
@@ -225,7 +228,11 @@ Variables（非秘匿の設定値）:
 - Zen Kaku Gothic New（作者 Yoshimichi Ohira / Zenfonts）
 - 配布元 Google Fonts（https://fonts.google.com/specimen/Zen+Kaku+Gothic+New ）
 - SIL Open Font License 1.1（同梱したライセンス本文 `/fonts/zen-kaku-gothic-new-OFL.txt`）
-- 課題曲 TAKEOVER の歌詞に現れる文字へサブセット化して同梱している。
+- 課題曲 TAKEOVER の歌詞に現れる文字へサブセット化して同梱している。歌詞表示に用いる。
+- M PLUS 1（作者 Coji Morishita / M+ FONTS Project）
+- 配布元 Google Fonts（https://fonts.google.com/specimen/M+PLUS+1 ）
+- SIL Open Font License 1.1（同梱したライセンス本文 `/fonts/m-plus-1-OFL.txt`）
+- 画面UIの見出し・タイトルに用いる。UIに現れる見出しの文字へサブセット化して同梱している。
 
 ### 楽曲・歌詞
 

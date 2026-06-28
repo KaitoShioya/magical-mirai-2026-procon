@@ -60,14 +60,14 @@ export function createPauseController(
 
   const resumeButton = document.createElement("button");
   resumeButton.type = "button";
-  resumeButton.className = "pause-overlay__resume";
+  resumeButton.className = "pause-overlay__resume ui-button--primary";
   resumeButton.textContent = "再開";
   resumeButton.setAttribute("aria-label", "再開する");
 
   // プレイを中断して題名へ戻すボタン。停止中だけ出す（再開ボタンと同じ局面）。
   const returnButton = document.createElement("button");
   returnButton.type = "button";
-  returnButton.className = "pause-overlay__return";
+  returnButton.className = "pause-overlay__return ui-button--secondary";
   returnButton.textContent = "トップに戻る";
   returnButton.setAttribute("aria-label", "トップ（題名）に戻る");
 

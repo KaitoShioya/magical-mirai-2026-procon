@@ -26,7 +26,7 @@ export const createResultScreen: ScreenFactory = (context: ScreenContext): Scree
 
   // スコア欄を畳む閉じるボタン。畳むと情景が広く見え、撮影の構図を決めやすくなる。data-no-camera で撮影操作の対象から除く。
   const closeButton = document.createElement("button");
-  closeButton.className = "screen__result-close";
+  closeButton.className = "screen__result-close ui-button--secondary";
   closeButton.type = "button";
   closeButton.dataset.action = "close-result-panel";
   closeButton.dataset.noCamera = "";
@@ -69,7 +69,7 @@ export const createResultScreen: ScreenFactory = (context: ScreenContext): Scree
 
   // スコア欄を畳んだときに再表示するためのボタン（畳むまでは隠す）。撮影操作の対象から除く。
   const reopenButton = document.createElement("button");
-  reopenButton.className = "screen__button screen__result-reopen";
+  reopenButton.className = "screen__button screen__result-reopen ui-button--secondary";
   reopenButton.type = "button";
   reopenButton.dataset.action = "reopen-result-panel";
   reopenButton.dataset.noCamera = "";
@@ -82,7 +82,7 @@ export const createResultScreen: ScreenFactory = (context: ScreenContext): Scree
 
   // 「もう一度」（Issue #74）。同じ曲を遊び直すためウォームアップへ戻す（許可遷移 result→warmup）。撮影操作の対象から除く。
   const replayButton = document.createElement("button");
-  replayButton.className = "screen__button";
+  replayButton.className = "screen__button ui-button--primary";
   replayButton.type = "button";
   replayButton.dataset.action = "replay";
   replayButton.dataset.noCamera = "";
@@ -92,7 +92,7 @@ export const createResultScreen: ScreenFactory = (context: ScreenContext): Scree
   // data-no-camera を付ける理由を先に述べる。撮影モード（#68）の操作がボタン押下をカメラ操作と誤認しないよう、
   // 撮影モードの結線側がこの目印で操作対象から除く。
   const saveShareButton = document.createElement("button");
-  saveShareButton.className = "screen__button";
+  saveShareButton.className = "screen__button ui-button--primary";
   saveShareButton.type = "button";
   saveShareButton.dataset.action = "save-share";
   saveShareButton.dataset.noCamera = "";
@@ -100,7 +100,7 @@ export const createResultScreen: ScreenFactory = (context: ScreenContext): Scree
 
   // 「タイトルに戻る」は再挑戦状態を経て題名へ戻す（result→retry→title）。
   const returnButton = document.createElement("button");
-  returnButton.className = "screen__button";
+  returnButton.className = "screen__button ui-button--secondary";
   returnButton.type = "button";
   returnButton.dataset.action = "return-title";
   returnButton.dataset.noCamera = "";

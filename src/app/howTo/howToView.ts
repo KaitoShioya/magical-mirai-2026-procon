@@ -72,7 +72,7 @@ export function createHowToView(
 
   const closeButton = document.createElement("button");
   closeButton.type = "button";
-  closeButton.className = "howto-panel__close";
+  closeButton.className = "howto-panel__close ui-button--secondary";
   closeButton.textContent = "閉じる";
   closeButton.setAttribute("aria-label", "遊び方を閉じる");
 

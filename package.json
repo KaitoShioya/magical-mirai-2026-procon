@@ -12,6 +12,7 @@
     "test": "vitest run",
     "profile:gen": "vite-node scripts/generate-profile.ts",
     "build:font-subset": "node scripts/build-font-subset.mjs",
+    "build:ui-font-subset": "node scripts/build-ui-font-subset.mjs",
     "build:stage-model": "node scripts/build-stage-model.mjs",
     "prototype:fps": "node scripts/prototype-fps.mjs",
     "typography:fps": "node scripts/typography-fps.mjs",

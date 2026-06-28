@@ -5,6 +5,7 @@ import type { Scene, PerspectiveCamera, Object3D } from "three";
 import type { MusicMapSource } from "../textalive/musicMap";
 import type { TypographyChart, TypographyDisplayRegion, ReadingDisplayUnit } from "../types/typography";
 import type { LaneNote } from "../types/judgmentLane";
+import type { ScoreHistory } from "../scoring/scoreHistoryStore";
 
 /** 5つの画面状態を表すキー。題名・ウォームアップ・プレイ・結果・再挑戦。 */
 export type ScreenKey = "title" | "warmup" | "play" | "result" | "retry";
@@ -100,7 +101,7 @@ export interface PlayWiring {
 }
 
 /**
- * 結果画面が表示する確定スコアの写し（成果物タスク #71）。
+ * 結果画面が表示する確定スコアの写し（Issue #74・成果物タスク #71）。
  * 画面層は得点の論理を持たないため、得点型そのものでなく統括（src/app）が整形して渡す表示用の値だけを受け取る。
  * 値は楽曲終了の地点で一度だけ確定（凍結）したもので、撮影や共有のたびに再計算しない。
  */
@@ -114,13 +115,15 @@ export interface ResultSnapshot {
 }
 
 /**
- * 結果画面の結線（成果物タスク #71・#69・#70・#68）。統括（src/app）が確定スコア・作品情報・撮影・画像化・共有を解決して渡す。
- * 結果画面はこれを用いてスコア表示・成果物プレビュー・撮影操作・保存共有を組み立てる。
+ * 結果画面の結線（Issue #74・成果物タスク #71・#69・#70・#68）。統括（src/app）が確定スコア・自己ベスト履歴・作品情報・撮影・画像化・共有を解決して渡す。
+ * 結果画面はこれを用いてスコア表示・自己ベスト表示・成果物プレビュー・撮影操作・保存共有を組み立てる。
  * 画面層が得点・描画・共有の論理を持たないための窓口で、論理はすべて統括側にある。
  */
 export interface ResultWiring {
   /** 楽曲終了時に凍結した確定スコアの写しを返す。確定前（異常時）は null を返す。 */
   getFinalResult(): ResultSnapshot | null;
+  /** 端末内に保存済みの自己ベストと直近履歴（Issue #67・#74）。記録が無い・保存できない環境では null。 */
+  getScoreHistory(): ScoreHistory | null;
   /** 作品名（成果物画像の見出し・共有文に使う）。 */
   readonly appTitle: string;
   /** 曲名。 */
@@ -148,7 +151,7 @@ export interface ScreenContext {
   requestTransition(to: ScreenKey): void;
   /** プレイ画面の本編表示の結線（Issue #33）。診断・本番の双方で統括が渡す。 */
   readonly play?: PlayWiring;
-  /** 結果画面の結線（成果物タスク #71）。統括が渡す。 */
+  /** 結果画面の結線（Issue #74・成果物タスク #71/#69/#70/#68）。統括がプレイ終了時に渡す。 */
   readonly result?: ResultWiring;
 }
 

@@ -12,7 +12,7 @@ import {
   buildCalibrationVoice,
   OPERATION_LANE_COUNT,
 } from "./droplet";
-import { SYNTH_POLYPHONY_MAX, ENGINE_STATE_UNINITIALIZED } from "./synthConstants";
+import { SYNTH_POLYPHONY_MAX, ENGINE_STATE_UNINITIALIZED, SYNTH_MASTER_GAIN } from "./synthConstants";
 
 // 標準の AudioContext と、古い Safari の接頭辞つき実装の両方を受け付ける。
 function resolveAudioContextConstructor(): typeof AudioContext | null {
@@ -32,6 +32,8 @@ export function createOperationSoundEngine(): OperationSoundEngine {
   let unlockPromise: Promise<EngineContextState> | null = null;
 
   let enabled = true;
+  // 利用者の音量倍率（0以上1以下）。マスター音量の基準値 SYNTH_MASTER_GAIN へ掛ける。既定は1（基準音量）。
+  let masterVolume = 1;
   // 投下中かどうか。真のあいだ、以後の発音を少し大きく・存在感を増す。既定は偽（通常）。
   let deployTimbre = false;
   let disposed = false;
@@ -142,6 +144,8 @@ export function createOperationSoundEngine(): OperationSoundEngine {
       if (!context) {
         context = new Ctor();
         graph = buildOutputGraph(context, context.destination);
+        // 起動前に設定された音量倍率を、グラフ構築時に反映する。
+        graph.master.gain.value = SYNTH_MASTER_GAIN * masterVolume;
       }
       const ctx = context;
       const promise = ctx
@@ -161,6 +165,15 @@ export function createOperationSoundEngine(): OperationSoundEngine {
 
     setEnabled(value: boolean): void {
       enabled = value;
+    },
+
+    setVolume(volume: number): void {
+      // 0以上1以下へ丸める（非有限は基準音量1へ倒す）。AudioContext 起動前は値を覚え、起動時に反映する。
+      const clamped = !Number.isFinite(volume) ? 1 : volume < 0 ? 0 : volume > 1 ? 1 : volume;
+      masterVolume = clamped;
+      if (graph) {
+        graph.master.gain.value = SYNTH_MASTER_GAIN * masterVolume;
+      }
     },
 
     setDeployTimbre(active: boolean): void {

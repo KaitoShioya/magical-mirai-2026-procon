@@ -13,10 +13,12 @@ export interface ScoreBounds {
 // "builtin-level-curve" は Issue #66 の内蔵水準カーブによる累積分布関数（levelCurve.ts の percentileFromLevelCurve）を表す。
 export type PercentileBasis = "fixed-uniform" | "builtin-level-curve";
 
-// 百分位が作品内蔵の固定分布による推定であり、実際のオンライン順位ではないことを示す文言。
+// 百分位が、得点の理論端（理論最小・理論最大）に照らした到達度であり、実際のオンライン順位ではないことを示す文言。
 // Issue #66 が Result 画面と README に明記する際に参照する。静的アプリ規約上オンライン順位は持てない（docs/decisions/app-overall-decisions.md 規約節）。
+// 「理論値への到達度」と表す理由を先に述べる。百分位は過去のプレイの順位ではなく、得点を理論端 [Smin,Smax] に
+// 照らした内蔵水準カーブの値であり（simplePercentile・levelCurve）、実装と齟齬の無い表現にするためである。
 export const PERCENTILE_ESTIMATE_DISCLAIMER =
-  "作品内推定（固定分布）であり、実際のオンライン順位ではありません。";
+  "理論値への到達度であり、実際のオンライン順位ではありません。";
 
 function clamp(value: number, min: number, max: number): number {
   if (value < min) return min;

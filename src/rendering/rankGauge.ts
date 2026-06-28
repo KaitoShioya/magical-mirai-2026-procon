@@ -6,6 +6,8 @@
 // 設計の出典は docs/idea/concept-final.md §9。
 
 import {
+  AdditiveBlending,
+  CanvasTexture,
   Color,
   Group,
   Mesh,
@@ -13,6 +15,7 @@ import {
   type Object3D,
   PlaneGeometry,
   SRGBColorSpace,
+  type Texture,
 } from "three";
 import { OVERLAY_RENDER_ORDER } from "./overlay";
 import { createRankLetterAtlas, RANK_LETTER_ATLAS_CELL_COUNT, type RankLetterAtlas } from "./rankLetterAtlas";
@@ -54,7 +57,22 @@ const LETTER_MAX_UNITS = 0.2;
 const RENDER_ORDER_BASE = OVERLAY_RENDER_ORDER.standardInformation;
 const RENDER_ORDER_TRACK = RENDER_ORDER_BASE;
 const RENDER_ORDER_FILL = RENDER_ORDER_BASE + 1;
-const RENDER_ORDER_LETTER = RENDER_ORDER_BASE + 2;
+// ランク文字の背後の発光の暈（halo）。文字より奥（手前の文字を隠さない）に置く。
+const RENDER_ORDER_HALO = RENDER_ORDER_BASE + 2;
+const RENDER_ORDER_LETTER = RENDER_ORDER_BASE + 3;
+
+// --- ランクが上がるほど豊かにする発光の暈（halo）の量（★暫定。実機調整で確定） ---
+// 採用理由を先に述べる。ランク表示を C→S で次第に華やかにするため、ランク文字の背後にランク色の発光の暈を置き、
+// ランク添字（0=C, 1=B, 2=A, 3=S）に比例して暈の強さと大きさを増す。C（添字0）では暈を出さず（強さ0）、
+// S（添字3）で最大にする。発光は加算合成で重ね、画面のブルームに拾わせて豊かさを出す。
+/** 暈の最大の不透明度。白飛びを避け上品な発光に留めるため1未満の0.9とする。 */
+const HALO_MAX_OPACITY = 0.9;
+/** 暈の大きさ（文字の大きさに対する倍率）の基準。文字をひとまわり超える2.0から始める。 */
+const HALO_SCALE_BASE = 2.0;
+/** ランク1段ごとに増す暈の大きさ（文字の大きさに対する倍率）。S で 2.0+3×0.6=3.8 倍になる。 */
+const HALO_SCALE_STEP = 0.6;
+/** ランクの最大添字（S=3）。強さ・大きさの比率の分母に使う。 */
+const RANK_INDEX_MAX = 3;
 
 // --- 色（トラックの色、★暫定） ---
 // 採用理由を先に述べる。トラックは満ちの色を引き立てる暗い下地とし、深夜の背景に薄く溶けつつ枠が分かる濃さにする。
@@ -133,6 +151,30 @@ function makeOverlayMaterial(options: {
   return material;
 }
 
+/** 放射状の発光テクスチャを作る。中心が明るく外周へ向けて透明になる白い円。ランク色で着色して暈（halo）に使う。
+ *  コードによる描画（canvas の放射状グラデーション）で作り、外部画像は使わない。 */
+function createGlowTexture(): CanvasTexture {
+  // 128画素四方とする理由を先に述べる。暈は柔らかい円のためにじみで階調が滑らかになり、小さめの図版でも画素の段差が
+  // 見えにくい。128画素は柔らかさと記憶域の軽さの両立として十分である。
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext("2d");
+  if (context) {
+    const half = size / 2;
+    const gradient = context.createRadialGradient(half, half, 0, half, half, half);
+    gradient.addColorStop(0, "rgba(255,255,255,1)");
+    gradient.addColorStop(0.5, "rgba(255,255,255,0.45)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, size, size);
+  }
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+
 /** 値を下限と上限で挟む。 */
 function clamp(value: number, min: number, max: number): number {
   if (value < min) {
@@ -186,6 +228,26 @@ export function createRankGauge(): RankGauge {
   fill.renderOrder = RENDER_ORDER_FILL;
   fill.visible = false;
   group.add(fill);
+
+  // ランク色の発光の暈（ランクが上がるほど強く・大きくする）。ランク文字の背後（手前の文字を隠さない）に置き、
+  // 加算合成で重ねて画面のブルームに拾わせ、C→S で次第に華やかにする。初期は不可視（update で確定）。
+  const glowTexture: Texture = createGlowTexture();
+  const haloMaterial = new MeshBasicMaterial({
+    map: glowTexture,
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+    blending: AdditiveBlending,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const haloGeometry = new PlaneGeometry(1, 1);
+  const halo = new Mesh(haloGeometry, haloMaterial);
+  halo.position.set(0, LETTER_CENTER_Y, 0);
+  halo.renderOrder = RENDER_ORDER_HALO;
+  halo.visible = false;
+  group.add(halo);
 
   // ランク文字。
   const letter = new Mesh(letterGeometries[0], letterMaterial);
@@ -253,6 +315,24 @@ export function createRankGauge(): RankGauge {
       const letterSize = computeLetterSize(viewportPixelHeight);
       letter.scale.set(letterSize, letterSize, 1);
       letter.position.set(0, LETTER_CENTER_Y, 0);
+
+      // ランクの発光の暈（C→S で次第に華やかにする）。ランク添字に比例して強さ・大きさを増す。C（添字0）では出さない。
+      const haloRatio = safeIndex / RANK_INDEX_MAX; // 0(C) → 1(S)
+      if (haloRatio <= 0) {
+        halo.visible = false;
+      } else {
+        halo.visible = true;
+        const haloScale = letterSize * (HALO_SCALE_BASE + safeIndex * HALO_SCALE_STEP);
+        halo.scale.set(haloScale, haloScale, 1);
+        halo.position.set(0, LETTER_CENTER_Y, 0);
+        haloMaterial.opacity = HALO_MAX_OPACITY * haloRatio;
+        // ランク色で着色する。満ちの色（rankGaugeColorAt(t)）が設定済み（t>0）ならその色を、無いときは白を使う。
+        if (t > 0) {
+          haloMaterial.color.copy(fillColor);
+        } else {
+          haloMaterial.color.setRGB(1, 1, 1);
+        }
+      }
     },
     state(): RankGaugeState {
       return {
@@ -277,12 +357,15 @@ export function createRankGauge(): RankGauge {
       disposed = true;
       trackGeometry.dispose();
       fillGeometry.dispose();
+      haloGeometry.dispose();
       for (const geometry of letterGeometries) {
         geometry.dispose();
       }
       trackMaterial.dispose();
       fillMaterial.dispose();
       letterMaterial.dispose();
+      haloMaterial.dispose();
+      glowTexture.dispose();
       atlas.dispose();
     },
   };

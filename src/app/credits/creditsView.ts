@@ -12,6 +12,10 @@ import type {
 import type { CharacterCredit } from "../../types/character";
 
 export interface CreditsView {
+  /** クレジット表示を開く（設定画面から到達するため。Issue #77）。 */
+  open(): void;
+  /** クレジット表示を閉じる（プレイ突入時に開いていれば閉じるため。Issue #112）。 */
+  close(): void;
   /** 後始末。生成した表示要素と取り付けた監視を取り除く。 */
   dispose(): void;
 }
@@ -159,6 +163,15 @@ export function createCreditsView(
   host.append(toggle, panel);
 
   return {
+    open(): void {
+      open();
+    },
+    close(): void {
+      // 開いているときだけ閉じる。閉じているときに焦点を奪わないため、内部の close は呼ばない。
+      if (!panel.hidden) {
+        close();
+      }
+    },
     dispose(): void {
       toggle.removeEventListener("click", onToggleClick);
       closeButton.removeEventListener("click", onCloseClick);

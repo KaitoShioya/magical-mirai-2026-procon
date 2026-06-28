@@ -37,12 +37,14 @@ export interface VoiceNodes {
   extraNodes: AudioNode[];
 }
 
-/** 共有出力グラフの2つの入口。各音はこの2つへ接続する。 */
+/** 共有出力グラフの2つの入口と、利用者の音量調整に使うマスター音量節点。 */
 export interface OutputGraphInputs {
   /** 直接音（乾いた音）の入口。各音は常時ここへつなぐ。 */
   dryInput: AudioNode;
   /** 残響音（湿った音）の入口。各音はレーンごとの残響送り量でここへつなぐ。 */
   wetInput: AudioNode;
+  /** マスター音量節点。基準値は SYNTH_MASTER_GAIN。利用者の音量調整（Issue #77）はこの利得を基準値へ倍率で掛けて行う。 */
+  master: GainNode;
 }
 
 /**
@@ -123,5 +125,5 @@ export function buildOutputGraph(
   master.connect(softClip);
   softClip.connect(destination);
 
-  return { dryInput: dryHighpass, wetInput: wetHighpass };
+  return { dryInput: dryHighpass, wetInput: wetHighpass, master };
 }

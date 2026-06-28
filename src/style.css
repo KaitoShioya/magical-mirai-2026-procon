@@ -78,6 +78,23 @@ body {
     max(env(safe-area-inset-bottom), clamp(12px, 3vh, 24px))
     max(env(safe-area-inset-left), clamp(12px, 3vw, 24px));
   text-align: center;
+  /* 画面遷移の入場フェード（Issue #75）。状態機械が新しい画面を差し込むたびに再生される。 */
+  animation: screen-enter 220ms ease-out both;
+}
+
+/* 画面遷移の入場フェード（Issue #75）。採用値の理由を先に述べる。瞬間的な切替を和らげつつ操作の反応を
+   遅く感じさせない範囲として、不透明度を0から1へ・わずかな上方向の移動（8画素。水面へ浮かび上がる印象）を伴う
+   220ミリ秒の入場とする。220ミリ秒は人が遅延と感じ始める手前の値で、既存の画面拡大・減衰揺れの時定数
+   200〜300ミリ秒の下限側に合わせる。 */
+@keyframes screen-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .screen__title {
@@ -116,6 +133,251 @@ body {
 .screen__button:hover {
   color: #fff;
   box-shadow: 0 0 16px var(--accent);
+}
+
+/* 自己ベスト・成長履歴の差し込み先（Issue #67・#74）。結果画面の地・上下の欄・ボタンの体裁は成果物タスク側の
+   クラス（.screen--result・.screen__result-*、後方で定義）が担い、ここは自己ベスト履歴の差し込み先と内側の体裁だけを持つ。 */
+.result-history {
+  width: 100%;
+}
+
+/* 結果画面に載せる自己ベスト・成長履歴（Issue #67・#74）の体裁。表示部品 src/ui/scoreHistoryView が描く構造へ与える。
+   .result-history 配下に閉じて、構造だけを検査する診断ページ（score-history.html）の表示には影響させない。 */
+.result-history .score-history__empty {
+  font-size: clamp(12px, 2vw, 15px);
+  color: var(--text-dim);
+}
+
+/* 自己ベストの見出し行。見出し語・得点・ランク・百分位を横に並べ、狭い幅では折り返す。 */
+.result-history .score-history__best {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px 12px;
+}
+
+.result-history .score-history__best-label {
+  font-size: clamp(11px, 1.8vw, 14px);
+  color: var(--text-dim);
+}
+
+.result-history .score-history__best-score {
+  font-size: clamp(18px, 3.4vw, 26px);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.result-history .score-history__best-rank,
+.result-history .score-history__best-percentile {
+  font-size: clamp(12px, 2vw, 15px);
+  color: var(--text);
+}
+
+/* 成長の横棒グラフ。直近プレイを左から右へ古い順に並べ、棒の高さで相対的な成長を示す。高さ48画素は、
+   結果パネルの中で成長の差が読み取れて場所を取りすぎない大きさとして採る。 */
+.result-history .score-history__chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  height: 48px;
+  margin-top: 8px;
+}
+
+.result-history .score-history__bar {
+  width: 8px;
+  min-height: 2px;
+  background: rgba(126, 200, 227, 0.4);
+  border-radius: 2px;
+}
+
+/* 自己ベストに当たる棒だけを強調色（ピンク）にする。 */
+.result-history .score-history__bar--best {
+  background: var(--accent2);
+}
+
+/* プレイ中の一時停止（Issue #112）。一時停止ボタンは実行中だけ左上に出す。配置の理由を先に述べる。
+   右上はクレジット、下端は出典バッジが占めるため、プレイ中に隠す較正トグルが空ける左上へ置く。重なり順は既存トグルと同じ1100。 */
+.pause-button {
+  position: fixed;
+  top: max(env(safe-area-inset-top), 8px);
+  left: max(env(safe-area-inset-left), 8px);
+  z-index: 1100;
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: clamp(11px, 2vw, 13px);
+  color: var(--text-dim);
+  background: rgba(5, 6, 10, 0.7);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* 一時停止中・カウントイン中の覆い。重なり順の理由を先に述べる。停止が明確に伝わるよう画面UI（1）と既存の覆い（1000）
+   より前面へ出す一方、規約が求めるクレジットの常時到達を妨げないよう、クレジットトグル（1100）より下の1050に置く。 */
+.pause-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 3vh, 24px);
+  background: rgba(5, 6, 10, 0.6);
+  color: var(--text);
+}
+
+/* hidden 属性で出し入れする。display 指定があると hidden が効かないため、明示的に分岐する。 */
+.pause-overlay[hidden] {
+  display: none;
+}
+
+.pause-overlay__message {
+  font-size: clamp(16px, 3vw, 22px);
+  color: var(--text);
+}
+
+.pause-overlay__countdown {
+  font-size: clamp(40px, 12vw, 96px);
+  font-weight: 700;
+  color: var(--accent);
+  min-height: 1.2em;
+}
+
+.pause-overlay__resume {
+  min-width: 160px;
+  min-height: 48px;
+  padding: 12px 28px;
+  font-size: clamp(14px, 2.4vw, 18px);
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* 「トップに戻る」は中断の副ボタン。主操作の「再開」より控えめに、淡色の細い枠で出す。 */
+.pause-overlay__return {
+  min-width: 160px;
+  min-height: 44px;
+  padding: 10px 24px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--text-dim);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* 覆いの中の表示物は局面に応じて出し入れする。hidden 属性で隠す。 */
+.pause-overlay__message[hidden],
+.pause-overlay__countdown[hidden],
+.pause-overlay__resume[hidden],
+.pause-overlay__return[hidden] {
+  display: none;
+}
+
+/* 設定（Issue #77）。配置の理由を先に述べる。クレジットは右上、較正は左上、使い方は下部を占めるため、
+   設定トグルは右上のクレジットの直下へ縦に並べる。クレジットトグルの高さ32画素と間隔8画素のぶん（合計40画素）
+   下げた位置に置くことで、右上で縦に並んで重ならない。重なり順は既存トグルと同じ1100。 */
+.settings-toggle {
+  position: fixed;
+  top: calc(max(env(safe-area-inset-top), 8px) + 40px);
+  right: max(env(safe-area-inset-right), 8px);
+  z-index: 1100;
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: clamp(11px, 2vw, 13px);
+  color: var(--text-dim);
+  background: rgba(5, 6, 10, 0.7);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.settings-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding:
+    max(env(safe-area-inset-top), 24px)
+    max(env(safe-area-inset-right), 24px)
+    max(env(safe-area-inset-bottom), 24px)
+    max(env(safe-area-inset-left), 24px);
+  overflow-y: auto;
+  background: rgba(8, 9, 14, 0.96);
+  color: var(--text);
+}
+
+/* hidden 属性で出し入れする。display 指定があると hidden が効かないため、明示的に分岐する。 */
+.settings-panel[hidden] {
+  display: none;
+}
+
+.settings-panel__close {
+  align-self: flex-end;
+  min-height: 40px;
+  padding: 8px 20px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  color: var(--text);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.settings-panel__title {
+  font-size: clamp(16px, 3vw, 22px);
+  color: var(--accent);
+}
+
+/* 操作音の音量の行。説明文とつまみを横に並べ、片手でも操作しやすい高さを保つ。 */
+.settings-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.settings-panel__row-text {
+  white-space: nowrap;
+}
+
+/* 音量つまみ。残りの幅へ広げ、上限で広がりすぎないようにする。つまみの色は世界観のシアンに合わせる。 */
+.settings-panel__slider {
+  flex: 1;
+  min-width: 120px;
+  max-width: 260px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.settings-panel__button {
+  min-height: 44px;
+  padding: 10px 20px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  color: var(--text);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* プレイ中は、較正・使い方説明・設定のトグルを隠して画面を整える（Issue #112）。クレジットは規約で常時表示のため除外する。 */
+body[data-phase="play"] .calibration-toggle,
+body[data-phase="play"] .howto-toggle,
+body[data-phase="play"] .settings-toggle {
+  display: none;
 }
 
 .screen__button:disabled {
@@ -267,6 +529,112 @@ body {
   font-size: clamp(10px, 1.6vw, 12px);
   letter-spacing: 0.08em;
   color: var(--text-dim);
+}
+
+/* タイトル画面の磨き（Issue #73）。背面の深夜の湖を主役に保ちつつ、見出しはネオンの二色（シアン→ピンク）で
+   にじませ、字間を整える。曲一覧は湖面に浮かぶ薄いガラスの札として、背面を透かしつつ可読性を上げる。 */
+.screen--title .screen__title {
+  letter-spacing: 0.04em;
+  background: linear-gradient(120deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* グラデーション文字には文字影を載せず、代わりに発光のにじみで暗い湖から浮かせる。 */
+  text-shadow: none;
+  filter: drop-shadow(0 0 18px rgba(126, 200, 227, 0.45));
+}
+
+.screen--title .screen__text {
+  letter-spacing: 0.08em;
+}
+
+/* 遊べる曲の札に、湖面に浮かぶ薄いガラスの地を敷く。未実装曲（disabled）には敷かず、押せないことの淡色表示を保つ。 */
+.screen--title .song-choice:not([disabled]) {
+  background: rgba(10, 14, 26, 0.5);
+}
+
+.screen--title .song-choice:not([disabled]):hover {
+  background: rgba(16, 22, 38, 0.65);
+  box-shadow: 0 0 18px rgba(126, 200, 227, 0.4);
+}
+
+/* ウォームアップの磨き（Issue #72）。深夜の湖が暗から現れる導入と、ソナーレ（湖に響くソナー）を思わせる
+   カウントインの波紋リングを加える。固定尺・自動進行・3-2-1の表示そのものは変えない。 */
+.screen--warmup {
+  position: relative;
+}
+
+/* 導入の直接の子（見出し・カウントイン）を覆いより前面へ置き、覆いに隠されないようにする。 */
+.screen--warmup > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 湖が現れる導入。暗い覆いを最初に敷き、1.5秒かけて晴らして背面の湖を見せる（一度だけ）。 */
+.screen--warmup::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--bg);
+  pointer-events: none;
+  animation: warmup-reveal 1500ms ease-out both;
+}
+
+@keyframes warmup-reveal {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* カウントインの数字。ソナーの波紋を思わせるリングを数字の背後にゆっくり広げる（湖のソナーレ）。 */
+.screen--warmup .screen__countdown {
+  position: relative;
+}
+
+.screen--warmup .screen__countdown::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.6em;
+  height: 1.6em;
+  margin: -0.8em 0 0 -0.8em;
+  z-index: -1;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: warmup-sonar 2000ms ease-out infinite;
+}
+
+@keyframes warmup-sonar {
+  from {
+    transform: scale(0.6);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* 動きを減らす設定の利用者には、入場フェード・導入の覆いの晴れ・ソナーの波紋を止める（既存の減衰揺れの配慮に合わせる）。
+   覆いは止めると不透明のまま残るため、湖を隠さないよう透明にしておく。 */
+@media (prefers-reduced-motion: reduce) {
+  .screen {
+    animation: none;
+  }
+  .screen--warmup::before {
+    animation: none;
+    opacity: 0;
+  }
+  .screen--warmup .screen__countdown::before {
+    animation: none;
+    display: none;
+  }
 }
 
 /* 画面高さが小さい端末（横向きの携帯や低いウィンドウ）では、題名画面の見出し・案内文と間隔を詰めて

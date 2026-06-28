@@ -23,6 +23,12 @@ export interface OperationSoundEngine {
   /** 操作音の有効・無効を切り替える。無効のあいだ playSlot は無音（playCalibrationCue は鳴る）。既定は有効。 */
   setEnabled(enabled: boolean): void;
   /**
+   * 操作音の音量を設定する（0以上1以下。0で無音、1で基準音量）。設定画面の音量つまみ（Issue #77）が使う。
+   * 較正音（playCalibrationCue）にも掛かる（マスター音量を介すため）。範囲外は0以上1以下へ丸める。
+   * AudioContext 起動前に呼んでも、起動時にこの値を反映する。
+   */
+  setVolume(volume: number): void;
+  /**
    * 投下中かどうかを切り替える。真のあいだ playSlot は少し大きく・存在感を増して発音する。既定は偽（通常）。
    * 破棄後は発音そのものが無音のため無作用。鳴っている音は再調整しない（以後の発音へ適用する）。
    * 呼び出し側（Issue #59）は投下の開始で真、投下窓の終了で偽へ必ず同期させる（状態の消し忘れによる音色の残留を防ぐ）。

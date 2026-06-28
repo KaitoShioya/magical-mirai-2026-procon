@@ -22,6 +22,9 @@ import {
   FOG_COLOR,
   FOG_DENSITY,
   LANTERN_CAPACITY_DEFAULT,
+  LANTERN_FINALE_BRIGHTNESS_OVERSHOOT,
+  LANTERN_FINALE_RISE_DURATION_SEC,
+  LANTERN_FINALE_STAGGER_TOTAL_SEC,
   LANTERN_SUNFLOWER_BRIGHTNESS_MAX,
   LANTERN_SUNFLOWER_BRIGHTNESS_MIN,
   LANTERN_SUNFLOWER_SCALE_MAX,
@@ -32,10 +35,17 @@ import {
   NIGHT_COLOR_HEX,
   PERF_LEVELS,
 } from "./constants";
+import { isFinaleComplete, type FinaleParams } from "../utils/finaleReveal";
 import { createPlaceholderGlow, type PlaceholderGlow } from "./placeholderGlow";
 import { clampPixelRatio, computeAspect } from "./viewport";
 import { createWater, type Water } from "./water";
 import { createBloomComposer, type BloomComposer, type BloomState } from "./bloom";
+import {
+  captureArtifactPixels,
+  encodeArtifactImage,
+  type ArtifactCaptureInput,
+  type ArtifactTextLines,
+} from "./artifactCapture";
 import { createNightLighting, type NightLighting } from "./lighting";
 import { createNeonNebulaSky, type NeonNebulaSky } from "./sky";
 import {
@@ -254,6 +264,12 @@ export interface RenderRoot {
   placeLantern(input: PlaceLanternInput): void;
   /** 持続配置の灯しを全て消去し0から積み直せるようにする（リトライ用）。WebGL が無い端末では何もしない。 */
   resetLanterns(): void;
+  /** 楽曲終了後の灯し立ち上げ演出（Issue #63）を始める。以後 update が実経過時間で点灯の盛り上がりを進める。
+   *  reduceMotion が真のとき（動きを減らす設定）は演出せず、灯しを基準輝度のまま保つ。WebGL が無い端末では何もしない。 */
+  beginLanternFinale(reduceMotion: boolean): void;
+  /** 現在のカメラ構図で成果物画像を作って返す（成果物タスク #69）。文字は統括が整形済みで渡す。
+   *  描画できない端末（WebGL 無し）では null を返す。 */
+  captureArtifact(input: ArtifactCaptureInput): Promise<Blob | null>;
   /** 診断・検証用の現在状態を返す。 */
   state(): RenderState;
   /** 後始末。リサイズ待ち受けの解除・GPU資源の解放・canvas の取り外しを行う。冪等。 */
@@ -408,6 +424,15 @@ export function createRenderRoot(
   let sunflower: SunflowerFigures | null = null;
   // 持続配置の灯しの現在数（蝶とひまわりで常に一致）。診断・目視で読む。
   let placedLanternCount = 0;
+  // 楽曲終了後の灯し立ち上げ演出（Issue #63）の状態。立ち上げ中だけ update が経過時間を積算し点灯の盛り上がりを進める。
+  let lanternFinaleActive = false;
+  let lanternFinaleElapsedSec = 0;
+  // 立ち上げ演出の時間と強さ（定数。曲非依存）。
+  const LANTERN_FINALE_PARAMS: FinaleParams = {
+    riseDurationSec: LANTERN_FINALE_RISE_DURATION_SEC,
+    staggerTotalSec: LANTERN_FINALE_STAGGER_TOTAL_SEC,
+    brightnessOvershoot: LANTERN_FINALE_BRIGHTNESS_OVERSHOOT,
+  };
   // ネオン星雲の夜空（Issue #205）。最背面に不透明で描き、使用中のカメラへ追従する。反射に映すためシーンへ加える。
   let sky: NeonNebulaSky | null = null;
   // 2次元層（Issue #15）。3次元の合成の後に最前面へ重ねる正射影カメラと専用シーン。
@@ -657,6 +682,18 @@ export function createRenderRoot(
     // 内部で軽く返る。統括は setCameraPose（カメラ姿勢更新）の後に本 update を呼ぶため、当該フレームの最新の
     // カメラ位置を読む。
     lanternButterfly?.update(camera.position);
+    // 楽曲終了後の灯し立ち上げ演出（Issue #63）。立ち上げ中だけ実経過時間を積算し、点灯の盛り上がりを蝶・ひまわりへ反映する。
+    // 近距離フェードの後に呼ぶ理由を先に述べる。立ち上げ中は近距離フェードより本演出を優先するため、後勝ちで上書きする。
+    if (lanternFinaleActive && lanternButterfly && sunflower) {
+      lanternFinaleElapsedSec += deltaSeconds;
+      const count = lanternButterfly.activeCount();
+      lanternButterfly.applyFinale(lanternFinaleElapsedSec, count, LANTERN_FINALE_PARAMS);
+      sunflower.applyFinale(lanternFinaleElapsedSec, count, LANTERN_FINALE_PARAMS);
+      // 全個体が基準輝度へ収束したら駆動を止める（毎フレームの再計算を続けない）。完了時は局所進行が1で倍率1.0のため基準に戻っている。
+      if (isFinaleComplete(lanternFinaleElapsedSec, LANTERN_FINALE_PARAMS)) {
+        lanternFinaleActive = false;
+      }
+    }
     // ネオン星雲の夜空（Issue #205）の星雲の漂いと星の瞬きの時刻を進める。
     sky?.update(deltaSeconds);
   }
@@ -898,6 +935,50 @@ export function createRenderRoot(
       lanternButterfly?.reset();
       sunflower?.setVisibleCount(0);
       placedLanternCount = 0;
+      // 立ち上げ演出の状態も初期化する（前回プレイの立ち上げを持ち越さない）。
+      lanternFinaleActive = false;
+      lanternFinaleElapsedSec = 0;
+    },
+    beginLanternFinale(reduceMotion: boolean): void {
+      // 灯しを作っていない（WebGL 無し）端末では何もしない。
+      if (!lanternButterfly || !sunflower) {
+        return;
+      }
+      // 動きを減らす設定では演出しない（灯しは既に基準輝度で灯っているため、そのまま情景として完成している）。
+      if (reduceMotion) {
+        lanternFinaleActive = false;
+        return;
+      }
+      lanternFinaleActive = true;
+      lanternFinaleElapsedSec = 0;
+    },
+    async captureArtifact(input: ArtifactCaptureInput): Promise<Blob | null> {
+      // 描画できない端末では画像を作れない。null を返し、呼び出し側はテキストのみで共有を成立させる。
+      if (!renderer || disposed) {
+        return null;
+      }
+      // 画素の読み戻しの間だけ画素密度倍率を1へ退避する。退避と読み戻しと復元はすべて同期で行い、await をまたがない。
+      // またがない理由を先に述べる。非同期の画像化（フォント読み込み・符号化）の最中に倍率が1のままだと、
+      // 毎フレームの画面描画が低い倍率で描かれてしまう。読み戻しを終えて倍率を戻してから画像化に入る。
+      const savedPixelRatio = renderer.getPixelRatio();
+      let captured;
+      try {
+        renderer.setPixelRatio(1);
+        captured = captureArtifactPixels({
+          renderer,
+          scene,
+          camera,
+          bloomEnabled,
+          postEffectEnabled,
+          viewportWidth: currentDisplayWidth,
+          viewportHeight: currentDisplayHeight,
+        });
+      } finally {
+        // 倍率を元へ戻す（setPixelRatio は内部で描画バッファを元の表示寸法へ再確保する）。
+        renderer.setPixelRatio(savedPixelRatio);
+      }
+      // 画像化（行反転・2次元キャンバス転写・文字合成・符号化）はレンダラに触れないため、ここからは非同期で進める。
+      return encodeArtifactImage(captured, input.lines);
     },
     resize,
     applyPerformanceLevel,

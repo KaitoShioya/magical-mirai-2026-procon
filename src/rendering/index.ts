@@ -8,6 +8,7 @@ export type {
   PlaceLanternInput,
 } from "./renderRoot";
 export type { BloomState } from "./bloom";
+export type { ArtifactCaptureInput, ArtifactTextLines } from "./artifactCapture";
 export type { CenterFigureStatus } from "./entities/centerFigure";
 export { createRenderRoot } from "./renderRoot";
 export { resolveReflectionResolution } from "./reflection";

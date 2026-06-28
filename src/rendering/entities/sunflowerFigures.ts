@@ -15,6 +15,11 @@ import { SUNFLOWER_SEED_COUNT, SUNFLOWER_SEED_COUNT_HIGH } from "../constants";
 import { createGlowPoints } from "./glowPoints";
 import { createSunflowerGeometry } from "./sunflowerGeometry";
 import { reactionToBrightness, reactionToScale } from "./sunflowerReactionMapping";
+import {
+  finaleLocalProgress,
+  finaleBrightnessMultiplier,
+  type FinaleParams,
+} from "../../utils/finaleReveal";
 
 /** 1個のひまわりの配置入力。大きさ強度・輝度強度は反応強度の0以上1以下の素の数値で、得点層の型は受け取らない。 */
 export interface SunflowerSetInput {
@@ -55,6 +60,12 @@ export interface SunflowerFigures {
   setVisibleCount(count: number): void;
   /** 設定を GPU へ反映する。 */
   commit(options?: { matrix?: boolean; color?: boolean }): void;
+  /**
+   * 楽曲終了後の灯し立ち上げ演出（Issue #63）を適用する。先頭から count 個の各個体へ、配置順に時間差を付けた
+   * 点灯の盛り上がり（輝度の一過性の増加）を、保持した基準輝度に乗じて反映し、GPU へ反映する。
+   * 位置と大きさは基準のまま変えない。完了時（局所進行が1）は基準輝度へ戻る。
+   */
+  applyFinale(elapsedSec: number, count: number, params: FinaleParams): void;
   /** 後始末。生成したジオメトリ・材質と発光点基盤を解放する。冪等。 */
   dispose(): void;
 }
@@ -82,6 +93,12 @@ export function createSunflowerFigures(options: {
 
   let disposed = false;
 
+  // 立ち上げ演出（#63）のため、各個体の基準（位置・大きさ・輝度）を保持する。applyFinale が基準輝度に倍率を乗じて
+  // 点灯の盛り上がりを作り、完了時は基準へ戻すために用いる。索引がそのままインスタンスのスロット索引に対応する。
+  const basePosition: { x: number; y: number; z: number }[] = [];
+  const baseScale: number[] = [];
+  const baseBrightness: number[] = [];
+
   function setInstance(index: number, input: SunflowerSetInput): void {
     // scale・brightness の明示指定があればそれを優先し、無ければ反応強度から写像する（既存の診断呼び出しは
     // 強度のみを渡すため従来どおり）。本タスクの灯し配置は実寸スケールと上品な輝度を明示で渡す。
@@ -89,6 +106,26 @@ export function createSunflowerFigures(options: {
     const brightness = input.brightness ?? reactionToBrightness(input.brightnessStrength);
     // 基準色は白（[1,1,1]）で渡す。図形内の橙の階調は頂点色が持ち、ここでは個体ごとの輝度だけを与える。
     glow.setInstance(index, { position: input.position, scale, colorRgb: [1, 1, 1], brightness });
+    // 立ち上げ演出のための基準を保持する。
+    basePosition[index] = { x: input.position.x, y: input.position.y, z: input.position.z };
+    baseScale[index] = scale;
+    baseBrightness[index] = brightness;
+  }
+
+  function applyFinale(elapsedSec: number, count: number, params: FinaleParams): void {
+    const limit = Math.min(count, baseBrightness.length);
+    for (let i = 0; i < limit; i += 1) {
+      const local = finaleLocalProgress(elapsedSec, i, limit, params);
+      const multiplier = finaleBrightnessMultiplier(local, params.brightnessOvershoot);
+      glow.setInstance(i, {
+        position: basePosition[i],
+        scale: baseScale[i],
+        colorRgb: [1, 1, 1],
+        brightness: baseBrightness[i] * multiplier,
+      });
+    }
+    // 輝度（色）だけが変わるため色の反映を指示する（位置・大きさの行列は基準のまま変えていない）。
+    glow.commit({ color: true });
   }
 
   return {
@@ -108,6 +145,7 @@ export function createSunflowerFigures(options: {
     commit(commitOptions?: { matrix?: boolean; color?: boolean }): void {
       glow.commit(commitOptions);
     },
+    applyFinale,
     dispose(): void {
       if (disposed) {
         return;

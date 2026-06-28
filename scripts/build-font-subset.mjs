@@ -24,7 +24,24 @@ const OUTPUT_PATH = path.join(root, "public/fonts/zen-kaku-gothic-new-subset.wof
 // 基本集合。歌詞は英語と全角記号が混在するため、印字可能なASCIIと全角の約物を加えて欠字を防ぐ。
 const FULLWIDTH_PUNCTUATION = "　＆？！…、。「」（）・〜ー";
 
-/** songmap の phrases[].text と基本集合から、サブセットに含める文字の集合を作る。 */
+// 成果物画像（成果物タスク #69）が焼き込む固定の文字。歌詞には現れない作品名・表示ラベル・出典の文字を欠かさないため、
+// このフォントの被覆対象に加える。これらは2次元キャンバスの文字描画（artifactCapture.ts）が同じサブセットフォントで描く。
+// 値の正典: 作品名=docs/idea/concept-final.md §1、出典=src/config/character.ts の PCL_CREDIT、曲名・作者=src/config/songs.ts。
+// 現在の成果物が表示する曲は TAKEOVER（曲名・作者ともASCIIで既出のASCII集合に含まれる）のみのため、ここでは
+// 作品名・表示ラベル・出典の固定文字だけを加える。他曲を成果物に表示する横展開では、その曲の曲名・作者の文字を
+// ここへ加えて再生成する（元フォントが収録しない文字があれば代替フォントへ回す）。
+const ARTIFACT_REQUIRED_TEXT = [
+  // 作品名と表示ラベル。
+  "あなたが奏でた湖",
+  "結果スコアランク上位",
+  // 出典（ピアプロ・キャラクター・ライセンスの必須4要素の全文。条件を満たす範囲で短縮しても欠字が出ないよう全文を含める）。
+  "この作品はピアプロ・キャラクター・ライセンスに基づいて初音ミクを描いています。",
+  "ピアプロ・キャラクター・ライセンス",
+  "© Crypton Future Media, INC. www.piapro.net",
+  "本作品はクリプトン・フューチャー・メディア株式会社のキャラクター利用のガイドラインに従います。",
+].join("");
+
+/** songmap の phrases[].text と基本集合と成果物の固定文字から、サブセットに含める文字の集合を作る。 */
 export function extractRequiredChars(songmap) {
   const chars = new Set();
   for (const phrase of songmap.phrases ?? []) {
@@ -37,6 +54,10 @@ export function extractRequiredChars(songmap) {
     chars.add(String.fromCodePoint(codePoint));
   }
   for (const char of FULLWIDTH_PUNCTUATION) {
+    chars.add(char);
+  }
+  // 成果物画像が焼き込む固定の文字（作品名・表示ラベル・出典・曲名・作者）。
+  for (const char of ARTIFACT_REQUIRED_TEXT) {
     chars.add(char);
   }
   return chars;

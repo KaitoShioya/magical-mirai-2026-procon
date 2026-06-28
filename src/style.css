@@ -118,6 +118,95 @@ body {
   box-shadow: 0 0 16px var(--accent);
 }
 
+.screen__button:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+/* 結果画面（成果物タスク #71）。背面のライブの3D情景を見せるため中身を上下に寄せ、中央は空けて情景を見せる。
+   スコアの欄を上に、ボタンを下に置く。欄とボタンだけが見えやすいよう半透明の下地を敷く。撮影モード（#68）のカメラ操作は
+   入力と同じく画面ルート（#app）で受け、空き領域のポインタはバブリングで撮影の結線へ届く（ボタンは data-no-camera で除く）。 */
+.screen--result {
+  justify-content: space-between;
+}
+
+.screen__result-panel {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(4px, 1.2vh, 10px);
+}
+
+/* hidden 属性での非表示を効かせる。理由を先に述べる。display:flex を持つ要素は hidden 属性の既定（display:none）を
+   上書きしてしまうため、hidden のときは明示的に display:none にして畳む操作を成立させる。 */
+.screen__result-panel[hidden] {
+  display: none;
+}
+
+.screen__result-panel--top {
+  position: relative;
+  padding: clamp(10px, 2vh, 18px);
+  background: rgba(5, 6, 10, 0.55);
+  border-radius: 12px;
+}
+
+/* スコア欄を畳む閉じるボタン。欄の右上に小さく置く。 */
+.screen__result-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.screen__result-close:hover {
+  color: #fff;
+  box-shadow: 0 0 12px var(--accent);
+}
+
+/* スコア欄を畳んだときの再表示ボタン。上部に小さく置き、撮影の邪魔をしない控えめな大きさにする。 */
+.screen__result-reopen {
+  min-width: 0;
+  min-height: 0;
+  padding: 8px 16px;
+  font-size: clamp(12px, 2vw, 14px);
+  background: rgba(5, 6, 10, 0.55);
+}
+
+.screen__result-panel--bottom {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(10px, 3vw, 20px);
+  /* 下端に常設するライセンス表記の帯（.attribution、実測およそ66画素）と「これはなに?」トグルにボタンが重ならないよう、
+     下に余白を確保してボタンを帯の上へ持ち上げる。帯は画面が狭いほど折り返して高くなるため、余裕を見た余白にする。 */
+  margin-bottom: clamp(56px, 11vh, 84px);
+}
+
+.screen__result-heading {
+  font-size: clamp(18px, 3.4vw, 30px);
+  margin: 0;
+}
+
+.screen__result-hint {
+  opacity: 0.85;
+}
+
+.screen__result-disclaimer {
+  font-size: clamp(11px, 1.6vw, 13px);
+  opacity: 0.8;
+}
+
 /* 題名画面の課題曲一覧（Issue #5）。題名画面だけが使うクラスのため、ここの変更は他画面に波及しない。
    幅に応じて列数が変わる適応グリッド。縦長の携帯では1列、幅が広いほど2〜3列になり、6曲が少ない行数で
    可視領域に収まる。min(100%, 14rem) により、極端に狭い幅でも列が100%に縮んで横はみ出しを防ぐ。 */

@@ -27,7 +27,16 @@ import { createCreditsView, type CreditsView } from "./credits/creditsView";
 import { createCalibrationView, type CalibrationView } from "./calibration/calibrationView";
 import { createHowToView, type HowToView } from "./howTo/howToView";
 import { createOperationSoundEngine } from "../audio";
-import { loadCalibrationOffsetMs, saveCalibrationOffsetMs, type FrameTimeSample } from "../scoring";
+import {
+  loadCalibrationOffsetMs,
+  saveCalibrationOffsetMs,
+  formatResultText,
+  type FrameTimeSample,
+  type ScoreResult,
+} from "../scoring";
+import { APP_WORK_TITLE } from "../config/work";
+import { shareArtifact, composeShareText, createBrowserShareEnvironment } from "./share";
+import { createPhotoCamera } from "./photoCamera";
 import {
   takeoverTypographyChart,
   TAKEOVER_DEFAULT_READING_PIXEL_HEIGHT,
@@ -225,6 +234,11 @@ export function createApp(
   // 画面から抜けるときに何もしない受け口へ戻す。プレイ画面が組み立て前・WebGL が無い等で未登録のあいだは何もしない。
   let tapRippleSink: ((slotIndex0: number) => void) | null = null;
 
+  // 楽曲終了時に一度だけ凍結する確定スコア（成果物タスク #71）。結果画面の表示と成果物画像の双方がこの同じ凍結値を
+  // 使うことで、画面表示の数値と画像内の数値を一致させる。凍結する理由を先に述べる。session は次回プレイで初期化される
+  // ため、結果画面の表示中に再計算せず終了の瞬間の値を保持する。
+  let lastResult: ScoreResult | null = null;
+
   // プレイ進行の判定・採点・音・光の統合（Issue #59）。曲プロファイルを渡し、副作用の出口（操作音・反応光点・
   // フレーム時刻標本・較正値）を注入する。較正値はプレイ開始ごとに読み直すため関数で渡す。
   const session = createPlaySession({
@@ -244,6 +258,16 @@ export function createApp(
   const input = createInput({
     target: root,
     onReaction: (reaction) => session.onReaction(reaction),
+  });
+
+  // 撮影モード（Issue #68）。結果画面でのみ有効化し、画面の指の操作でカメラ姿勢を動かす。判定用の入力とは別系統で、
+  // 得点状態へ触れない。計算結果のカメラ姿勢は renderRoot.setCameraPose で反映する。プレイ中は inPlayPhase の
+  // カメラ軌跡駆動だけがカメラへ書き込むため、結果画面（inPlayPhase 偽）で撮影モードと競合しない。
+  const photoCamera = createPhotoCamera({
+    target: root,
+    applyPose: (pose) => {
+      renderRoot.setCameraPose(pose.position, pose.target);
+    },
   });
 
   function enterPlay(): void {
@@ -318,6 +342,64 @@ export function createApp(
       // ランク添字（rankFromPercentile・rankOrdinal 由来）を供給する。
       currentRankGaugeState: () => session.rankGaugeState(),
     },
+    // 結果画面の結線（成果物タスク #71）。確定スコアの写しと作品情報を渡す。撮影（#68）・画像化（#69）・共有（#70）の
+    // 中身は後続の段階で結線する。現時点では撮影は何もせず、画像化は描画前提が整うまで null、共有は何もしない。
+    result: {
+      getFinalResult: () =>
+        lastResult === null
+          ? null
+          : {
+              totalScore: lastResult.totalScore,
+              rank: lastResult.rank,
+              percentile: lastResult.percentile,
+            },
+      appTitle: APP_WORK_TITLE,
+      songTitle: song.title,
+      songArtist: song.artist,
+      beginPhotoMode: () => {
+        // 結果画面に入ったら、軌跡の終端の構図を初期姿勢にして撮影モードを始める（Issue #68）。
+        photoCamera.activate(cameraTrajectory.poseAt(cameraTrajectory.endTimeMs));
+      },
+      endPhotoMode: () => {
+        photoCamera.deactivate();
+      },
+      captureArtifact: () => {
+        // 成果物画像に焼き込む文字を整形して描画基盤へ渡す（成果物タスク #69）。確定スコアは凍結値を使う。
+        // 表示文字列は結果画面と同じ formatResultText を通すため、画面表示と画像内の数値が一致する。
+        const text = formatResultText(
+          lastResult ?? { totalScore: Number.NaN, rank: "", percentile: Number.NaN }
+        );
+        const credit = MIKU_CHARACTER.credit;
+        return renderRoot.captureArtifact({
+          lines: {
+            workTitle: APP_WORK_TITLE,
+            songLine: `${song.title} / ${song.artist}`,
+            scoreText: `スコア ${text.scoreText}`,
+            rankText: `ランク ${text.rankText}`,
+            percentileText: text.percentileText,
+            // ミクの出典を画像内に焼き込む（§16 の出典明示）。権利者の社名とライセンス名を1行へ凝縮する。
+            creditText: `初音ミク ${credit.rightsHolder}　${credit.licenseName}`,
+          },
+        });
+      },
+      shareArtifact: async (blob: Blob | null) => {
+        // 共有・保存に添えるテキストを組み立てる（成果物タスク #70）。スコア・ランクは凍結値を整形して用いる。
+        const text = formatResultText(
+          lastResult ?? { totalScore: Number.NaN, rank: "", percentile: Number.NaN }
+        );
+        const shareText = composeShareText({
+          appTitle: APP_WORK_TITLE,
+          songTitle: song.title,
+          songArtist: song.artist,
+          scoreText: text.scoreText,
+          rankText: text.rankText,
+        });
+        await shareArtifact(
+          { blob, text: shareText, baseFileName: "screenshot" },
+          createBrowserShareEnvironment()
+        );
+      },
+    },
   };
 
   machine.start("title", context);
@@ -354,9 +436,13 @@ export function createApp(
     if (playback.hasEnded()) {
       inPlayPhase = false;
       overlays.hideTapToPlay();
-      // 入力を無効化する（結果画面ではタップを判定・採点へ流さない）。最終スコアは session.finalResult() で
-      // 取得でき、結果画面への引き渡しは結果画面の実装（Issue #74）が結線する。
+      // 入力を無効化する（結果画面ではタップを判定・採点へ流さない）。
       input.setActive(false);
+      // 最終スコアをこの地点で一度だけ凍結する（成果物タスク #71）。結果画面の表示と成果物画像が同じ値を使う。
+      lastResult = session.finalResult();
+      // 楽曲終了後の灯し立ち上げ演出（Issue #63）を始める。既に灯っている灯しに点灯の盛り上がりを重ねて情景を完成させる。
+      // 動きを減らす設定では演出せず基準輝度のまま保つ。
+      renderRoot.beginLanternFinale(reduceMotionQuery.matches);
       machine.requestTransition("result");
     }
   }
@@ -525,6 +611,8 @@ export function createApp(
       operationSound.dispose();
       // 入力（Issue #59）の待ち受けを解除する。
       input.dispose();
+      // 撮影モード（Issue #68）の待ち受けを解除する。
+      photoCamera.dispose();
       playback.dispose();
       renderRoot.dispose();
       // 確定前に破棄された場合に備え、renderOverlays が付けた inert 属性を外す。

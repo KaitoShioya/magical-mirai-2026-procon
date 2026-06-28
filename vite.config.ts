@@ -70,6 +70,7 @@ export default defineConfig(({ mode }) => {
         rankGauge: "rank-gauge.html",
         scoreHistory: "score-history.html",
         nightSky: "night-sky.html",
+        artifact: "artifact.html",
       };
 
   return {

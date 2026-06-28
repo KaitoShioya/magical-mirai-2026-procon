@@ -80,6 +80,13 @@ export {
   type Rank,
 } from "./rank";
 export { summarizeScore, type ScoreResult } from "./scoreResult";
+export {
+  formatResultScore,
+  formatResultRank,
+  formatResultPercentile,
+  formatResultText,
+  type ResultDisplayText,
+} from "./resultText";
 
 // --- 目的関数統合（Issue #56） ---
 export {

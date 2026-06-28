@@ -328,6 +328,12 @@ declare global {
       petalCount: number;
     };
     /**
+     * 検証用の成果物画像書き出し診断アクセサ（Issue #69）。成果物診断ページ（artifact.html）だけが取り付ける。
+     * 現在のカメラ構図で成果物画像を作って復号し、寸法・容量・形式・明るさ・文字領域の分布を返す。
+     * scripts/rendering-artifact-smoke.mjs が取得する。共有型が rendering に依存しないよう素の構造で宣言する。
+     */
+    __artifactCapture?: () => Promise<unknown>;
+    /**
      * 検証用の層合成診断アクセサ。層合成の受け入れ診断ページ（layer-composite.html）だけが取り付ける。
      * 本番と同じ合成手順（3次元の合成→深度のみ消去→正射影で2次元層を最前面）で数フレーム描いた直後に、
      * 画面の画素を読み戻したスナップショットを返す。scripts/rendering-layer-smoke.mjs が取得する。

@@ -188,7 +188,7 @@ try {
   }
 
   // 4.6 結果画面が今回のスコア・ランク・百分位・自己ベスト履歴を表示している（Issue #74 受け入れ基準）。
-  //     各値は data-role="score" / "rank" / "percentile" の要素で、自己ベスト履歴は .result-history に描かれる。
+  //     各値は data-role="result-score" / "result-rank" / "result-percentile" の要素で、自己ベスト履歴は .result-history に描かれる。
   const resultContent = await page.evaluate(() => {
     const root = document.querySelector('[data-screen="result"]');
     if (!root) {
@@ -199,9 +199,9 @@ try {
       return element ? element.textContent : null;
     };
     return {
-      score: text("score"),
-      rank: text("rank"),
-      percentile: text("percentile"),
+      score: text("result-score"),
+      rank: text("result-rank"),
+      percentile: text("result-percentile"),
       hasHistory: Boolean(root.querySelector(".result-history")),
       hasReplay: Boolean(root.querySelector('[data-action="replay"]')),
     };

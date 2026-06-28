@@ -135,63 +135,10 @@ body {
   box-shadow: 0 0 16px var(--accent);
 }
 
-/* 結果画面（Issue #74）。地を透過させ、プレイ中に配置された灯し（蝶・ひまわり）の3Dシーンを
-   背景の成果物プレビューとして見せる（成果物のPNG書き出し・撮影モード・楽曲終了後の灯し一括演出は別Issueの範囲）。
-   下方向の余白を増やす理由を先に述べる。画面下端には初音ミクの出典バッジ（.attribution）が固定表示され（規約で常時表示）、
-   中央寄せの結果パネルがこれと重なり得る。出典バッジは小さな文字で折り返しても高々2〜3行（およそ48画素）であり、
-   安全領域（safe-area）を足して余白を確保すれば重ならないため、画面下端からの余白を出典バッジぶん広げる。 */
-.screen--result {
-  background: transparent;
-  padding-bottom: calc(max(env(safe-area-inset-bottom), 12px) + 56px);
-}
-
-/* 得点群の半透明パネル。採用値の理由を先に述べる。深夜の湖の暗い背景の上で文字を読ませるため、地に対し
-   不透明度0.55の暗色面を敷く（0.55は、背景の情景を透かしつつ文字の可読性を保つ均衡として採る）。3Dの情景を
-   完全には隠さないよう最大幅を640px（クレジットパネルの本文最大幅と同値で既存の読み幅に揃える）に収め、中央へ置く。 */
-.result-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(8px, 1.6vh, 14px);
-  width: 100%;
-  max-width: 640px;
-  padding: clamp(16px, 3vh, 28px) clamp(16px, 4vw, 32px);
-  background: rgba(8, 12, 24, 0.55);
-  border: 1px solid var(--accent);
-  border-radius: 12px;
-}
-
-/* スコア・ランク・百分位の1項目。見出しは小さく、値を大きく見せる。 */
-.result-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.result-stat__label {
-  font-size: clamp(11px, 1.8vw, 14px);
-  color: var(--text-dim);
-}
-
-.result-stat__value {
-  font-size: clamp(24px, 5vw, 44px);
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 0 16px var(--accent2);
-}
-
-/* 自己ベスト・成長履歴の差し込み先。表示部品（src/ui/scoreHistoryView）が内側を描く。 */
+/* 自己ベスト・成長履歴の差し込み先（Issue #67・#74）。結果画面の地・上下の欄・ボタンの体裁は成果物タスク側の
+   クラス（.screen--result・.screen__result-*、後方で定義）が担い、ここは自己ベスト履歴の差し込み先と内側の体裁だけを持つ。 */
 .result-history {
   width: 100%;
-}
-
-/* 「もう一度」「タイトルに戻る」を横に並べ、狭い幅では縦に折り返す。 */
-.result-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: clamp(8px, 2vw, 16px);
 }
 
 /* 結果画面に載せる自己ベスト・成長履歴（Issue #67・#74）の体裁。表示部品 src/ui/scoreHistoryView が描く構造へ与える。
@@ -431,6 +378,93 @@ body[data-phase="play"] .calibration-toggle,
 body[data-phase="play"] .howto-toggle,
 body[data-phase="play"] .settings-toggle {
   display: none;
+.screen__button:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+/* 結果画面（成果物タスク #71）。背面のライブの3D情景を見せるため中身を上下に寄せ、中央は空けて情景を見せる。
+   スコアの欄を上に、ボタンを下に置く。欄とボタンだけが見えやすいよう半透明の下地を敷く。撮影モード（#68）のカメラ操作は
+   入力と同じく画面ルート（#app）で受け、空き領域のポインタはバブリングで撮影の結線へ届く（ボタンは data-no-camera で除く）。 */
+.screen--result {
+  justify-content: space-between;
+}
+
+.screen__result-panel {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(4px, 1.2vh, 10px);
+}
+
+/* hidden 属性での非表示を効かせる。理由を先に述べる。display:flex を持つ要素は hidden 属性の既定（display:none）を
+   上書きしてしまうため、hidden のときは明示的に display:none にして畳む操作を成立させる。 */
+.screen__result-panel[hidden] {
+  display: none;
+}
+
+.screen__result-panel--top {
+  position: relative;
+  padding: clamp(10px, 2vh, 18px);
+  background: rgba(5, 6, 10, 0.55);
+  border-radius: 12px;
+}
+
+/* スコア欄を畳む閉じるボタン。欄の右上に小さく置く。 */
+.screen__result-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.screen__result-close:hover {
+  color: #fff;
+  box-shadow: 0 0 12px var(--accent);
+}
+
+/* スコア欄を畳んだときの再表示ボタン。上部に小さく置き、撮影の邪魔をしない控えめな大きさにする。 */
+.screen__result-reopen {
+  min-width: 0;
+  min-height: 0;
+  padding: 8px 16px;
+  font-size: clamp(12px, 2vw, 14px);
+  background: rgba(5, 6, 10, 0.55);
+}
+
+.screen__result-panel--bottom {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(10px, 3vw, 20px);
+  /* 下端に常設するライセンス表記の帯（.attribution、実測およそ66画素）と「これはなに?」トグルにボタンが重ならないよう、
+     下に余白を確保してボタンを帯の上へ持ち上げる。帯は画面が狭いほど折り返して高くなるため、余裕を見た余白にする。 */
+  margin-bottom: clamp(56px, 11vh, 84px);
+}
+
+.screen__result-heading {
+  font-size: clamp(18px, 3.4vw, 30px);
+  margin: 0;
+}
+
+.screen__result-hint {
+  opacity: 0.85;
+}
+
+.screen__result-disclaimer {
+  font-size: clamp(11px, 1.6vw, 13px);
+  opacity: 0.8;
 }
 
 /* 題名画面の課題曲一覧（Issue #5）。題名画面だけが使うクラスのため、ここの変更は他画面に波及しない。

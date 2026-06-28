@@ -36,7 +36,8 @@ export default defineConfig(({ mode }) => {
   // pitch-axis.html は本編左側のレーンガイド（#58・#202）の受け入れ診断（レーンの仕切り線と単一判定線の表示・寸法変更追従）、
   // rank-gauge.html はランク専用ゲージ（#65）の受け入れ診断（判定レーン上の縦バーが百分位で満ち、色が C→B→A→S へ
   // OKLCH 補間で滑らかに移ること・ランク文字の併記）、
-  // score-history.html は自己ベスト履歴（#67）の受け入れ診断（複数回記録での自己ベスト更新・成長の横棒表示・自己ベスト棒の強調）の
+  // score-history.html は自己ベスト履歴（#67）の受け入れ診断（複数回記録での自己ベスト更新・成長の横棒表示・自己ベスト棒の強調）、
+  // night-sky.html はネオン星雲の夜空（#205）の受け入れ診断（夜空の組み込み・反射への映り込み・空と地形の輝度境界）の
   // 入口で、いずれも本番では配信しない。
   const input: Record<string, string> = deployAppOnly
     ? { main: "index.html" }
@@ -68,6 +69,7 @@ export default defineConfig(({ mode }) => {
         pitchAxis: "pitch-axis.html",
         rankGauge: "rank-gauge.html",
         scoreHistory: "score-history.html",
+        nightSky: "night-sky.html",
       };
 
   return {

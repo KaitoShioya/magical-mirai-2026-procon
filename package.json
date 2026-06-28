@@ -38,6 +38,7 @@
     "smoke:rank-gauge": "node scripts/rendering-rank-gauge-smoke.mjs",
     "smoke:audio": "node scripts/audio-smoke.mjs",
     "smoke:score-history": "node scripts/score-history-smoke.mjs",
+    "smoke:night-sky": "node scripts/rendering-night-sky-smoke.mjs",
     "smoke:readability": "node scripts/readability-smoke.mjs",
     "quality": "node scripts/quality-harness.mjs --mode=local",
     "quality:cloud": "node scripts/quality-harness.mjs --mode=cloud",

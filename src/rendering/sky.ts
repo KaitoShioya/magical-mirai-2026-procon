@@ -167,26 +167,25 @@ const FRAGMENT_SHADER = /* glsl */ `
     return total;
   }
 
-  // 天の川のような帯のマスク（帯の中心で1、帯から外れると0）。低周波の値雑音で帯の濃淡を散らし一様な帯を避ける。
+  // 天の川のような帯のマスク（帯の中心で1、帯から外れると0）。方向ベクトルと帯の法線の内積だけで求め、値雑音を
+  // 使わず軽くする（帯の濃淡の散らしは星雲自身の濃淡に委ねる）。
   float bandMask( vec3 dir ) {
     vec3 axis = normalize( BAND_AXIS );
     float d = abs( dot( dir, axis ) );
-    float m = 1.0 - smoothstep( 0.0, BAND_HALF_WIDTH, d );
-    float v = fbm( dir * 1.1 + vec3( 20.0 ) );
-    return m * mix( 0.6, 1.0, v );
+    return 1.0 - smoothstep( 0.0, BAND_HALF_WIDTH, d );
   }
 
   // ドメインワーピングで繊維状の星雲を求める。連続した薄いヘイズと明るい繊維を別々に返し（out 引数）、塵レーンと色も
-  // 反映する。戻り値はヘイズと繊維を合わせた濃さ（呼び出し側は色を掛ける）。
+  // 反映する。値雑音の評価回数を抑えるため、歪みは2成分（横方向）で作り、塵レーンは安価な単一の値雑音で求める。
   void nebula( vec3 dir, out vec3 nebulaColor, out float haze, out float filament ) {
     vec3 flow = vec3( uTime * uNebulaFlowSpeed, uTime * uNebulaFlowSpeed * 0.6, 0.0 );
     vec3 p = dir * NEBULA_BASE_SCALE + flow;
     // 座標を別の値雑音で歪める（ドメインワーピング）。歪めた座標で濃さを評価すると繊維状のうねりが出る。
-    vec3 warp = vec3( fbm( p ), fbm( p + vec3( 5.2, 1.3, 2.7 ) ), fbm( p + vec3( 1.7, 9.2, 4.4 ) ) );
-    vec3 warped = p + NEBULA_WARP * warp;
+    vec2 warp = vec2( fbm( p ), fbm( p + vec3( 5.2, 1.3, 2.7 ) ) );
+    vec3 warped = p + NEBULA_WARP * vec3( warp, 0.0 );
     float base = fbm( warped );
-    // 暗い塵のレーン（別の値雑音が高い所を暗くする）。
-    float lane = fbm( p * 2.3 + vec3( 3.3 ) );
+    // 暗い塵のレーン（単一の値雑音が高い所を暗くする。fbm より安価）。
+    float lane = valueNoise( p * 2.3 + vec3( 3.3 ) );
     float dustMask = 1.0 - NEBULA_DUST * smoothstep( 0.4, 0.85, lane );
     // 連続した薄いヘイズ（広い範囲を途切れず覆う色霧）と、その上に重なる明るい繊維（濃い芯のうねり）。
     haze = smoothstep( 0.25, 0.75, base ) * dustMask;

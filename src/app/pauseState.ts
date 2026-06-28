@@ -72,9 +72,10 @@ export function createPauseState(deps: PauseStateDeps): PauseState {
     setPlayPhase(active: boolean): void {
       playPhaseActive = active;
       if (!active) {
-        // プレイを抜けるときは一時停止の状態を持ち越さない。
+        // プレイを抜けるときは一時停止の状態を持ち越さない。停止の契機も初期化して、次のプレイへ古い値を残さない。
         phase = "running";
         accumulatedMs = 0;
+        resumeAutomatically = false;
       }
     },
 
@@ -109,6 +110,8 @@ export function createPauseState(deps: PauseStateDeps): PauseState {
       if (accumulatedMs >= COUNT_IN_TOTAL_MS) {
         phase = "running";
         accumulatedMs = 0;
+        // 実行中へ戻るため、停止の契機を初期化する（次の停止までは判定に使わない値だが、古い値を残さない）。
+        resumeAutomatically = false;
         deps.resumePlayback();
         deps.setInputActive(true);
       }

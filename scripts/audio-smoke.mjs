@@ -118,30 +118,53 @@ try {
   fail("30音同時の検査で上限維持または収束が確認できない");
 }
 
-// 5. 投下時に明るく聞こえる（投下時の周波数重心が通常時より高い）。倍音を1層重ねることで重心が上がることを、
-//    共有出力グラフを通したオフライン描画で測って確認する。基準1.05は、見積もり上昇率約9パーセントより十分低く、
-//    測定・数値計算の誤差より十分高い余裕として採る。
+// 5. 水滴音の客観測定（クリップしないこと・直流の偏りが小さいこと・単音の大きさの記録）。
+//    共有出力グラフ（残響・圧縮・ソフトクリップ込み）を通してオフライン描画した測定値を読む。
+// 最大振幅の上限。0.95を採る理由を先に述べる。最終段の柔らかい飽和制限の天井0.99により出力は構造的に1.0未満に収まるが、
+// 合否はそれより低い0.95に置く。これにより、現在の最悪値が余裕をもって合格しつつ、将来の音量や残響などの調整で頂点が
+// 0.95へ近づいた時点で（実際にクリップする前に）検査が捕捉できる。
+const CLIP_PEAK_MAX = 0.95;
+// 直流の偏りの上限（最大振幅に対する比）。0.1を採る理由を先に述べる。短い水滴音の波形は非対称な過渡で平均が
+// わずかに偏るのは正常であり、その正常な偏りが合格する余裕として0.1を採る。配線の誤りなどによる持続的な直流の偏りは
+// これを大きく超えるため、正常を許しつつ誤りを捕捉できる。
+const DC_RATIO_MAX = 0.1;
 try {
-  const brightness = await page.evaluate(() => window.__audioBrightness());
-  if (
-    !brightness ||
-    brightness.normalCentroid === null ||
-    brightness.deployCentroid === null
-  ) {
-    fail("明るさ測定に失敗: " + (brightness && brightness.error ? brightness.error : "結果なし"));
-  } else if (!(brightness.deployCentroid > brightness.normalCentroid * 1.05)) {
-    fail(
-      `投下時の周波数重心が通常時の1.05倍を超えない: 通常${brightness.normalCentroid.toFixed(1)}Hz ` +
-        `投下${brightness.deployCentroid.toFixed(1)}Hz`
-    );
+  const stats = await page.evaluate(() => window.__audioPercussionStats());
+  if (!stats || stats.manyPeak === null) {
+    fail("水滴音測定に失敗: " + (stats && stats.error ? stats.error : "結果なし"));
   } else {
-    ok(
-      `投下時の周波数重心が通常時より高い: 通常${brightness.normalCentroid.toFixed(1)}Hz ` +
-        `投下${brightness.deployCentroid.toFixed(1)}Hz`
-    );
+    // 多数同時（同時発音上限ぶん）の重なりの最悪条件でクリップしない（合否条件）。
+    if (!(stats.manyPeak <= CLIP_PEAK_MAX)) {
+      fail(`多数同時の最大振幅が上限を超える: 最大振幅${stats.manyPeak.toFixed(3)}（${CLIP_PEAK_MAX}以下が必要）`);
+    } else {
+      ok(`多数同時でクリップしない: 最大振幅${stats.manyPeak.toFixed(3)}`);
+    }
+    // 直流の偏りが小さい（合否条件）。
+    if (!(stats.manyDcRatio <= DC_RATIO_MAX)) {
+      fail(`直流の偏りが大きい: 比${stats.manyDcRatio.toFixed(3)}（${DC_RATIO_MAX}以下が必要）`);
+    } else {
+      ok(`直流の偏りが小さい: 比${stats.manyDcRatio.toFixed(3)}`);
+    }
+    // 単音の最大振幅・二乗平均平方根は記録（参考）に留め、合否条件にはしない（聞き取りやすさの音量調整の材料）。
+    console.log(`記録（参考）単音: 振幅${stats.singlePeak.toFixed(3)}/大きさ${stats.singleRms.toFixed(4)}`);
   }
 } catch (error) {
-  fail("明るさ測定の呼び出しで例外: " + error.message);
+  fail("水滴音測定の呼び出しで例外: " + error.message);
+}
+
+// 6. 較正音が鳴る（同時発音管理に1音が加わる）。較正音は操作音の有効・無効に関わらず鳴ることを確認する。
+try {
+  await waitActiveZero();
+  // 操作音を無効にしてから較正音を鳴らし、直後の発音中の数が増えることを同期に確認する（鳴り終わりとの競合を避ける）。
+  await page.getByText("操作音 OFF/ON").click();
+  const sounding = await page.evaluate(() => window.__audioPlayCalibrationCue());
+  if (!(sounding >= 1)) {
+    fail(`較正音を鳴らしても発音中が増えない（操作音が無効）: 発音中${sounding}`);
+  } else {
+    ok("較正音が鳴る（操作音が無効でも発音中に加わる）");
+  }
+} catch (error) {
+  fail("較正音の確認で例外: " + error.message);
 }
 
 await browser.close();

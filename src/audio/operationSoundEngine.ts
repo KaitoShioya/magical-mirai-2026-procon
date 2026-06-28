@@ -1,14 +1,17 @@
 // 操作音エンジン本体。AudioContext の遅延生成と起動、共有出力グラフの構築、発音、同時発音管理、
 // 有効・無効の切替、投下中の音色切替、破棄の競合防御を担う。
 // 時計は AudioContext.currentTime のみを使い、ゲームの時計（再生位置）とは混同しない（architecture §6）。
-// 曲データ（profiles）は import せず、スロットの音高は setSlotPitches で、投下中かどうかは setDeployTimbre で
-// 外から受け取る（architecture §5）。
+// どのレーンを叩いても同じ単一の「水滴が弾ける音」を鳴らす（droplet.ts）。曲データ（profiles）は import しない。
 
 import type { EngineContextState, OperationSoundEngine } from "./types";
-import { midiToFrequency, sanitizeSlotPitches, slotToMidi } from "./pitch";
 import { createVoicePool } from "./voicePool";
-import { computeNaturalEnvelope, computeStealEnvelope } from "./envelope";
-import { buildOutputGraph, buildVoice, type VoiceNodes } from "./voiceGraph";
+import { computeStealEnvelope } from "./envelope";
+import { buildOutputGraph, type OutputGraphInputs, type VoiceNodes } from "./voiceGraph";
+import {
+  buildDropletVoice,
+  buildCalibrationVoice,
+  OPERATION_LANE_COUNT,
+} from "./droplet";
 import { SYNTH_POLYPHONY_MAX, ENGINE_STATE_UNINITIALIZED } from "./synthConstants";
 
 // 標準の AudioContext と、古い Safari の接頭辞つき実装の両方を受け付ける。
@@ -24,15 +27,14 @@ function resolveAudioContextConstructor(): typeof AudioContext | null {
 
 export function createOperationSoundEngine(): OperationSoundEngine {
   let context: AudioContext | null = null;
-  // 共有部の入口（使い捨ての音はここへ接続する）。
-  let inputNode: BiquadFilterNode | null = null;
+  // 共有出力グラフの2つの入口（直接音と残響音）。各音はこの2つへ接続する。
+  let graph: OutputGraphInputs | null = null;
   let unlockPromise: Promise<EngineContextState> | null = null;
 
   let enabled = true;
-  // 投下中かどうか。真のあいだ、以後の発音に倍音層を重ねる。既定は偽（通常）。
+  // 投下中かどうか。真のあいだ、以後の発音を少し大きく・存在感を増す。既定は偽（通常）。
   let deployTimbre = false;
   let disposed = false;
-  let slotPitches: number[] = [];
 
   const pool = createVoicePool();
   const voices = new Map<number, VoiceNodes>();
@@ -53,11 +55,11 @@ export function createOperationSoundEngine(): OperationSoundEngine {
     }
   }
 
-  // 1音ぶんの全節点（基本オシレーター・倍音オシレーター・音量節点・補助節点）を切断する。
+  // 1音ぶんの全節点（音源・音量節点・補助節点）を切断する。
   function disconnectVoice(voice: VoiceNodes): void {
     try {
-      for (const oscillator of voice.oscillators) {
-        oscillator.disconnect();
+      for (const source of voice.sources) {
+        source.disconnect();
       }
       voice.gain.disconnect();
       for (const node of voice.extraNodes) {
@@ -86,66 +88,37 @@ export function createOperationSoundEngine(): OperationSoundEngine {
     const voice = voices.get(oldestId);
     if (!voice) {
       // 不変条件（プールの識別子と節点が常に対応する）が万一崩れた場合の自己修復。
-      // 節点が無ければ消音も停止もできず、消音中へ移すと取り除く契機（再生終了通知）が来ないため、
-      // プールからも取り除いて発音中の数と接続中の数の食い違いを残さない。
       pool.remove(oldestId);
       return;
     }
     pool.markMuting(oldestId);
     const now = context.currentTime;
     const steal = computeStealEnvelope(now);
-    // 予約済みの指数減衰を取り消し、その瞬間の音量を始点に固定してから0へ線形に下げる。
-    // 音量節点は基本音と倍音の双方を駆動するため、この消音は両成分に効く。
+    // 予約済みの音量変化を取り消し、その瞬間の音量を始点に固定してから0へ線形に下げる。
+    // 根の音量節点は全成分を束ねるため、この消音は全成分に効く。
     // 始点固定を挟むのは、線形の補間が「直前に予約したイベントの値」を始点にする仕様への対処である。
     voice.gain.gain.cancelScheduledValues(now);
     voice.gain.gain.setValueAtTime(voice.gain.gain.value, now);
     voice.gain.gain.linearRampToValueAtTime(0, steal.fadeEndTime);
-    // 基本音と倍音の全オシレーターの停止を消音終了の少し後へ再予約する
-    // （停止の予約は最後の呼び出しが有効で、より早い時刻へ移せる）。
-    for (const oscillator of voice.oscillators) {
+    // 全成分（合図用音源を含む）の停止を消音終了の少し後へ再予約する（停止の予約は最後の呼び出しが有効）。
+    for (const source of voice.sources) {
       try {
-        oscillator.stop(steal.stopTime);
+        source.stop(steal.stopTime);
       } catch {
         // すでに停止予約済みでも安全に進める。
       }
     }
   }
 
-  function trigger(frequencyHz: number): void {
-    if (disposed || !enabled || !context || !inputNode || context.state !== "running") {
-      return;
-    }
-    // 発音中が上限に達していれば、最古の発音中を消してから新規を加える。
-    if (pool.soundingCount >= SYNTH_POLYPHONY_MAX) {
-      stealOldestVoice();
-    }
-
-    const ctx = context;
-    // 投下中なら倍音層を重ねる。鳴っている音は再調整せず、以後の発音にだけ適用する。
-    const voice = buildVoice(ctx, inputNode, frequencyHz, deployTimbre);
-
-    const env = computeNaturalEnvelope(ctx.currentTime);
-    // 立ち上げは0から頂点へ直線、減衰は頂点（正の値）から微小値へ指数。指数は0を始点にしない。
-    // 音量節点が基本音と倍音の双方を駆動するため、この包絡は両成分に共通で効く。
-    voice.gain.gain.setValueAtTime(0, env.startTime);
-    voice.gain.gain.linearRampToValueAtTime(env.peakGain, env.attackEndTime);
-    voice.gain.gain.exponentialRampToValueAtTime(env.endGain, env.decayEndTime);
-
-    // 基本音と倍音は同一時刻で開始・停止する。
-    for (const oscillator of voice.oscillators) {
-      oscillator.start(env.startTime);
-      oscillator.stop(env.stopTime);
-    }
-
+  // 組み上げた1音を同時発音管理へ登録し、再生終了通知で後始末する。
+  // 添字0は無音の合図用音源で、音全体の停止時刻まで鳴る。その終了通知で一度だけ後始末する。
+  // 破棄中は破棄側で一括処理するため何もしない（二重処理を避ける）。
+  function registerVoice(voice: VoiceNodes, startTime: number): void {
     const id = nextVoiceId;
     nextVoiceId += 1;
     voices.set(id, voice);
-    pool.add(id, env.startTime);
-
-    // 添字0の基本オシレーターを再生終了通知の担当にする。全オシレーターは同一時刻で停止するため、
-    // 基本オシレーターの通知で発音全体の終了とみなし、一度だけ後始末する（倍音は通知を持たなくてよい）。
-    // 破棄中は破棄側で一括処理するため何もしない（二重処理を避ける）。
-    voice.oscillators[0].onended = (): void => {
+    pool.add(id, startTime);
+    voice.sources[0].onended = (): void => {
       if (disposed) {
         return;
       }
@@ -168,7 +141,7 @@ export function createOperationSoundEngine(): OperationSoundEngine {
       }
       if (!context) {
         context = new Ctor();
-        inputNode = buildOutputGraph(context, context.destination);
+        graph = buildOutputGraph(context, context.destination);
       }
       const ctx = context;
       const promise = ctx
@@ -191,34 +164,41 @@ export function createOperationSoundEngine(): OperationSoundEngine {
     },
 
     setDeployTimbre(active: boolean): void {
-      // 投下中かどうかの状態。真のあいだ、以後の発音に倍音層を重ねる。鳴っている音は再調整しない。
-      // 破棄後は trigger が無音のため、状態を変えても無作用になる。
+      // 投下中かどうかの状態。真のあいだ、以後の発音を少し大きく・存在感を増す。鳴っている音は再調整しない。
       deployTimbre = active;
     },
 
-    setSlotPitches(midiNotes: readonly number[] | null | undefined): void {
-      // 未設定や非有限値を無効化する。鳴っている音は再調整しない（新しい音高は以後のタップへ適用する）。
-      slotPitches = sanitizeSlotPitches(midiNotes);
-    },
-
     playSlot(slotIndex: number): void {
-      const midiNote = slotToMidi(slotPitches, slotIndex);
-      if (midiNote === null) {
+      if (disposed || !enabled || !context || !graph || context.state !== "running") {
         return;
       }
-      const frequencyHz = midiToFrequency(midiNote);
-      if (frequencyHz === null) {
+      // レーン番号は範囲だけ検査する。音はどのレーンでも同じ水滴音にするため、番号で音色は変えない（利用者の決定）。
+      if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= OPERATION_LANE_COUNT) {
         return;
       }
-      trigger(frequencyHz);
+      // 発音中が上限に達していれば、最古の発音中を消してから新規を加える。
+      if (pool.soundingCount >= SYNTH_POLYPHONY_MAX) {
+        stealOldestVoice();
+      }
+      const ctx = context;
+      const startTime = ctx.currentTime;
+      const voice = buildDropletVoice(ctx, graph, deployTimbre);
+      registerVoice(voice, startTime);
     },
 
-    playNote(midiNote: number): void {
-      const frequencyHz = midiToFrequency(midiNote);
-      if (frequencyHz === null) {
+    playCalibrationCue(): void {
+      // 較正音は、操作音の有効・無効に関わらず鳴らす（較正は設定の準備手順であり基準音が聞こえる必要があるため）。
+      // 同時発音管理は他の音と同じ後始末経路に載せる。短い単音で、設定中に鳴らすため上限への影響は無視できる。
+      if (disposed || !context || !graph || context.state !== "running") {
         return;
       }
-      trigger(frequencyHz);
+      if (pool.soundingCount >= SYNTH_POLYPHONY_MAX) {
+        stealOldestVoice();
+      }
+      const ctx = context;
+      const startTime = ctx.currentTime;
+      const voice = buildCalibrationVoice(ctx, graph.dryInput);
+      registerVoice(voice, startTime);
     },
 
     get soundingVoiceCount(): number {
@@ -257,14 +237,14 @@ export function createOperationSoundEngine(): OperationSoundEngine {
       }
       // 破棄フラグを先に立て、各音の再生終了通知の処理を無効化する（除去や切断を一度だけにする）。
       disposed = true;
-      // プールの全音について、停止と接続切断を例外捕捉つきで行う。基本音と倍音の全オシレーターを走査する。
+      // プールの全音について、停止と接続切断を例外捕捉つきで行う。全音源を走査する。
       for (const id of pool.ids()) {
         const voice = voices.get(id);
         if (voice) {
-          for (const oscillator of voice.oscillators) {
+          for (const source of voice.sources) {
             try {
-              oscillator.onended = null;
-              oscillator.stop();
+              source.onended = null;
+              source.stop();
             } catch {
               // すでに停止済みでも安全に進める。
             }
@@ -272,8 +252,7 @@ export function createOperationSoundEngine(): OperationSoundEngine {
           disconnectVoice(voice);
         }
       }
-      // 節点の対応表とプールの両方を空にする。プールを空にすることで、破棄後の発音中の数・接続中の数が0になる
-      // （プールに残したままだと、破棄後も発音数を過大に報告してしまう）。
+      // 節点の対応表とプールの両方を空にする。プールを空にすることで、破棄後の発音中の数・接続中の数が0になる。
       voices.clear();
       pool.clear();
       // 最後に AudioContext を閉じる。

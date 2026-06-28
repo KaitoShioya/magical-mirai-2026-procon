@@ -4,6 +4,7 @@
 // ゲーム中の操作情報UI（src/ui、マイルストーンM5）とは別物のため混在させない。
 
 import type { PlaybackState } from "../textalive";
+import { createHowToSectionElements } from "./howTo/howToView";
 
 /** 楽曲ロードの支援ページ（トークン入手先・作法）。エラー表示の誘導先にする。 */
 const SUPPORT_PAGE_URL = "https://developer.textalive.jp/events/magicalmirai2026/";
@@ -44,6 +45,12 @@ export function createOverlays(host: HTMLElement = document.body): Overlays {
   loadingText.className = "overlay__text";
   loadingText.textContent = "読み込み中…";
   loadingPanel.append(loadingText);
+  // ロード中の待機時間に使い方説明（世界観・操作方法・成果物）を見せる。読み込み文言は固定で見せ、
+  // 説明だけをスクロール領域に入れて、縦長の小さな画面でも文言が埋もれないようにする（体裁は src/style.css）。
+  const loadingHowTo = document.createElement("div");
+  loadingHowTo.className = "overlay__howto";
+  loadingHowTo.append(...createHowToSectionElements());
+  loadingPanel.append(loadingHowTo);
 
   // ---- エラー表示（設定エラーと読み込み失敗で内容を出し分ける） ----
   const error = createPanel(host, "error");

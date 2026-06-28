@@ -2,7 +2,7 @@
 // キーボードを受け、複数の指を識別番号で独立に管理し、画面座標を正規化して判定面写像関数へ通し、入力イベントを発行する。
 // 依存規則（docs/decisions/architecture.md §5）に従い、profiles・tools・rendering・three.js を import しない。
 // 3次元の交差判定（レイキャスト）もカメラ行列も参照しない（docs/decisions/app-overall-decisions.md §3.3）。
-// 音程はX軸の7レーンで選ぶ。タップの横位置がレーン、タップ時刻が判定の基準になる。
+// 鳴る打楽器はX軸の7レーンで選ぶ。タップの横位置がレーン、タップ時刻が判定の基準になる。
 
 import { PITCH_SLOT_COUNT_DEFAULT } from "../config/tuning";
 import { laneCenterNormalizedX } from "../utils/pitchHudLayout";

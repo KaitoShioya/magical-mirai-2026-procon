@@ -9,8 +9,8 @@ export type EngineContextState = "uninitialized" | "suspended" | "running" | "cl
 
 /**
  * 操作音エンジンの外部契約。発音の生成と起動、同時発音の観測、後始末を公開する。
- * コードトーン格子（スロット→音高）の中身は外から `setSlotPitches` で与える。和音名の解析や音域配置は
- * 本サブシステムの責務外（Issue #35・#36）であり、本エンジンは割り当て済みの音高配列を受け取るだけにする。
+ * どのレーンを叩いても同じ単一の「水滴が弾ける音」を鳴らす（中身は droplet.ts が持つ）。本エンジンはレーン番号を
+ * 範囲だけ検査し、音色はレーン番号で変えない。較正用の基準音は playCalibrationCue で別に鳴らす。
  */
 export interface OperationSoundEngine {
   /**
@@ -20,20 +20,21 @@ export interface OperationSoundEngine {
    * 起動に失敗（拒否）した場合はキャッシュを消し、次回の呼び出しで再試行できるようにする。
    */
   unlock(): Promise<EngineContextState>;
-  /** 操作音の有効・無効を切り替える。無効のあいだ playSlot・playNote は無音。既定は有効。 */
+  /** 操作音の有効・無効を切り替える。無効のあいだ playSlot は無音（playCalibrationCue は鳴る）。既定は有効。 */
   setEnabled(enabled: boolean): void;
   /**
-   * 投下中かどうかを切り替える。真のあいだ playSlot・playNote は明るい倍音層を重ねて発音する。既定は偽（通常）。
+   * 投下中かどうかを切り替える。真のあいだ playSlot は少し大きく・存在感を増して発音する。既定は偽（通常）。
    * 破棄後は発音そのものが無音のため無作用。鳴っている音は再調整しない（以後の発音へ適用する）。
    * 呼び出し側（Issue #59）は投下の開始で真、投下窓の終了で偽へ必ず同期させる（状態の消し忘れによる音色の残留を防ぐ）。
    */
   setDeployTimbre(active: boolean): void;
-  /** 各Y軸スロットの音高（音高番号、低い順）を設定する。未設定や非有限値は無効化する。鳴っている音は再調整しない。 */
-  setSlotPitches(midiNotes: readonly number[] | null | undefined): void;
-  /** スロット番号を発音する（0が最下、増えるほど高い）。即座に鳴らす。未起動・無効・範囲外・該当音高なしは無音。 */
+  /** レーン番号を範囲だけ検査し、どのレーンでも同じ水滴音を即座に鳴らす（音色はレーン番号で変えない）。未起動・無効・範囲外は無音。 */
   playSlot(slotIndex: number): void;
-  /** 音高番号を直接発音する（スロットを介さない経路）。未起動・無効・非有限値は無音。 */
-  playNote(midiNote: number): void;
+  /**
+   * 較正用の基準音（固定の短い音）を鳴らす。レイテンシ較正で点滅に拍を合わせるために使う。
+   * 操作音の有効・無効に関わらず鳴らす（較正は設定の準備手順であり基準音が聞こえる必要があるため）。未起動は無音。
+   */
+  playCalibrationCue(): void;
   /** 発音中（奪取の対象になる）音の数。常に上限以下を保つ。 */
   readonly soundingVoiceCount: number;
   /** 接続中（発音中と消音中の合計、まだ再生終了通知に達していない）音の数。起動用の無音音源は含めない。 */

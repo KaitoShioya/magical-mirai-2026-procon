@@ -82,7 +82,6 @@ export interface PlaySessionDiagnostics {
 
 /** 操作音のうち本セッションが使う最小の口（注入で擬似実装に差し替え可能にする）。 */
 export interface PlaySessionOperationSound {
-  setSlotPitches(midiNotes: readonly number[] | null): void;
   playSlot(slotIndex: number): void;
   setDeployTimbre(active: boolean): void;
 }
@@ -111,9 +110,9 @@ export interface PlaySessionDeps {
 export interface PlaySession {
   /** プレイ進入時に状態を初期化する。 */
   reset(): void;
-  /** タップ1回を反映する（判定→協和音→一過性の蝶→採点→投下の自動発動）。 */
+  /** タップ1回を反映する（判定→水滴音の発音→一過性の蝶→採点→投下の自動発動）。 */
   onReaction(reaction: Reaction): void;
-  /** プレイフレームごとに呼ぶ。音楽時刻は clock.gameTimeMs。スロット音高更新・投下期限解消・自動発動・投下音色を進める。 */
+  /** プレイフレームごとに呼ぶ。音楽時刻は clock.gameTimeMs。投下期限解消・自動発動・投下音色を進める。 */
   updateFrame(musicTimeMs: number): void;
   /** ランクゲージの現在入力（百分位とランク添字）を返す。 */
   rankGaugeState(): PlayRankGaugeState;
@@ -163,12 +162,8 @@ export function createPlaySession(deps: PlaySessionDeps): PlaySession {
   };
   const scoreBounds: ScoreBoundsInput = { tapBudget: profile.tapBudget.limit };
 
-  const slots = profile.slots;
-
   let objectiveState: ObjectiveState = createObjectiveState(context);
   let calibrationOffsetMs = getCalibrationOffsetMs();
-  // 直近に音高を設定したスロット区間の索引（-1は未設定）。前進的な探索の起点に使う。
-  let lastSlotRegionIndex = -1;
   let playSlotCallCount = 0;
 
   // 持続配置のひまわりの放射状リング配置（本タスク）。中心は初音ミク（湖の中心＝原点。src/config/character.ts の
@@ -181,39 +176,6 @@ export function createPlaySession(deps: PlaySessionDeps): PlaySession {
     ringCount: LANTERN_SUNFLOWER_RING_COUNT,
     minSpacing: LANTERN_SUNFLOWER_MIN_SPACING,
   });
-
-  // 指定時刻を含むスロット区間の索引を返す。見つからなければ -1。直近区間が今も該当するなら据え置き、
-  // 外れたら全走査で確定する（時刻は単調に進むため通常は直近の据え置きか隣接で当たる）。
-  function findSlotRegionIndex(musicTimeMs: number): number {
-    if (lastSlotRegionIndex >= 0) {
-      const current = slots[lastSlotRegionIndex];
-      if (
-        current !== undefined &&
-        musicTimeMs >= current.startTimeMs &&
-        musicTimeMs < current.endTimeMs
-      ) {
-        return lastSlotRegionIndex;
-      }
-    }
-    for (let i = 0; i < slots.length; i += 1) {
-      const region = slots[i];
-      if (musicTimeMs >= region.startTimeMs && musicTimeMs < region.endTimeMs) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  // 指定時刻のスロット音高を操作音へ反映する。区間が直近と異なるときだけ setSlotPitches を呼ぶ。
-  // 区間が見つからないときは何もしない（直前の音高を保持し、無音にしない）。
-  function applySlotPitches(musicTimeMs: number): void {
-    const index = findSlotRegionIndex(musicTimeMs);
-    if (index < 0 || index === lastSlotRegionIndex) {
-      return;
-    }
-    lastSlotRegionIndex = index;
-    operationSound.setSlotPitches(slots[index].pitches);
-  }
 
   // ゲージ満タンかつ適用中の投下が無いとき、見せ場区間内で自動発動する。区間外・倍率1以下では状態不変。
   function tryAutoDeploy(state: ObjectiveState, atMusicTimeMs: number): ObjectiveState {
@@ -296,25 +258,20 @@ export function createPlaySession(deps: PlaySessionDeps): PlaySession {
     reset(): void {
       objectiveState = createObjectiveState(context);
       calibrationOffsetMs = getCalibrationOffsetMs();
-      lastSlotRegionIndex = -1;
       playSlotCallCount = 0;
       // 持続配置のひまわりのリング配置状態を初期化する（リトライで前回の疎密を持ち越さない）。
       sunflowerRing.reset();
-      // 初回タップがフレーム更新前に来ても無音にしないため、現在時刻のスロット音高を一度反映する。
-      applySlotPitches(getFrameSample().musicPositionMs);
     },
 
     onReaction(reaction: Reaction): void {
       const frame = getFrameSample();
       const musicTimeMs = tapMusicTimeMs(reaction.eventTimeMs, frame);
-      // 判定・発音の前に、現在時刻のスロット音高を反映する（初回タップでの無音を防ぐ）。
-      applySlotPitches(musicTimeMs);
       const judgment = judgeTap(
         { musicTimeMs, slot0: reaction.slotIndex, reliableMusicTime: frame.reliableMusicTime },
         judgmentNotes,
         { windows: DEFAULT_JUDGMENT_WINDOWS, calibrationOffsetMs },
       );
-      // 協和音。どのタップも必ず発音する（床でも操作スロットの音を鳴らす）。
+      // 心地よい水滴音。どのタップも必ず発音する（床でも鳴らす。音はどのレーンでも同じ）。
       operationSound.playSlot(reaction.slotIndex);
       playSlotCallCount += 1;
       // 反応強度（精度→大きさ・輝度）。世界座標・大きさ・輝度への写像は描画層が担う。
@@ -361,7 +318,6 @@ export function createPlaySession(deps: PlaySessionDeps): PlaySession {
     },
 
     updateFrame(musicTimeMs: number): void {
-      applySlotPitches(musicTimeMs);
       // 期限切れ投下の解消（タップが無いまま見せ場を抜ける場合に備える）。
       const deploy = objectiveState.activeDeploy;
       if (deploy !== null && musicTimeMs >= deploy.endTimeMs) {

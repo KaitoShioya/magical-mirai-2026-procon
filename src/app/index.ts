@@ -2,7 +2,7 @@
 // TextAlive の再生（src/textalive）を時間源として engine へ供給し、楽曲ロード失敗の導線（src/app/overlay）と
 // 楽曲終了によるプレイ→結果遷移、タブ離脱時の楽曲停止・再開を結ぶ（Issue #4）。
 
-import { DEFAULT_SONG_KEY, findSong, SONGS } from "../config/songs";
+import { SONGS, resolveImplementedSong } from "../config/songs";
 import { createClock, createLoop, createScheduler, createWorld } from "../engine";
 import {
   createPlayScreen,
@@ -40,12 +40,10 @@ import {
 import { APP_WORK_TITLE } from "../config/work";
 import { shareArtifact, composeShareText, createBrowserShareEnvironment } from "./share";
 import { createPhotoCamera } from "./photoCamera";
-import {
-  takeoverTypographyChart,
-  TAKEOVER_DEFAULT_READING_PIXEL_HEIGHT,
-  TAKEOVER_DEFAULT_READING_REGION,
-} from "../profiles/takeover/typographyChart";
-import { takeoverProfile } from "../profiles/takeover/profile";
+import { getSongBundle } from "../profiles";
+import { applyChorusCorrectionToLyricVideo } from "../utils/chorusCorrection";
+import { KOTAETE_CHORUS_CORRECTIONS } from "../profiles/kotaete/chorusTimings";
+import type { LyricsTransform } from "../textalive/musicMap";
 import { createCameraTrajectory } from "../utils/cameraTrajectory";
 import { createInput } from "../input";
 import { createPlaySession } from "./playSession";
@@ -78,9 +76,16 @@ export function createApp(
     stageRoot: HTMLElement;
     reflectionResolution: number;
     bloomEnabled?: boolean;
+    /** 再生対象の曲キー（URL引数 song。無指定・未実装曲のときは既定曲へ解決する）。 */
+    songKey?: string | null;
   }
 ): App {
-  const song = findSong(DEFAULT_SONG_KEY);
+  // 再生対象の曲を解決し、その曲の束（プロファイル・タイポ譜面・読ませる役の既定）を取る。1ページ読込が1曲に対応し、
+  // 曲の切り替えは selectSong による再読込で行うため、ここで一度だけ構成すれば可変の差し替えは要らない。
+  const song = resolveImplementedSong(options.songKey ?? null);
+  const bundle = getSongBundle(song.key);
+  // 別の曲を選んでページを再読込した際に、起動時の自動進行のために用いる sessionStorage のキー。
+  const PENDING_START_KEY = "mm2026.pendingStartSongKey";
 
   // 描画基盤を常在領域へ載せ、起動直後にクリアカラーを適用する（Issue #8）。
   // 画面UIの背面に深夜の湖を描く。毎フレームの描画は下のループ onFrame で駆動する。
@@ -95,11 +100,11 @@ export function createApp(
     placeholderGlowEnabled: false,
     // 持続配置の灯し（本タスク）の収容上限は、得点が出たタップ（各ノーツが最大1回バインド）の上限であるノーツ数を
     // 渡す（データ駆動。描画層は profiles を import しないため、統括が数値で渡す）。
-    lanternCapacity: takeoverProfile.notes.length,
+    lanternCapacity: bundle.profile.notes.length,
   });
 
   // 演出カメラ軌跡（Issue #13・#59）。曲プロファイルのキーフレームから評価器を作り、プレイ中に毎フレーム駆動する。
-  const cameraTrajectory = createCameraTrajectory(takeoverProfile.camera);
+  const cameraTrajectory = createCameraTrajectory(bundle.profile.camera);
 
   // 性能バジェットの自動劣化制御（Issue #18）。診断の有無に依らず常時生成する。理由を先に述べる。これは実機の
   // 性能に追従する本番機能であり、本番ビルドでも監視と劣化適用を動かす必要がある。FPSの読み出し口（window.__fps
@@ -147,9 +152,30 @@ export function createApp(
   const howToView: HowToView = createHowToView();
 
   // 診断モード（?smoke=1）はトークン非依存の擬似再生、通常はトークンで実プレイヤーを使う。
+  // 曲固有の歌詞変換（横展開）。「こたえて」はコーラス補正（Issue #90）を実行時の歌詞へ適用する。3段落目のコーラスが
+  // 2段落目の発声中に重なり TextAlive では文字タイミングが潰れるため、対象フレーズの文字・単語・フレーズの時刻を補正データで
+  // 戻す。変換を持たない曲は無変換で従来どおり。診断モードの擬似再生は曲非依存のため変換を渡さない。
+  const lyricsTransform: LyricsTransform | undefined =
+    song.key === "kotaete"
+      ? (video) => {
+          // 防御的に適用する理由を先に述べる。補正の対象フレーズ特定は歌詞テキストと単語・文字数の一致に依存する。
+          // ダンプ済み音楽地図とは一致を生成時に照合済みだが、実ロードの歌詞構造が将来相違すると補正が例外を投げる。
+          // その場合でもプレイ画面全体を止めないため、補正なしの歌詞へ退避する（失敗のない床。Issue #90）。原因は警告で残す。
+          try {
+            return applyChorusCorrectionToLyricVideo(video, KOTAETE_CHORUS_CORRECTIONS);
+          } catch (error) {
+            console.warn(
+              `コーラス補正を適用できませんでした。補正なしの歌詞で続行します: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+            return video;
+          }
+        }
+      : undefined;
   const playback: Playback = options.diagnostics
     ? createFakePlayback()
-    : createTextAlivePlayback({ song, token: import.meta.env.VITE_TEXTALIVE_TOKEN });
+    : createTextAlivePlayback({ song, token: import.meta.env.VITE_TEXTALIVE_TOKEN, lyricsTransform });
 
   const overlays = createOverlays();
   const renderOverlays = (state = playback.getState()): void => {
@@ -227,7 +253,7 @@ export function createApp(
   // 画面拡大・減衰揺れ（Issue #76）。ノーツの消滅（目標線到達）に同期して画面を一瞬拡大し減衰させる演出を結線する。
   // 拍時刻は曲プロファイル生成（#46）の beats から供給する（#59）。各拍の開始時刻と小節内位置を写す。拍走査器は全拍を
   // 走査し、強度は小節内位置で決める（小節頭を強く）が、発火はノーツのある拍だけに限る（下記 noteBeatIndices）。
-  const screenShakeBeats: { startTimeMs: number; position: number }[] = takeoverProfile.beats.map(
+  const screenShakeBeats: { startTimeMs: number; position: number }[] = bundle.profile.beats.map(
     (beat) => ({ startTimeMs: beat.startTimeMs, position: beat.position })
   );
   const screenShakeAmplitudes = resolveBeatAmplitudes(screenShakeBeats);
@@ -237,7 +263,7 @@ export function createApp(
   // 目標線へ達して消えるため、ノーツのある拍だけで振動を発火する。休符の拍では振動させないことで、振動が譜面の抑揚ある
   // リズムに同期して躍動感が出て、休符で静まる緩急が生まれる。beatIndex は beats 配列の添字で拍走査器の event.index と
   // 同じ意味である。
-  const noteBeatIndices = new Set<number>(takeoverProfile.notes.map((note) => note.beatIndex));
+  const noteBeatIndices = new Set<number>(bundle.profile.notes.map((note) => note.beatIndex));
   const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   // エンジンの固定時間刻みの時計・走査器・世界状態。プレイ画面の本編表示（Issue #33）が同期の基準として
@@ -275,7 +301,7 @@ export function createApp(
   // プレイ進行の判定・採点・音・光の統合（Issue #59）。曲プロファイルを渡し、副作用の出口（操作音・反応光点・
   // フレーム時刻標本・較正値）を注入する。較正値はプレイ開始ごとに読み直すため関数で渡す。
   const session = createPlaySession({
-    profile: takeoverProfile,
+    profile: bundle.profile,
     cameraTrajectory,
     operationSound,
     // 得点が出たタップで、持続配置の灯し（蝶＝カメラ通過点・ひまわり＝その真下の水面、本タスク）を1組置く。
@@ -374,7 +400,27 @@ export function createApp(
         enterPlay();
       }
     },
-    // プレイ画面の本編表示の結線（Issue #33）。描画基盤の3D場面・カメラ、音楽地図、ゲーム時刻、TAKEOVERの
+    selectSong: (key: string): void => {
+      // 選択キーが現在再生中の曲なら、そのまま開始する（ウォームアップへ遷移）。再生許可の確立は requestTransition と同じ。
+      if (key === song.key) {
+        playback.primeAudioPermission();
+        void operationSound.unlock();
+        machine.requestTransition("warmup");
+        return;
+      }
+      // 別の曲を選んだら、次回起動の自動進行の印を立て、現在のURL引数全体を保ったまま song だけ差し替えて再読込する。
+      // URL引数全体を保つ理由を先に述べる。refl・bloom・smoke などの既存引数を書き漏らさず保つためで、特に smoke の
+      // 脱落は曲選択リロードで診断モードが外れて検証が崩れる。よって全体を複製し song のみ差し替える。
+      try {
+        window.sessionStorage.setItem(PENDING_START_KEY, key);
+      } catch {
+        // 端末内保存が使えない環境では自動進行の印を立てられない。その場合は再読込後に題名で曲を押し直せば開始できる。
+      }
+      const params = new URLSearchParams(window.location.search);
+      params.set("song", key);
+      window.location.search = params.toString();
+    },
+    // プレイ画面の本編表示の結線（Issue #33）。描画基盤の3D場面・カメラ、音楽地図、ゲーム時刻、選択曲の
     // タイポ譜面と読ませる役の既定を渡す。診断・本番の双方で渡し、診断は擬似再生の音楽地図で動く。
     play: {
       getWorldScene: () => renderRoot.getWorldScene(),
@@ -382,10 +428,10 @@ export function createApp(
       webglAvailable: () => renderRoot.state().webglAvailable,
       musicMapSource: () => playback.musicMap(),
       currentGameTimeMs: () => world.gameTimeMs,
-      typographyChart: takeoverTypographyChart,
-      defaultReadingUnit: "phrase",
-      defaultReadingPixelHeight: TAKEOVER_DEFAULT_READING_PIXEL_HEIGHT,
-      defaultReadingRegion: TAKEOVER_DEFAULT_READING_REGION,
+      typographyChart: bundle.typographyChart,
+      defaultReadingUnit: bundle.defaultReadingUnit,
+      defaultReadingPixelHeight: bundle.defaultReadingPixelHeight,
+      defaultReadingRegion: bundle.defaultReadingRegion,
       // 読ませる役の収まり判定と最小表示寸法はデバイス画素で扱うため、表示寸法に画素密度倍率を掛ける。
       viewportPixelWidth: () =>
         Math.round(options.stageRoot.clientWidth * (window.devicePixelRatio || 1)),
@@ -395,7 +441,7 @@ export function createApp(
       // notes）。2次元層への追加・削除は描画基盤へ委譲する。
       addOverlayObject: (object) => renderRoot.addOverlayObject(object),
       removeOverlayObject: (object) => renderRoot.removeOverlayObject(object),
-      laneNotes: takeoverProfile.notes,
+      laneNotes: bundle.profile.notes,
       // レーンガイド（Issue #58・Issue #202。レーンの仕切り線と単一判定線）。音程スロット数（レーン数）は楽曲非依存の既定値を統括が注入する。
       // WebGL が無い端末では描画基盤側が何もしない。将来の曲別スロット数対応はこの注入箇所だけで変わる。
       showPitchAxisGuide: () => renderRoot.showPitchAxisGuide(PITCH_SLOT_COUNT_DEFAULT),
@@ -471,6 +517,44 @@ export function createApp(
 
   machine.start("title", context);
 
+  // 再読込方式の自動進行（横展開）。別の曲を選んでページを再読込したときだけ、起動時に印（sessionStorage の保存キー）が立つ。
+  // 印が現在の曲キーと一致するときだけ、音源の準備完了の時点で題名からウォームアップへ一度だけ自動遷移する。
+  // 順序の理由を先に述べる。状態機械 requestTransition は machine.start 前の要求を無視し、擬似再生の購読は購読時に
+  // 準備完了を同期通知するため、自動遷移の発火と購読登録は machine.start の後に置く。印は起動時に一度だけ消費する
+  // （読み込みが完了するか否かに依らず即座に消す）ことで、読み込み失敗・題名復帰・タブ復帰での再度の自動進行を防ぐ。
+  let autoStartUnsubscribe: (() => void) | null = null;
+  {
+    let wantsAutoStart = false;
+    try {
+      wantsAutoStart = window.sessionStorage.getItem(PENDING_START_KEY) === song.key;
+      window.sessionStorage.removeItem(PENDING_START_KEY);
+    } catch {
+      wantsAutoStart = false;
+    }
+    if (wantsAutoStart) {
+      let autoStarted = false;
+      const startWhenReady = (state = playback.getState()): void => {
+        if (autoStarted || state.status !== "ready") {
+          return;
+        }
+        autoStarted = true;
+        if (autoStartUnsubscribe) {
+          autoStartUnsubscribe();
+          autoStartUnsubscribe = null;
+        }
+        // ウォームアップへ進む。再生許可の確立は題名画面の開始操作と同じ最善努力で行う。
+        playback.primeAudioPermission();
+        void operationSound.unlock();
+        machine.requestTransition("warmup");
+      };
+      if (playback.getState().status === "ready") {
+        startWhenReady();
+      } else {
+        autoStartUnsubscribe = playback.subscribe(startWhenReady);
+      }
+    }
+  }
+
   // 毎フレームのプレイ進行の観測（再生開始の成立確認・楽曲終了）。
   function tickPlay(realDeltaMs: number): void {
     if (!inPlayPhase) {
@@ -517,9 +601,9 @@ export function createApp(
       // 凍結値は結果画面の表示と成果物画像・共有が同じ値を使う。自己ベスト・成長履歴は記録の後に読み直して端末内に
       // 実際に保存された内容を反映する（保存に失敗した回が履歴へ混ざらないようにする）。
       const finalResult = session.finalResult();
-      recordPlay(DEFAULT_SONG_KEY, finalResult);
+      recordPlay(song.key, finalResult);
       lastResult = finalResult;
-      lastHistory = loadScoreHistory(DEFAULT_SONG_KEY);
+      lastHistory = loadScoreHistory(song.key);
       // 楽曲終了後の灯し立ち上げ演出（Issue #63）を始める。既に灯っている灯しに点灯の盛り上がりを重ねて情景を完成させる。
       // 動きを減らす設定では演出せず基準輝度のまま保つ。
       renderRoot.beginLanternFinale(reduceMotionQuery.matches);
@@ -691,6 +775,8 @@ export function createApp(
     window.__perfLevel = (): number => renderRoot.state().degradationLevel;
     window.__perfLevelHistory = (): readonly { atMs: number; level: number }[] =>
       diagPerfHistory.slice();
+    // 再生対象の曲キー（横展開）。スモークが ?song= の解決結果（実装済み曲への解決）を機械的に検証する。
+    window.__currentSongKey = (): string => song.key;
   }
 
   // 肯定操作ボタンの押下ソナー波紋（シグネチャー演出）。document への委譲で1回だけ結線する。
@@ -720,6 +806,11 @@ export function createApp(
       loop.dispose();
       machine.dispose();
       unsubscribe();
+      // 自動進行の購読が残っていれば解除する（準備完了前に破棄された場合に備える）。
+      if (autoStartUnsubscribe) {
+        autoStartUnsubscribe();
+        autoStartUnsubscribe = null;
+      }
       // 押下ソナー波紋の委譲リスナーを解除する。解除しないと作り直すたびに同じリスナーが重なって多重発火するため。
       document.removeEventListener("pointerdown", triggerButtonSonar);
       overlays.dispose();
@@ -752,6 +843,7 @@ export function createApp(
         delete window.__drawCalls;
         delete window.__perfLevel;
         delete window.__perfLevelHistory;
+        delete window.__currentSongKey;
       }
     },
   };

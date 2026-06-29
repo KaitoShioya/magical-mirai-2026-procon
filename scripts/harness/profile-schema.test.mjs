@@ -7,6 +7,8 @@ import {
   SONG_PROFILE_SCHEMA,
   TAKEOVER_PROFILE_PATH,
   TAKEOVER_PROFILE_CHECK_KEY,
+  KOTAETE_PROFILE_PATH,
+  KOTAETE_PROFILE_CHECK_KEY,
   registerProfileSchemas,
 } from "./profile-schema.mjs";
 
@@ -64,22 +66,35 @@ describe("registerProfileSchemas（曲プロファイル検査の登録・冪等
     resetRegistry();
   });
 
-  test("検査キー song-profile-takeover を登録する", () => {
+  test("両曲（takeover・kotaete）の検査キーを登録する", () => {
     registerProfileSchemas();
     const checks = listRegisteredChecks();
-    expect(checks).toHaveLength(1);
-    expect(checks[0].key).toBe(TAKEOVER_PROFILE_CHECK_KEY);
-    expect(checks[0].file).toBe(TAKEOVER_PROFILE_PATH);
+    expect(checks).toHaveLength(2);
+    const byKey = new Map(checks.map((c) => [c.key, c.file]));
+    expect(byKey.get(TAKEOVER_PROFILE_CHECK_KEY)).toBe(TAKEOVER_PROFILE_PATH);
+    expect(byKey.get(KOTAETE_PROFILE_CHECK_KEY)).toBe(KOTAETE_PROFILE_PATH);
   });
 
-  test("2回呼んでも登録は1件のまま（冪等）", () => {
+  test("2回呼んでも登録は2件のまま（冪等）", () => {
     registerProfileSchemas();
     registerProfileSchemas();
-    expect(listRegisteredChecks()).toHaveLength(1);
+    expect(listRegisteredChecks()).toHaveLength(2);
   });
 });
 
 // 絶対パスが実在ファイルを指すことを確かめる（起動位置に依存しない解決の確認）。
 test("TAKEOVER_PROFILE_PATH が実在ファイルを指す", () => {
   expect(() => readFileSync(TAKEOVER_PROFILE_PATH, "utf8")).not.toThrow();
+});
+
+test("KOTAETE_PROFILE_PATH が実在ファイルを指す", () => {
+  expect(() => readFileSync(KOTAETE_PROFILE_PATH, "utf8")).not.toThrow();
+});
+
+// コミット済み「こたえて」プロファイルが第1層のJSONスキーマ構造検査を通る。
+test("達成基準: コミット済み kotaete.profile.json が構造検査を通る", () => {
+  const committedKotaete = JSON.parse(readFileSync(KOTAETE_PROFILE_PATH, "utf8"));
+  const result = validate(committedKotaete, SONG_PROFILE_SCHEMA);
+  expect(result.errors).toEqual([]);
+  expect(result.ok).toBe(true);
 });

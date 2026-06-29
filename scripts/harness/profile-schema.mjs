@@ -379,16 +379,29 @@ export const TAKEOVER_PROFILE_PATH = fileURLToPath(
 // 曲プロファイルの検査キー。横展開（M8）で各曲が自分の検査を登録できるよう曲キーを含める。
 export const TAKEOVER_PROFILE_CHECK_KEY = "song-profile-takeover";
 
+// 「こたえて」のコミット済み成果物への絶対パスと検査キー（横展開）。スキーマ本体 SONG_PROFILE_SCHEMA は曲非依存で
+// 全曲が共有する。
+export const KOTAETE_PROFILE_PATH = fileURLToPath(
+  new URL("../../src/profiles/kotaete/kotaete.profile.json", import.meta.url)
+);
+export const KOTAETE_PROFILE_CHECK_KEY = "song-profile-kotaete";
+
 // 曲プロファイルの検査を登録簿へ登録する（冪等）。
 // 採用理由を先に述べる。registerSchema は無条件に登録簿へ追加するため（schema-check.mjs 22〜24行）、複数回呼ぶと
-// 重複する。同一プロセス内での重複登録を避けるため、キーの存在で前置きする。
+// 重複する。同一プロセス内での重複登録を避けるため、各曲キーの存在で前置きする。
 export function registerProfileSchemas() {
-  const already = listRegisteredChecks().some((c) => c.key === TAKEOVER_PROFILE_CHECK_KEY);
-  if (already) {
-    return;
+  const entries = [
+    { key: TAKEOVER_PROFILE_CHECK_KEY, file: TAKEOVER_PROFILE_PATH },
+    { key: KOTAETE_PROFILE_CHECK_KEY, file: KOTAETE_PROFILE_PATH },
+  ];
+  const registered = new Set(listRegisteredChecks().map((c) => c.key));
+  for (const entry of entries) {
+    if (registered.has(entry.key)) {
+      continue;
+    }
+    registerSchema(entry.key, {
+      file: entry.file,
+      schema: SONG_PROFILE_SCHEMA,
+    });
   }
-  registerSchema(TAKEOVER_PROFILE_CHECK_KEY, {
-    file: TAKEOVER_PROFILE_PATH,
-    schema: SONG_PROFILE_SCHEMA,
-  });
 }

@@ -96,6 +96,12 @@ export interface OnsetOptions {
   windowCap: number;
   /** ノーツ id の接頭辞。 */
   idPrefix: string;
+  /** サビ反復で共有テンプレートを使うか。既定 true（TAKEOVER）。
+   *  false にする理由を先に述べる。サビ共有テンプレートは全サビ反復が同一拍数であることを前提に、同一の相対拍位置集合を
+   *  各反復へ写して多様性逓減（基準G）の突き合わせを成立させる。サビ反復の拍数が揃わない曲（「こたえて」はサビが
+   *  不均一に隣接し拍数が揃わない）はこの前提を満たさないため、false にしてサビ区間も非サビと同じ個別スコアで選別する。
+   *  この場合、サビ間の多様性逓減は発火しないが、配分・一回性・ゲージ投下・ランクは従来どおり機能する。 */
+  chorusSharedTemplate: boolean;
 }
 
 /** 中間ノーツ（第1段の出力）。最終 Note のうち第1段で確定する項目に、密度の出所を加える。
@@ -131,6 +137,7 @@ export const DEFAULT_ONSET_OPTIONS: OnsetOptions = {
   windowBeats: 4,
   windowCap: 3,
   idPrefix: "note-",
+  chorusSharedTemplate: true,
 };
 
 /** id 連番のゼロ埋め桁数。固定4桁にする理由は旧実装と同じで、全idを等幅にして桁が総数に依存して揺れないため。 */
@@ -334,9 +341,11 @@ export function generateOnsetNotes(input: OnsetInput, options?: Partial<OnsetOpt
   // 選ばれた拍を集める集合（beatIndex）。サビは共有テンプレートで、非サビは個別スコアで選ぶ。
   const selectedBeats: OnsetBeat[] = [];
 
-  // ── サビ3反復の共有テンプレート ──
-  // 反復不変の相対コード変化時刻を作る。各サビの「サビ開始時刻からの相対」に揃え、3反復で同じ相対集合になる前提に立つ。
-  if (chorusRegionIndices.length > 0) {
+  // ── サビ反復の共有テンプレート ──
+  // 反復不変の相対コード変化時刻を作る。各サビの「サビ開始時刻からの相対」に揃え、反復で同じ相対集合になる前提に立つ。
+  // chorusSharedTemplate が false の曲（サビ反復の拍数が揃わない「こたえて」など）はこの経路を通らず、サビ区間も
+  // 下の非サビ経路で個別スコア選別する。
+  if (opts.chorusSharedTemplate && chorusRegionIndices.length > 0) {
     // 先頭サビを基準にテンプレートを作る。
     const firstChorus = input.regions[chorusRegionIndices[0]];
     const firstChorusBeats = (beatsByRegion.get(chorusRegionIndices[0]) ?? []).slice();
@@ -396,9 +405,10 @@ export function generateOnsetNotes(input: OnsetInput, options?: Partial<OnsetOpt
     }
   }
 
-  // ── サビ以外の区間 ──
+  // ── サビ以外の区間（共有テンプレート無効時はサビ区間もここで個別選別する） ──
   for (let ri = 0; ri < input.regions.length; ri++) {
-    if (input.regions[ri].className === "chorus") continue; // サビは上で処理済み。
+    // 共有テンプレートを使う場合のみサビ区間を飛ばす（上で処理済み）。無効時はサビ区間もここで個別スコア選別する。
+    if (opts.chorusSharedTemplate && input.regions[ri].className === "chorus") continue;
     const target = targetByRegion.get(ri) ?? 0;
     if (target <= 0) continue; // 休符（rest）など目標0は何も置かない。
     const rbeats = beatsByRegion.get(ri) ?? [];

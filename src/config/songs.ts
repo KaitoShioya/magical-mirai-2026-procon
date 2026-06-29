@@ -49,7 +49,7 @@ export const SONGS: readonly Song[] = [
       lyricId: 126519,
       lyricDiffId: 28645,
     },
-    implemented: false,
+    implemented: true,
     // コーラス補正: https://developer.textalive.jp/events/magicalmirai2026/6W2N_chorus_timings.jsonc
     hasChorusCorrectionJsonc: true,
   },
@@ -125,11 +125,25 @@ export const SONGS: readonly Song[] = [
   },
 ];
 
-/** キーで曲を引く。見つからなければ既定曲、それも無ければ先頭曲を返す。 */
+/** キーで曲を引く。見つからなければ既定曲、それも無ければ先頭曲を返す。
+ *  題名画面の一覧表示など、実装の有無に依らず曲を引きたい用途に使う。 */
 export function findSong(key: string): Song {
   return (
     SONGS.find((s) => s.key === key) ??
     SONGS.find((s) => s.key === DEFAULT_SONG_KEY) ??
     SONGS[0]
   );
+}
+
+/** 再生対象として実装済みの曲を解決する。キー（URL引数 song などの外部入力。null も受ける）が存在し
+ *  かつ実装済みならその曲を、そうでなければ既定曲（DEFAULT_SONG_KEY の曲）を返す。
+ *  findSong と分ける理由を先に述べる。findSong は実装フラグを見ず未実装曲も返すため、未実装曲のキーで
+ *  再生を始めると曲プロファイルが無く破綻する。再生対象の解決は本関数を唯一の窓口とし、実装済みのみを返す。
+ *  既定曲が実装済みであることは songs.test.ts が保証する。 */
+export function resolveImplementedSong(key: string | null): Song {
+  const requested = key === null ? undefined : SONGS.find((s) => s.key === key);
+  if (requested !== undefined && requested.implemented) {
+    return requested;
+  }
+  return findSong(DEFAULT_SONG_KEY);
 }

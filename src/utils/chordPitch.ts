@@ -14,7 +14,9 @@
 // 無和音 "N" は本モジュールでは音高化せず例外とする。無和音区間を直前和音または調の音階へ解決する処理は
 // Issue #37 の責務であり、解決後の実在和音名を本モジュールへ渡す（profileSchema.ts の ChordToneSlotRegion 注釈）。
 
-/** 和音の品質。TAKEOVER に出現する16種の実在和音に対応し、将来の曲のために拡張可能な列挙とする。 */
+/** 和音の品質。TAKEOVER に出現する実在和音に対応し、将来の曲のために拡張可能な列挙とする。
+ *  横展開で現れる拡張和音・変化和音（sus2・sus4・sus2(#7) など）は、新たな品質を足さず QUALITY_TOKEN_TO_QUALITY で
+ *  最も近い基本品質へ写す（スロットの音高値は実行時に使われないため近似で足りる。詳細は同表のコメント）。 */
 export type ChordQuality =
   | "major"
   | "minor"
@@ -71,6 +73,15 @@ export const CHORD_QUALITY_INTERVALS: Record<ChordQuality, readonly number[]> = 
 
 /** 品質を表す文字列から品質への対応。根音と分数和音の低音を除いた残り文字列を完全一致で引く。
  *  完全一致で引くため "M7"（長七）・"m7"（短七）・"m"（短三和音）が確実に区別される。 */
+//
+//  拡張和音・変化和音を基本品質へ写す方針の理由を先に述べる。横展開で読み込む楽曲は、TAKEOVER に無い拡張和音
+//  （"m(9)"・"m(11)"・"m(13)"・"m9"・"add9"）、サスペンド和音（"sus2"・"sus4"・"sus2(#7)"）、減和音（"dim"・"dim7"）、
+//  変化和音（"7(b13)"）を含む。これらを音高集合へ厳密に展開する必要は現時点では無い。理由は、本作の操作音はどのレーンでも
+//  同一の「水滴が弾ける音」に統一されており（src/audio/operationSoundEngine.ts）、判定はレーン番号と時間で行い
+//  （src/app/playSession.ts）、譜面のレーン割当 src/profiles/generate/notePatterns.ts は音高の数値を一切読まず時刻境界と
+//  スロット数だけを使うため、スロットの音高値（slots[].pitches）は実行時のどの処理にも読まれない（validateProfile が
+//  値域だけを検査する）。したがってこれらの和音を最も近い基本品質へ写しても、レーン数・割当・音・判定・描画は変わらず、
+//  変わるのは実行時に未使用のスロット音高値だけである。写し先は各和音の核となる三和音または七和音とする。
 export const QUALITY_TOKEN_TO_QUALITY: Record<string, ChordQuality> = {
   "": "major",
   m: "minor",
@@ -79,6 +90,24 @@ export const QUALITY_TOKEN_TO_QUALITY: Record<string, ChordQuality> = {
   M7: "majorSeventh",
   m7: "minorSeventh",
   "6": "majorSixth",
+  // 短和音にテンション（9度・11度・13度）を付した和音。核は短三和音。
+  "m(9)": "minor",
+  "m(11)": "minor",
+  "m(13)": "minor",
+  // 短九の和音（短七＋9度）。核は短七和音。
+  m9: "minorSeventh",
+  // 長和音に9度を付した和音。核は長三和音。
+  add9: "major",
+  // サスペンド和音（第3音を2度・4度で置換）。三和音1つで近似するため核は長三和音とする。
+  sus2: "major",
+  sus4: "major",
+  // サスペンド2に長7度を付した和音（"sus2(#7)" の "(#7)" は属七の短7度を半音上げた長7度）。核は長七和音で近似する。
+  "sus2(#7)": "majorSeventh",
+  // 減三和音・減七和音。核はそれぞれ短三和音・短七和音で近似する。
+  dim: "minor",
+  dim7: "minorSeventh",
+  // 属七に変化13度を付した和音。核は属七和音。
+  "7(b13)": "dominantSeventh",
 };
 
 /** 2オクターブ展開の下のオクターブにおける、ハ音（音高クラス0）のMIDIノート番号。★暫定。

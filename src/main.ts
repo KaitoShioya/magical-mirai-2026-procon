@@ -38,4 +38,8 @@ const reflectionResolution = resolveReflectionResolution(query.get("refl"));
 // 受け入れ基準が bloom=0 を無効条件と明示するため、値が文字列 "0" のときに限り無効と判定する。
 const bloomEnabled = query.get("bloom") !== "0";
 
-createApp(screenRoot, { diagnostics, stageRoot, reflectionResolution, bloomEnabled });
+// 再生対象の曲キー（横展開）。題名画面で別の曲を選ぶと、統括が ?song を選択キーへ差し替えてページを再読込し、
+// 起動時にその曲で構成する。引数が無い・未実装曲のときの既定への解決は統括（createApp）が resolveImplementedSong で行う。
+const songKey = query.get("song");
+
+createApp(screenRoot, { diagnostics, stageRoot, reflectionResolution, bloomEnabled, songKey });

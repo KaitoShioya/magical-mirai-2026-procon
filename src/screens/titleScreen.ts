@@ -25,11 +25,16 @@ export const createTitleScreen: ScreenFactory = (context: ScreenContext): Screen
   element.append(heading, guide, list);
 
   // クリックは一覧へ1つだけ委譲する。無効ボタン（未実装曲）はクリック事象を発火しないため、
-  // 実装済み曲のボタンだけがこの委譲に届く。押された要素から最も近い開始ボタンを辿って遷移する。
+  // 実装済み曲のボタンだけがこの委譲に届く。押された開始ボタンの曲キーを読み、曲選択を統括へ伝える。
+  // 統括は、選択キーが現在再生中の曲なら開始（ウォームアップへ遷移）し、別の曲なら ?song を差し替えて再読込する。
   const onListClick = (event: MouseEvent): void => {
     const target = event.target as HTMLElement | null;
-    if (target?.closest('[data-action="start"]')) {
-      context.requestTransition("warmup");
+    const startButton = target?.closest('[data-action="start"]');
+    if (startButton instanceof HTMLElement) {
+      const songKey = startButton.dataset.songKey;
+      if (songKey !== undefined && songKey !== "") {
+        context.selectSong(songKey);
+      }
     }
   };
 

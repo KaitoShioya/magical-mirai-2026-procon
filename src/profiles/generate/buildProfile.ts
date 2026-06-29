@@ -79,6 +79,14 @@ export interface ManualProfileInputs {
    *  和音索引で指定する理由を先に述べる。songmap の時刻は浮動小数点で人が手で書いた時刻と厳密一致しないが、
    *  和音索引は整数で曖昧さが無いためである。 */
   ncTreatmentOverrides?: Record<number, NcTreatment>;
+  /** 見せ場の個数の曲別上書き。省略時は既定（TAKEOVER 用の6）。
+   *  上書きが必要な理由を先に述べる。見せ場生成はサビ区間数が見せ場の個数を超えると失敗するため、サビ区間が多い曲は
+   *  サビ区間数以上の個数を渡す必要がある。「こたえて」はサビ区間が9個のため9を渡す。 */
+  showcaseCount?: number;
+  /** サビ反復で共有テンプレートを使うか。省略時は true（TAKEOVER）。サビ反復の拍数が揃わない曲は false にして、
+   *  サビ区間も非サビと同じ個別スコアでノーツを選別する（「こたえて」のみ false。サビ間の多様性逓減は発火しないが、
+   *  配分・一回性・ゲージ投下・ランクは従来どおり機能する）。 */
+  chorusSharedTemplate?: boolean;
 }
 
 /** 手動カメラ軌跡が与えられないときの暫定カメラを作る。曲頭と曲尾の2点だけの直線的な軌跡で、検証関数（カメラは曲頭0ミリ秒から
@@ -157,6 +165,12 @@ export function buildProfile(args: {
 }): { profile: SongProfile; validation: ValidationResult } {
   const { songmap, manual, source } = args;
 
+  // コーラス補正（Issue #90）はプロファイル生成には適用しない。理由を先に述べる。「こたえて」のコーラスは2段落目の
+  // 発声中に重なる重唱で、補正で本来の時刻へ戻すと歌詞が他フレーズと時間的に重複する。一方プロファイルの lyricChars は
+  // 時刻昇順・非重複の平坦配列であることを検証関数が要求し、重なる重唱とは両立しない。加えて lyricChars は実行時に
+  // 消費されず（実行時タイポは再生中の歌詞を直読みする）、補正をプロファイルへ入れる利点が無い。よって補正は実行時の
+  // キネティックタイポにのみ適用する（src/utils/chorusCorrection.ts の applyChorusCorrectionToLyricVideo を再生層が使う）。
+
   // 1. songmap → スキーマ配列・生成関数入力。
   const durationMs = songmap.song.duration;
   const beats = toBeats(songmap);
@@ -169,6 +183,21 @@ export function buildProfile(args: {
     const endTimeMs = Math.min(c.endTimeMs, durationMs);
     return { ...c, endTimeMs, durationMs: endTimeMs - c.startTimeMs };
   });
+  // 末尾コードが曲長に僅かに届かない曲への対応。理由を先に述べる。検証関数はコード区間が曲長まで連続被覆することを
+  // 要求する（許容差1ミリ秒）。「こたえて」は末尾の無和音区間が曲長の31ミリ秒手前で終わり、隙間が許容差を超えて
+  // 検証に落ちる。最終コード区間の終了を曲長へ延ばして末尾の隙間を埋める。末尾が曲長以上の曲（TAKEOVERは19ミリ秒超過の
+  // ため上の丸めで曲長に一致）では延長は起きない。最終区間は無和音「N」の場合があるが、延長は ncRanges・スロットの
+  // 素になる同じコード配列へ反映されるため、無和音区間とコードの対応・被覆は整合したまま保たれる。
+  if (chords.length > 0) {
+    const last = chords[chords.length - 1];
+    if (last.endTimeMs < durationMs) {
+      chords[chords.length - 1] = {
+        ...last,
+        endTimeMs: durationMs,
+        durationMs: durationMs - last.startTimeMs,
+      };
+    }
+  }
   const repetitiveSegments = toRepetitiveSegments(songmap);
   const loudnessCurve = toLoudnessCurve(songmap);
   const emotionCurve = toEmotionCurve(songmap);
@@ -184,7 +213,11 @@ export function buildProfile(args: {
   const slots: ChordToneSlotRegion[] = generateChordToneSlots(resolvedRegions);
 
   // 4. 見せ場（climaxAnchorMs は手動入力。見せ場生成ではオプション引数で渡す）。
-  const showcases = generateShowcases(toShowcaseInput(songmap), { climaxAnchorMs: manual.climaxAnchorMs });
+  const showcases = generateShowcases(toShowcaseInput(songmap), {
+    climaxAnchorMs: manual.climaxAnchorMs,
+    // 見せ場の個数。曲別の上書きがあれば渡す（サビ区間数が既定6を超える曲のため。「こたえて」は9）。
+    ...(manual.showcaseCount !== undefined ? { count: manual.showcaseCount } : {}),
+  });
 
   // 5. 歌詞密度（密度プランから windowMs と windows だけをスキーマの LyricDensity へ写す）。
   const densityInput: DensityInput = {
@@ -223,7 +256,8 @@ export function buildProfile(args: {
     })),
     selectionSignal: densityPlan.selectionSignal,
   });
-  const onsets = generateOnsetNotes(onsetInput);
+  // サビ共有テンプレートの可否を曲別入力から渡す（省略時は既定 true）。
+  const onsets = generateOnsetNotes(onsetInput, { chorusSharedTemplate: manual.chorusSharedTemplate ?? true });
   const patterned = applyNotePatterns({
     notes: onsets,
     slots,

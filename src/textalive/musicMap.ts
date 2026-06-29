@@ -90,17 +90,25 @@ function buildLyricsVideoFromPlayer(video: RawVideo): LyricSourceVideo {
   return { phrases } as unknown as LyricSourceVideo;
 }
 
+/** 歌詞構造への曲固有の変換（横展開）。「こたえて」はコーラス補正（Issue #90）をここで適用する。変換を渡さない曲は無変換。 */
+export type LyricsTransform = (video: LyricSourceVideo) => LyricSourceVideo;
+
 /**
  * TextAlive の Player を裏側に持つ音楽地図ソースを作る。isReady は外（再生抽象 Playback の準備完了状態）から渡す。
  * 準備完了の前に読み取ると不正確な値になるため、呼び出し側は isReady を確認してから読む。
+ * lyricsTransform を渡すと、歌詞構造（buildLyricsVideoFromPlayer の結果）へ曲固有の変換を適用してから返す。
  */
 export function createPlayerMusicMapSource(
   player: TextAlivePlayerLike,
-  isReady: () => boolean
+  isReady: () => boolean,
+  lyricsTransform?: LyricsTransform
 ): MusicMapSource {
   return {
     isReady,
-    lyricsVideo: () => buildLyricsVideoFromPlayer(player.video),
+    lyricsVideo: () => {
+      const video = buildLyricsVideoFromPlayer(player.video);
+      return lyricsTransform ? lyricsTransform(video) : video;
+    },
     beatStartTimesMs: () => player.getBeats().map((b) => b.startTime),
     chorusRanges: () =>
       player.getChoruses().map((c) => ({ startTimeMs: c.startTime, endTimeMs: c.endTime })),

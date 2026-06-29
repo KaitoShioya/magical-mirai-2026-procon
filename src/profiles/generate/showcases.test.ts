@@ -3,10 +3,79 @@ import {
   generateShowcases,
   InvalidChorusSegmentError,
   InvalidShowcaseOptionError,
+  mergeContiguousChorusSegments,
   selectNonChorusPeaks,
   TooManyChorusError,
 } from "./showcases";
-import type { ShowcaseInput } from "./types";
+import type { ChorusSegment, ShowcaseInput } from "./types";
+
+describe("mergeContiguousChorusSegments（連続サビのブロック統合）", () => {
+  it("空配列は空配列を返す", () => {
+    expect(mergeContiguousChorusSegments([])).toEqual([]);
+  });
+
+  it("単一区間はそのまま返す", () => {
+    expect(mergeContiguousChorusSegments([{ startMs: 1000, endMs: 2000 }])).toEqual([
+      { startMs: 1000, endMs: 2000 },
+    ]);
+  });
+
+  it("隙間0ミリ秒（境界共有）の連続区間は1ブロックへ統合する", () => {
+    const segments: ChorusSegment[] = [
+      { startMs: 0, endMs: 1000 },
+      { startMs: 1000, endMs: 2000 },
+    ];
+    expect(mergeContiguousChorusSegments(segments)).toEqual([{ startMs: 0, endMs: 2000 }]);
+  });
+
+  it("隙間1ミリ秒ちょうど（許容の上限）は統合する", () => {
+    const segments: ChorusSegment[] = [
+      { startMs: 0, endMs: 1000 },
+      { startMs: 1001, endMs: 2000 },
+    ];
+    expect(mergeContiguousChorusSegments(segments)).toEqual([{ startMs: 0, endMs: 2000 }]);
+  });
+
+  it("隙間1.001ミリ秒（許容を超える）は統合しない", () => {
+    const segments: ChorusSegment[] = [
+      { startMs: 0, endMs: 1000 },
+      { startMs: 1001.001, endMs: 2000 },
+    ];
+    expect(mergeContiguousChorusSegments(segments)).toEqual([
+      { startMs: 0, endMs: 1000 },
+      { startMs: 1001.001, endMs: 2000 },
+    ]);
+  });
+
+  it("微小な重なり（負の隙間）でも統合し、終了は大きい方を採る", () => {
+    const segments: ChorusSegment[] = [
+      { startMs: 0, endMs: 1000.0005 },
+      { startMs: 1000, endMs: 2000 },
+    ];
+    expect(mergeContiguousChorusSegments(segments)).toEqual([{ startMs: 0, endMs: 2000 }]);
+  });
+
+  it("離れたサビ群（隙間が許容超）は別ブロックのまま保つ", () => {
+    const segments: ChorusSegment[] = [
+      { startMs: 2605, endMs: 10925 },
+      { startMs: 10925, endMs: 19245 },
+      { startMs: 52645, endMs: 60965 },
+      { startMs: 60965, endMs: 69285 },
+    ];
+    expect(mergeContiguousChorusSegments(segments)).toEqual([
+      { startMs: 2605, endMs: 19245 },
+      { startMs: 52645, endMs: 69285 },
+    ]);
+  });
+
+  it("入力が未整列でも開始時刻昇順で統合する", () => {
+    const segments: ChorusSegment[] = [
+      { startMs: 1000, endMs: 2000 },
+      { startMs: 0, endMs: 1000 },
+    ];
+    expect(mergeContiguousChorusSegments(segments)).toEqual([{ startMs: 0, endMs: 2000 }]);
+  });
+});
 
 // 1秒刻みの声量配列を作る補助。指定したビン範囲に値を置く。
 function ampCurve(bins: number, spans: { from: number; to: number; value: number }[]): number[] {
@@ -79,6 +148,49 @@ describe("generateShowcases（chorusあり）", () => {
   });
   it("決定論: 同じ入力で同じ結果", () => {
     expect(generateShowcases(input, options)).toEqual(generateShowcases(input, options));
+  });
+});
+
+describe("generateShowcases（mergeContiguousChorus による連続サビ統合の切替・Issue #90）", () => {
+  // 隣接する2つのサビ区間（境界 60000 を共有）を持つ入力。統合の可否で見せ場の数と境界が変わることを固定する。
+  const durationMs = 120000;
+  const input: ShowcaseInput = {
+    durationMs,
+    amplitudeStepMs: 1000,
+    amplitudeCurve: ampCurve(120, [
+      { from: 8, to: 12, value: 100 },
+      { from: 40, to: 79, value: 50 }, // 2つのサビ区間にまたがる山
+    ]),
+    lyricCharOnsetsMs: [],
+    chorusSegments: [
+      { startMs: 40000, endMs: 60000 },
+      { startMs: 60000, endMs: 80000 },
+    ],
+    beatsMs: beatsEvery500(durationMs),
+  };
+
+  it("既定（統合する）では隣接サビが1つの見せ場へ統合される", () => {
+    // 統合後サビ群は1個。個数をその数（1）に合わせて非サビ補充を0にし、サビ由来の見せ場が40000〜80000の1つだけになることを見る。
+    const showcases = generateShowcases(input, { count: 1, climaxAnchorMs: 50000 });
+    expect(showcases).toHaveLength(1);
+    expect(showcases[0].startTimeMs).toBe(40000);
+    expect(showcases[0].endTimeMs).toBe(80000);
+  });
+
+  it("統合しない（mergeContiguousChorus: false）では各サビ区間が独立の見せ場になる", () => {
+    // 統合しないとサビ群は2個。個数をその数（2）に合わせて非サビ補充を0にし、各サビ区間が別々の不変窓になることを見る。
+    const showcases = generateShowcases(input, {
+      count: 2,
+      climaxAnchorMs: 50000,
+      mergeContiguousChorus: false,
+    });
+    expect(showcases).toHaveLength(2);
+    const first = showcases.find((s) => s.startTimeMs === 40000 && s.endTimeMs === 60000);
+    const second = showcases.find((s) => s.startTimeMs === 60000 && s.endTimeMs === 80000);
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    // 統合された40000〜80000の窓は存在しない（各サビ区間が別々の不変窓のまま）。
+    expect(showcases.find((s) => s.startTimeMs === 40000 && s.endTimeMs === 80000)).toBeUndefined();
   });
 });
 

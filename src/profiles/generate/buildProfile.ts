@@ -32,7 +32,7 @@ import { isNoChordSymbol } from "../../utils/chordPitch";
 import { createCameraTrajectory } from "../../utils/cameraTrajectory";
 import { resolveNoChordRegions } from "./noChordResolution";
 import { generateChordToneSlots, type ResolvedChordRegion } from "./chordToneSlots";
-import { generateShowcases } from "./showcases";
+import { generateShowcases, mergeContiguousChorusSegments } from "./showcases";
 import {
   generateDensityPlan,
   countTargetNotes,
@@ -108,6 +108,10 @@ export interface ManualProfileInputs {
    *  サビ区間も非サビと同じ個別スコアでノーツを選別する（「こたえて」のみ false。サビ間の多様性逓減は発火しないが、
    *  配分・一回性・ゲージ投下・ランクは従来どおり機能する）。 */
   chorusSharedTemplate?: boolean;
+  /** 連続するサビ区間を1つのサビ群へ統合してから見せ場にするか。省略時は既定（true）。隣接するサビ区間も別個の見せ場として
+   *  扱いたい曲（各反復区間を独立の見せ場にしたい曲）は false にする（「こたえて」のみ false。9個のサビ区間をそれぞれ見せ場にする）。
+   *  false にする曲は、各サビ区間を独立の不変窓にしてもクライマックス窓の延長が隣接窓へ食い込まない（重ならない）ことを確認した上で指定する。 */
+  mergeContiguousChorus?: boolean;
 }
 
 /** 手動カメラ軌跡が与えられないときの暫定カメラを作る。曲頭と曲尾の2点だけの直線的な軌跡で、検証関数（カメラは曲頭0ミリ秒から
@@ -222,14 +226,22 @@ export function buildProfile(args: {
   const slots: ChordToneSlotRegion[] = generateChordToneSlots(resolvedRegions);
 
   // 4. 見せ場（climaxAnchorMs は手動入力。見せ場生成ではオプション引数で渡す）。
-  //    見せ場の個数は、既定値と曲のサビ区間数の大きい方にする。理由を先に述べる。見せ場生成は戦略Bでサビ区間を必ず
-  //    見せ場にするため、見せ場の個数がサビ区間数より少ないと失敗する。サビ区間数は曲ごとに異なるため、既定値を下限と
-  //    しつつサビ区間数まで個数を増やすことで、サビ数の多い曲でも全サビを見せ場にできる。サビ数が既定値以下の曲では
-  //    既定値のままで、非サビの高声量点が残りの見せ場を補う（従来の挙動を保つ）。
-  const showcaseCount = Math.max(DEFAULT_SHOWCASE_OPTIONS.count, chorusSegments.length);
+  //    見せ場の個数は、既定値と曲のサビ群（連続サビを統合したブロック）の数の大きい方にする。理由を先に述べる。見せ場生成は
+  //    戦略Bで各サビ群を必ず見せ場にするため、見せ場の個数がサビ群の数より少ないと失敗する。また見せ場生成は隣接する反復区間を
+  //    1つのサビ群へ統合してから不変窓にする（接する区間を別々の窓にすると窓どうしが重なるため）ので、個数の下限も統合後のサビ群の数で
+  //    数える。サビ群の数は曲ごとに異なるため、既定値を下限としつつサビ群の数まで個数を増やすことで、サビの多い曲でも全サビ群を見せ場に
+  //    できる。サビ群が既定値以下の曲では既定値のままで、非サビの高声量点が残りの見せ場を補う（従来の挙動を保つ）。
+  //    サビ群の統合は曲別入力 mergeContiguousChorus で切り替えられる（省略時は統合する）。統合しない曲は各サビ区間が
+  //    そのまま見せ場になるため、個数の下限も統合せず数えたサビ区間の数で数える。
+  const mergeContiguousChorus = manual.mergeContiguousChorus ?? DEFAULT_SHOWCASE_OPTIONS.mergeContiguousChorus;
+  const chorusGroupCount = mergeContiguousChorus
+    ? mergeContiguousChorusSegments(chorusSegments).length
+    : chorusSegments.length;
+  const showcaseCount = Math.max(DEFAULT_SHOWCASE_OPTIONS.count, chorusGroupCount);
   const showcases = generateShowcases(toShowcaseInput(songmap), {
     climaxAnchorMs: manual.climaxAnchorMs,
     count: showcaseCount,
+    mergeContiguousChorus,
   });
 
   // 5. 歌詞密度（密度プランから windowMs と windows だけをスキーマの LyricDensity へ写す）。
@@ -241,9 +253,17 @@ export function buildProfile(args: {
     showcases,
     climaxAnchorMs: manual.climaxAnchorMs,
   };
+  // サビ共有テンプレートの可否（省略時は既定）。密度プランのサビ反復区切りとオンセット選別の両方がこの可否に従うため、
+  // 一度だけ解決して共有する。共有テンプレートを使う曲はサビ反復を独立区間に保ち（区切る）、使わない曲は区切らない。
+  const chorusSharedTemplate = manual.chorusSharedTemplate ?? DEFAULT_ONSET_OPTIONS.chorusSharedTemplate;
   // 譜面密度の曲別上書きを既定値へ重ねる（指定の無いフィールドは既定値のまま）。countTargetNotes は密度プランから
-  // 計数するため、上書きした密度はノーツ数まで一貫して反映される。
-  const densityOptions: DensityOptions = { ...DEFAULT_DENSITY_OPTIONS, ...manual.density };
+  // 計数するため、上書きした密度はノーツ数まで一貫して反映される。サビ反復の区切りは既定で共有テンプレートの可否に連動させ、
+  // 曲別入力 density で明示指定があればそれを優先する。
+  const densityOptions: DensityOptions = {
+    ...DEFAULT_DENSITY_OPTIONS,
+    splitChorusRepetitions: chorusSharedTemplate,
+    ...manual.density,
+  };
   const densityPlan = generateDensityPlan(densityInput, densityOptions);
   const lyricDensity: LyricDensity = {
     windowMs: densityPlan.lyricDensity.windowMs,
@@ -281,13 +301,11 @@ export function buildProfile(args: {
     selectionSignal: densityPlan.selectionSignal,
   });
   // オンセット選択の曲別上書きを既定値へ重ねる（指定の無いフィールドは既定値のまま）。サビ共有テンプレートの可否は
-  // 専用の曲別入力 chorusSharedTemplate からも受け取り、指定があれば上書きする（「こたえて」は false）。
+  // 上で解決した chorusSharedTemplate を使う（密度プランのサビ反復区切りと同じ可否。「こたえて」は false）。
   const onsetOptions: OnsetOptions = {
     ...DEFAULT_ONSET_OPTIONS,
     ...manual.onset,
-    ...(manual.chorusSharedTemplate !== undefined
-      ? { chorusSharedTemplate: manual.chorusSharedTemplate }
-      : {}),
+    chorusSharedTemplate,
   };
   const onsets = generateOnsetNotes(onsetInput, onsetOptions);
   const patterned = applyNotePatterns({

@@ -67,6 +67,15 @@ export interface ShowcaseOptions {
   minWindowMs: number;
   /** 重み写像で代表合成値を同値とみなす差の上限。貪欲選択の同点処理には使わない。 */
   compositeEqualEpsilon: number;
+  /**
+   * 連続するサビ区間を1つのサビ群へ統合してから見せ場窓にするか。既定は真。
+   * 役割と既定理由を先に述べる。多くの曲は1つのサビ群が複数の反復区間に分かれて隣接記録され、接する区間を別々の
+   * 不変窓にするとクライマックス窓の延長で窓どうしが重なる。これを防ぐため既定では統合する（mergeContiguousChorusSegments）。
+   * 一方、各反復区間をそれぞれ独立の見せ場として扱いたい曲（隣接区間でも別個の見せ場にしたい曲）は偽にして統合を止める。
+   * 偽にする曲は、各サビ区間を独立の不変窓にしてもクライマックス窓の延長が隣接窓へ食い込まないこと（重ならないこと）を
+   * 呼び出し側で確認した上で指定する。
+   */
+  mergeContiguousChorus: boolean;
 }
 
 /**
@@ -91,6 +100,7 @@ export const DEFAULT_SHOWCASE_OPTIONS: ShowcaseOptions = {
   nonClimaxWeightCeil: 0.9,
   minWindowMs: 2000,
   compositeEqualEpsilon: 1e-9,
+  mergeContiguousChorus: true,
 };
 
 /** 合成ボルテージ曲線。values[i] はビン i（時間範囲 [i×gridMs, (i+1)×gridMs)）の合成値。 */

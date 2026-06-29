@@ -23,6 +23,7 @@ import { afterTheCurtainInputs } from "../src/profiles/after-the-curtain/afterTh
 import { toritsukuLogyInputs } from "../src/profiles/toritsuku-logy/toritsukuLogyInputs";
 import { shutterChanceInputs } from "../src/profiles/shutter-chance/shutterChanceInputs";
 import { kotaeteInputs } from "../src/profiles/kotaete/kotaeteInputs";
+import { sekaiSaigoInputs } from "../src/profiles/sekai-saigo/sekaiSaigoInputs";
 
 // 曲別手動入力の登録表。曲を横展開するときはここへ追加する。
 const MANUAL_INPUTS_BY_KEY: Record<string, ManualProfileInputs> = {
@@ -31,6 +32,7 @@ const MANUAL_INPUTS_BY_KEY: Record<string, ManualProfileInputs> = {
   "toritsuku-logy": toritsukuLogyInputs,
   "shutter-chance": shutterChanceInputs,
   kotaete: kotaeteInputs,
+  "sekai-saigo": sekaiSaigoInputs,
 };
 
 function fail(message: string): never {

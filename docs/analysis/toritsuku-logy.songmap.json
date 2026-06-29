@@ -1,0 +1,8139 @@
+{
+  "song": {
+    "name": "トリツクロジー",
+    "artist": "鶴三",
+    "key": "toritsuku-logy",
+    "songUrl": "https://piapro.jp/t/QBdL/20251215094303",
+    "duration": 140650,
+    "durationSec": 140.65
+  },
+  "beats": [
+    {
+      "index": 0,
+      "position": 1,
+      "startTime": 420,
+      "endTime": 1370,
+      "length": 1,
+      "duration": 950
+    },
+    {
+      "index": 1,
+      "position": 1,
+      "startTime": 1370,
+      "endTime": 2286,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 2,
+      "position": 2,
+      "startTime": 2286,
+      "endTime": 3202.1000000000004,
+      "length": 4,
+      "duration": 916.1000000000004
+    },
+    {
+      "index": 3,
+      "position": 3,
+      "startTime": 3202.1000000000004,
+      "endTime": 4118.1,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 4,
+      "position": 4,
+      "startTime": 4118.1,
+      "endTime": 5034.099999999999,
+      "length": 4,
+      "duration": 915.9999999999991
+    },
+    {
+      "index": 5,
+      "position": 1,
+      "startTime": 5034.099999999999,
+      "endTime": 5950.2,
+      "length": 4,
+      "duration": 916.1000000000004
+    },
+    {
+      "index": 6,
+      "position": 2,
+      "startTime": 5950.2,
+      "endTime": 6866.2,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 7,
+      "position": 3,
+      "startTime": 6866.2,
+      "endTime": 7782.2,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 8,
+      "position": 4,
+      "startTime": 7782.2,
+      "endTime": 8698.3,
+      "length": 4,
+      "duration": 916.0999999999995
+    },
+    {
+      "index": 9,
+      "position": 1,
+      "startTime": 8698.3,
+      "endTime": 9614.3,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 10,
+      "position": 2,
+      "startTime": 9614.3,
+      "endTime": 10530.300000000001,
+      "length": 4,
+      "duration": 916.0000000000018
+    },
+    {
+      "index": 11,
+      "position": 3,
+      "startTime": 10530.300000000001,
+      "endTime": 11446.400000000001,
+      "length": 4,
+      "duration": 916.1000000000004
+    },
+    {
+      "index": 12,
+      "position": 4,
+      "startTime": 11446.400000000001,
+      "endTime": 12362.4,
+      "length": 4,
+      "duration": 915.9999999999982
+    },
+    {
+      "index": 13,
+      "position": 1,
+      "startTime": 12362.4,
+      "endTime": 13278.5,
+      "length": 4,
+      "duration": 916.1000000000004
+    },
+    {
+      "index": 14,
+      "position": 2,
+      "startTime": 13278.5,
+      "endTime": 14194.5,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 15,
+      "position": 3,
+      "startTime": 14194.5,
+      "endTime": 15110.5,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 16,
+      "position": 4,
+      "startTime": 15110.5,
+      "endTime": 16026.599999999999,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 17,
+      "position": 1,
+      "startTime": 16026.599999999999,
+      "endTime": 16942.6,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 18,
+      "position": 2,
+      "startTime": 16942.6,
+      "endTime": 17858.6,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 19,
+      "position": 3,
+      "startTime": 17858.6,
+      "endTime": 18774.7,
+      "length": 4,
+      "duration": 916.1000000000022
+    },
+    {
+      "index": 20,
+      "position": 4,
+      "startTime": 18774.7,
+      "endTime": 19690.7,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 21,
+      "position": 1,
+      "startTime": 19690.7,
+      "endTime": 20606.7,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 22,
+      "position": 2,
+      "startTime": 20606.7,
+      "endTime": 21522.8,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 23,
+      "position": 3,
+      "startTime": 21522.8,
+      "endTime": 22438.8,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 24,
+      "position": 4,
+      "startTime": 22438.8,
+      "endTime": 23354.8,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 25,
+      "position": 1,
+      "startTime": 23354.8,
+      "endTime": 24270.9,
+      "length": 4,
+      "duration": 916.1000000000022
+    },
+    {
+      "index": 26,
+      "position": 2,
+      "startTime": 24270.9,
+      "endTime": 25186.9,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 27,
+      "position": 3,
+      "startTime": 25186.9,
+      "endTime": 26102.9,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 28,
+      "position": 4,
+      "startTime": 26102.9,
+      "endTime": 27019,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 29,
+      "position": 1,
+      "startTime": 27019,
+      "endTime": 27935,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 30,
+      "position": 2,
+      "startTime": 27935,
+      "endTime": 28851,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 31,
+      "position": 3,
+      "startTime": 28851,
+      "endTime": 29767.1,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 32,
+      "position": 4,
+      "startTime": 29767.1,
+      "endTime": 30683.1,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 33,
+      "position": 1,
+      "startTime": 30683.1,
+      "endTime": 31599.1,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 34,
+      "position": 2,
+      "startTime": 31599.1,
+      "endTime": 32515.2,
+      "length": 4,
+      "duration": 916.1000000000022
+    },
+    {
+      "index": 35,
+      "position": 3,
+      "startTime": 32515.2,
+      "endTime": 33431.2,
+      "length": 4,
+      "duration": 915.9999999999964
+    },
+    {
+      "index": 36,
+      "position": 4,
+      "startTime": 33431.2,
+      "endTime": 34347.200000000004,
+      "length": 4,
+      "duration": 916.0000000000073
+    },
+    {
+      "index": 37,
+      "position": 1,
+      "startTime": 34347.200000000004,
+      "endTime": 35263.3,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 38,
+      "position": 2,
+      "startTime": 35263.3,
+      "endTime": 36179.299999999996,
+      "length": 4,
+      "duration": 915.9999999999927
+    },
+    {
+      "index": 39,
+      "position": 3,
+      "startTime": 36179.299999999996,
+      "endTime": 37095.4,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 40,
+      "position": 4,
+      "startTime": 37095.4,
+      "endTime": 38011.4,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 41,
+      "position": 1,
+      "startTime": 38011.4,
+      "endTime": 38927.4,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 42,
+      "position": 2,
+      "startTime": 38927.4,
+      "endTime": 39843.5,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 43,
+      "position": 3,
+      "startTime": 39843.5,
+      "endTime": 40759.5,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 44,
+      "position": 4,
+      "startTime": 40759.5,
+      "endTime": 41675.5,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 45,
+      "position": 1,
+      "startTime": 41675.5,
+      "endTime": 42591.6,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 46,
+      "position": 2,
+      "startTime": 42591.6,
+      "endTime": 43507.6,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 47,
+      "position": 3,
+      "startTime": 43507.6,
+      "endTime": 44423.6,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 48,
+      "position": 4,
+      "startTime": 44423.6,
+      "endTime": 45339.7,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 49,
+      "position": 1,
+      "startTime": 45339.7,
+      "endTime": 46255.7,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 50,
+      "position": 2,
+      "startTime": 46255.7,
+      "endTime": 47171.700000000004,
+      "length": 4,
+      "duration": 916.0000000000073
+    },
+    {
+      "index": 51,
+      "position": 3,
+      "startTime": 47171.700000000004,
+      "endTime": 48087.8,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 52,
+      "position": 4,
+      "startTime": 48087.8,
+      "endTime": 49003.799999999996,
+      "length": 4,
+      "duration": 915.9999999999927
+    },
+    {
+      "index": 53,
+      "position": 1,
+      "startTime": 49003.799999999996,
+      "endTime": 49919.8,
+      "length": 4,
+      "duration": 916.0000000000073
+    },
+    {
+      "index": 54,
+      "position": 2,
+      "startTime": 49919.8,
+      "endTime": 50835.9,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 55,
+      "position": 3,
+      "startTime": 50835.9,
+      "endTime": 51751.9,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 56,
+      "position": 4,
+      "startTime": 51751.9,
+      "endTime": 52667.9,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 57,
+      "position": 1,
+      "startTime": 52667.9,
+      "endTime": 53584,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 58,
+      "position": 2,
+      "startTime": 53584,
+      "endTime": 54500,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 59,
+      "position": 3,
+      "startTime": 54500,
+      "endTime": 55416,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 60,
+      "position": 4,
+      "startTime": 55416,
+      "endTime": 56332.1,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 61,
+      "position": 1,
+      "startTime": 56332.1,
+      "endTime": 57248.1,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 62,
+      "position": 2,
+      "startTime": 57248.1,
+      "endTime": 58164.1,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 63,
+      "position": 3,
+      "startTime": 58164.1,
+      "endTime": 59080.2,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 64,
+      "position": 4,
+      "startTime": 59080.2,
+      "endTime": 59996.200000000004,
+      "length": 4,
+      "duration": 916.0000000000073
+    },
+    {
+      "index": 65,
+      "position": 1,
+      "startTime": 59996.200000000004,
+      "endTime": 60912.3,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 66,
+      "position": 2,
+      "startTime": 60912.3,
+      "endTime": 61828.299999999996,
+      "length": 4,
+      "duration": 915.9999999999927
+    },
+    {
+      "index": 67,
+      "position": 3,
+      "startTime": 61828.299999999996,
+      "endTime": 62744.3,
+      "length": 4,
+      "duration": 916.0000000000073
+    },
+    {
+      "index": 68,
+      "position": 4,
+      "startTime": 62744.3,
+      "endTime": 63660.4,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 69,
+      "position": 1,
+      "startTime": 63660.4,
+      "endTime": 64576.40000000001,
+      "length": 4,
+      "duration": 916.0000000000073
+    },
+    {
+      "index": 70,
+      "position": 2,
+      "startTime": 64576.40000000001,
+      "endTime": 65492.4,
+      "length": 4,
+      "duration": 915.9999999999927
+    },
+    {
+      "index": 71,
+      "position": 3,
+      "startTime": 65492.4,
+      "endTime": 66408.5,
+      "length": 4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 72,
+      "position": 4,
+      "startTime": 66408.5,
+      "endTime": 67324.5,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 73,
+      "position": 1,
+      "startTime": 67324.5,
+      "endTime": 68240.5,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 74,
+      "position": 2,
+      "startTime": 68240.5,
+      "endTime": 69156.59999999999,
+      "length": 4,
+      "duration": 916.0999999999913
+    },
+    {
+      "index": 75,
+      "position": 3,
+      "startTime": 69156.59999999999,
+      "endTime": 70072.59999999999,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 76,
+      "position": 4,
+      "startTime": 70072.59999999999,
+      "endTime": 70988.6,
+      "length": 4,
+      "duration": 916.0000000000146
+    },
+    {
+      "index": 77,
+      "position": 1,
+      "startTime": 70988.6,
+      "endTime": 71904.70000000001,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 78,
+      "position": 2,
+      "startTime": 71904.70000000001,
+      "endTime": 72820.7,
+      "length": 4,
+      "duration": 915.9999999999854
+    },
+    {
+      "index": 79,
+      "position": 3,
+      "startTime": 72820.7,
+      "endTime": 73736.7,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 80,
+      "position": 4,
+      "startTime": 73736.7,
+      "endTime": 74652.8,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 81,
+      "position": 1,
+      "startTime": 74652.8,
+      "endTime": 75568.8,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 82,
+      "position": 2,
+      "startTime": 75568.8,
+      "endTime": 76484.8,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 83,
+      "position": 3,
+      "startTime": 76484.8,
+      "endTime": 77400.9,
+      "length": 4,
+      "duration": 916.0999999999913
+    },
+    {
+      "index": 84,
+      "position": 4,
+      "startTime": 77400.9,
+      "endTime": 78316.90000000001,
+      "length": 4,
+      "duration": 916.0000000000146
+    },
+    {
+      "index": 85,
+      "position": 1,
+      "startTime": 78316.90000000001,
+      "endTime": 79232.9,
+      "length": 4,
+      "duration": 915.9999999999854
+    },
+    {
+      "index": 86,
+      "position": 2,
+      "startTime": 79232.9,
+      "endTime": 80149,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 87,
+      "position": 3,
+      "startTime": 80149,
+      "endTime": 81065,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 88,
+      "position": 4,
+      "startTime": 81065,
+      "endTime": 81981.09999999999,
+      "length": 4,
+      "duration": 916.0999999999913
+    },
+    {
+      "index": 89,
+      "position": 1,
+      "startTime": 81981.09999999999,
+      "endTime": 82897.09999999999,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 90,
+      "position": 2,
+      "startTime": 82897.09999999999,
+      "endTime": 83813.1,
+      "length": 4,
+      "duration": 916.0000000000146
+    },
+    {
+      "index": 91,
+      "position": 3,
+      "startTime": 83813.1,
+      "endTime": 84729.20000000001,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 92,
+      "position": 4,
+      "startTime": 84729.20000000001,
+      "endTime": 85645.2,
+      "length": 4,
+      "duration": 915.9999999999854
+    },
+    {
+      "index": 93,
+      "position": 1,
+      "startTime": 85645.2,
+      "endTime": 86561.2,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 94,
+      "position": 2,
+      "startTime": 86561.2,
+      "endTime": 87477.3,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 95,
+      "position": 3,
+      "startTime": 87477.3,
+      "endTime": 88393.3,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 96,
+      "position": 4,
+      "startTime": 88393.3,
+      "endTime": 89309.29999999999,
+      "length": 4,
+      "duration": 915.9999999999854
+    },
+    {
+      "index": 97,
+      "position": 1,
+      "startTime": 89309.29999999999,
+      "endTime": 90225.4,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 98,
+      "position": 2,
+      "startTime": 90225.4,
+      "endTime": 91141.40000000001,
+      "length": 4,
+      "duration": 916.0000000000146
+    },
+    {
+      "index": 99,
+      "position": 3,
+      "startTime": 91141.40000000001,
+      "endTime": 92057.4,
+      "length": 4,
+      "duration": 915.9999999999854
+    },
+    {
+      "index": 100,
+      "position": 4,
+      "startTime": 92057.4,
+      "endTime": 92973.5,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 101,
+      "position": 1,
+      "startTime": 92973.5,
+      "endTime": 93889.5,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 102,
+      "position": 2,
+      "startTime": 93889.5,
+      "endTime": 94805.5,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 103,
+      "position": 3,
+      "startTime": 94805.5,
+      "endTime": 95721.59999999999,
+      "length": 4,
+      "duration": 916.0999999999913
+    },
+    {
+      "index": 104,
+      "position": 4,
+      "startTime": 95721.59999999999,
+      "endTime": 96637.6,
+      "length": 4,
+      "duration": 916.0000000000146
+    },
+    {
+      "index": 105,
+      "position": 1,
+      "startTime": 96637.6,
+      "endTime": 97553.6,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 106,
+      "position": 2,
+      "startTime": 97553.6,
+      "endTime": 98469.7,
+      "length": 4,
+      "duration": 916.0999999999913
+    },
+    {
+      "index": 107,
+      "position": 3,
+      "startTime": 98469.7,
+      "endTime": 99385.7,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 108,
+      "position": 4,
+      "startTime": 99385.7,
+      "endTime": 100301.7,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 109,
+      "position": 1,
+      "startTime": 100301.7,
+      "endTime": 101217.8,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 110,
+      "position": 2,
+      "startTime": 101217.8,
+      "endTime": 102133.79999999999,
+      "length": 4,
+      "duration": 915.9999999999854
+    },
+    {
+      "index": 111,
+      "position": 3,
+      "startTime": 102133.79999999999,
+      "endTime": 103049.8,
+      "length": 4,
+      "duration": 916.0000000000146
+    },
+    {
+      "index": 112,
+      "position": 4,
+      "startTime": 103049.8,
+      "endTime": 103965.90000000001,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 113,
+      "position": 1,
+      "startTime": 103965.90000000001,
+      "endTime": 104903.59999999999,
+      "length": 4,
+      "duration": 937.6999999999825
+    },
+    {
+      "index": 114,
+      "position": 2,
+      "startTime": 104903.59999999999,
+      "endTime": 105819.7,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 115,
+      "position": 3,
+      "startTime": 105819.7,
+      "endTime": 106735.7,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 116,
+      "position": 4,
+      "startTime": 106735.7,
+      "endTime": 107651.70000000001,
+      "length": 4,
+      "duration": 916.0000000000146
+    },
+    {
+      "index": 117,
+      "position": 1,
+      "startTime": 107651.70000000001,
+      "endTime": 108567.8,
+      "length": 4,
+      "duration": 916.0999999999913
+    },
+    {
+      "index": 118,
+      "position": 2,
+      "startTime": 108567.8,
+      "endTime": 109483.8,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 119,
+      "position": 3,
+      "startTime": 109483.8,
+      "endTime": 110399.8,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 120,
+      "position": 4,
+      "startTime": 110399.8,
+      "endTime": 111315.9,
+      "length": 4,
+      "duration": 916.0999999999913
+    },
+    {
+      "index": 121,
+      "position": 1,
+      "startTime": 111315.9,
+      "endTime": 112231.9,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 122,
+      "position": 2,
+      "startTime": 112231.9,
+      "endTime": 113147.90000000001,
+      "length": 4,
+      "duration": 916.0000000000146
+    },
+    {
+      "index": 123,
+      "position": 3,
+      "startTime": 113147.90000000001,
+      "endTime": 114064,
+      "length": 4,
+      "duration": 916.0999999999913
+    },
+    {
+      "index": 124,
+      "position": 4,
+      "startTime": 114064,
+      "endTime": 114980,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 125,
+      "position": 1,
+      "startTime": 114980,
+      "endTime": 115896,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 126,
+      "position": 2,
+      "startTime": 115896,
+      "endTime": 116812.1,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 127,
+      "position": 3,
+      "startTime": 116812.1,
+      "endTime": 117728.09999999999,
+      "length": 4,
+      "duration": 915.9999999999854
+    },
+    {
+      "index": 128,
+      "position": 4,
+      "startTime": 117728.09999999999,
+      "endTime": 118644.09999999999,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 129,
+      "position": 1,
+      "startTime": 118644.09999999999,
+      "endTime": 119560.2,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 130,
+      "position": 2,
+      "startTime": 119560.2,
+      "endTime": 120476.20000000001,
+      "length": 4,
+      "duration": 916.0000000000146
+    },
+    {
+      "index": 131,
+      "position": 3,
+      "startTime": 120476.20000000001,
+      "endTime": 121392.2,
+      "length": 4,
+      "duration": 915.9999999999854
+    },
+    {
+      "index": 132,
+      "position": 4,
+      "startTime": 121392.2,
+      "endTime": 122308.3,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 133,
+      "position": 1,
+      "startTime": 122308.3,
+      "endTime": 123224.3,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 134,
+      "position": 2,
+      "startTime": 123224.3,
+      "endTime": 124140.3,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 135,
+      "position": 3,
+      "startTime": 124140.3,
+      "endTime": 125056.4,
+      "length": 4,
+      "duration": 916.0999999999913
+    },
+    {
+      "index": 136,
+      "position": 4,
+      "startTime": 125056.4,
+      "endTime": 125972.4,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 137,
+      "position": 1,
+      "startTime": 125972.4,
+      "endTime": 126888.5,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 138,
+      "position": 2,
+      "startTime": 126888.5,
+      "endTime": 127804.5,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 139,
+      "position": 3,
+      "startTime": 127804.5,
+      "endTime": 128720.49999999999,
+      "length": 4,
+      "duration": 915.9999999999854
+    },
+    {
+      "index": 140,
+      "position": 4,
+      "startTime": 128720.49999999999,
+      "endTime": 129636.59999999999,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 141,
+      "position": 1,
+      "startTime": 129636.59999999999,
+      "endTime": 130552.6,
+      "length": 4,
+      "duration": 916.0000000000146
+    },
+    {
+      "index": 142,
+      "position": 2,
+      "startTime": 130552.6,
+      "endTime": 131468.6,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 143,
+      "position": 3,
+      "startTime": 131468.6,
+      "endTime": 132384.7,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 144,
+      "position": 4,
+      "startTime": 132384.7,
+      "endTime": 133300.7,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 145,
+      "position": 1,
+      "startTime": 133300.7,
+      "endTime": 134216.7,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 146,
+      "position": 2,
+      "startTime": 134216.7,
+      "endTime": 135132.80000000002,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 147,
+      "position": 3,
+      "startTime": 135132.80000000002,
+      "endTime": 136048.8,
+      "length": 4,
+      "duration": 915.9999999999709
+    },
+    {
+      "index": 148,
+      "position": 4,
+      "startTime": 136048.8,
+      "endTime": 136964.8,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 149,
+      "position": 1,
+      "startTime": 136964.8,
+      "endTime": 137880.9,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 150,
+      "position": 2,
+      "startTime": 137880.9,
+      "endTime": 138796.9,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 151,
+      "position": 3,
+      "startTime": 138796.9,
+      "endTime": 139712.9,
+      "length": 4,
+      "duration": 916
+    },
+    {
+      "index": 152,
+      "position": 4,
+      "startTime": 139712.9,
+      "endTime": 140629,
+      "length": 4,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 153,
+      "position": 1,
+      "startTime": 140629,
+      "endTime": 140629,
+      "length": 1,
+      "duration": 0
+    }
+  ],
+  "chords": [
+    {
+      "index": 0,
+      "name": "N",
+      "startTime": 0,
+      "endTime": 1370,
+      "duration": 1370
+    },
+    {
+      "index": 1,
+      "name": "GbM7",
+      "startTime": 1370,
+      "endTime": 1828,
+      "duration": 458
+    },
+    {
+      "index": 2,
+      "name": "N",
+      "startTime": 1828,
+      "endTime": 3202.1000000000004,
+      "duration": 1374.1000000000004
+    },
+    {
+      "index": 3,
+      "name": "Gbm(13)",
+      "startTime": 3202.1000000000004,
+      "endTime": 3660.1,
+      "duration": 457.99999999999955
+    },
+    {
+      "index": 4,
+      "name": "N",
+      "startTime": 3660.1,
+      "endTime": 5034.099999999999,
+      "duration": 1373.9999999999995
+    },
+    {
+      "index": 5,
+      "name": "Dbadd9/F",
+      "startTime": 5034.099999999999,
+      "endTime": 5492.200000000001,
+      "duration": 458.1000000000013
+    },
+    {
+      "index": 6,
+      "name": "N",
+      "startTime": 5492.200000000001,
+      "endTime": 6866.2,
+      "duration": 1373.999999999999
+    },
+    {
+      "index": 7,
+      "name": "Bbm(11)",
+      "startTime": 6866.2,
+      "endTime": 8698.3,
+      "duration": 1832.0999999999995
+    },
+    {
+      "index": 8,
+      "name": "GbM7",
+      "startTime": 8698.3,
+      "endTime": 9156.3,
+      "duration": 458
+    },
+    {
+      "index": 9,
+      "name": "N",
+      "startTime": 9156.3,
+      "endTime": 10530.300000000001,
+      "duration": 1374.0000000000018
+    },
+    {
+      "index": 10,
+      "name": "Gbm(13)",
+      "startTime": 10530.300000000001,
+      "endTime": 10988.4,
+      "duration": 458.09999999999854
+    },
+    {
+      "index": 11,
+      "name": "N",
+      "startTime": 10988.4,
+      "endTime": 12362.4,
+      "duration": 1374
+    },
+    {
+      "index": 12,
+      "name": "Dbadd9/F",
+      "startTime": 12362.4,
+      "endTime": 12820.5,
+      "duration": 458.10000000000036
+    },
+    {
+      "index": 13,
+      "name": "N",
+      "startTime": 12820.5,
+      "endTime": 13278.5,
+      "duration": 458
+    },
+    {
+      "index": 14,
+      "name": "Ab/A",
+      "startTime": 13278.5,
+      "endTime": 14194.5,
+      "duration": 916
+    },
+    {
+      "index": 15,
+      "name": "Bbm7",
+      "startTime": 14194.5,
+      "endTime": 14881.5,
+      "duration": 687
+    },
+    {
+      "index": 16,
+      "name": "Bbm9",
+      "startTime": 14881.5,
+      "endTime": 16026.599999999999,
+      "duration": 1145.0999999999985
+    },
+    {
+      "index": 17,
+      "name": "GbM7",
+      "startTime": 16026.599999999999,
+      "endTime": 16484.6,
+      "duration": 458
+    },
+    {
+      "index": 18,
+      "name": "N",
+      "startTime": 16484.6,
+      "endTime": 16713.6,
+      "duration": 229
+    },
+    {
+      "index": 19,
+      "name": "GbM7",
+      "startTime": 16713.6,
+      "endTime": 17171.600000000002,
+      "duration": 458.00000000000364
+    },
+    {
+      "index": 20,
+      "name": "N",
+      "startTime": 17171.600000000002,
+      "endTime": 17858.6,
+      "duration": 686.9999999999964
+    },
+    {
+      "index": 21,
+      "name": "Ab6",
+      "startTime": 17858.6,
+      "endTime": 18316.7,
+      "duration": 458.1000000000022
+    },
+    {
+      "index": 22,
+      "name": "N",
+      "startTime": 18316.7,
+      "endTime": 18545.7,
+      "duration": 229
+    },
+    {
+      "index": 23,
+      "name": "Ab",
+      "startTime": 18545.7,
+      "endTime": 19232.7,
+      "duration": 687
+    },
+    {
+      "index": 24,
+      "name": "N",
+      "startTime": 19232.7,
+      "endTime": 19690.7,
+      "duration": 458
+    },
+    {
+      "index": 25,
+      "name": "Ab/F",
+      "startTime": 19690.7,
+      "endTime": 20148.7,
+      "duration": 458
+    },
+    {
+      "index": 26,
+      "name": "N",
+      "startTime": 20148.7,
+      "endTime": 20377.7,
+      "duration": 229
+    },
+    {
+      "index": 27,
+      "name": "Ab/F",
+      "startTime": 20377.7,
+      "endTime": 20835.7,
+      "duration": 458
+    },
+    {
+      "index": 28,
+      "name": "N",
+      "startTime": 20835.7,
+      "endTime": 21522.8,
+      "duration": 687.0999999999985
+    },
+    {
+      "index": 29,
+      "name": "Bbm(11)",
+      "startTime": 21522.8,
+      "endTime": 21980.8,
+      "duration": 458
+    },
+    {
+      "index": 30,
+      "name": "N",
+      "startTime": 21980.8,
+      "endTime": 22438.8,
+      "duration": 458
+    },
+    {
+      "index": 31,
+      "name": "Bbm7",
+      "startTime": 22438.8,
+      "endTime": 23125.800000000003,
+      "duration": 687.0000000000036
+    },
+    {
+      "index": 32,
+      "name": "N",
+      "startTime": 23125.800000000003,
+      "endTime": 24270.9,
+      "duration": 1145.0999999999985
+    },
+    {
+      "index": 33,
+      "name": "C#/G#",
+      "startTime": 24270.9,
+      "endTime": 25186.9,
+      "duration": 916
+    },
+    {
+      "index": 34,
+      "name": "C#/G#",
+      "startTime": 25186.9,
+      "endTime": 26102.9,
+      "duration": 916
+    },
+    {
+      "index": 35,
+      "name": "C#/G#",
+      "startTime": 26102.9,
+      "endTime": 27019,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 36,
+      "name": "Bbm7",
+      "startTime": 27019,
+      "endTime": 27935,
+      "duration": 916
+    },
+    {
+      "index": 37,
+      "name": "Bbm7",
+      "startTime": 27935,
+      "endTime": 28851,
+      "duration": 916
+    },
+    {
+      "index": 38,
+      "name": "Abm7",
+      "startTime": 28851,
+      "endTime": 29767.1,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 39,
+      "name": "Faug/G",
+      "startTime": 29767.1,
+      "endTime": 30683.1,
+      "duration": 916
+    },
+    {
+      "index": 40,
+      "name": "GbM7",
+      "startTime": 30683.1,
+      "endTime": 31141.100000000002,
+      "duration": 458.00000000000364
+    },
+    {
+      "index": 41,
+      "name": "N",
+      "startTime": 31141.100000000002,
+      "endTime": 31370.100000000002,
+      "duration": 229
+    },
+    {
+      "index": 42,
+      "name": "GbM7",
+      "startTime": 31370.100000000002,
+      "endTime": 31828.1,
+      "duration": 457.99999999999636
+    },
+    {
+      "index": 43,
+      "name": "N",
+      "startTime": 31828.1,
+      "endTime": 32515.2,
+      "duration": 687.1000000000022
+    },
+    {
+      "index": 44,
+      "name": "Gbm(9)",
+      "startTime": 32515.2,
+      "endTime": 32973.2,
+      "duration": 457.99999999999636
+    },
+    {
+      "index": 45,
+      "name": "N",
+      "startTime": 32973.2,
+      "endTime": 33202.2,
+      "duration": 229
+    },
+    {
+      "index": 46,
+      "name": "Gbm(9)",
+      "startTime": 33202.2,
+      "endTime": 33660.200000000004,
+      "duration": 458.0000000000073
+    },
+    {
+      "index": 47,
+      "name": "N",
+      "startTime": 33660.200000000004,
+      "endTime": 34347.200000000004,
+      "duration": 687
+    },
+    {
+      "index": 48,
+      "name": "Fm7",
+      "startTime": 34347.200000000004,
+      "endTime": 34805.3,
+      "duration": 458.09999999999854
+    },
+    {
+      "index": 49,
+      "name": "N",
+      "startTime": 34805.3,
+      "endTime": 35034.3,
+      "duration": 229
+    },
+    {
+      "index": 50,
+      "name": "Fm7",
+      "startTime": 35034.3,
+      "endTime": 35492.3,
+      "duration": 458
+    },
+    {
+      "index": 51,
+      "name": "N",
+      "startTime": 35492.3,
+      "endTime": 36179.299999999996,
+      "duration": 686.9999999999927
+    },
+    {
+      "index": 52,
+      "name": "Bbm(9)",
+      "startTime": 36179.299999999996,
+      "endTime": 36637.4,
+      "duration": 458.1000000000058
+    },
+    {
+      "index": 53,
+      "name": "N",
+      "startTime": 36637.4,
+      "endTime": 36866.4,
+      "duration": 229
+    },
+    {
+      "index": 54,
+      "name": "Bbm(9)",
+      "startTime": 36866.4,
+      "endTime": 37095.4,
+      "duration": 229
+    },
+    {
+      "index": 55,
+      "name": "Ab",
+      "startTime": 37095.4,
+      "endTime": 38011.4,
+      "duration": 916
+    },
+    {
+      "index": 56,
+      "name": "GbM7",
+      "startTime": 38011.4,
+      "endTime": 38469.4,
+      "duration": 458
+    },
+    {
+      "index": 57,
+      "name": "N",
+      "startTime": 38469.4,
+      "endTime": 38698.4,
+      "duration": 229
+    },
+    {
+      "index": 58,
+      "name": "GbM7",
+      "startTime": 38698.4,
+      "endTime": 39156.4,
+      "duration": 458
+    },
+    {
+      "index": 59,
+      "name": "N",
+      "startTime": 39156.4,
+      "endTime": 39843.5,
+      "duration": 687.0999999999985
+    },
+    {
+      "index": 60,
+      "name": "Gbm(9)",
+      "startTime": 39843.5,
+      "endTime": 40301.5,
+      "duration": 458
+    },
+    {
+      "index": 61,
+      "name": "N",
+      "startTime": 40301.5,
+      "endTime": 40530.5,
+      "duration": 229
+    },
+    {
+      "index": 62,
+      "name": "Gbm(9)",
+      "startTime": 40530.5,
+      "endTime": 40988.5,
+      "duration": 458
+    },
+    {
+      "index": 63,
+      "name": "N",
+      "startTime": 40988.5,
+      "endTime": 41675.5,
+      "duration": 687
+    },
+    {
+      "index": 64,
+      "name": "Fm7",
+      "startTime": 41675.5,
+      "endTime": 42133.6,
+      "duration": 458.09999999999854
+    },
+    {
+      "index": 65,
+      "name": "N",
+      "startTime": 42133.6,
+      "endTime": 42362.6,
+      "duration": 229
+    },
+    {
+      "index": 66,
+      "name": "Fm7",
+      "startTime": 42362.6,
+      "endTime": 42820.6,
+      "duration": 458
+    },
+    {
+      "index": 67,
+      "name": "N",
+      "startTime": 42820.6,
+      "endTime": 43049.6,
+      "duration": 229
+    },
+    {
+      "index": 68,
+      "name": "Fm7",
+      "startTime": 43049.6,
+      "endTime": 43507.6,
+      "duration": 458
+    },
+    {
+      "index": 69,
+      "name": "Abm7",
+      "startTime": 43507.6,
+      "endTime": 44423.6,
+      "duration": 916
+    },
+    {
+      "index": 70,
+      "name": "Faug/G",
+      "startTime": 44423.6,
+      "endTime": 45339.7,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 71,
+      "name": "GbM7",
+      "startTime": 45339.7,
+      "endTime": 45797.7,
+      "duration": 458
+    },
+    {
+      "index": 72,
+      "name": "N",
+      "startTime": 45797.7,
+      "endTime": 46026.7,
+      "duration": 229
+    },
+    {
+      "index": 73,
+      "name": "GbM7",
+      "startTime": 46026.7,
+      "endTime": 46484.7,
+      "duration": 458
+    },
+    {
+      "index": 74,
+      "name": "N",
+      "startTime": 46484.7,
+      "endTime": 47171.700000000004,
+      "duration": 687.0000000000073
+    },
+    {
+      "index": 75,
+      "name": "D",
+      "startTime": 47171.700000000004,
+      "endTime": 47629.8,
+      "duration": 458.09999999999854
+    },
+    {
+      "index": 76,
+      "name": "N",
+      "startTime": 47629.8,
+      "endTime": 47858.8,
+      "duration": 229
+    },
+    {
+      "index": 77,
+      "name": "Ebsus2",
+      "startTime": 47858.8,
+      "endTime": 48316.8,
+      "duration": 458
+    },
+    {
+      "index": 78,
+      "name": "N",
+      "startTime": 48316.8,
+      "endTime": 48545.8,
+      "duration": 229
+    },
+    {
+      "index": 79,
+      "name": "Fm7",
+      "startTime": 48545.8,
+      "endTime": 49003.799999999996,
+      "duration": 457.9999999999927
+    },
+    {
+      "index": 80,
+      "name": "Bbm7",
+      "startTime": 49003.799999999996,
+      "endTime": 49461.799999999996,
+      "duration": 458
+    },
+    {
+      "index": 81,
+      "name": "N",
+      "startTime": 49461.799999999996,
+      "endTime": 49690.8,
+      "duration": 229.00000000000728
+    },
+    {
+      "index": 82,
+      "name": "Ab6",
+      "startTime": 49690.8,
+      "endTime": 50148.8,
+      "duration": 458
+    },
+    {
+      "index": 83,
+      "name": "N",
+      "startTime": 50148.8,
+      "endTime": 50835.9,
+      "duration": 687.0999999999985
+    },
+    {
+      "index": 84,
+      "name": "Faug/G",
+      "startTime": 50835.9,
+      "endTime": 51751.9,
+      "duration": 916
+    },
+    {
+      "index": 85,
+      "name": "Ab",
+      "startTime": 51751.9,
+      "endTime": 52209.899999999994,
+      "duration": 457.9999999999927
+    },
+    {
+      "index": 86,
+      "name": "Bb/G",
+      "startTime": 52209.899999999994,
+      "endTime": 52667.9,
+      "duration": 458.0000000000073
+    },
+    {
+      "index": 87,
+      "name": "Bbm7",
+      "startTime": 52667.9,
+      "endTime": 53126,
+      "duration": 458.09999999999854
+    },
+    {
+      "index": 88,
+      "name": "N",
+      "startTime": 53126,
+      "endTime": 53355,
+      "duration": 229
+    },
+    {
+      "index": 89,
+      "name": "Bbm7",
+      "startTime": 53355,
+      "endTime": 53813,
+      "duration": 458
+    },
+    {
+      "index": 90,
+      "name": "N",
+      "startTime": 53813,
+      "endTime": 54500,
+      "duration": 687
+    },
+    {
+      "index": 91,
+      "name": "Db/Ab",
+      "startTime": 54500,
+      "endTime": 54958,
+      "duration": 458
+    },
+    {
+      "index": 92,
+      "name": "N",
+      "startTime": 54958,
+      "endTime": 55187,
+      "duration": 229
+    },
+    {
+      "index": 93,
+      "name": "Ab",
+      "startTime": 55187,
+      "endTime": 55645,
+      "duration": 458
+    },
+    {
+      "index": 94,
+      "name": "N",
+      "startTime": 55645,
+      "endTime": 55874.1,
+      "duration": 229.09999999999854
+    },
+    {
+      "index": 95,
+      "name": "Adim",
+      "startTime": 55874.1,
+      "endTime": 56332.1,
+      "duration": 458
+    },
+    {
+      "index": 96,
+      "name": "Bbm7",
+      "startTime": 56332.1,
+      "endTime": 58164.1,
+      "duration": 1832
+    },
+    {
+      "index": 97,
+      "name": "Bbm9",
+      "startTime": 58164.1,
+      "endTime": 59996.200000000004,
+      "duration": 1832.1000000000058
+    },
+    {
+      "index": 98,
+      "name": "Ebm7",
+      "startTime": 59996.200000000004,
+      "endTime": 62744.3,
+      "duration": 2748.0999999999985
+    },
+    {
+      "index": 99,
+      "name": "N",
+      "startTime": 62744.3,
+      "endTime": 63660.4,
+      "duration": 916.0999999999985
+    },
+    {
+      "index": 100,
+      "name": "GbM7",
+      "startTime": 63660.4,
+      "endTime": 64118.399999999994,
+      "duration": 457.9999999999927
+    },
+    {
+      "index": 101,
+      "name": "N",
+      "startTime": 64118.399999999994,
+      "endTime": 64576.40000000001,
+      "duration": 458.00000000001455
+    },
+    {
+      "index": 102,
+      "name": "GbM7",
+      "startTime": 64576.40000000001,
+      "endTime": 65034.40000000001,
+      "duration": 458
+    },
+    {
+      "index": 103,
+      "name": "N",
+      "startTime": 65034.40000000001,
+      "endTime": 65492.4,
+      "duration": 457.9999999999927
+    },
+    {
+      "index": 104,
+      "name": "Gbm(13)",
+      "startTime": 65492.4,
+      "endTime": 65950.5,
+      "duration": 458.09999999999854
+    },
+    {
+      "index": 105,
+      "name": "N",
+      "startTime": 65950.5,
+      "endTime": 66408.5,
+      "duration": 458
+    },
+    {
+      "index": 106,
+      "name": "Gbm(13)",
+      "startTime": 66408.5,
+      "endTime": 66866.5,
+      "duration": 458
+    },
+    {
+      "index": 107,
+      "name": "N",
+      "startTime": 66866.5,
+      "endTime": 67324.5,
+      "duration": 458
+    },
+    {
+      "index": 108,
+      "name": "Dbadd9/F",
+      "startTime": 67324.5,
+      "endTime": 67782.5,
+      "duration": 458
+    },
+    {
+      "index": 109,
+      "name": "N",
+      "startTime": 67782.5,
+      "endTime": 68240.5,
+      "duration": 458
+    },
+    {
+      "index": 110,
+      "name": "Dbadd9/F",
+      "startTime": 68240.5,
+      "endTime": 68698.6,
+      "duration": 458.1000000000058
+    },
+    {
+      "index": 111,
+      "name": "N",
+      "startTime": 68698.6,
+      "endTime": 69156.59999999999,
+      "duration": 457.99999999998545
+    },
+    {
+      "index": 112,
+      "name": "Bbm(11)",
+      "startTime": 69156.59999999999,
+      "endTime": 69614.59999999999,
+      "duration": 458
+    },
+    {
+      "index": 113,
+      "name": "N",
+      "startTime": 69614.59999999999,
+      "endTime": 70072.59999999999,
+      "duration": 458
+    },
+    {
+      "index": 114,
+      "name": "Bb7(b13)",
+      "startTime": 70072.59999999999,
+      "endTime": 70530.6,
+      "duration": 458.00000000001455
+    },
+    {
+      "index": 115,
+      "name": "N",
+      "startTime": 70530.6,
+      "endTime": 70988.6,
+      "duration": 458
+    },
+    {
+      "index": 116,
+      "name": "GbM7",
+      "startTime": 70988.6,
+      "endTime": 71446.70000000001,
+      "duration": 458.1000000000058
+    },
+    {
+      "index": 117,
+      "name": "N",
+      "startTime": 71446.70000000001,
+      "endTime": 71904.70000000001,
+      "duration": 458
+    },
+    {
+      "index": 118,
+      "name": "GbM7",
+      "startTime": 71904.70000000001,
+      "endTime": 72362.7,
+      "duration": 457.99999999998545
+    },
+    {
+      "index": 119,
+      "name": "N",
+      "startTime": 72362.7,
+      "endTime": 72820.7,
+      "duration": 458
+    },
+    {
+      "index": 120,
+      "name": "Gbm(13)",
+      "startTime": 72820.7,
+      "endTime": 73278.7,
+      "duration": 458
+    },
+    {
+      "index": 121,
+      "name": "N",
+      "startTime": 73278.7,
+      "endTime": 73736.7,
+      "duration": 458
+    },
+    {
+      "index": 122,
+      "name": "Gbm(13)",
+      "startTime": 73736.7,
+      "endTime": 74194.8,
+      "duration": 458.1000000000058
+    },
+    {
+      "index": 123,
+      "name": "N",
+      "startTime": 74194.8,
+      "endTime": 74652.8,
+      "duration": 458
+    },
+    {
+      "index": 124,
+      "name": "Dbadd9/F",
+      "startTime": 74652.8,
+      "endTime": 75110.8,
+      "duration": 458
+    },
+    {
+      "index": 125,
+      "name": "N",
+      "startTime": 75110.8,
+      "endTime": 75568.8,
+      "duration": 458
+    },
+    {
+      "index": 126,
+      "name": "Ab/A",
+      "startTime": 75568.8,
+      "endTime": 76026.79999999999,
+      "duration": 457.99999999998545
+    },
+    {
+      "index": 127,
+      "name": "N",
+      "startTime": 76026.79999999999,
+      "endTime": 76484.8,
+      "duration": 458.00000000001455
+    },
+    {
+      "index": 128,
+      "name": "Bbm7",
+      "startTime": 76484.8,
+      "endTime": 76942.8,
+      "duration": 458
+    },
+    {
+      "index": 129,
+      "name": "N",
+      "startTime": 76942.8,
+      "endTime": 77400.9,
+      "duration": 458.09999999999127
+    },
+    {
+      "index": 130,
+      "name": "Ab6",
+      "startTime": 77400.9,
+      "endTime": 78316.90000000001,
+      "duration": 916.0000000000146
+    },
+    {
+      "index": 131,
+      "name": "GbM7",
+      "startTime": 78316.90000000001,
+      "endTime": 78774.90000000001,
+      "duration": 458
+    },
+    {
+      "index": 132,
+      "name": "N",
+      "startTime": 78774.90000000001,
+      "endTime": 79003.90000000001,
+      "duration": 229
+    },
+    {
+      "index": 133,
+      "name": "GbM7",
+      "startTime": 79003.90000000001,
+      "endTime": 79461.9,
+      "duration": 457.99999999998545
+    },
+    {
+      "index": 134,
+      "name": "N",
+      "startTime": 79461.9,
+      "endTime": 80149,
+      "duration": 687.1000000000058
+    },
+    {
+      "index": 135,
+      "name": "Ab6",
+      "startTime": 80149,
+      "endTime": 80607,
+      "duration": 458
+    },
+    {
+      "index": 136,
+      "name": "N",
+      "startTime": 80607,
+      "endTime": 81065,
+      "duration": 458
+    },
+    {
+      "index": 137,
+      "name": "Ab",
+      "startTime": 81065,
+      "endTime": 81523.1,
+      "duration": 458.1000000000058
+    },
+    {
+      "index": 138,
+      "name": "N",
+      "startTime": 81523.1,
+      "endTime": 81981.09999999999,
+      "duration": 457.99999999998545
+    },
+    {
+      "index": 139,
+      "name": "Ab/F",
+      "startTime": 81981.09999999999,
+      "endTime": 82439.09999999999,
+      "duration": 458
+    },
+    {
+      "index": 140,
+      "name": "N",
+      "startTime": 82439.09999999999,
+      "endTime": 82897.09999999999,
+      "duration": 458
+    },
+    {
+      "index": 141,
+      "name": "Ab/F",
+      "startTime": 82897.09999999999,
+      "endTime": 83355.09999999999,
+      "duration": 458
+    },
+    {
+      "index": 142,
+      "name": "N",
+      "startTime": 83355.09999999999,
+      "endTime": 83813.1,
+      "duration": 458.00000000001455
+    },
+    {
+      "index": 143,
+      "name": "Bbm(11)",
+      "startTime": 83813.1,
+      "endTime": 84271.2,
+      "duration": 458.09999999999127
+    },
+    {
+      "index": 144,
+      "name": "N",
+      "startTime": 84271.2,
+      "endTime": 84729.20000000001,
+      "duration": 458.00000000001455
+    },
+    {
+      "index": 145,
+      "name": "Bb7(b13)",
+      "startTime": 84729.20000000001,
+      "endTime": 85416.2,
+      "duration": 686.9999999999854
+    },
+    {
+      "index": 146,
+      "name": "N",
+      "startTime": 85416.2,
+      "endTime": 85645.2,
+      "duration": 229
+    },
+    {
+      "index": 147,
+      "name": "Ebm7",
+      "startTime": 85645.2,
+      "endTime": 86561.2,
+      "duration": 916
+    },
+    {
+      "index": 148,
+      "name": "BbM7",
+      "startTime": 86561.2,
+      "endTime": 87477.3,
+      "duration": 916.1000000000058
+    },
+    {
+      "index": 149,
+      "name": "BM7",
+      "startTime": 87477.3,
+      "endTime": 88393.3,
+      "duration": 916
+    },
+    {
+      "index": 150,
+      "name": "Ab/C",
+      "startTime": 88393.3,
+      "endTime": 89309.29999999999,
+      "duration": 915.9999999999854
+    },
+    {
+      "index": 151,
+      "name": "Abm9",
+      "startTime": 89309.29999999999,
+      "endTime": 91141.40000000001,
+      "duration": 1832.1000000000204
+    },
+    {
+      "index": 152,
+      "name": "Db7",
+      "startTime": 91141.40000000001,
+      "endTime": 92057.4,
+      "duration": 915.9999999999854
+    },
+    {
+      "index": 153,
+      "name": "Dbsus4",
+      "startTime": 92057.4,
+      "endTime": 92515.5,
+      "duration": 458.1000000000058
+    },
+    {
+      "index": 154,
+      "name": "N",
+      "startTime": 92515.5,
+      "endTime": 92973.5,
+      "duration": 458
+    },
+    {
+      "index": 155,
+      "name": "GbM7",
+      "startTime": 92973.5,
+      "endTime": 93431.5,
+      "duration": 458
+    },
+    {
+      "index": 156,
+      "name": "N",
+      "startTime": 93431.5,
+      "endTime": 93660.5,
+      "duration": 229
+    },
+    {
+      "index": 157,
+      "name": "GbM7",
+      "startTime": 93660.5,
+      "endTime": 94118.5,
+      "duration": 458
+    },
+    {
+      "index": 158,
+      "name": "N",
+      "startTime": 94118.5,
+      "endTime": 94805.5,
+      "duration": 687
+    },
+    {
+      "index": 159,
+      "name": "Gbm(9)",
+      "startTime": 94805.5,
+      "endTime": 95263.59999999999,
+      "duration": 458.09999999999127
+    },
+    {
+      "index": 160,
+      "name": "N",
+      "startTime": 95263.59999999999,
+      "endTime": 95492.59999999999,
+      "duration": 229
+    },
+    {
+      "index": 161,
+      "name": "Gbm(9)",
+      "startTime": 95492.59999999999,
+      "endTime": 95950.59999999999,
+      "duration": 458
+    },
+    {
+      "index": 162,
+      "name": "N",
+      "startTime": 95950.59999999999,
+      "endTime": 96637.6,
+      "duration": 687.0000000000146
+    },
+    {
+      "index": 163,
+      "name": "Fm7",
+      "startTime": 96637.6,
+      "endTime": 97095.6,
+      "duration": 458
+    },
+    {
+      "index": 164,
+      "name": "N",
+      "startTime": 97095.6,
+      "endTime": 97324.6,
+      "duration": 229
+    },
+    {
+      "index": 165,
+      "name": "Fm7",
+      "startTime": 97324.6,
+      "endTime": 97782.6,
+      "duration": 458
+    },
+    {
+      "index": 166,
+      "name": "N",
+      "startTime": 97782.6,
+      "endTime": 98469.7,
+      "duration": 687.0999999999913
+    },
+    {
+      "index": 167,
+      "name": "Bbm(9)",
+      "startTime": 98469.7,
+      "endTime": 98927.7,
+      "duration": 458
+    },
+    {
+      "index": 168,
+      "name": "N",
+      "startTime": 98927.7,
+      "endTime": 99156.7,
+      "duration": 229
+    },
+    {
+      "index": 169,
+      "name": "Bbm(9)",
+      "startTime": 99156.7,
+      "endTime": 99385.7,
+      "duration": 229
+    },
+    {
+      "index": 170,
+      "name": "Ab",
+      "startTime": 99385.7,
+      "endTime": 100301.7,
+      "duration": 916
+    },
+    {
+      "index": 171,
+      "name": "GbM7",
+      "startTime": 100301.7,
+      "endTime": 100759.8,
+      "duration": 458.1000000000058
+    },
+    {
+      "index": 172,
+      "name": "N",
+      "startTime": 100759.8,
+      "endTime": 100988.8,
+      "duration": 229
+    },
+    {
+      "index": 173,
+      "name": "GbM7",
+      "startTime": 100988.8,
+      "endTime": 101446.8,
+      "duration": 458
+    },
+    {
+      "index": 174,
+      "name": "N",
+      "startTime": 101446.8,
+      "endTime": 102133.79999999999,
+      "duration": 686.9999999999854
+    },
+    {
+      "index": 175,
+      "name": "Gbm(9)",
+      "startTime": 102133.79999999999,
+      "endTime": 102591.8,
+      "duration": 458.00000000001455
+    },
+    {
+      "index": 176,
+      "name": "N",
+      "startTime": 102591.8,
+      "endTime": 102820.8,
+      "duration": 229
+    },
+    {
+      "index": 177,
+      "name": "Gbm(9)",
+      "startTime": 102820.8,
+      "endTime": 103278.8,
+      "duration": 458
+    },
+    {
+      "index": 178,
+      "name": "N",
+      "startTime": 103278.8,
+      "endTime": 103965.90000000001,
+      "duration": 687.1000000000058
+    },
+    {
+      "index": 179,
+      "name": "Fm7",
+      "startTime": 103965.90000000001,
+      "endTime": 104434.79999999999,
+      "duration": 468.8999999999796
+    },
+    {
+      "index": 180,
+      "name": "N",
+      "startTime": 104434.79999999999,
+      "endTime": 104669.2,
+      "duration": 234.40000000000873
+    },
+    {
+      "index": 181,
+      "name": "Fm7",
+      "startTime": 104669.2,
+      "endTime": 105132.59999999999,
+      "duration": 463.3999999999942
+    },
+    {
+      "index": 182,
+      "name": "N",
+      "startTime": 105132.59999999999,
+      "endTime": 105361.7,
+      "duration": 229.10000000000582
+    },
+    {
+      "index": 183,
+      "name": "Fm7",
+      "startTime": 105361.7,
+      "endTime": 105819.7,
+      "duration": 458
+    },
+    {
+      "index": 184,
+      "name": "Abm7",
+      "startTime": 105819.7,
+      "endTime": 106735.7,
+      "duration": 916
+    },
+    {
+      "index": 185,
+      "name": "Faug/G",
+      "startTime": 106735.7,
+      "endTime": 107651.70000000001,
+      "duration": 916.0000000000146
+    },
+    {
+      "index": 186,
+      "name": "GbM7",
+      "startTime": 107651.70000000001,
+      "endTime": 108109.8,
+      "duration": 458.09999999999127
+    },
+    {
+      "index": 187,
+      "name": "N",
+      "startTime": 108109.8,
+      "endTime": 108338.8,
+      "duration": 229
+    },
+    {
+      "index": 188,
+      "name": "GbM7",
+      "startTime": 108338.8,
+      "endTime": 108796.8,
+      "duration": 458
+    },
+    {
+      "index": 189,
+      "name": "N",
+      "startTime": 108796.8,
+      "endTime": 109483.8,
+      "duration": 687
+    },
+    {
+      "index": 190,
+      "name": "D",
+      "startTime": 109483.8,
+      "endTime": 109941.8,
+      "duration": 458
+    },
+    {
+      "index": 191,
+      "name": "N",
+      "startTime": 109941.8,
+      "endTime": 110170.8,
+      "duration": 229
+    },
+    {
+      "index": 192,
+      "name": "Ebsus2",
+      "startTime": 110170.8,
+      "endTime": 110628.8,
+      "duration": 458
+    },
+    {
+      "index": 193,
+      "name": "N",
+      "startTime": 110628.8,
+      "endTime": 110857.9,
+      "duration": 229.09999999999127
+    },
+    {
+      "index": 194,
+      "name": "Fm7",
+      "startTime": 110857.9,
+      "endTime": 111315.9,
+      "duration": 458
+    },
+    {
+      "index": 195,
+      "name": "Bbm7",
+      "startTime": 111315.9,
+      "endTime": 111773.9,
+      "duration": 458
+    },
+    {
+      "index": 196,
+      "name": "N",
+      "startTime": 111773.9,
+      "endTime": 112002.9,
+      "duration": 229
+    },
+    {
+      "index": 197,
+      "name": "Ab6",
+      "startTime": 112002.9,
+      "endTime": 112460.9,
+      "duration": 458
+    },
+    {
+      "index": 198,
+      "name": "N",
+      "startTime": 112460.9,
+      "endTime": 113147.90000000001,
+      "duration": 687.0000000000146
+    },
+    {
+      "index": 199,
+      "name": "Faug/G",
+      "startTime": 113147.90000000001,
+      "endTime": 114064,
+      "duration": 916.0999999999913
+    },
+    {
+      "index": 200,
+      "name": "Ab",
+      "startTime": 114064,
+      "endTime": 114980,
+      "duration": 916
+    },
+    {
+      "index": 201,
+      "name": "Bbm7",
+      "startTime": 114980,
+      "endTime": 115438,
+      "duration": 458
+    },
+    {
+      "index": 202,
+      "name": "N",
+      "startTime": 115438,
+      "endTime": 115667,
+      "duration": 229
+    },
+    {
+      "index": 203,
+      "name": "Bbm7",
+      "startTime": 115667,
+      "endTime": 116125,
+      "duration": 458
+    },
+    {
+      "index": 204,
+      "name": "N",
+      "startTime": 116125,
+      "endTime": 116812.1,
+      "duration": 687.1000000000058
+    },
+    {
+      "index": 205,
+      "name": "Db/Ab",
+      "startTime": 116812.1,
+      "endTime": 117270.1,
+      "duration": 458
+    },
+    {
+      "index": 206,
+      "name": "N",
+      "startTime": 117270.1,
+      "endTime": 117499.1,
+      "duration": 229
+    },
+    {
+      "index": 207,
+      "name": "Ab",
+      "startTime": 117499.1,
+      "endTime": 117957.09999999999,
+      "duration": 457.99999999998545
+    },
+    {
+      "index": 208,
+      "name": "N",
+      "startTime": 117957.09999999999,
+      "endTime": 119560.2,
+      "duration": 1603.1000000000058
+    },
+    {
+      "index": 209,
+      "name": "BM7",
+      "startTime": 119560.2,
+      "endTime": 120018.2,
+      "duration": 458
+    },
+    {
+      "index": 210,
+      "name": "Bbdim",
+      "startTime": 120018.2,
+      "endTime": 120476.20000000001,
+      "duration": 458.00000000001455
+    },
+    {
+      "index": 211,
+      "name": "A7",
+      "startTime": 120476.20000000001,
+      "endTime": 120934.2,
+      "duration": 457.99999999998545
+    },
+    {
+      "index": 212,
+      "name": "Adim7",
+      "startTime": 120934.2,
+      "endTime": 121392.2,
+      "duration": 458
+    },
+    {
+      "index": 213,
+      "name": "Fdim7",
+      "startTime": 121392.2,
+      "endTime": 121850.3,
+      "duration": 458.1000000000058
+    },
+    {
+      "index": 214,
+      "name": "Db/E",
+      "startTime": 121850.3,
+      "endTime": 122308.3,
+      "duration": 458
+    },
+    {
+      "index": 215,
+      "name": "GbM7",
+      "startTime": 122308.3,
+      "endTime": 122766.3,
+      "duration": 458
+    },
+    {
+      "index": 216,
+      "name": "N",
+      "startTime": 122766.3,
+      "endTime": 122995.3,
+      "duration": 229
+    },
+    {
+      "index": 217,
+      "name": "GbM7",
+      "startTime": 122995.3,
+      "endTime": 123453.3,
+      "duration": 458
+    },
+    {
+      "index": 218,
+      "name": "N",
+      "startTime": 123453.3,
+      "endTime": 124140.3,
+      "duration": 687
+    },
+    {
+      "index": 219,
+      "name": "Absus4",
+      "startTime": 124140.3,
+      "endTime": 124598.4,
+      "duration": 458.09999999999127
+    },
+    {
+      "index": 220,
+      "name": "N",
+      "startTime": 124598.4,
+      "endTime": 124827.4,
+      "duration": 229
+    },
+    {
+      "index": 221,
+      "name": "Ab",
+      "startTime": 124827.4,
+      "endTime": 125285.4,
+      "duration": 458
+    },
+    {
+      "index": 222,
+      "name": "N",
+      "startTime": 125285.4,
+      "endTime": 125972.4,
+      "duration": 687
+    },
+    {
+      "index": 223,
+      "name": "Bbm7",
+      "startTime": 125972.4,
+      "endTime": 126430.5,
+      "duration": 458.1000000000058
+    },
+    {
+      "index": 224,
+      "name": "N",
+      "startTime": 126430.5,
+      "endTime": 126659.5,
+      "duration": 229
+    },
+    {
+      "index": 225,
+      "name": "Bbm7",
+      "startTime": 126659.5,
+      "endTime": 127117.5,
+      "duration": 458
+    },
+    {
+      "index": 226,
+      "name": "N",
+      "startTime": 127117.5,
+      "endTime": 127804.5,
+      "duration": 687
+    },
+    {
+      "index": 227,
+      "name": "Fm7",
+      "startTime": 127804.5,
+      "endTime": 128262.49999999999,
+      "duration": 457.99999999998545
+    },
+    {
+      "index": 228,
+      "name": "N",
+      "startTime": 128262.49999999999,
+      "endTime": 128491.5,
+      "duration": 229.00000000001455
+    },
+    {
+      "index": 229,
+      "name": "Fm7",
+      "startTime": 128491.5,
+      "endTime": 128949.5,
+      "duration": 458
+    },
+    {
+      "index": 230,
+      "name": "N",
+      "startTime": 128949.5,
+      "endTime": 129636.59999999999,
+      "duration": 687.0999999999913
+    },
+    {
+      "index": 231,
+      "name": "GbM7",
+      "startTime": 129636.59999999999,
+      "endTime": 130094.60000000002,
+      "duration": 458.0000000000291
+    },
+    {
+      "index": 232,
+      "name": "N",
+      "startTime": 130094.60000000002,
+      "endTime": 130323.6,
+      "duration": 228.99999999998545
+    },
+    {
+      "index": 233,
+      "name": "GbM7",
+      "startTime": 130323.6,
+      "endTime": 130781.59999999999,
+      "duration": 457.99999999998545
+    },
+    {
+      "index": 234,
+      "name": "N",
+      "startTime": 130781.59999999999,
+      "endTime": 131468.6,
+      "duration": 687.0000000000146
+    },
+    {
+      "index": 235,
+      "name": "Absus4",
+      "startTime": 131468.6,
+      "endTime": 131926.7,
+      "duration": 458.1000000000058
+    },
+    {
+      "index": 236,
+      "name": "N",
+      "startTime": 131926.7,
+      "endTime": 132155.69999999998,
+      "duration": 228.9999999999709
+    },
+    {
+      "index": 237,
+      "name": "Adim",
+      "startTime": 132155.69999999998,
+      "endTime": 132613.69999999998,
+      "duration": 458
+    },
+    {
+      "index": 238,
+      "name": "N",
+      "startTime": 132613.69999999998,
+      "endTime": 133300.7,
+      "duration": 687.0000000000291
+    },
+    {
+      "index": 239,
+      "name": "Bbm9",
+      "startTime": 133300.7,
+      "endTime": 136964.8,
+      "duration": 3664.0999999999767
+    },
+    {
+      "index": 240,
+      "name": "Ebm9",
+      "startTime": 136964.8,
+      "endTime": 140629,
+      "duration": 3664.2000000000116
+    },
+    {
+      "index": 241,
+      "name": "N",
+      "startTime": 140629,
+      "endTime": 140672,
+      "duration": 43
+    }
+  ],
+  "segments": [
+    {
+      "index": 0,
+      "startTime": 30225.1,
+      "endTime": 56324.100000000006,
+      "duration": 26099.000000000007,
+      "isChorus": true
+    },
+    {
+      "index": 1,
+      "startTime": 92545.09999999998,
+      "endTime": 118644.09999999998,
+      "duration": 26099,
+      "isChorus": true
+    }
+  ],
+  "phrases": [
+    {
+      "startTime": 340,
+      "endTime": 3863,
+      "text": "見せかけの言葉だけで",
+      "words": [
+        {
+          "startTime": 340,
+          "endTime": 1345,
+          "text": "見せかけ",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 340,
+              "endTime": 600,
+              "text": "見"
+            },
+            {
+              "startTime": 600,
+              "endTime": 890,
+              "text": "せ"
+            },
+            {
+              "startTime": 890,
+              "endTime": 1120,
+              "text": "か"
+            },
+            {
+              "startTime": 1120,
+              "endTime": 1345,
+              "text": "け"
+            }
+          ]
+        },
+        {
+          "startTime": 1345,
+          "endTime": 1835,
+          "text": "の",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 1345,
+              "endTime": 1835,
+              "text": "の"
+            }
+          ]
+        },
+        {
+          "startTime": 2290,
+          "endTime": 2960,
+          "text": "言葉",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 2290,
+              "endTime": 2727,
+              "text": "言"
+            },
+            {
+              "startTime": 2727,
+              "endTime": 2960,
+              "text": "葉"
+            }
+          ]
+        },
+        {
+          "startTime": 2960,
+          "endTime": 3430,
+          "text": "だけ",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 2960,
+              "endTime": 3170,
+              "text": "だ"
+            },
+            {
+              "startTime": 3170,
+              "endTime": 3430,
+              "text": "け"
+            }
+          ]
+        },
+        {
+          "startTime": 3430,
+          "endTime": 3863,
+          "text": "で",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 3430,
+              "endTime": 3863,
+              "text": "で"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 4117,
+      "endTime": 7414,
+      "text": "魅せられて嬉しいね",
+      "words": [
+        {
+          "startTime": 4117,
+          "endTime": 4591,
+          "text": "魅せ",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 4117,
+              "endTime": 4353,
+              "text": "魅"
+            },
+            {
+              "startTime": 4353,
+              "endTime": 4591,
+              "text": "せ"
+            }
+          ]
+        },
+        {
+          "startTime": 4591,
+          "endTime": 5041,
+          "text": "られ",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 4591,
+              "endTime": 4800,
+              "text": "ら"
+            },
+            {
+              "startTime": 4800,
+              "endTime": 5041,
+              "text": "れ"
+            }
+          ]
+        },
+        {
+          "startTime": 5041,
+          "endTime": 5831,
+          "text": "て",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 5041,
+              "endTime": 5831,
+              "text": "て"
+            }
+          ]
+        },
+        {
+          "startTime": 5933,
+          "endTime": 6877,
+          "text": "嬉しい",
+          "pos": "J",
+          "chars": [
+            {
+              "startTime": 5933,
+              "endTime": 6366,
+              "text": "嬉"
+            },
+            {
+              "startTime": 6366,
+              "endTime": 6603,
+              "text": "し"
+            },
+            {
+              "startTime": 6603,
+              "endTime": 6877,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 6894,
+          "endTime": 7414,
+          "text": "ね",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 6894,
+              "endTime": 7414,
+              "text": "ね"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 7790,
+      "endTime": 11073,
+      "text": "ホントはね悪夢だけど",
+      "words": [
+        {
+          "startTime": 7790,
+          "endTime": 8451,
+          "text": "ホント",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 7790,
+              "endTime": 8022,
+              "text": "ホ"
+            },
+            {
+              "startTime": 8022,
+              "endTime": 8259,
+              "text": "ン"
+            },
+            {
+              "startTime": 8259,
+              "endTime": 8451,
+              "text": "ト"
+            }
+          ]
+        },
+        {
+          "startTime": 8451,
+          "endTime": 9288,
+          "text": "はね",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 8451,
+              "endTime": 8698,
+              "text": "は"
+            },
+            {
+              "startTime": 8698,
+              "endTime": 9288,
+              "text": "ね"
+            }
+          ]
+        },
+        {
+          "startTime": 9610,
+          "endTime": 10273,
+          "text": "悪夢",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 9610,
+              "endTime": 10056,
+              "text": "悪"
+            },
+            {
+              "startTime": 10056,
+              "endTime": 10273,
+              "text": "夢"
+            }
+          ]
+        },
+        {
+          "startTime": 10273,
+          "endTime": 10513,
+          "text": "だ",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 10273,
+              "endTime": 10513,
+              "text": "だ"
+            }
+          ]
+        },
+        {
+          "startTime": 10513,
+          "endTime": 11073,
+          "text": "けど",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 10513,
+              "endTime": 10733,
+              "text": "け"
+            },
+            {
+              "startTime": 10733,
+              "endTime": 11073,
+              "text": "ど"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 11180,
+      "endTime": 14660,
+      "text": "見捨てないで見つけないで",
+      "words": [
+        {
+          "startTime": 11180,
+          "endTime": 11808,
+          "text": "見捨て",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 11180,
+              "endTime": 11456,
+              "text": "見"
+            },
+            {
+              "startTime": 11456,
+              "endTime": 11523,
+              "text": "捨"
+            },
+            {
+              "startTime": 11523,
+              "endTime": 11808,
+              "text": "て"
+            }
+          ]
+        },
+        {
+          "startTime": 11808,
+          "endTime": 12370,
+          "text": "ない",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 11808,
+              "endTime": 12061,
+              "text": "な"
+            },
+            {
+              "startTime": 12061,
+              "endTime": 12370,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 12370,
+          "endTime": 12873,
+          "text": "で",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 12370,
+              "endTime": 12873,
+              "text": "で"
+            }
+          ]
+        },
+        {
+          "startTime": 12987,
+          "endTime": 13540,
+          "text": "見つけ",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 12987,
+              "endTime": 13285,
+              "text": "見"
+            },
+            {
+              "startTime": 13285,
+              "endTime": 13379,
+              "text": "つ"
+            },
+            {
+              "startTime": 13379,
+              "endTime": 13540,
+              "text": "け"
+            }
+          ]
+        },
+        {
+          "startTime": 13540,
+          "endTime": 14032,
+          "text": "ない",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 13540,
+              "endTime": 13789,
+              "text": "な"
+            },
+            {
+              "startTime": 13789,
+              "endTime": 14032,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 14037,
+          "endTime": 14660,
+          "text": "で",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 14037,
+              "endTime": 14660,
+              "text": "で"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 14900,
+      "endTime": 18231,
+      "text": "思いがけず想いはすぐ",
+      "words": [
+        {
+          "startTime": 14900,
+          "endTime": 16000,
+          "text": "思いがけ",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 14900,
+              "endTime": 15320,
+              "text": "思"
+            },
+            {
+              "startTime": 15320,
+              "endTime": 15550,
+              "text": "い"
+            },
+            {
+              "startTime": 15550,
+              "endTime": 15770,
+              "text": "が"
+            },
+            {
+              "startTime": 15770,
+              "endTime": 16000,
+              "text": "け"
+            }
+          ]
+        },
+        {
+          "startTime": 16000,
+          "endTime": 16320,
+          "text": "ず",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 16000,
+              "endTime": 16320,
+              "text": "ず"
+            }
+          ]
+        },
+        {
+          "startTime": 16700,
+          "endTime": 17350,
+          "text": "想い",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 16700,
+              "endTime": 17150,
+              "text": "想"
+            },
+            {
+              "startTime": 17150,
+              "endTime": 17350,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 17350,
+          "endTime": 17500,
+          "text": "は",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 17350,
+              "endTime": 17500,
+              "text": "は"
+            }
+          ]
+        },
+        {
+          "startTime": 17500,
+          "endTime": 18231,
+          "text": "すぐ",
+          "pos": "R",
+          "chars": [
+            {
+              "startTime": 17500,
+              "endTime": 17701,
+              "text": "す"
+            },
+            {
+              "startTime": 17701,
+              "endTime": 18231,
+              "text": "ぐ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 18544,
+      "endTime": 21914,
+      "text": "あなたに届いてしまうから",
+      "words": [
+        {
+          "startTime": 18544,
+          "endTime": 19104,
+          "text": "あなた",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 18544,
+              "endTime": 18711,
+              "text": "あ"
+            },
+            {
+              "startTime": 18711,
+              "endTime": 18938,
+              "text": "な"
+            },
+            {
+              "startTime": 18938,
+              "endTime": 19104,
+              "text": "た"
+            }
+          ]
+        },
+        {
+          "startTime": 19104,
+          "endTime": 19376,
+          "text": "に",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 19104,
+              "endTime": 19376,
+              "text": "に"
+            }
+          ]
+        },
+        {
+          "startTime": 19376,
+          "endTime": 20031,
+          "text": "届い",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 19376,
+              "endTime": 19881,
+              "text": "届"
+            },
+            {
+              "startTime": 19881,
+              "endTime": 20031,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 20031,
+          "endTime": 20424,
+          "text": "て",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 20031,
+              "endTime": 20424,
+              "text": "て"
+            }
+          ]
+        },
+        {
+          "startTime": 20424,
+          "endTime": 21014,
+          "text": "しまう",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 20424,
+              "endTime": 20664,
+              "text": "し"
+            },
+            {
+              "startTime": 20664,
+              "endTime": 20864,
+              "text": "ま"
+            },
+            {
+              "startTime": 20864,
+              "endTime": 21014,
+              "text": "う"
+            }
+          ]
+        },
+        {
+          "startTime": 21014,
+          "endTime": 21914,
+          "text": "から",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 21014,
+              "endTime": 21194,
+              "text": "か"
+            },
+            {
+              "startTime": 21194,
+              "endTime": 21914,
+              "text": "ら"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 22390,
+      "endTime": 26020,
+      "text": "少しだけよそゆきの声",
+      "words": [
+        {
+          "startTime": 22390,
+          "endTime": 22940,
+          "text": "少し",
+          "pos": "R",
+          "chars": [
+            {
+              "startTime": 22390,
+              "endTime": 22790,
+              "text": "少"
+            },
+            {
+              "startTime": 22790,
+              "endTime": 22940,
+              "text": "し"
+            }
+          ]
+        },
+        {
+          "startTime": 22940,
+          "endTime": 23790,
+          "text": "だけ",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 22940,
+              "endTime": 23180,
+              "text": "だ"
+            },
+            {
+              "startTime": 23180,
+              "endTime": 23790,
+              "text": "け"
+            }
+          ]
+        },
+        {
+          "startTime": 23970,
+          "endTime": 24420,
+          "text": "よそ",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 23970,
+              "endTime": 24171,
+              "text": "よ"
+            },
+            {
+              "startTime": 24171,
+              "endTime": 24420,
+              "text": "そ"
+            }
+          ]
+        },
+        {
+          "startTime": 24420,
+          "endTime": 24910,
+          "text": "ゆき",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 24420,
+              "endTime": 24690,
+              "text": "ゆ"
+            },
+            {
+              "startTime": 24690,
+              "endTime": 24910,
+              "text": "き"
+            }
+          ]
+        },
+        {
+          "startTime": 24910,
+          "endTime": 25140,
+          "text": "の",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 24910,
+              "endTime": 25140,
+              "text": "の"
+            }
+          ]
+        },
+        {
+          "startTime": 25140,
+          "endTime": 26020,
+          "text": "声",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 25140,
+              "endTime": 26020,
+              "text": "声"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 26100,
+      "endTime": 30100,
+      "text": "ウソで重ねたハリボテの上",
+      "words": [
+        {
+          "startTime": 26100,
+          "endTime": 26560,
+          "text": "ウソ",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 26100,
+              "endTime": 26200,
+              "text": "ウ"
+            },
+            {
+              "startTime": 26278,
+              "endTime": 26560,
+              "text": "ソ"
+            }
+          ]
+        },
+        {
+          "startTime": 26560,
+          "endTime": 26770,
+          "text": "で",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 26560,
+              "endTime": 26770,
+              "text": "で"
+            }
+          ]
+        },
+        {
+          "startTime": 26770,
+          "endTime": 27460,
+          "text": "重ね",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 26770,
+              "endTime": 27200,
+              "text": "重"
+            },
+            {
+              "startTime": 27200,
+              "endTime": 27460,
+              "text": "ね"
+            }
+          ]
+        },
+        {
+          "startTime": 27460,
+          "endTime": 27790,
+          "text": "た",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 27460,
+              "endTime": 27790,
+              "text": "た"
+            }
+          ]
+        },
+        {
+          "startTime": 27790,
+          "endTime": 28600,
+          "text": "ハリボテ",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 27790,
+              "endTime": 27920,
+              "text": "ハ"
+            },
+            {
+              "startTime": 27920,
+              "endTime": 28140,
+              "text": "リ"
+            },
+            {
+              "startTime": 28140,
+              "endTime": 28360,
+              "text": "ボ"
+            },
+            {
+              "startTime": 28360,
+              "endTime": 28600,
+              "text": "テ"
+            }
+          ]
+        },
+        {
+          "startTime": 28600,
+          "endTime": 28790,
+          "text": "の",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 28600,
+              "endTime": 28790,
+              "text": "の"
+            }
+          ]
+        },
+        {
+          "startTime": 28790,
+          "endTime": 30100,
+          "text": "上",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 28790,
+              "endTime": 30100,
+              "text": "上"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 30220,
+      "endTime": 33770,
+      "text": "トリツクロジー変なロジック",
+      "words": [
+        {
+          "startTime": 30220,
+          "endTime": 31880,
+          "text": "トリツクロジー",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 30220,
+              "endTime": 30457,
+              "text": "ト"
+            },
+            {
+              "startTime": 30457,
+              "endTime": 30694,
+              "text": "リ"
+            },
+            {
+              "startTime": 30694,
+              "endTime": 30993,
+              "text": "ツ"
+            },
+            {
+              "startTime": 30993,
+              "endTime": 31069,
+              "text": "ク"
+            },
+            {
+              "startTime": 31069,
+              "endTime": 31406,
+              "text": "ロ"
+            },
+            {
+              "startTime": 31406,
+              "endTime": 31481,
+              "text": "ジ"
+            },
+            {
+              "startTime": 31481,
+              "endTime": 31880,
+              "text": "ー"
+            }
+          ]
+        },
+        {
+          "startTime": 32030,
+          "endTime": 32420,
+          "text": "変",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 32030,
+              "endTime": 32420,
+              "text": "変"
+            }
+          ]
+        },
+        {
+          "startTime": 32420,
+          "endTime": 32820,
+          "text": "な",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 32420,
+              "endTime": 32820,
+              "text": "な"
+            }
+          ]
+        },
+        {
+          "startTime": 32950,
+          "endTime": 33770,
+          "text": "ロジック",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 32950,
+              "endTime": 33380,
+              "text": "ロ"
+            },
+            {
+              "startTime": 33380,
+              "endTime": 33680,
+              "text": "ジ"
+            },
+            {
+              "startTime": 33680,
+              "endTime": 33710,
+              "text": "ッ"
+            },
+            {
+              "startTime": 33710,
+              "endTime": 33770,
+              "text": "ク"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 33860,
+      "endTime": 37450,
+      "text": "ここに居たら凍りつくのに",
+      "words": [
+        {
+          "startTime": 33860,
+          "endTime": 34292,
+          "text": "ここ",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 33860,
+              "endTime": 34082,
+              "text": "こ"
+            },
+            {
+              "startTime": 34082,
+              "endTime": 34292,
+              "text": "こ"
+            }
+          ]
+        },
+        {
+          "startTime": 34292,
+          "endTime": 34501,
+          "text": "に",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 34292,
+              "endTime": 34501,
+              "text": "に"
+            }
+          ]
+        },
+        {
+          "startTime": 34501,
+          "endTime": 34729,
+          "text": "居",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 34501,
+              "endTime": 34729,
+              "text": "居"
+            }
+          ]
+        },
+        {
+          "startTime": 34729,
+          "endTime": 35708,
+          "text": "たら",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 34729,
+              "endTime": 35208,
+              "text": "た"
+            },
+            {
+              "startTime": 35208,
+              "endTime": 35708,
+              "text": "ら"
+            }
+          ]
+        },
+        {
+          "startTime": 35708,
+          "endTime": 36830,
+          "text": "凍りつく",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 35708,
+              "endTime": 36170,
+              "text": "凍"
+            },
+            {
+              "startTime": 36170,
+              "endTime": 36390,
+              "text": "り"
+            },
+            {
+              "startTime": 36390,
+              "endTime": 36560,
+              "text": "つ"
+            },
+            {
+              "startTime": 36560,
+              "endTime": 36830,
+              "text": "く"
+            }
+          ]
+        },
+        {
+          "startTime": 36830,
+          "endTime": 37030,
+          "text": "の",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 36830,
+              "endTime": 37030,
+              "text": "の"
+            }
+          ]
+        },
+        {
+          "startTime": 37030,
+          "endTime": 37450,
+          "text": "に",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 37030,
+              "endTime": 37450,
+              "text": "に"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 37619,
+      "endTime": 40890,
+      "text": "取り憑くように無い性懲り",
+      "words": [
+        {
+          "startTime": 37619,
+          "endTime": 37999,
+          "text": "取り",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 37619,
+              "endTime": 37779,
+              "text": "取"
+            },
+            {
+              "startTime": 37779,
+              "endTime": 37999,
+              "text": "り"
+            }
+          ]
+        },
+        {
+          "startTime": 37999,
+          "endTime": 38208,
+          "text": "憑",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 37999,
+              "endTime": 38208,
+              "text": "憑"
+            }
+          ]
+        },
+        {
+          "startTime": 38211,
+          "endTime": 38425,
+          "text": "く",
+          "pos": "J",
+          "chars": [
+            {
+              "startTime": 38211,
+              "endTime": 38425,
+              "text": "く"
+            }
+          ]
+        },
+        {
+          "startTime": 38425,
+          "endTime": 38835,
+          "text": "よう",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 38425,
+              "endTime": 38630,
+              "text": "よ"
+            },
+            {
+              "startTime": 38630,
+              "endTime": 38835,
+              "text": "う"
+            }
+          ]
+        },
+        {
+          "startTime": 38835,
+          "endTime": 39205,
+          "text": "に",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 38835,
+              "endTime": 39205,
+              "text": "に"
+            }
+          ]
+        },
+        {
+          "startTime": 39205,
+          "endTime": 39775,
+          "text": "無い",
+          "pos": "J",
+          "chars": [
+            {
+              "startTime": 39205,
+              "endTime": 39451,
+              "text": "無"
+            },
+            {
+              "startTime": 39474,
+              "endTime": 39775,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 39775,
+          "endTime": 40890,
+          "text": "性懲り",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 39775,
+              "endTime": 40255,
+              "text": "性"
+            },
+            {
+              "startTime": 40255,
+              "endTime": 40600,
+              "text": "懲"
+            },
+            {
+              "startTime": 40600,
+              "endTime": 40890,
+              "text": "り"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 41120,
+      "endTime": 44746,
+      "text": "離れまいとしてしまう病理",
+      "words": [
+        {
+          "startTime": 41120,
+          "endTime": 41800,
+          "text": "離れ",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 41120,
+              "endTime": 41580,
+              "text": "離"
+            },
+            {
+              "startTime": 41580,
+              "endTime": 41800,
+              "text": "れ"
+            }
+          ]
+        },
+        {
+          "startTime": 41800,
+          "endTime": 42250,
+          "text": "まい",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 41800,
+              "endTime": 42020,
+              "text": "ま"
+            },
+            {
+              "startTime": 42020,
+              "endTime": 42250,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 42250,
+          "endTime": 42475,
+          "text": "と",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 42250,
+              "endTime": 42475,
+              "text": "と"
+            }
+          ]
+        },
+        {
+          "startTime": 42475,
+          "endTime": 42692,
+          "text": "し",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 42475,
+              "endTime": 42692,
+              "text": "し"
+            }
+          ]
+        },
+        {
+          "startTime": 42692,
+          "endTime": 42940,
+          "text": "て",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 42692,
+              "endTime": 42940,
+              "text": "て"
+            }
+          ]
+        },
+        {
+          "startTime": 42940,
+          "endTime": 43836,
+          "text": "しまう",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 42940,
+              "endTime": 43145,
+              "text": "し"
+            },
+            {
+              "startTime": 43145,
+              "endTime": 43629,
+              "text": "ま"
+            },
+            {
+              "startTime": 43629,
+              "endTime": 43836,
+              "text": "う"
+            }
+          ]
+        },
+        {
+          "startTime": 43836,
+          "endTime": 44746,
+          "text": "病理",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 43836,
+              "endTime": 44246,
+              "text": "病"
+            },
+            {
+              "startTime": 44246,
+              "endTime": 44746,
+              "text": "理"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 44870,
+      "endTime": 48250,
+      "text": "トリツクロジー取り繕い",
+      "words": [
+        {
+          "startTime": 44870,
+          "endTime": 46670,
+          "text": "トリツクロジー",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 44870,
+              "endTime": 45127,
+              "text": "ト"
+            },
+            {
+              "startTime": 45127,
+              "endTime": 45384,
+              "text": "リ"
+            },
+            {
+              "startTime": 45384,
+              "endTime": 45641,
+              "text": "ツ"
+            },
+            {
+              "startTime": 45641,
+              "endTime": 45753,
+              "text": "ク"
+            },
+            {
+              "startTime": 45753,
+              "endTime": 46156,
+              "text": "ロ"
+            },
+            {
+              "startTime": 46156,
+              "endTime": 46236,
+              "text": "ジ"
+            },
+            {
+              "startTime": 46236,
+              "endTime": 46670,
+              "text": "ー"
+            }
+          ]
+        },
+        {
+          "startTime": 46670,
+          "endTime": 48250,
+          "text": "取り繕い",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 46670,
+              "endTime": 46890,
+              "text": "取"
+            },
+            {
+              "startTime": 46890,
+              "endTime": 47159,
+              "text": "り"
+            },
+            {
+              "startTime": 47159,
+              "endTime": 47990,
+              "text": "繕"
+            },
+            {
+              "startTime": 47990,
+              "endTime": 48250,
+              "text": "い"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 48440,
+      "endTime": 51591,
+      "text": "「卑怯な人」と笑って",
+      "words": [
+        {
+          "startTime": 48440,
+          "endTime": 48440,
+          "text": "「",
+          "pos": "S",
+          "chars": [
+            {
+              "startTime": 48440,
+              "endTime": 48440,
+              "text": "「"
+            }
+          ]
+        },
+        {
+          "startTime": 48440,
+          "endTime": 48850,
+          "text": "卑怯",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 48440,
+              "endTime": 48590,
+              "text": "卑"
+            },
+            {
+              "startTime": 48590,
+              "endTime": 48850,
+              "text": "怯"
+            }
+          ]
+        },
+        {
+          "startTime": 48850,
+          "endTime": 49280,
+          "text": "な",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 48850,
+              "endTime": 49280,
+              "text": "な"
+            }
+          ]
+        },
+        {
+          "startTime": 49280,
+          "endTime": 49355,
+          "text": "人",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 49280,
+              "endTime": 49355,
+              "text": "人"
+            }
+          ]
+        },
+        {
+          "startTime": 49355,
+          "endTime": 49717,
+          "text": "」",
+          "pos": "S",
+          "chars": [
+            {
+              "startTime": 49355,
+              "endTime": 49717,
+              "text": "」"
+            }
+          ]
+        },
+        {
+          "startTime": 49717,
+          "endTime": 49921,
+          "text": "と",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 49717,
+              "endTime": 49921,
+              "text": "と"
+            }
+          ]
+        },
+        {
+          "startTime": 50191,
+          "endTime": 51161,
+          "text": "笑っ",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 50191,
+              "endTime": 50960,
+              "text": "笑"
+            },
+            {
+              "startTime": 50960,
+              "endTime": 51161,
+              "text": "っ"
+            }
+          ]
+        },
+        {
+          "startTime": 51161,
+          "endTime": 51591,
+          "text": "て",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 51161,
+              "endTime": 51591,
+              "text": "て"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 51720,
+      "endTime": 54770,
+      "text": "なんでかなハズレかな",
+      "words": [
+        {
+          "startTime": 51720,
+          "endTime": 52380,
+          "text": "なんで",
+          "pos": "R",
+          "chars": [
+            {
+              "startTime": 51720,
+              "endTime": 51910,
+              "text": "な"
+            },
+            {
+              "startTime": 51910,
+              "endTime": 52210,
+              "text": "ん"
+            },
+            {
+              "startTime": 52210,
+              "endTime": 52380,
+              "text": "で"
+            }
+          ]
+        },
+        {
+          "startTime": 52380,
+          "endTime": 53070,
+          "text": "かな",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 52380,
+              "endTime": 52580,
+              "text": "か"
+            },
+            {
+              "startTime": 52580,
+              "endTime": 53070,
+              "text": "な"
+            }
+          ]
+        },
+        {
+          "startTime": 53560,
+          "endTime": 54230,
+          "text": "ハズレ",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 53560,
+              "endTime": 53760,
+              "text": "ハ"
+            },
+            {
+              "startTime": 53760,
+              "endTime": 53990,
+              "text": "ズ"
+            },
+            {
+              "startTime": 53990,
+              "endTime": 54230,
+              "text": "レ"
+            }
+          ]
+        },
+        {
+          "startTime": 54230,
+          "endTime": 54410,
+          "text": "か",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 54230,
+              "endTime": 54410,
+              "text": "か"
+            }
+          ]
+        },
+        {
+          "startTime": 54410,
+          "endTime": 54770,
+          "text": "な",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 54410,
+              "endTime": 54770,
+              "text": "な"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 54918,
+      "endTime": 60710,
+      "text": "水面に映るあたしが本物みたいな気がして",
+      "words": [
+        {
+          "startTime": 54918,
+          "endTime": 55678,
+          "text": "水面",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 54918,
+              "endTime": 55388,
+              "text": "水"
+            },
+            {
+              "startTime": 55388,
+              "endTime": 55678,
+              "text": "面"
+            }
+          ]
+        },
+        {
+          "startTime": 55678,
+          "endTime": 55915,
+          "text": "に",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 55678,
+              "endTime": 55915,
+              "text": "に"
+            }
+          ]
+        },
+        {
+          "startTime": 55915,
+          "endTime": 56597,
+          "text": "映る",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 55915,
+              "endTime": 56337,
+              "text": "映"
+            },
+            {
+              "startTime": 56337,
+              "endTime": 56597,
+              "text": "る"
+            }
+          ]
+        },
+        {
+          "startTime": 56597,
+          "endTime": 57262,
+          "text": "あたし",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 56597,
+              "endTime": 56817,
+              "text": "あ"
+            },
+            {
+              "startTime": 56817,
+              "endTime": 57042,
+              "text": "た"
+            },
+            {
+              "startTime": 57042,
+              "endTime": 57262,
+              "text": "し"
+            }
+          ]
+        },
+        {
+          "startTime": 57262,
+          "endTime": 57452,
+          "text": "が",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 57262,
+              "endTime": 57452,
+              "text": "が"
+            }
+          ]
+        },
+        {
+          "startTime": 57452,
+          "endTime": 58610,
+          "text": "本物",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 57452,
+              "endTime": 58020,
+              "text": "本"
+            },
+            {
+              "startTime": 58020,
+              "endTime": 58610,
+              "text": "物"
+            }
+          ]
+        },
+        {
+          "startTime": 58610,
+          "endTime": 59270,
+          "text": "みたい",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 58610,
+              "endTime": 58830,
+              "text": "み"
+            },
+            {
+              "startTime": 58830,
+              "endTime": 59180,
+              "text": "た"
+            },
+            {
+              "startTime": 59180,
+              "endTime": 59270,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 59270,
+          "endTime": 59442,
+          "text": "な",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 59270,
+              "endTime": 59442,
+              "text": "な"
+            }
+          ]
+        },
+        {
+          "startTime": 59442,
+          "endTime": 59750,
+          "text": "気",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 59442,
+              "endTime": 59750,
+              "text": "気"
+            }
+          ]
+        },
+        {
+          "startTime": 59750,
+          "endTime": 60020,
+          "text": "が",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 59750,
+              "endTime": 60020,
+              "text": "が"
+            }
+          ]
+        },
+        {
+          "startTime": 60020,
+          "endTime": 60220,
+          "text": "し",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 60020,
+              "endTime": 60220,
+              "text": "し"
+            }
+          ]
+        },
+        {
+          "startTime": 60220,
+          "endTime": 60710,
+          "text": "て",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 60220,
+              "endTime": 60710,
+              "text": "て"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 62364,
+      "endTime": 65957,
+      "text": "いびつな形最高純度",
+      "words": [
+        {
+          "startTime": 62364,
+          "endTime": 63092,
+          "text": "いびつ",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 62364,
+              "endTime": 62627,
+              "text": "い"
+            },
+            {
+              "startTime": 62627,
+              "endTime": 62854,
+              "text": "び"
+            },
+            {
+              "startTime": 62854,
+              "endTime": 63092,
+              "text": "つ"
+            }
+          ]
+        },
+        {
+          "startTime": 63092,
+          "endTime": 63370,
+          "text": "な",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 63092,
+              "endTime": 63370,
+              "text": "な"
+            }
+          ]
+        },
+        {
+          "startTime": 63370,
+          "endTime": 64060,
+          "text": "形",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 63370,
+              "endTime": 64060,
+              "text": "形"
+            }
+          ]
+        },
+        {
+          "startTime": 64336,
+          "endTime": 65188,
+          "text": "最高",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 64336,
+              "endTime": 64797,
+              "text": "最"
+            },
+            {
+              "startTime": 64797,
+              "endTime": 65188,
+              "text": "高"
+            }
+          ]
+        },
+        {
+          "startTime": 65188,
+          "endTime": 65957,
+          "text": "純度",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 65188,
+              "endTime": 65537,
+              "text": "純"
+            },
+            {
+              "startTime": 65537,
+              "endTime": 65957,
+              "text": "度"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 66033,
+      "endTime": 69535,
+      "text": "でも怖くて壊してしまう",
+      "words": [
+        {
+          "startTime": 66033,
+          "endTime": 66484,
+          "text": "でも",
+          "pos": "I",
+          "chars": [
+            {
+              "startTime": 66033,
+              "endTime": 66196,
+              "text": "で"
+            },
+            {
+              "startTime": 66196,
+              "endTime": 66484,
+              "text": "も"
+            }
+          ]
+        },
+        {
+          "startTime": 66484,
+          "endTime": 67144,
+          "text": "怖く",
+          "pos": "J",
+          "chars": [
+            {
+              "startTime": 66484,
+              "endTime": 66954,
+              "text": "怖"
+            },
+            {
+              "startTime": 66954,
+              "endTime": 67144,
+              "text": "く"
+            }
+          ]
+        },
+        {
+          "startTime": 67144,
+          "endTime": 67686,
+          "text": "て",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 67144,
+              "endTime": 67686,
+              "text": "て"
+            }
+          ]
+        },
+        {
+          "startTime": 67822,
+          "endTime": 68462,
+          "text": "壊し",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 67822,
+              "endTime": 68212,
+              "text": "壊"
+            },
+            {
+              "startTime": 68212,
+              "endTime": 68462,
+              "text": "し"
+            }
+          ]
+        },
+        {
+          "startTime": 68462,
+          "endTime": 68745,
+          "text": "て",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 68462,
+              "endTime": 68745,
+              "text": "て"
+            }
+          ]
+        },
+        {
+          "startTime": 68745,
+          "endTime": 69535,
+          "text": "しまう",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 68745,
+              "endTime": 68925,
+              "text": "し"
+            },
+            {
+              "startTime": 68925,
+              "endTime": 69324,
+              "text": "ま"
+            },
+            {
+              "startTime": 69324,
+              "endTime": 69535,
+              "text": "う"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 69672,
+      "endTime": 73330,
+      "text": "泣いたカケラ拾い集め",
+      "words": [
+        {
+          "startTime": 69672,
+          "endTime": 70098,
+          "text": "泣い",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 69672,
+              "endTime": 69902,
+              "text": "泣"
+            },
+            {
+              "startTime": 69902,
+              "endTime": 70098,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 70102,
+          "endTime": 70322,
+          "text": "た",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 70102,
+              "endTime": 70322,
+              "text": "た"
+            }
+          ]
+        },
+        {
+          "startTime": 70322,
+          "endTime": 71302,
+          "text": "カケラ",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 70322,
+              "endTime": 70572,
+              "text": "カ"
+            },
+            {
+              "startTime": 70593,
+              "endTime": 70837,
+              "text": "ケ"
+            },
+            {
+              "startTime": 70837,
+              "endTime": 71302,
+              "text": "ラ"
+            }
+          ]
+        },
+        {
+          "startTime": 71900,
+          "endTime": 72610,
+          "text": "拾い",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 71900,
+              "endTime": 72350,
+              "text": "拾"
+            },
+            {
+              "startTime": 72350,
+              "endTime": 72610,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 72610,
+          "endTime": 73330,
+          "text": "集め",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 72610,
+              "endTime": 73120,
+              "text": "集"
+            },
+            {
+              "startTime": 73120,
+              "endTime": 73330,
+              "text": "め"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 73460,
+      "endTime": 76807,
+      "text": "とっても綺麗な丸にするの",
+      "words": [
+        {
+          "startTime": 73460,
+          "endTime": 74254,
+          "text": "とっても",
+          "pos": "R",
+          "chars": [
+            {
+              "startTime": 73460,
+              "endTime": 73719,
+              "text": "と"
+            },
+            {
+              "startTime": 73719,
+              "endTime": 73883,
+              "text": "っ"
+            },
+            {
+              "startTime": 73883,
+              "endTime": 73978,
+              "text": "て"
+            },
+            {
+              "startTime": 73978,
+              "endTime": 74254,
+              "text": "も"
+            }
+          ]
+        },
+        {
+          "startTime": 74254,
+          "endTime": 74864,
+          "text": "綺麗",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 74254,
+              "endTime": 74474,
+              "text": "綺"
+            },
+            {
+              "startTime": 74474,
+              "endTime": 74864,
+              "text": "麗"
+            }
+          ]
+        },
+        {
+          "startTime": 74864,
+          "endTime": 75164,
+          "text": "な",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 74864,
+              "endTime": 75164,
+              "text": "な"
+            }
+          ]
+        },
+        {
+          "startTime": 75164,
+          "endTime": 75614,
+          "text": "丸",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 75164,
+              "endTime": 75614,
+              "text": "丸"
+            }
+          ]
+        },
+        {
+          "startTime": 75614,
+          "endTime": 75856,
+          "text": "に",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 75614,
+              "endTime": 75856,
+              "text": "に"
+            }
+          ]
+        },
+        {
+          "startTime": 75856,
+          "endTime": 76434,
+          "text": "する",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 75856,
+              "endTime": 76101,
+              "text": "す"
+            },
+            {
+              "startTime": 76101,
+              "endTime": 76434,
+              "text": "る"
+            }
+          ]
+        },
+        {
+          "startTime": 76434,
+          "endTime": 76807,
+          "text": "の",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 76434,
+              "endTime": 76807,
+              "text": "の"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 77244,
+      "endTime": 80584,
+      "text": "最早それあたしの意味",
+      "words": [
+        {
+          "startTime": 77244,
+          "endTime": 77874,
+          "text": "最早",
+          "pos": "R",
+          "chars": [
+            {
+              "startTime": 77244,
+              "endTime": 77394,
+              "text": "最"
+            },
+            {
+              "startTime": 77394,
+              "endTime": 77874,
+              "text": "早"
+            }
+          ]
+        },
+        {
+          "startTime": 77874,
+          "endTime": 78591,
+          "text": "それ",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 77874,
+              "endTime": 78079,
+              "text": "そ"
+            },
+            {
+              "startTime": 78079,
+              "endTime": 78591,
+              "text": "れ"
+            }
+          ]
+        },
+        {
+          "startTime": 78980,
+          "endTime": 79640,
+          "text": "あたし",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 78980,
+              "endTime": 79190,
+              "text": "あ"
+            },
+            {
+              "startTime": 79190,
+              "endTime": 79370,
+              "text": "た"
+            },
+            {
+              "startTime": 79370,
+              "endTime": 79640,
+              "text": "し"
+            }
+          ]
+        },
+        {
+          "startTime": 79640,
+          "endTime": 79790,
+          "text": "の",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 79640,
+              "endTime": 79790,
+              "text": "の"
+            }
+          ]
+        },
+        {
+          "startTime": 79794,
+          "endTime": 80584,
+          "text": "意味",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 79794,
+              "endTime": 79984,
+              "text": "意"
+            },
+            {
+              "startTime": 79984,
+              "endTime": 80584,
+              "text": "味"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 80818,
+      "endTime": 83995,
+      "text": "あってないようなものなのかな",
+      "words": [
+        {
+          "startTime": 80818,
+          "endTime": 81258,
+          "text": "あっ",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 80818,
+              "endTime": 81158,
+              "text": "あ"
+            },
+            {
+              "startTime": 81158,
+              "endTime": 81258,
+              "text": "っ"
+            }
+          ]
+        },
+        {
+          "startTime": 81258,
+          "endTime": 81348,
+          "text": "て",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 81258,
+              "endTime": 81348,
+              "text": "て"
+            }
+          ]
+        },
+        {
+          "startTime": 81348,
+          "endTime": 81939,
+          "text": "ない",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 81348,
+              "endTime": 81642,
+              "text": "な"
+            },
+            {
+              "startTime": 81642,
+              "endTime": 81939,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 81939,
+          "endTime": 82337,
+          "text": "よう",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 81939,
+              "endTime": 82221,
+              "text": "よ"
+            },
+            {
+              "startTime": 82221,
+              "endTime": 82337,
+              "text": "う"
+            }
+          ]
+        },
+        {
+          "startTime": 82337,
+          "endTime": 82625,
+          "text": "な",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 82337,
+              "endTime": 82625,
+              "text": "な"
+            }
+          ]
+        },
+        {
+          "startTime": 82625,
+          "endTime": 82923,
+          "text": "もの",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 82625,
+              "endTime": 82733,
+              "text": "も"
+            },
+            {
+              "startTime": 82733,
+              "endTime": 82923,
+              "text": "の"
+            }
+          ]
+        },
+        {
+          "startTime": 82933,
+          "endTime": 83153,
+          "text": "な",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 82933,
+              "endTime": 83153,
+              "text": "な"
+            }
+          ]
+        },
+        {
+          "startTime": 83153,
+          "endTime": 83335,
+          "text": "の",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 83153,
+              "endTime": 83335,
+              "text": "の"
+            }
+          ]
+        },
+        {
+          "startTime": 83335,
+          "endTime": 83535,
+          "text": "か",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 83335,
+              "endTime": 83535,
+              "text": "か"
+            }
+          ]
+        },
+        {
+          "startTime": 83535,
+          "endTime": 83995,
+          "text": "な",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 83535,
+              "endTime": 83995,
+              "text": "な"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 84728,
+      "endTime": 87687,
+      "text": "でもねいいのいいの",
+      "words": [
+        {
+          "startTime": 84728,
+          "endTime": 85488,
+          "text": "でも",
+          "pos": "I",
+          "chars": [
+            {
+              "startTime": 84728,
+              "endTime": 85328,
+              "text": "で"
+            },
+            {
+              "startTime": 85328,
+              "endTime": 85488,
+              "text": "も"
+            }
+          ]
+        },
+        {
+          "startTime": 85488,
+          "endTime": 85692,
+          "text": "ね",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 85488,
+              "endTime": 85692,
+              "text": "ね"
+            }
+          ]
+        },
+        {
+          "startTime": 85881,
+          "endTime": 86355,
+          "text": "いい",
+          "pos": "J",
+          "chars": [
+            {
+              "startTime": 85881,
+              "endTime": 86111,
+              "text": "い"
+            },
+            {
+              "startTime": 86111,
+              "endTime": 86355,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 86355,
+          "endTime": 86695,
+          "text": "の",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 86355,
+              "endTime": 86695,
+              "text": "の"
+            }
+          ]
+        },
+        {
+          "startTime": 86814,
+          "endTime": 87377,
+          "text": "いい",
+          "pos": "J",
+          "chars": [
+            {
+              "startTime": 86814,
+              "endTime": 87017,
+              "text": "い"
+            },
+            {
+              "startTime": 87017,
+              "endTime": 87377,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 87377,
+          "endTime": 87687,
+          "text": "の",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 87377,
+              "endTime": 87687,
+              "text": "の"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 87687,
+      "endTime": 92317,
+      "text": "あなたの喜ぶ顔が見れるから",
+      "words": [
+        {
+          "startTime": 87687,
+          "endTime": 88300,
+          "text": "あなた",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 87687,
+              "endTime": 87860,
+              "text": "あ"
+            },
+            {
+              "startTime": 87860,
+              "endTime": 88097,
+              "text": "な"
+            },
+            {
+              "startTime": 88097,
+              "endTime": 88300,
+              "text": "た"
+            }
+          ]
+        },
+        {
+          "startTime": 88300,
+          "endTime": 88780,
+          "text": "の",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 88300,
+              "endTime": 88780,
+              "text": "の"
+            }
+          ]
+        },
+        {
+          "startTime": 88780,
+          "endTime": 89655,
+          "text": "喜ぶ",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 88780,
+              "endTime": 89430,
+              "text": "喜"
+            },
+            {
+              "startTime": 89430,
+              "endTime": 89655,
+              "text": "ぶ"
+            }
+          ]
+        },
+        {
+          "startTime": 89655,
+          "endTime": 90075,
+          "text": "顔",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 89655,
+              "endTime": 90075,
+              "text": "顔"
+            }
+          ]
+        },
+        {
+          "startTime": 90075,
+          "endTime": 90347,
+          "text": "が",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 90075,
+              "endTime": 90347,
+              "text": "が"
+            }
+          ]
+        },
+        {
+          "startTime": 90347,
+          "endTime": 91527,
+          "text": "見れる",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 90347,
+              "endTime": 90817,
+              "text": "見"
+            },
+            {
+              "startTime": 90817,
+              "endTime": 91297,
+              "text": "れ"
+            },
+            {
+              "startTime": 91297,
+              "endTime": 91527,
+              "text": "る"
+            }
+          ]
+        },
+        {
+          "startTime": 91527,
+          "endTime": 92317,
+          "text": "から",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 91527,
+              "endTime": 91727,
+              "text": "か"
+            },
+            {
+              "startTime": 91727,
+              "endTime": 92317,
+              "text": "ら"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 92510,
+      "endTime": 95938,
+      "text": "トリツクロジー取り繕い",
+      "words": [
+        {
+          "startTime": 92510,
+          "endTime": 94280,
+          "text": "トリツクロジー",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 92510,
+              "endTime": 92763,
+              "text": "ト"
+            },
+            {
+              "startTime": 92763,
+              "endTime": 93016,
+              "text": "リ"
+            },
+            {
+              "startTime": 93016,
+              "endTime": 93248,
+              "text": "ツ"
+            },
+            {
+              "startTime": 93248,
+              "endTime": 93468,
+              "text": "ク"
+            },
+            {
+              "startTime": 93468,
+              "endTime": 93858,
+              "text": "ロ"
+            },
+            {
+              "startTime": 93858,
+              "endTime": 93974,
+              "text": "ジ"
+            },
+            {
+              "startTime": 93974,
+              "endTime": 94280,
+              "text": "ー"
+            }
+          ]
+        },
+        {
+          "startTime": 94280,
+          "endTime": 95938,
+          "text": "取り繕い",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 94280,
+              "endTime": 94524,
+              "text": "取"
+            },
+            {
+              "startTime": 94524,
+              "endTime": 94768,
+              "text": "り"
+            },
+            {
+              "startTime": 94768,
+              "endTime": 95665,
+              "text": "繕"
+            },
+            {
+              "startTime": 95665,
+              "endTime": 95938,
+              "text": "い"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 96125,
+      "endTime": 99770,
+      "text": "愛されたら溶けてしまうのに",
+      "words": [
+        {
+          "startTime": 96125,
+          "endTime": 96720,
+          "text": "愛さ",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 96125,
+              "endTime": 96515,
+              "text": "愛"
+            },
+            {
+              "startTime": 96515,
+              "endTime": 96720,
+              "text": "さ"
+            }
+          ]
+        },
+        {
+          "startTime": 96720,
+          "endTime": 97008,
+          "text": "れ",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 96720,
+              "endTime": 97008,
+              "text": "れ"
+            }
+          ]
+        },
+        {
+          "startTime": 97008,
+          "endTime": 97948,
+          "text": "たら",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 97008,
+              "endTime": 97521,
+              "text": "た"
+            },
+            {
+              "startTime": 97521,
+              "endTime": 97948,
+              "text": "ら"
+            }
+          ]
+        },
+        {
+          "startTime": 97990,
+          "endTime": 98460,
+          "text": "溶け",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 97990,
+              "endTime": 98230,
+              "text": "溶"
+            },
+            {
+              "startTime": 98230,
+              "endTime": 98460,
+              "text": "け"
+            }
+          ]
+        },
+        {
+          "startTime": 98460,
+          "endTime": 98620,
+          "text": "て",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 98460,
+              "endTime": 98620,
+              "text": "て"
+            }
+          ]
+        },
+        {
+          "startTime": 98620,
+          "endTime": 99110,
+          "text": "しまう",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 98620,
+              "endTime": 98820,
+              "text": "し"
+            },
+            {
+              "startTime": 98820,
+              "endTime": 99050,
+              "text": "ま"
+            },
+            {
+              "startTime": 99050,
+              "endTime": 99110,
+              "text": "う"
+            }
+          ]
+        },
+        {
+          "startTime": 99110,
+          "endTime": 99770,
+          "text": "のに",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 99110,
+              "endTime": 99320,
+              "text": "の"
+            },
+            {
+              "startTime": 99320,
+              "endTime": 99770,
+              "text": "に"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 100290,
+      "endTime": 103270,
+      "text": "取り憑くように無い性懲り",
+      "words": [
+        {
+          "startTime": 100290,
+          "endTime": 100690,
+          "text": "取り",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 100290,
+              "endTime": 100520,
+              "text": "取"
+            },
+            {
+              "startTime": 100520,
+              "endTime": 100690,
+              "text": "り"
+            }
+          ]
+        },
+        {
+          "startTime": 100690,
+          "endTime": 100690,
+          "text": "憑",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 100690,
+              "endTime": 100690,
+              "text": "憑"
+            }
+          ]
+        },
+        {
+          "startTime": 100690,
+          "endTime": 100780,
+          "text": "く",
+          "pos": "J",
+          "chars": [
+            {
+              "startTime": 100690,
+              "endTime": 100780,
+              "text": "く"
+            }
+          ]
+        },
+        {
+          "startTime": 100780,
+          "endTime": 101120,
+          "text": "よう",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 100780,
+              "endTime": 100950,
+              "text": "よ"
+            },
+            {
+              "startTime": 100950,
+              "endTime": 101120,
+              "text": "う"
+            }
+          ]
+        },
+        {
+          "startTime": 101120,
+          "endTime": 101480,
+          "text": "に",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 101120,
+              "endTime": 101480,
+              "text": "に"
+            }
+          ]
+        },
+        {
+          "startTime": 101480,
+          "endTime": 102040,
+          "text": "無い",
+          "pos": "J",
+          "chars": [
+            {
+              "startTime": 101480,
+              "endTime": 101870,
+              "text": "無"
+            },
+            {
+              "startTime": 101870,
+              "endTime": 102040,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 102040,
+          "endTime": 103270,
+          "text": "性懲り",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 102040,
+              "endTime": 102480,
+              "text": "性"
+            },
+            {
+              "startTime": 102480,
+              "endTime": 102990,
+              "text": "懲"
+            },
+            {
+              "startTime": 102990,
+              "endTime": 103270,
+              "text": "り"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 103500,
+      "endTime": 107030,
+      "text": "恥ずかしがり嫌いたいロンリー",
+      "words": [
+        {
+          "startTime": 103500,
+          "endTime": 104360,
+          "text": "恥ずかし",
+          "pos": "J",
+          "chars": [
+            {
+              "startTime": 103500,
+              "endTime": 103702,
+              "text": "恥"
+            },
+            {
+              "startTime": 103702,
+              "endTime": 103950,
+              "text": "ず"
+            },
+            {
+              "startTime": 103950,
+              "endTime": 104120,
+              "text": "か"
+            },
+            {
+              "startTime": 104120,
+              "endTime": 104360,
+              "text": "し"
+            }
+          ]
+        },
+        {
+          "startTime": 104360,
+          "endTime": 104820,
+          "text": "がり",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 104360,
+              "endTime": 104550,
+              "text": "が"
+            },
+            {
+              "startTime": 104550,
+              "endTime": 104820,
+              "text": "り"
+            }
+          ]
+        },
+        {
+          "startTime": 104820,
+          "endTime": 105490,
+          "text": "嫌い",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 104820,
+              "endTime": 105320,
+              "text": "嫌"
+            },
+            {
+              "startTime": 105320,
+              "endTime": 105490,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 105490,
+          "endTime": 106140,
+          "text": "たい",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 105490,
+              "endTime": 106020,
+              "text": "た"
+            },
+            {
+              "startTime": 106020,
+              "endTime": 106140,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 106140,
+          "endTime": 107030,
+          "text": "ロンリー",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 106140,
+              "endTime": 106363,
+              "text": "ロ"
+            },
+            {
+              "startTime": 106363,
+              "endTime": 106585,
+              "text": "ン"
+            },
+            {
+              "startTime": 106585,
+              "endTime": 106691,
+              "text": "リ"
+            },
+            {
+              "startTime": 106691,
+              "endTime": 107030,
+              "text": "ー"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 107150,
+      "endTime": 110710,
+      "text": "じきにそっと秋が来て",
+      "words": [
+        {
+          "startTime": 107150,
+          "endTime": 107540,
+          "text": "じき",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 107150,
+              "endTime": 107348,
+              "text": "じ"
+            },
+            {
+              "startTime": 107348,
+              "endTime": 107540,
+              "text": "き"
+            }
+          ]
+        },
+        {
+          "startTime": 107540,
+          "endTime": 107873,
+          "text": "に",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 107540,
+              "endTime": 107873,
+              "text": "に"
+            }
+          ]
+        },
+        {
+          "startTime": 108020,
+          "endTime": 108840,
+          "text": "そっと",
+          "pos": "R",
+          "chars": [
+            {
+              "startTime": 108020,
+              "endTime": 108410,
+              "text": "そ"
+            },
+            {
+              "startTime": 108410,
+              "endTime": 108510,
+              "text": "っ"
+            },
+            {
+              "startTime": 108510,
+              "endTime": 108840,
+              "text": "と"
+            }
+          ]
+        },
+        {
+          "startTime": 109018,
+          "endTime": 109437,
+          "text": "秋",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 109018,
+              "endTime": 109437,
+              "text": "秋"
+            }
+          ]
+        },
+        {
+          "startTime": 109440,
+          "endTime": 109850,
+          "text": "が",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 109440,
+              "endTime": 109850,
+              "text": "が"
+            }
+          ]
+        },
+        {
+          "startTime": 109850,
+          "endTime": 110360,
+          "text": "来",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 109850,
+              "endTime": 110360,
+              "text": "来"
+            }
+          ]
+        },
+        {
+          "startTime": 110360,
+          "endTime": 110710,
+          "text": "て",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 110360,
+              "endTime": 110710,
+              "text": "て"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 110769,
+      "endTime": 113906,
+      "text": "無慈悲な風が痛くて",
+      "words": [
+        {
+          "startTime": 110769,
+          "endTime": 111270,
+          "text": "無慈悲",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 110769,
+              "endTime": 110875,
+              "text": "無"
+            },
+            {
+              "startTime": 110875,
+              "endTime": 111085,
+              "text": "慈"
+            },
+            {
+              "startTime": 111085,
+              "endTime": 111270,
+              "text": "悲"
+            }
+          ]
+        },
+        {
+          "startTime": 111270,
+          "endTime": 111490,
+          "text": "な",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 111270,
+              "endTime": 111490,
+              "text": "な"
+            }
+          ]
+        },
+        {
+          "startTime": 111490,
+          "endTime": 112105,
+          "text": "風",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 111490,
+              "endTime": 112105,
+              "text": "風"
+            }
+          ]
+        },
+        {
+          "startTime": 112105,
+          "endTime": 112525,
+          "text": "が",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 112105,
+              "endTime": 112525,
+              "text": "が"
+            }
+          ]
+        },
+        {
+          "startTime": 112856,
+          "endTime": 113596,
+          "text": "痛く",
+          "pos": "J",
+          "chars": [
+            {
+              "startTime": 112856,
+              "endTime": 113413,
+              "text": "痛"
+            },
+            {
+              "startTime": 113413,
+              "endTime": 113596,
+              "text": "く"
+            }
+          ]
+        },
+        {
+          "startTime": 113596,
+          "endTime": 113906,
+          "text": "て",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 113596,
+              "endTime": 113906,
+              "text": "て"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 114010,
+      "endTime": 117260,
+      "text": "いつまでもいつまでも",
+      "words": [
+        {
+          "startTime": 114010,
+          "endTime": 114430,
+          "text": "いつ",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 114010,
+              "endTime": 114230,
+              "text": "い"
+            },
+            {
+              "startTime": 114230,
+              "endTime": 114430,
+              "text": "つ"
+            }
+          ]
+        },
+        {
+          "startTime": 114430,
+          "endTime": 114850,
+          "text": "まで",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 114430,
+              "endTime": 114710,
+              "text": "ま"
+            },
+            {
+              "startTime": 114710,
+              "endTime": 114850,
+              "text": "で"
+            }
+          ]
+        },
+        {
+          "startTime": 114850,
+          "endTime": 115340,
+          "text": "も",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 114850,
+              "endTime": 115340,
+              "text": "も"
+            }
+          ]
+        },
+        {
+          "startTime": 115830,
+          "endTime": 116070,
+          "text": "い",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 115830,
+              "endTime": 116070,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 116070,
+          "endTime": 116300,
+          "text": "つ",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 116070,
+              "endTime": 116300,
+              "text": "つ"
+            }
+          ]
+        },
+        {
+          "startTime": 116300,
+          "endTime": 116680,
+          "text": "まで",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 116300,
+              "endTime": 116497,
+              "text": "ま"
+            },
+            {
+              "startTime": 116497,
+              "endTime": 116680,
+              "text": "で"
+            }
+          ]
+        },
+        {
+          "startTime": 116680,
+          "endTime": 117260,
+          "text": "も",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 116680,
+              "endTime": 117260,
+              "text": "も"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 118034,
+      "endTime": 124512,
+      "text": "取り繕うトリツクロジー",
+      "words": [
+        {
+          "startTime": 118034,
+          "endTime": 120519,
+          "text": "取り繕う",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 118034,
+              "endTime": 118340,
+              "text": "取"
+            },
+            {
+              "startTime": 118340,
+              "endTime": 118671,
+              "text": "り"
+            },
+            {
+              "startTime": 118671,
+              "endTime": 119957,
+              "text": "繕"
+            },
+            {
+              "startTime": 119957,
+              "endTime": 120519,
+              "text": "う"
+            }
+          ]
+        },
+        {
+          "startTime": 120520,
+          "endTime": 124512,
+          "text": "トリツクロジー",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 120520,
+              "endTime": 120854,
+              "text": "ト"
+            },
+            {
+              "startTime": 120854,
+              "endTime": 121189,
+              "text": "リ"
+            },
+            {
+              "startTime": 121189,
+              "endTime": 121523,
+              "text": "ツ"
+            },
+            {
+              "startTime": 121523,
+              "endTime": 121857,
+              "text": "ク"
+            },
+            {
+              "startTime": 121857,
+              "endTime": 122191,
+              "text": "ロ"
+            },
+            {
+              "startTime": 122191,
+              "endTime": 122526,
+              "text": "ジ"
+            },
+            {
+              "startTime": 122526,
+              "endTime": 124512,
+              "text": "ー"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "startTime": 132000,
+      "endTime": 138290,
+      "text": "水面に映るあたしが本物みたいな気がして",
+      "words": [
+        {
+          "startTime": 132000,
+          "endTime": 132620,
+          "text": "水面",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 132000,
+              "endTime": 132340,
+              "text": "水"
+            },
+            {
+              "startTime": 132340,
+              "endTime": 132620,
+              "text": "面"
+            }
+          ]
+        },
+        {
+          "startTime": 132620,
+          "endTime": 132876,
+          "text": "に",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 132620,
+              "endTime": 132876,
+              "text": "に"
+            }
+          ]
+        },
+        {
+          "startTime": 132876,
+          "endTime": 133578,
+          "text": "映る",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 132876,
+              "endTime": 133269,
+              "text": "映"
+            },
+            {
+              "startTime": 133269,
+              "endTime": 133578,
+              "text": "る"
+            }
+          ]
+        },
+        {
+          "startTime": 133578,
+          "endTime": 134238,
+          "text": "あたし",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 133578,
+              "endTime": 133788,
+              "text": "あ"
+            },
+            {
+              "startTime": 133788,
+              "endTime": 134023,
+              "text": "た"
+            },
+            {
+              "startTime": 134023,
+              "endTime": 134238,
+              "text": "し"
+            }
+          ]
+        },
+        {
+          "startTime": 134238,
+          "endTime": 134460,
+          "text": "が",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 134238,
+              "endTime": 134460,
+              "text": "が"
+            }
+          ]
+        },
+        {
+          "startTime": 134474,
+          "endTime": 135560,
+          "text": "本物",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 134474,
+              "endTime": 134970,
+              "text": "本"
+            },
+            {
+              "startTime": 134970,
+              "endTime": 135560,
+              "text": "物"
+            }
+          ]
+        },
+        {
+          "startTime": 135560,
+          "endTime": 136230,
+          "text": "みたい",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 135560,
+              "endTime": 135780,
+              "text": "み"
+            },
+            {
+              "startTime": 135780,
+              "endTime": 136046,
+              "text": "た"
+            },
+            {
+              "startTime": 136046,
+              "endTime": 136230,
+              "text": "い"
+            }
+          ]
+        },
+        {
+          "startTime": 136230,
+          "endTime": 136420,
+          "text": "な",
+          "pos": "M",
+          "chars": [
+            {
+              "startTime": 136230,
+              "endTime": 136420,
+              "text": "な"
+            }
+          ]
+        },
+        {
+          "startTime": 136420,
+          "endTime": 136690,
+          "text": "気",
+          "pos": "N",
+          "chars": [
+            {
+              "startTime": 136420,
+              "endTime": 136690,
+              "text": "気"
+            }
+          ]
+        },
+        {
+          "startTime": 136690,
+          "endTime": 136970,
+          "text": "が",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 136690,
+              "endTime": 136970,
+              "text": "が"
+            }
+          ]
+        },
+        {
+          "startTime": 136970,
+          "endTime": 137170,
+          "text": "し",
+          "pos": "V",
+          "chars": [
+            {
+              "startTime": 136970,
+              "endTime": 137170,
+              "text": "し"
+            }
+          ]
+        },
+        {
+          "startTime": 137170,
+          "endTime": 138290,
+          "text": "て",
+          "pos": "P",
+          "chars": [
+            {
+              "startTime": 137170,
+              "endTime": 138290,
+              "text": "て"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "maxVocalAmplitude": 41467.79756,
+  "valenceArousal": {
+    "median": {
+      "valence": 0.2863170916028535,
+      "arousal": 0.21042007510849595
+    }
+  },
+  "amplitudeStep": 200,
+  "amplitudeCurve": [
+    0,
+    0,
+    234,
+    3943,
+    9612,
+    16965,
+    8551,
+    2629,
+    19844,
+    5984,
+    230,
+    203,
+    9580,
+    4389,
+    9512,
+    10846,
+    2956,
+    18864,
+    28654,
+    1492,
+    226,
+    6010,
+    8587,
+    9735,
+    8144,
+    54,
+    18528,
+    21762,
+    973,
+    347,
+    24848,
+    15090,
+    19162,
+    10310,
+    9233,
+    24043,
+    13605,
+    438,
+    10350,
+    36224,
+    7484,
+    0,
+    13987,
+    10885,
+    23927,
+    19572,
+    2770,
+    229,
+    386,
+    1683,
+    2374,
+    7211,
+    16674,
+    11994,
+    17479,
+    4451,
+    5300,
+    7285,
+    9151,
+    5854,
+    13852,
+    11320,
+    16531,
+    25209,
+    10767,
+    548,
+    15721,
+    8951,
+    25428,
+    22721,
+    14921,
+    5048,
+    27799,
+    4085,
+    2452,
+    7875,
+    14072,
+    9818,
+    11665,
+    6461,
+    7294,
+    13155,
+    3324,
+    11,
+    5105,
+    24764,
+    10437,
+    12591,
+    6742,
+    7437,
+    9316,
+    9951,
+    398,
+    13740,
+    36016,
+    1491,
+    1807,
+    5330,
+    17782,
+    13279,
+    15370,
+    18417,
+    11533,
+    4891,
+    20723,
+    422,
+    12750,
+    19673,
+    14546,
+    12223,
+    11199,
+    5376,
+    8032,
+    4023,
+    4774,
+    7338,
+    18683,
+    15009,
+    29427,
+    4802,
+    989,
+    7201,
+    8969,
+    3596,
+    6990,
+    6317,
+    12631,
+    18398,
+    23596,
+    7834,
+    0,
+    9413,
+    11717,
+    20297,
+    6793,
+    4603,
+    13634,
+    6856,
+    18264,
+    1603,
+    10575,
+    20245,
+    5128,
+    21936,
+    14792,
+    26917,
+    15964,
+    24226,
+    14775,
+    27523,
+    15895,
+    10942,
+    16493,
+    8085,
+    20715,
+    15155,
+    12161,
+    20326,
+    16491,
+    20883,
+    3720,
+    23960,
+    15476,
+    28262,
+    9749,
+    18938,
+    15897,
+    11221,
+    20468,
+    3922,
+    16894,
+    17867,
+    36057,
+    16257,
+    5835,
+    21842,
+    25914,
+    27462,
+    3297,
+    22400,
+    24458,
+    23789,
+    2068,
+    402,
+    20027,
+    28443,
+    23563,
+    7407,
+    23052,
+    14937,
+    6706,
+    19703,
+    11406,
+    25739,
+    27179,
+    16860,
+    6362,
+    19659,
+    13134,
+    7774,
+    29181,
+    1444,
+    32262,
+    32088,
+    33635,
+    11500,
+    14900,
+    22514,
+    9894,
+    22933,
+    31514,
+    14195,
+    23840,
+    27000,
+    6755,
+    18692,
+    15640,
+    25425,
+    26100,
+    16588,
+    31534,
+    22221,
+    17654,
+    30194,
+    16015,
+    13723,
+    16355,
+    31266,
+    17452,
+    17225,
+    18205,
+    21850,
+    16111,
+    4574,
+    20473,
+    17236,
+    15324,
+    11806,
+    10274,
+    22398,
+    24720,
+    23433,
+    4125,
+    13151,
+    33157,
+    10675,
+    19059,
+    12650,
+    18677,
+    27540,
+    26779,
+    8587,
+    30239,
+    26240,
+    7707,
+    23327,
+    1871,
+    23243,
+    14737,
+    34134,
+    10627,
+    4134,
+    479,
+    10363,
+    25182,
+    13080,
+    3093,
+    32747,
+    30022,
+    4405,
+    10841,
+    7643,
+    20023,
+    24034,
+    16956,
+    426,
+    16840,
+    10790,
+    15614,
+    17805,
+    10406,
+    7809,
+    7703,
+    10162,
+    11705,
+    2562,
+    14610,
+    13423,
+    22611,
+    20769,
+    10042,
+    31357,
+    11765,
+    9204,
+    7525,
+    27165,
+    14804,
+    15332,
+    8625,
+    23125,
+    13975,
+    6580,
+    23354,
+    10851,
+    5607,
+    4453,
+    3697,
+    3124,
+    2819,
+    2827,
+    2301,
+    2509,
+    3378,
+    6431,
+    9530,
+    12332,
+    8129,
+    8724,
+    10188,
+    16460,
+    1312,
+    581,
+    2490,
+    42064,
+    6081,
+    2630,
+    10308,
+    1475,
+    3715,
+    3993,
+    7534,
+    12694,
+    5501,
+    6463,
+    12399,
+    14433,
+    3585,
+    11020,
+    24065,
+    9821,
+    3825,
+    9403,
+    4842,
+    0,
+    15685,
+    9482,
+    17133,
+    26013,
+    13060,
+    277,
+    10307,
+    2609,
+    9851,
+    19018,
+    9201,
+    0,
+    22047,
+    12282,
+    472,
+    253,
+    5586,
+    7760,
+    8887,
+    6795,
+    3389,
+    10103,
+    17823,
+    235,
+    9614,
+    16191,
+    12055,
+    7205,
+    1973,
+    10539,
+    17032,
+    9701,
+    728,
+    15749,
+    35213,
+    7009,
+    5976,
+    15768,
+    465,
+    16313,
+    13277,
+    9387,
+    4919,
+    4962,
+    12233,
+    11027,
+    9476,
+    14427,
+    13939,
+    26675,
+    7821,
+    1062,
+    366,
+    10114,
+    12609,
+    7149,
+    8979,
+    13316,
+    13259,
+    6507,
+    393,
+    14746,
+    4525,
+    8709,
+    11113,
+    8801,
+    14056,
+    22776,
+    13458,
+    24141,
+    4818,
+    13453,
+    14762,
+    11198,
+    10891,
+    4330,
+    20667,
+    14244,
+    408,
+    317,
+    19042,
+    21873,
+    17084,
+    4580,
+    3997,
+    13200,
+    2239,
+    11303,
+    12728,
+    36930,
+    5731,
+    4155,
+    11488,
+    7287,
+    19596,
+    16237,
+    12429,
+    18120,
+    16104,
+    23245,
+    6948,
+    22412,
+    0,
+    18124,
+    11601,
+    19993,
+    16807,
+    5099,
+    20510,
+    19105,
+    4153,
+    10489,
+    28916,
+    10591,
+    5033,
+    16980,
+    36900,
+    20481,
+    26622,
+    19086,
+    17536,
+    22117,
+    12568,
+    6315,
+    18728,
+    25423,
+    9965,
+    5218,
+    13827,
+    20528,
+    7494,
+    19776,
+    539,
+    25087,
+    27755,
+    17551,
+    7104,
+    13821,
+    13180,
+    6929,
+    29026,
+    10766,
+    38195,
+    33904,
+    35344,
+    13459,
+    2002,
+    11531,
+    12447,
+    24830,
+    13265,
+    20898,
+    34025,
+    20033,
+    14835,
+    1749,
+    17337,
+    4104,
+    13107,
+    14152,
+    19386,
+    25165,
+    11957,
+    21669,
+    3082,
+    28886,
+    25913,
+    18582,
+    9420,
+    15738,
+    16304,
+    21620,
+    12338,
+    4923,
+    34933,
+    10815,
+    23941,
+    13836,
+    14177,
+    37008,
+    16427,
+    15683,
+    19454,
+    13656,
+    20485,
+    21888,
+    20195,
+    15960,
+    19217,
+    17003,
+    11753,
+    25042,
+    18198,
+    5032,
+    3994,
+    20626,
+    9942,
+    34302,
+    32003,
+    32309,
+    9782,
+    3337,
+    7162,
+    839,
+    28370,
+    1263,
+    12681,
+    29451,
+    23944,
+    23584,
+    6884,
+    15159,
+    15644,
+    24994,
+    27047,
+    11618,
+    27135,
+    14182,
+    25940,
+    2950,
+    27212,
+    11168,
+    18151,
+    23613,
+    8350,
+    26839,
+    14385,
+    8894,
+    14917,
+    29747,
+    15375,
+    32582,
+    20014,
+    7259,
+    690,
+    26369,
+    16280,
+    16313,
+    12570,
+    31994,
+    12897,
+    24799,
+    354,
+    195,
+    12459,
+    16934,
+    16768,
+    18159,
+    14613,
+    4452,
+    23523,
+    12062,
+    22538,
+    12495,
+    30832,
+    33086,
+    13237,
+    24031,
+    3593,
+    13195,
+    22053,
+    15678,
+    12933,
+    7247,
+    16545,
+    7710,
+    26603,
+    26463,
+    22451,
+    18632,
+    29916,
+    23389,
+    34389,
+    29753,
+    20828,
+    25878,
+    23328,
+    19658,
+    22801,
+    28848,
+    3546,
+    12934,
+    8204,
+    209,
+    8224,
+    8206,
+    36579,
+    26364,
+    20888,
+    6061,
+    15219,
+    16475,
+    6216,
+    2048,
+    11351,
+    200,
+    0,
+    807,
+    516,
+    11419,
+    10838,
+    6515,
+    12833,
+    24502,
+    6638,
+    19711,
+    7675,
+    6925,
+    16817,
+    13719,
+    5773,
+    5548,
+    552,
+    368,
+    0,
+    0,
+    281,
+    25159,
+    33799,
+    9267,
+    6000,
+    8530,
+    5180,
+    10760,
+    6086,
+    14955,
+    14671,
+    16618,
+    6629,
+    5829,
+    15217,
+    12586,
+    16974,
+    16207,
+    24055,
+    1913,
+    25317,
+    11681,
+    6248,
+    11341,
+    25179,
+    9307,
+    10825,
+    18899,
+    15766,
+    16206,
+    3806,
+    3664,
+    10155,
+    5073,
+    3514,
+    2266,
+    1796,
+    1322,
+    817,
+    537,
+    324,
+    174,
+    -1,
+    -1
+  ],
+  "vaCurve": [
+    {
+      "t": 0,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 1000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 2000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 3000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 4000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 5000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 6000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 7000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 8000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 9000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 10000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 11000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 12000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 13000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 14000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 15000,
+      "v": 0.221,
+      "a": 0.09
+    },
+    {
+      "t": 16000,
+      "v": 0.228,
+      "a": 0.099
+    },
+    {
+      "t": 17000,
+      "v": 0.235,
+      "a": 0.109
+    },
+    {
+      "t": 18000,
+      "v": 0.242,
+      "a": 0.118
+    },
+    {
+      "t": 19000,
+      "v": 0.249,
+      "a": 0.127
+    },
+    {
+      "t": 20000,
+      "v": 0.257,
+      "a": 0.136
+    },
+    {
+      "t": 21000,
+      "v": 0.264,
+      "a": 0.145
+    },
+    {
+      "t": 22000,
+      "v": 0.271,
+      "a": 0.154
+    },
+    {
+      "t": 23000,
+      "v": 0.278,
+      "a": 0.163
+    },
+    {
+      "t": 24000,
+      "v": 0.285,
+      "a": 0.172
+    },
+    {
+      "t": 25000,
+      "v": 0.292,
+      "a": 0.181
+    },
+    {
+      "t": 26000,
+      "v": 0.3,
+      "a": 0.191
+    },
+    {
+      "t": 27000,
+      "v": 0.307,
+      "a": 0.2
+    },
+    {
+      "t": 28000,
+      "v": 0.314,
+      "a": 0.209
+    },
+    {
+      "t": 29000,
+      "v": 0.321,
+      "a": 0.218
+    },
+    {
+      "t": 30000,
+      "v": 0.328,
+      "a": 0.227
+    },
+    {
+      "t": 31000,
+      "v": 0.328,
+      "a": 0.23
+    },
+    {
+      "t": 32000,
+      "v": 0.328,
+      "a": 0.233
+    },
+    {
+      "t": 33000,
+      "v": 0.328,
+      "a": 0.236
+    },
+    {
+      "t": 34000,
+      "v": 0.327,
+      "a": 0.239
+    },
+    {
+      "t": 35000,
+      "v": 0.327,
+      "a": 0.241
+    },
+    {
+      "t": 36000,
+      "v": 0.327,
+      "a": 0.244
+    },
+    {
+      "t": 37000,
+      "v": 0.326,
+      "a": 0.247
+    },
+    {
+      "t": 38000,
+      "v": 0.326,
+      "a": 0.25
+    },
+    {
+      "t": 39000,
+      "v": 0.326,
+      "a": 0.253
+    },
+    {
+      "t": 40000,
+      "v": 0.326,
+      "a": 0.256
+    },
+    {
+      "t": 41000,
+      "v": 0.325,
+      "a": 0.259
+    },
+    {
+      "t": 42000,
+      "v": 0.325,
+      "a": 0.261
+    },
+    {
+      "t": 43000,
+      "v": 0.325,
+      "a": 0.264
+    },
+    {
+      "t": 44000,
+      "v": 0.324,
+      "a": 0.267
+    },
+    {
+      "t": 45000,
+      "v": 0.324,
+      "a": 0.27
+    },
+    {
+      "t": 46000,
+      "v": 0.321,
+      "a": 0.265
+    },
+    {
+      "t": 47000,
+      "v": 0.318,
+      "a": 0.261
+    },
+    {
+      "t": 48000,
+      "v": 0.315,
+      "a": 0.256
+    },
+    {
+      "t": 49000,
+      "v": 0.313,
+      "a": 0.252
+    },
+    {
+      "t": 50000,
+      "v": 0.31,
+      "a": 0.247
+    },
+    {
+      "t": 51000,
+      "v": 0.307,
+      "a": 0.243
+    },
+    {
+      "t": 52000,
+      "v": 0.304,
+      "a": 0.238
+    },
+    {
+      "t": 53000,
+      "v": 0.301,
+      "a": 0.233
+    },
+    {
+      "t": 54000,
+      "v": 0.298,
+      "a": 0.229
+    },
+    {
+      "t": 55000,
+      "v": 0.295,
+      "a": 0.224
+    },
+    {
+      "t": 56000,
+      "v": 0.292,
+      "a": 0.22
+    },
+    {
+      "t": 57000,
+      "v": 0.289,
+      "a": 0.215
+    },
+    {
+      "t": 58000,
+      "v": 0.286,
+      "a": 0.21
+    },
+    {
+      "t": 59000,
+      "v": 0.283,
+      "a": 0.206
+    },
+    {
+      "t": 60000,
+      "v": 0.28,
+      "a": 0.201
+    },
+    {
+      "t": 61000,
+      "v": 0.278,
+      "a": 0.196
+    },
+    {
+      "t": 62000,
+      "v": 0.276,
+      "a": 0.191
+    },
+    {
+      "t": 63000,
+      "v": 0.273,
+      "a": 0.186
+    },
+    {
+      "t": 64000,
+      "v": 0.271,
+      "a": 0.181
+    },
+    {
+      "t": 65000,
+      "v": 0.268,
+      "a": 0.176
+    },
+    {
+      "t": 66000,
+      "v": 0.266,
+      "a": 0.171
+    },
+    {
+      "t": 67000,
+      "v": 0.263,
+      "a": 0.166
+    },
+    {
+      "t": 68000,
+      "v": 0.261,
+      "a": 0.161
+    },
+    {
+      "t": 69000,
+      "v": 0.259,
+      "a": 0.157
+    },
+    {
+      "t": 70000,
+      "v": 0.256,
+      "a": 0.152
+    },
+    {
+      "t": 71000,
+      "v": 0.254,
+      "a": 0.147
+    },
+    {
+      "t": 72000,
+      "v": 0.251,
+      "a": 0.142
+    },
+    {
+      "t": 73000,
+      "v": 0.249,
+      "a": 0.137
+    },
+    {
+      "t": 74000,
+      "v": 0.246,
+      "a": 0.132
+    },
+    {
+      "t": 75000,
+      "v": 0.244,
+      "a": 0.127
+    },
+    {
+      "t": 76000,
+      "v": 0.249,
+      "a": 0.134
+    },
+    {
+      "t": 77000,
+      "v": 0.254,
+      "a": 0.142
+    },
+    {
+      "t": 78000,
+      "v": 0.26,
+      "a": 0.15
+    },
+    {
+      "t": 79000,
+      "v": 0.265,
+      "a": 0.158
+    },
+    {
+      "t": 80000,
+      "v": 0.27,
+      "a": 0.165
+    },
+    {
+      "t": 81000,
+      "v": 0.275,
+      "a": 0.173
+    },
+    {
+      "t": 82000,
+      "v": 0.28,
+      "a": 0.181
+    },
+    {
+      "t": 83000,
+      "v": 0.286,
+      "a": 0.188
+    },
+    {
+      "t": 84000,
+      "v": 0.291,
+      "a": 0.196
+    },
+    {
+      "t": 85000,
+      "v": 0.296,
+      "a": 0.204
+    },
+    {
+      "t": 86000,
+      "v": 0.301,
+      "a": 0.212
+    },
+    {
+      "t": 87000,
+      "v": 0.307,
+      "a": 0.219
+    },
+    {
+      "t": 88000,
+      "v": 0.312,
+      "a": 0.227
+    },
+    {
+      "t": 89000,
+      "v": 0.317,
+      "a": 0.235
+    },
+    {
+      "t": 90000,
+      "v": 0.322,
+      "a": 0.242
+    },
+    {
+      "t": 91000,
+      "v": 0.322,
+      "a": 0.243
+    },
+    {
+      "t": 92000,
+      "v": 0.322,
+      "a": 0.244
+    },
+    {
+      "t": 93000,
+      "v": 0.322,
+      "a": 0.245
+    },
+    {
+      "t": 94000,
+      "v": 0.322,
+      "a": 0.246
+    },
+    {
+      "t": 95000,
+      "v": 0.322,
+      "a": 0.247
+    },
+    {
+      "t": 96000,
+      "v": 0.322,
+      "a": 0.248
+    },
+    {
+      "t": 97000,
+      "v": 0.322,
+      "a": 0.248
+    },
+    {
+      "t": 98000,
+      "v": 0.322,
+      "a": 0.249
+    },
+    {
+      "t": 99000,
+      "v": 0.322,
+      "a": 0.25
+    },
+    {
+      "t": 100000,
+      "v": 0.322,
+      "a": 0.251
+    },
+    {
+      "t": 101000,
+      "v": 0.322,
+      "a": 0.252
+    },
+    {
+      "t": 102000,
+      "v": 0.322,
+      "a": 0.253
+    },
+    {
+      "t": 103000,
+      "v": 0.322,
+      "a": 0.254
+    },
+    {
+      "t": 104000,
+      "v": 0.322,
+      "a": 0.254
+    },
+    {
+      "t": 105000,
+      "v": 0.322,
+      "a": 0.255
+    },
+    {
+      "t": 106000,
+      "v": 0.319,
+      "a": 0.25
+    },
+    {
+      "t": 107000,
+      "v": 0.317,
+      "a": 0.245
+    },
+    {
+      "t": 108000,
+      "v": 0.315,
+      "a": 0.239
+    },
+    {
+      "t": 109000,
+      "v": 0.313,
+      "a": 0.234
+    },
+    {
+      "t": 110000,
+      "v": 0.311,
+      "a": 0.229
+    },
+    {
+      "t": 111000,
+      "v": 0.309,
+      "a": 0.224
+    },
+    {
+      "t": 112000,
+      "v": 0.307,
+      "a": 0.218
+    },
+    {
+      "t": 113000,
+      "v": 0.305,
+      "a": 0.213
+    },
+    {
+      "t": 114000,
+      "v": 0.303,
+      "a": 0.208
+    },
+    {
+      "t": 115000,
+      "v": 0.301,
+      "a": 0.202
+    },
+    {
+      "t": 116000,
+      "v": 0.299,
+      "a": 0.197
+    },
+    {
+      "t": 117000,
+      "v": 0.297,
+      "a": 0.192
+    },
+    {
+      "t": 118000,
+      "v": 0.295,
+      "a": 0.187
+    },
+    {
+      "t": 119000,
+      "v": 0.293,
+      "a": 0.181
+    },
+    {
+      "t": 120000,
+      "v": 0.29,
+      "a": 0.176
+    },
+    {
+      "t": 121000,
+      "v": 0.282,
+      "a": 0.168
+    },
+    {
+      "t": 122000,
+      "v": 0.274,
+      "a": 0.159
+    },
+    {
+      "t": 123000,
+      "v": 0.266,
+      "a": 0.151
+    },
+    {
+      "t": 124000,
+      "v": 0.258,
+      "a": 0.143
+    },
+    {
+      "t": 125000,
+      "v": 0.25,
+      "a": 0.134
+    },
+    {
+      "t": 126000,
+      "v": 0.242,
+      "a": 0.126
+    },
+    {
+      "t": 127000,
+      "v": 0.233,
+      "a": 0.117
+    },
+    {
+      "t": 128000,
+      "v": 0.225,
+      "a": 0.109
+    },
+    {
+      "t": 129000,
+      "v": 0.217,
+      "a": 0.101
+    },
+    {
+      "t": 130000,
+      "v": 0.209,
+      "a": 0.092
+    },
+    {
+      "t": 131000,
+      "v": 0.201,
+      "a": 0.084
+    },
+    {
+      "t": 132000,
+      "v": 0.193,
+      "a": 0.076
+    },
+    {
+      "t": 133000,
+      "v": 0.185,
+      "a": 0.067
+    },
+    {
+      "t": 134000,
+      "v": 0.177,
+      "a": 0.059
+    },
+    {
+      "t": 135000,
+      "v": 0.168,
+      "a": 0.051
+    },
+    {
+      "t": 136000,
+      "v": 0.168,
+      "a": 0.051
+    },
+    {
+      "t": 137000,
+      "v": 0.168,
+      "a": 0.051
+    },
+    {
+      "t": 138000,
+      "v": 0.168,
+      "a": 0.051
+    },
+    {
+      "t": 139000,
+      "v": 0.168,
+      "a": 0.051
+    },
+    {
+      "t": 140000,
+      "v": 0.168,
+      "a": 0.051
+    }
+  ]
+}

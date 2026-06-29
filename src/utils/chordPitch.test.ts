@@ -152,10 +152,34 @@ describe("無和音の扱い", () => {
   });
 });
 
+describe("トリツクロジーの拡張和音・サスペンド和音・減三和音の核への写像（Issue #91）", () => {
+  // 音高値は実行時未使用のため核（基本品質）へ写す（詳細は chordPitch.ts の QUALITY_TOKEN_TO_QUALITY のコメント）。
+  // 各和音が解析でき期待の核になることを固定する。
+  it("短和音の拡張（m(9)・m(11)・m(13)）は短三和音に写る", () => {
+    expect(parseChordSymbol("Gbm(9)").quality).toBe("minor");
+    expect(parseChordSymbol("Bbm(11)").quality).toBe("minor");
+    expect(parseChordSymbol("Gbm(13)").quality).toBe("minor");
+  });
+
+  it("add9 は長三和音、sus2・sus4 は長三和音、dim は短三和音に写る", () => {
+    expect(parseChordSymbol("Dbadd9").quality).toBe("major");
+    expect(parseChordSymbol("Ebsus2").quality).toBe("major");
+    expect(parseChordSymbol("Dbsus4").quality).toBe("major");
+    expect(parseChordSymbol("Adim").quality).toBe("minor");
+  });
+
+  it("写像後の和音はいずれも音高集合へ展開できる", () => {
+    for (const name of ["Gbm(13)", "Bbm(9)", "Dbadd9", "Ebsus2", "Dbsus4", "Adim"]) {
+      expect(() => chordSymbolToPitchSet(name)).not.toThrow();
+    }
+  });
+});
+
 describe("異常入力", () => {
   it("空文字・未対応の品質・不正な根音は例外になる", () => {
     expect(() => parseChordSymbol("")).toThrow();
-    expect(() => parseChordSymbol("Csus4")).toThrow();
+    // サスペンド和音 sus4 は対応済みのため、なお未対応の拡張（maj9）で例外を確かめる。
+    expect(() => parseChordSymbol("Cmaj9")).toThrow();
     expect(() => parseChordSymbol("Hm")).toThrow();
   });
 

@@ -32,7 +32,7 @@ import { isNoChordSymbol } from "../../utils/chordPitch";
 import { createCameraTrajectory } from "../../utils/cameraTrajectory";
 import { resolveNoChordRegions } from "./noChordResolution";
 import { generateChordToneSlots, type ResolvedChordRegion } from "./chordToneSlots";
-import { generateShowcases } from "./showcases";
+import { generateShowcases, mergeContiguousChorusSegments } from "./showcases";
 import {
   generateDensityPlan,
   countTargetNotes,
@@ -218,11 +218,15 @@ export function buildProfile(args: {
   const slots: ChordToneSlotRegion[] = generateChordToneSlots(resolvedRegions);
 
   // 4. 見せ場（climaxAnchorMs は手動入力。見せ場生成ではオプション引数で渡す）。
-  //    見せ場の個数は、既定値と曲のサビ区間数の大きい方にする。理由を先に述べる。見せ場生成は戦略Bでサビ区間を必ず
-  //    見せ場にするため、見せ場の個数がサビ区間数より少ないと失敗する。サビ区間数は曲ごとに異なるため、既定値を下限と
-  //    しつつサビ区間数まで個数を増やすことで、サビ数の多い曲でも全サビを見せ場にできる。サビ数が既定値以下の曲では
-  //    既定値のままで、非サビの高声量点が残りの見せ場を補う（従来の挙動を保つ）。
-  const showcaseCount = Math.max(DEFAULT_SHOWCASE_OPTIONS.count, chorusSegments.length);
+  //    見せ場の個数は、既定値と曲のサビ群（連続サビを統合したブロック）の数の大きい方にする。理由を先に述べる。見せ場生成は
+  //    戦略Bで各サビ群を必ず見せ場にするため、見せ場の個数がサビ群の数より少ないと失敗する。また見せ場生成は隣接する反復区間を
+  //    1つのサビ群へ統合してから不変窓にする（接する区間を別々の窓にすると窓どうしが重なるため）ので、個数の下限も統合後のサビ群の数で
+  //    数える。サビ群の数は曲ごとに異なるため、既定値を下限としつつサビ群の数まで個数を増やすことで、サビの多い曲でも全サビ群を見せ場に
+  //    できる。サビ群が既定値以下の曲では既定値のままで、非サビの高声量点が残りの見せ場を補う（従来の挙動を保つ）。
+  const showcaseCount = Math.max(
+    DEFAULT_SHOWCASE_OPTIONS.count,
+    mergeContiguousChorusSegments(chorusSegments).length,
+  );
   const showcases = generateShowcases(toShowcaseInput(songmap), {
     climaxAnchorMs: manual.climaxAnchorMs,
     count: showcaseCount,

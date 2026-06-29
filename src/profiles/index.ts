@@ -26,6 +26,12 @@ import {
   TORITSUKU_LOGY_DEFAULT_READING_PIXEL_HEIGHT,
   TORITSUKU_LOGY_DEFAULT_READING_REGION,
 } from "./toritsuku-logy/typographyChart";
+import { shutterChanceProfile } from "./shutter-chance/profile";
+import {
+  shutterChanceTypographyChart,
+  SHUTTER_CHANCE_DEFAULT_READING_PIXEL_HEIGHT,
+  SHUTTER_CHANCE_DEFAULT_READING_REGION,
+} from "./shutter-chance/typographyChart";
 
 /** 1曲分の曲依存データの束。統括が本編プレイの結線で使う。 */
 export interface SongBundle {
@@ -63,6 +69,13 @@ const BUNDLES_BY_KEY: Record<string, SongBundle> = {
     defaultReadingUnit: "phrase",
     defaultReadingPixelHeight: TORITSUKU_LOGY_DEFAULT_READING_PIXEL_HEIGHT,
     defaultReadingRegion: TORITSUKU_LOGY_DEFAULT_READING_REGION,
+  },
+  "shutter-chance": {
+    profile: shutterChanceProfile,
+    typographyChart: shutterChanceTypographyChart,
+    defaultReadingUnit: "phrase",
+    defaultReadingPixelHeight: SHUTTER_CHANCE_DEFAULT_READING_PIXEL_HEIGHT,
+    defaultReadingRegion: SHUTTER_CHANCE_DEFAULT_READING_REGION,
   },
 };
 

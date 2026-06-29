@@ -109,7 +109,7 @@ export function circularSemitoneDistance(a: number, b: number): number {
 export function buildSafeConsonanceIntervals(quality: ChordQuality): number[] {
   const chordIntervals = CHORD_QUALITY_INTERVALS[quality];
   const category = QUALITY_TO_TONE_CATEGORY[quality];
-  // 網羅性検査。parseChordSymbol が返す品質は7種で各表もこれを網羅するが、将来 ChordQuality に品質が追加され表の更新が漏れた場合に、
+  // 網羅性検査。parseChordSymbol が返す品質を各表も網羅するが、将来 ChordQuality に品質が追加され表の更新が漏れた場合に、
   // 誤った値を黙って使わず発生源で止めるための検査である。
   if (chordIntervals === undefined || category === undefined) {
     throw new Error(`和音の品質に対応する音程表がありません（内部不整合）: "${String(quality)}"`);

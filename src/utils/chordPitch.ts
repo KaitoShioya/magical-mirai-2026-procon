@@ -15,7 +15,9 @@
 // Issue #37 の責務であり、解決後の実在和音名を本モジュールへ渡す（profileSchema.ts の ChordToneSlotRegion 注釈）。
 
 /** 和音の品質。実在和音に対応し、将来の曲のために拡張可能な列挙とする。
- *  TAKEOVER の16種に加え、アフター・ザ・カーテンに出現する属七の懸垂四度・減七・属九・短九・属七の変十三度を加える。 */
+ *  TAKEOVER の和音に加え、アフター・ザ・カーテン（Issue #91）の属七の懸垂四度・減七・属九・短九・属七の変十三度を加える。
+ *  トリツクロジー（Issue #91）とシャッターチャンス（Issue #88）の拡張和音・サスペンド和音・減三和音は、新しい品質を増やさず
+ *  最も近い核（基本品質）へ写すため、本列挙は増やさない（QUALITY_TOKEN_TO_QUALITY を参照）。 */
 export type ChordQuality =
   | "major"
   | "minor"
@@ -111,6 +113,13 @@ export const QUALITY_TOKEN_TO_QUALITY: Record<string, ChordQuality> = {
   sus2: "major",
   sus4: "major",
   dim: "minor",
+  // シャッターチャンス（Issue #88）に出現するテンション付きの短七和音と二度保留和音。上と同じ理由でテンションを無視して
+  // 最も近い核へ写す（短七和音は第七音を保つため核は短七和音、二度保留和音はトリツクロジーの sus2 と同じく長三和音）。
+  // 括弧付きトークンは完全一致で引く既存方針に揃え、他曲の括弧付き和音 "7(b13)" の解釈を壊さない。
+  "m7(#9)": "minorSeventh",
+  "m7(b9)": "minorSeventh",
+  "sus2(b9)": "major",
+
 };
 
 /** 2オクターブ展開の下のオクターブにおける、ハ音（音高クラス0）のMIDIノート番号。★暫定。
@@ -159,6 +168,8 @@ export function parseChordSymbol(name: string): ParsedChord {
   const bassPart = slashIndex >= 0 ? trimmed.slice(slashIndex + 1) : null;
 
   const root = readNote(chordPart);
+  // 根音と分数和音の低音を除いた残り文字列を完全一致で品質へ引く。括弧付きのテンション表記（"m7(#9)"・"sus2(b9)"・"7(b13)" など）も
+  // 完全一致のトークンとして QUALITY_TOKEN_TO_QUALITY に登録してあるため、ここでは加工せずそのまま引く。
   const quality = QUALITY_TOKEN_TO_QUALITY[root.rest];
   if (quality === undefined) {
     throw new Error(`和音記号の品質が未対応です: "${name}"（品質部分 "${root.rest}"）`);

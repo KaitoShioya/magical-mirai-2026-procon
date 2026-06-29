@@ -3,10 +3,79 @@ import {
   generateShowcases,
   InvalidChorusSegmentError,
   InvalidShowcaseOptionError,
+  mergeContiguousChorusSegments,
   selectNonChorusPeaks,
   TooManyChorusError,
 } from "./showcases";
-import type { ShowcaseInput } from "./types";
+import type { ChorusSegment, ShowcaseInput } from "./types";
+
+describe("mergeContiguousChorusSegments（連続サビのブロック統合）", () => {
+  it("空配列は空配列を返す", () => {
+    expect(mergeContiguousChorusSegments([])).toEqual([]);
+  });
+
+  it("単一区間はそのまま返す", () => {
+    expect(mergeContiguousChorusSegments([{ startMs: 1000, endMs: 2000 }])).toEqual([
+      { startMs: 1000, endMs: 2000 },
+    ]);
+  });
+
+  it("隙間0ミリ秒（境界共有）の連続区間は1ブロックへ統合する", () => {
+    const segments: ChorusSegment[] = [
+      { startMs: 0, endMs: 1000 },
+      { startMs: 1000, endMs: 2000 },
+    ];
+    expect(mergeContiguousChorusSegments(segments)).toEqual([{ startMs: 0, endMs: 2000 }]);
+  });
+
+  it("隙間1ミリ秒ちょうど（許容の上限）は統合する", () => {
+    const segments: ChorusSegment[] = [
+      { startMs: 0, endMs: 1000 },
+      { startMs: 1001, endMs: 2000 },
+    ];
+    expect(mergeContiguousChorusSegments(segments)).toEqual([{ startMs: 0, endMs: 2000 }]);
+  });
+
+  it("隙間1.001ミリ秒（許容を超える）は統合しない", () => {
+    const segments: ChorusSegment[] = [
+      { startMs: 0, endMs: 1000 },
+      { startMs: 1001.001, endMs: 2000 },
+    ];
+    expect(mergeContiguousChorusSegments(segments)).toEqual([
+      { startMs: 0, endMs: 1000 },
+      { startMs: 1001.001, endMs: 2000 },
+    ]);
+  });
+
+  it("微小な重なり（負の隙間）でも統合し、終了は大きい方を採る", () => {
+    const segments: ChorusSegment[] = [
+      { startMs: 0, endMs: 1000.0005 },
+      { startMs: 1000, endMs: 2000 },
+    ];
+    expect(mergeContiguousChorusSegments(segments)).toEqual([{ startMs: 0, endMs: 2000 }]);
+  });
+
+  it("離れたサビ群（隙間が許容超）は別ブロックのまま保つ", () => {
+    const segments: ChorusSegment[] = [
+      { startMs: 2605, endMs: 10925 },
+      { startMs: 10925, endMs: 19245 },
+      { startMs: 52645, endMs: 60965 },
+      { startMs: 60965, endMs: 69285 },
+    ];
+    expect(mergeContiguousChorusSegments(segments)).toEqual([
+      { startMs: 2605, endMs: 19245 },
+      { startMs: 52645, endMs: 69285 },
+    ]);
+  });
+
+  it("入力が未整列でも開始時刻昇順で統合する", () => {
+    const segments: ChorusSegment[] = [
+      { startMs: 1000, endMs: 2000 },
+      { startMs: 0, endMs: 1000 },
+    ];
+    expect(mergeContiguousChorusSegments(segments)).toEqual([{ startMs: 0, endMs: 2000 }]);
+  });
+});
 
 // 1秒刻みの声量配列を作る補助。指定したビン範囲に値を置く。
 function ampCurve(bins: number, spans: { from: number; to: number; value: number }[]): number[] {

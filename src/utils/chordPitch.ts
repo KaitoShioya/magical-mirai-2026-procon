@@ -14,9 +14,8 @@
 // 無和音 "N" は本モジュールでは音高化せず例外とする。無和音区間を直前和音または調の音階へ解決する処理は
 // Issue #37 の責務であり、解決後の実在和音名を本モジュールへ渡す（profileSchema.ts の ChordToneSlotRegion 注釈）。
 
-/** 和音の品質。TAKEOVER に出現する実在和音に対応し、将来の曲のために拡張可能な列挙とする。
- *  横展開で現れる拡張和音・変化和音（sus2・sus4・sus2(#7) など）は、新たな品質を足さず QUALITY_TOKEN_TO_QUALITY で
- *  最も近い基本品質へ写す（スロットの音高値は実行時に使われないため近似で足りる。詳細は同表のコメント）。 */
+/** 和音の品質。実在和音に対応し、将来の曲のために拡張可能な列挙とする。
+ *  TAKEOVER の16種に加え、アフター・ザ・カーテンに出現する属七の懸垂四度・減七・属九・短九・属七の変十三度を加える。 */
 export type ChordQuality =
   | "major"
   | "minor"
@@ -24,7 +23,12 @@ export type ChordQuality =
   | "dominantSeventh"
   | "majorSeventh"
   | "minorSeventh"
-  | "majorSixth";
+  | "majorSixth"
+  | "dominantSeventhSus4"
+  | "diminishedSeventh"
+  | "dominantNinth"
+  | "minorNinth"
+  | "dominantSeventhFlatThirteenth";
 
 /** 構造化された和音の解析結果。下流 #36・#37 が根音と品質と低音を文字列の再解析なしに再利用するために返す。 */
 export interface ParsedChord {
@@ -60,7 +64,9 @@ export const NOTE_LETTER_TO_PITCH_CLASS: Record<string, number> = {
   B: 11,
 };
 
-/** 和音の品質ごとの、根音からの半音間隔。出典は標準的な和声。 */
+/** 和音の品質ごとの、根音からの半音間隔。出典は標準的な和声。
+ *  属七の懸垂四度（7sus4）は第三音を完全四度（5半音）へ吊り上げ第七音（10半音）を加える。減七（dim7）は短三度を積む（0,3,6,9）。
+ *  属九（9）は属七に長九度（14半音）を、短九（m9）は短七に長九度を加える。属七の変十三度（7(b13)）は属七に短十三度＝増五度（8半音）を加える。 */
 export const CHORD_QUALITY_INTERVALS: Record<ChordQuality, readonly number[]> = {
   major: [0, 4, 7],
   minor: [0, 3, 7],
@@ -69,19 +75,15 @@ export const CHORD_QUALITY_INTERVALS: Record<ChordQuality, readonly number[]> = 
   majorSeventh: [0, 4, 7, 11],
   minorSeventh: [0, 3, 7, 10],
   majorSixth: [0, 4, 7, 9],
+  dominantSeventhSus4: [0, 5, 7, 10],
+  diminishedSeventh: [0, 3, 6, 9],
+  dominantNinth: [0, 4, 7, 10, 14],
+  minorNinth: [0, 3, 7, 10, 14],
+  dominantSeventhFlatThirteenth: [0, 4, 7, 10, 8],
 };
 
 /** 品質を表す文字列から品質への対応。根音と分数和音の低音を除いた残り文字列を完全一致で引く。
  *  完全一致で引くため "M7"（長七）・"m7"（短七）・"m"（短三和音）が確実に区別される。 */
-//
-//  拡張和音・変化和音を基本品質へ写す方針の理由を先に述べる。横展開で読み込む楽曲は、TAKEOVER に無い拡張和音
-//  （"m(9)"・"m(11)"・"m(13)"・"m9"・"add9"）、サスペンド和音（"sus2"・"sus4"・"sus2(#7)"）、減和音（"dim"・"dim7"）、
-//  変化和音（"7(b13)"）を含む。これらを音高集合へ厳密に展開する必要は現時点では無い。理由は、本作の操作音はどのレーンでも
-//  同一の「水滴が弾ける音」に統一されており（src/audio/operationSoundEngine.ts）、判定はレーン番号と時間で行い
-//  （src/app/playSession.ts）、譜面のレーン割当 src/profiles/generate/notePatterns.ts は音高の数値を一切読まず時刻境界と
-//  スロット数だけを使うため、スロットの音高値（slots[].pitches）は実行時のどの処理にも読まれない（validateProfile が
-//  値域だけを検査する）。したがってこれらの和音を最も近い基本品質へ写しても、レーン数・割当・音・判定・描画は変わらず、
-//  変わるのは実行時に未使用のスロット音高値だけである。写し先は各和音の核となる三和音または七和音とする。
 export const QUALITY_TOKEN_TO_QUALITY: Record<string, ChordQuality> = {
   "": "major",
   m: "minor",
@@ -90,24 +92,17 @@ export const QUALITY_TOKEN_TO_QUALITY: Record<string, ChordQuality> = {
   M7: "majorSeventh",
   m7: "minorSeventh",
   "6": "majorSixth",
-  // 短和音にテンション（9度・11度・13度）を付した和音。核は短三和音。
-  "m(9)": "minor",
-  "m(11)": "minor",
-  "m(13)": "minor",
-  // 短九の和音（短七＋9度）。核は短七和音。
-  m9: "minorSeventh",
-  // 長和音に9度を付した和音。核は長三和音。
-  add9: "major",
-  // サスペンド和音（第3音を2度・4度で置換）。三和音1つで近似するため核は長三和音とする。
+  "7sus4": "dominantSeventhSus4",
+  dim7: "diminishedSeventh",
+  "9": "dominantNinth",
+  m9: "minorNinth",
+  "7(b13)": "dominantSeventhFlatThirteenth",
+  // 「こたえて」のサスペンド和音。第3音を持たないため最も近い基本品質へ写す（sus2・sus4 は長三和音）。
+  // sus2(#7) は長7度を伴うため長七和音へ写す。音高値（slots[].pitches）は現在の操作モデルでは実行時に読まれないため、
+  // 基本品質への近似で足りる（撤去や別表現が要るなら chordToneSlots とともに見直す）。
   sus2: "major",
   sus4: "major",
-  // サスペンド2に長7度を付した和音（"sus2(#7)" の "(#7)" は属七の短7度を半音上げた長7度）。核は長七和音で近似する。
   "sus2(#7)": "majorSeventh",
-  // 減三和音・減七和音。核はそれぞれ短三和音・短七和音で近似する。
-  dim: "minor",
-  dim7: "minorSeventh",
-  // 属七に変化13度を付した和音。核は属七和音。
-  "7(b13)": "dominantSeventh",
 };
 
 /** 2オクターブ展開の下のオクターブにおける、ハ音（音高クラス0）のMIDIノート番号。★暫定。

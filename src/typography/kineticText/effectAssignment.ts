@@ -33,7 +33,18 @@ import type {
 
 // ---- 演出文法と識別名 ----
 
-/** 演出文法の種別（第9節の6文法と常時重ね層）。識別名のタイプミスを型で防ぐ列挙。 */
+/**
+ * 演出文法の種別。識別名のタイプミスを型で防ぐ列挙。
+ *
+ * 前半8件は第9節「発声属性→演出文法」の既定写像（REASON_RULES／DEFAULT_OVERLAY_RULES が参照する）。
+ * 後半は設計書§5.5の追加技法で、譜面の曲固有追加（typographyChartResolve.ts の addSongSpecific）から
+ * 到達できるパレットである。理由を先に述べる。typographyChartResolve は EFFECT_ID の逆引き ID_TO_GRAMMAR に
+ * 無い識別名を譜面追加時に黙って捨てるため、文法・識別名をここへ登録しないと曲固有追加から到達できない。
+ * 追加技法を既定規則（REASON_RULES／DEFAULT_OVERLAY_RULES）へは載せない。理由を述べる。§2.1.5の発声属性写像は
+ * 前半8文法を既定として確定しており、追加技法の既定選択（どの場面でどれを強めるか）はカメラ連動（#59）・
+ * 曲譜面（#33）・感情声量の選択（#30）が決める後続の作り込みだからである。本タスクの単位別駆動は、active に
+ * なった演出（既定8文法＋譜面が追加した技法）を一様に駆動するため、ここでの到達可能化だけで本編描画に届く。
+ */
 export type EffectGrammar =
   | "smash" // 1文字1拍スマッシュ（#23）
   | "letterSpacingSpread" // 字間拡大一括（#24）
@@ -42,7 +53,19 @@ export type EffectGrammar =
   | "afterimageTrail" // 残像（#27）
   | "fadeBlackout" // 減衰・暗転（#28）
   | "emotionLoudness" // 感情声量から発光・色・動き（#30）
-  | "depthFlight"; // 三次元カメラワーク（#32）
+  | "depthFlight" // 三次元カメラワーク（#32）
+  // 追加技法（譜面追加から到達可能なパレット。既定規則には載せない）。
+  | "swirlDeform" // 渦の歪み（変形）
+  | "waveDeform" // 波打ちの歪み（変形）
+  | "vortexScatterTransition" // 渦状スキャッター転換（変形＋不透明度）
+  | "axisMove" // 直線移動（位置の主変形・配分7の背骨）
+  | "scaleSoftSmash" // 柔らかい拡大登場（大きさの主変形）
+  | "squashStretch" // 押し潰しと引き伸ばし（大きさ縦横独立・演出役）
+  | "blink" // 点滅（不透明度の方形波＋発光）
+  | "floatJitter" // 浮遊・小刻み（位置の揺らぎ層）
+  | "wordRotation" // 全体回転・回転して戻す（回転の主変形）
+  | "unitOpacity" // 単位の暗転・句読点（不透明度）
+  | "initialFlash"; // 頭文字の予告フラッシュ（不透明度）
 
 /**
  * 演出文法から演出識別名への対応。#24〜#32 の各実演出はこの識別名で登録する命名契約。
@@ -58,9 +81,24 @@ export const EFFECT_ID: Readonly<Record<EffectGrammar, string>> = {
   fadeBlackout: "effect.fadeBlackout",
   emotionLoudness: "effect.emotionLoudness",
   depthFlight: "effect.depthFlight",
+  // 追加技法。識別名は effect.<文法名> に一致する（smash だけが歴史的命名で例外）。
+  swirlDeform: "effect.swirlDeform",
+  waveDeform: "effect.waveDeform",
+  vortexScatterTransition: "effect.vortexScatterTransition",
+  axisMove: "effect.axisMove",
+  scaleSoftSmash: "effect.scaleSoftSmash",
+  squashStretch: "effect.squashStretch",
+  blink: "effect.blink",
+  floatJitter: "effect.floatJitter",
+  wordRotation: "effect.wordRotation",
+  unitOpacity: "effect.unitOpacity",
+  initialFlash: "effect.initialFlash",
 };
 
-/** 演出が宣言する想定対象単位。検査用擬似演出の対象単位を、各実演出が採るべき宣言値として記録する。 */
+/**
+ * 演出が宣言する想定対象単位。検査用擬似演出の対象単位を、各実演出が採るべき宣言値として記録する。
+ * 追加技法の値は各実演出（effects/extraMotionSets.ts・effects/deformVortex.ts）の targetUnit と一致させる。
+ */
 const EXPECTED_TARGET_UNIT: Readonly<Record<EffectGrammar, EffectTargetUnit>> = {
   smash: "char",
   letterSpacingSpread: "phrase",
@@ -70,6 +108,18 @@ const EXPECTED_TARGET_UNIT: Readonly<Record<EffectGrammar, EffectTargetUnit>> = 
   fadeBlackout: "fullscreen",
   emotionLoudness: "char",
   depthFlight: "char",
+  // 追加技法。
+  swirlDeform: "phrase",
+  waveDeform: "phrase",
+  vortexScatterTransition: "phrase",
+  axisMove: "char",
+  scaleSoftSmash: "char",
+  squashStretch: "char",
+  blink: "char",
+  floatJitter: "char",
+  wordRotation: "word",
+  unitOpacity: "phrase",
+  initialFlash: "char",
 };
 
 // ---- 優先度補正定数 ----

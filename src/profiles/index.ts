@@ -1,24 +1,25 @@
-// 曲プロファイルの登録窓。実装済み曲のキーから、統括（src/app）が本編表示と判定の結線に必要な「曲の束」
-//（曲プロファイル・タイポ譜面・読ませる役の既定）を返す。1ページ読込が1曲に対応する設計（統括が起動時に
-// 選択曲で構成し、曲の切り替えは再読込で行う）のため、本窓は1曲分の束を引くだけでよい。
+// 曲束（バンドル）レジストリ。曲キーごとに、統括（src/app）が本編プレイの結線で使う曲依存データを1つにまとめて引けるようにする。
+// 統括が個々のプロファイル・タイポ譜面・読ませる役の既定を曲ごとに直接 import する代わりに、本レジストリからキーで束を引く。
+// これにより題名画面で選んだ曲へ統括が結線を差し替えられる。
 //
-// 取り込み範囲の方針を先に述べる。本ファイルが取り込んでよいのは各曲の profile.ts・typographyChart.ts の値と
-// スキーマ・型置き場の型のみであり、エンジン・描画・採点・ツールは取り込まない（依存規則 docs/decisions/architecture.md §5。
-// 既存の src/profiles/takeover/profile.ts と同じ取り込み範囲）。コーラス補正など実行時の歌詞変換は textalive 層に属するため
-// 本束には含めず、統括（src/app）が曲に応じて再生層へ渡す。
+// 依存方針: スキーマ型・各曲のプロファイルとタイポ譜面・型置き場 src/types のデータ型・曲ロード設定の既定キーだけを取り込み、
+// 中核（engine 等）・rendering・tools・three.js は取り込まない（docs/decisions/architecture.md §5 の依存規則）。
 
+import { DEFAULT_SONG_KEY } from "../config/songs";
 import type { SongProfile } from "./schema";
-import type {
-  TypographyChart,
-  TypographyDisplayRegion,
-  ReadingDisplayUnit,
-} from "../types/typography";
+import type { TypographyChart, TypographyDisplayRegion, ReadingDisplayUnit } from "../types/typography";
 import { takeoverProfile } from "./takeover/profile";
 import {
   takeoverTypographyChart,
   TAKEOVER_DEFAULT_READING_PIXEL_HEIGHT,
   TAKEOVER_DEFAULT_READING_REGION,
 } from "./takeover/typographyChart";
+import { afterTheCurtainProfile } from "./after-the-curtain/profile";
+import {
+  afterTheCurtainTypographyChart,
+  AFTER_THE_CURTAIN_DEFAULT_READING_PIXEL_HEIGHT,
+  AFTER_THE_CURTAIN_DEFAULT_READING_REGION,
+} from "./after-the-curtain/typographyChart";
 import { kotaeteProfile } from "./kotaete/profile";
 import {
   kotaeteTypographyChart,
@@ -26,29 +27,35 @@ import {
   KOTAETE_DEFAULT_READING_REGION,
 } from "./kotaete/typographyChart";
 
-/** 統括が1曲を構成するために必要な、曲固有のデータの束。 */
+/** 1曲分の曲依存データの束。統括が本編プレイの結線で使う。 */
 export interface SongBundle {
-  /** 検証済みの曲プロファイル（譜面・カメラ・見せ場・スロット・タップ上限など）。 */
-  profile: SongProfile;
-  /** 曲固有のタイポ譜面（演出上書きと読ませる役の配置）。 */
-  typographyChart: TypographyChart;
+  /** 検証済みの曲プロファイル（譜面・カメラ・色・操作音・見せ場・多様性逓減区間・タップ上限など）。 */
+  readonly profile: SongProfile;
+  /** 曲固有のタイポ譜面（演出割付の上書きと読ませる役の配置）。 */
+  readonly typographyChart: TypographyChart;
   /** 配置指定の無いフレーズの既定の読ませる役の表示単位。 */
-  defaultReadingUnit: ReadingDisplayUnit;
+  readonly defaultReadingUnit: ReadingDisplayUnit;
   /** 配置指定の無いフレーズの既定の想定表示寸法（デバイス画素）。 */
-  defaultReadingPixelHeight: number;
+  readonly defaultReadingPixelHeight: number;
   /** 配置指定の無いフレーズの既定の表示領域。 */
-  defaultReadingRegion: TypographyDisplayRegion;
+  readonly defaultReadingRegion: TypographyDisplayRegion;
 }
 
-// 実装済み曲のキーから束への登録表。曲を横展開するときはここへ追加する。
-// 既定の読ませる役の表示単位は、いずれの曲もフレーズ単位（既存の統括の既定と同じ）とする。
-const BUNDLES: Record<string, SongBundle> = {
+// 曲キーから曲束を引く表。横展開で曲を増やすときはここへ追加する。読ませる役の既定の表示単位は両曲ともフレーズ単位とする。
+const BUNDLES_BY_KEY: Record<string, SongBundle> = {
   takeover: {
     profile: takeoverProfile,
     typographyChart: takeoverTypographyChart,
     defaultReadingUnit: "phrase",
     defaultReadingPixelHeight: TAKEOVER_DEFAULT_READING_PIXEL_HEIGHT,
     defaultReadingRegion: TAKEOVER_DEFAULT_READING_REGION,
+  },
+  "after-the-curtain": {
+    profile: afterTheCurtainProfile,
+    typographyChart: afterTheCurtainTypographyChart,
+    defaultReadingUnit: "phrase",
+    defaultReadingPixelHeight: AFTER_THE_CURTAIN_DEFAULT_READING_PIXEL_HEIGHT,
+    defaultReadingRegion: AFTER_THE_CURTAIN_DEFAULT_READING_REGION,
   },
   kotaete: {
     profile: kotaeteProfile,
@@ -59,19 +66,10 @@ const BUNDLES: Record<string, SongBundle> = {
   },
 };
 
-/** 実装済み曲のキーから曲の束を引く。未登録のキーは明確に失敗させる
- *  （プロファイルは設定でなく内容であり、欠落時は明確に失敗させる。architecture.md §3.6）。 */
-export function getSongBundle(key: string): SongBundle {
-  const bundle = BUNDLES[key];
-  if (bundle === undefined) {
-    throw new Error(
-      `曲プロファイルの束が未登録です: "${key}"（登録済み: ${Object.keys(BUNDLES).join(", ")}）`,
-    );
-  }
-  return bundle;
-}
+/** 選べる全曲の曲束（灯しの収容上限など全曲にまたがる値の算出に使う）。 */
+export const ALL_SONG_BUNDLES: readonly SongBundle[] = Object.values(BUNDLES_BY_KEY);
 
-/** 選択可能な全曲の束を列挙する。全曲横断の計算に使う（例: 灯しの収容上限＝全曲のノーツ数の最大）。 */
-export function selectableSongBundles(): readonly SongBundle[] {
-  return Object.values(BUNDLES);
+/** 曲キーで曲束を引く。未登録のキーでは既定曲の束へ倒す（findSong の既定曲フォールバックと同じ方針）。 */
+export function songBundle(key: string): SongBundle {
+  return BUNDLES_BY_KEY[key] ?? BUNDLES_BY_KEY[DEFAULT_SONG_KEY];
 }

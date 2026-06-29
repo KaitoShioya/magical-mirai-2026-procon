@@ -8,9 +8,6 @@
 import { chromium } from "playwright";
 
 const BASE = process.env.BASE || "http://127.0.0.1:4173";
-// 通しプレイを検証する対象曲のキー（横展開）。既定は takeover。環境変数 SONG で切り替え、実装済みの2曲をそれぞれ走破する。
-// 擬似再生（?smoke=1）のため音源は鳴らないが、譜面・カメラ・採点は対象曲の曲プロファイルで動く。実音源の確認は目視で行う。
-const SONG = process.env.SONG || "takeover";
 
 // ウォームアップ完了待ちの上限（ミリ秒）。screens-smoke と同じ根拠（公称5000ミリ秒・最悪フレーム率の余裕）。
 const SCREEN_WAIT_TIMEOUT_MS = 15000;
@@ -47,33 +44,37 @@ async function waitForScreen(page, expectedKey) {
   );
 }
 
-async function currentScreen(page) {
-  return page.evaluate(() => {
-    const elements = document.querySelectorAll("[data-screen]");
-    return elements.length === 1 ? elements[0].getAttribute("data-screen") : null;
-  });
-}
-
-// 入力面（.screen-root）へ pointerdown を送出する。clientX/Y は入力面の矩形に対する正規化位置から求める。
-async function dispatchTap(page, normalizedX, normalizedY) {
-  await page.evaluate(
+// プレイ中であることの確認・入力面（.screen-root）への pointerdown 送出・セッション読取を、1回の評価で原子的に行う。
+// 1回にまとめる理由を先に述べる。画面確認と送出を別々の評価に分けると、その2つの評価の間にブラウザの毎フレーム処理が
+// 曲終了を検知して入力を無効化し画面を結果へ変えうる。すると「確認時はプレイ中」でも送出が無効化後の入力に当たって処理されず、
+// 注入数と算入数の比較が境界で崩れる（環境が遅いほど起きやすい）。同一評価内は1つの同期実行で毎フレーム処理が割り込まないため、
+// 画面が「プレイ中」なら入力は有効であり、送出した pointerdown は入力ハンドラ（onReaction）で同期的に処理され、
+// 直後のセッション読取にその1回が必ず反映される。clientX/Y は入力面の矩形に対する正規化位置から求める。
+async function tapWhilePlaying(page, normalizedX, normalizedY) {
+  return page.evaluate(
     ({ x, y }) => {
+      const screenElements = document.querySelectorAll("[data-screen]");
+      const screen =
+        screenElements.length === 1 ? screenElements[0].getAttribute("data-screen") : null;
+      if (screen !== "play") {
+        return { inPlay: false, session: null };
+      }
       const root = document.querySelector(".screen-root");
       if (!root) {
-        return;
+        return { inPlay: true, session: null };
       }
       const rect = root.getBoundingClientRect();
-      const clientX = rect.left + rect.width * x;
-      const clientY = rect.top + rect.height * y;
       const event = new PointerEvent("pointerdown", {
-        clientX,
-        clientY,
+        clientX: rect.left + rect.width * x,
+        clientY: rect.top + rect.height * y,
         pointerId: 1,
         pointerType: "touch",
         bubbles: true,
         cancelable: true,
       });
       root.dispatchEvent(event);
+      const session = typeof window.__playSession === "function" ? window.__playSession() : null;
+      return { inPlay: true, session };
     },
     { x: normalizedX, y: normalizedY }
   );
@@ -105,7 +106,7 @@ try {
   let connected = false;
   for (let attempt = 0; attempt < 30; attempt += 1) {
     try {
-      await page.goto(BASE + `/?smoke=1&song=${SONG}`, { waitUntil: "load", timeout: 2000 });
+      await page.goto(BASE + "/?smoke=1", { waitUntil: "load", timeout: 2000 });
       connected = true;
       break;
     } catch {
@@ -118,71 +119,82 @@ try {
 
   // 題名→ウォームアップ→プレイへ進む。
   await waitForScreen(page, "title");
-  // 再生対象の曲が、URL引数 song の解決結果として構成されていることを確認する（横展開）。
-  const currentSongKey = await page.evaluate(() =>
-    typeof window.__currentSongKey === "function" ? window.__currentSongKey() : null
-  );
-  check(
-    currentSongKey === SONG,
-    `再生対象の曲が "${SONG}" に解決されている`,
-    `再生対象の曲が "${currentSongKey}" です（期待: "${SONG}"）`
-  );
   // プレイ開始前のカメラ位置（暫定固定視点）を控える。プレイ中の軌跡駆動で変わることを確かめる基準にする。
   const prePlayCamera = (await readRenderState(page))?.cameraPosition ?? null;
-  // 対象曲 SONG は再生対象（アクティブ曲）のため、その開始ボタンを押すと再読込を挟まずウォームアップへ進む。
-  await page.click(`[data-song-key="${SONG}"][data-action="start"]`);
+  await page.click('[data-action="start"]');
   await waitForScreen(page, "warmup");
   await waitForScreen(page, "play");
+
+  // 本編入りのリードイン（簡易先回し）が終わって楽曲が進み始めるまで待つ。理由を先に述べる。先回し中は入力が無効で、
+  // 楽曲時刻は0のまま（ノーツが上から落ちてくる助走のみ）。楽曲開始（先回し終了）後にゲーム時計が0を超えて進み始めるので、
+  // それを待ってからタップ注入を始める。これを待たずに注入すると、無効な入力に当たって採点されず検査が崩れる。
+  await page.waitForFunction(
+    () => {
+      const state = typeof window.__engineState === "function" ? window.__engineState() : null;
+      return state !== null && Number.isFinite(state.gameTimeMs) && state.gameTimeMs > 0;
+    },
+    { timeout: SCREEN_WAIT_TIMEOUT_MS }
+  );
 
   // WebGL の可否を読む。蝶・カメラは描画基盤を要するため、利用不可の端末では該当検査を飛ばす。
   const renderAtPlay = await readRenderState(page);
   const webglAvailable = renderAtPlay?.webglAvailable === true;
 
   // プレイ進行中に合成タップを注入する。各タップで音程帯（Y位置）を変えて多様性を持たせる。
-  // プレイ→結果へ自動遷移するため、各タップ前にプレイ状態を確認し、抜けたら注入を止める。
-  let injected = 0;
+  // 各タップは tapWhilePlaying で「プレイ中の確認・送出・セッション読取」を原子的に行い、入力が有効な間に処理された
+  // タップだけを数える。プレイを抜けた（曲終了）時点で注入を止める。これにより、注入数と算入数の比較が曲終了の境界の
+  // 競合で崩れない（同一評価内では毎フレーム処理が割り込まないため、画面がプレイ中なら送出タップは必ず処理される）。
+  let processed = 0;
   for (let i = 0; i < TAP_COUNT; i += 1) {
-    if ((await currentScreen(page)) !== "play") {
+    const result = await tapWhilePlaying(page, 0.2 + 0.15 * i, 0.15 + 0.13 * i);
+    if (!result.inPlay) {
+      break; // プレイを抜けた（曲終了）。これ以上は注入しない。
+    }
+    if (result.session === null) {
+      fail("window.__playSession が取得できませんでした");
       break;
     }
-    const normalizedX = 0.2 + 0.15 * i;
-    const normalizedY = 0.15 + 0.13 * i;
-    await dispatchTap(page, normalizedX, normalizedY);
-    injected += 1;
+    // このタップが処理されたなら、発音回数も算入数もこのタップで1ずつ増えて processed+1 になる。両者が揃って1増えることを
+    // 各タップで確かめる（どのタップも必ず鳴り、必ず算入されること＝発音と採点が常に対で進むこと）。
+    const tapProcessed =
+      result.session.playSlotCallCount === processed + 1 && result.session.tapCount === processed + 1;
+    check(
+      tapProcessed,
+      `${processed + 1} 回目のタップが発音・算入された（発音 ${result.session.playSlotCallCount}・算入 ${result.session.tapCount}）`,
+      `${processed + 1} 回目のタップで発音 ${result.session.playSlotCallCount}・算入 ${result.session.tapCount} が期待値 ${processed + 1} と一致しません`
+    );
+    if (!tapProcessed) {
+      break;
+    }
+    processed += 1;
     await page.waitForTimeout(TAP_INTERVAL_MS);
   }
 
-  // 注入直後（まだプレイ中か、抜けた直後）のセッション・描画状態を読む。
+  // 注入後のセッション・描画状態を読む。
   const sessionAfter = await readPlaySession(page);
   const renderAfter = await readRenderState(page);
 
-  // 注入が1回も成立しなかった場合は検査の前提が崩れるため失敗とする。
+  // タップが1回も処理できなかった場合は検査の前提が崩れるため失敗とする。
   check(
-    injected >= 1,
-    `プレイ中に合成タップを ${injected} 回注入できた`,
-    "プレイ中にタップを1回も注入できませんでした（プレイ窓が短すぎる可能性）"
+    processed >= 1,
+    `プレイ中に合成タップを ${processed} 回処理できた`,
+    "プレイ中にタップを1回も処理できませんでした（プレイ窓が短すぎる可能性）"
   );
 
   if (sessionAfter === null) {
     fail("window.__playSession が取得できませんでした");
   } else {
-    // 採点: どのタップも算入される（床タップを含む）。算入タップ数は1以上で、注入回数以下である。
-    // 上限を「注入回数以下」とし「注入回数に一致」としない理由を先に述べる。最後に注入したタップは、画面が
-    // プレイのうちに送出されても、プレイ終了（入力の無効化）との境界でちょうど取りこぼされうる。これはスモークの
-    // 注入と楽曲終了検知の時間的境界のレースであり、配線の誤りではない。境界の1件を許容しつつ、算入が成立する
-    // ことと注入を超えないことを固定する。
-    check(
-      sessionAfter.tapCount >= 1 && sessionAfter.tapCount <= injected,
-      `算入タップ数が1以上・注入回数以下（算入 ${sessionAfter.tapCount} 回 / 注入 ${injected} 回）`,
-      `算入タップ数 ${sessionAfter.tapCount} が範囲（1以上 ${injected} 以下）を外れました`
-    );
-    // 音: 算入された各タップは必ず操作音の発音へ届く（発音回数と算入タップ数が一致する。床タップも鳴らす）。
-    // 注入回数でなく算入タップ数と突き合わせる理由は、上記の境界で取りこぼされたタップは算入も発音もされず、
-    // 算入と発音は常に1対1で対応するためである。
+    // 発音と採点が常に対で進むこと（最終状態でも一致する）。
     check(
       sessionAfter.playSlotCallCount === sessionAfter.tapCount,
-      `発音回数が算入タップ数と一致する（発音 ${sessionAfter.playSlotCallCount} 回 / 算入 ${sessionAfter.tapCount} 回）`,
-      `発音回数 ${sessionAfter.playSlotCallCount} が算入タップ数 ${sessionAfter.tapCount} と一致しません`
+      `発音回数と算入数が一致する（各 ${sessionAfter.tapCount} 回）`,
+      `発音回数 ${sessionAfter.playSlotCallCount} と算入数 ${sessionAfter.tapCount} が一致しません`
+    );
+    // 処理したタップ数が最終状態の算入数と一致する（処理後に余計な増減が無い）。
+    check(
+      sessionAfter.tapCount === processed,
+      `算入数が処理したタップ数と一致する（${sessionAfter.tapCount} 回）`,
+      `算入数 ${sessionAfter.tapCount} が処理したタップ数 ${processed} と一致しません`
     );
     // ランク: 百分位とランク添字が有限で、減少していない（0からの単調非減少を許容する）。
     check(

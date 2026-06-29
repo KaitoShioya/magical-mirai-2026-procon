@@ -55,6 +55,7 @@ import {
   toShowcaseInput,
 } from "./songmapAdapters";
 import { deriveDiversityZones } from "./diversityZones";
+import { DEFAULT_SHOWCASE_OPTIONS } from "./types";
 
 /** 曲別の手動入力。songmap から導出できないフィールドを受け取る。
  *  実内容の確定は後続 Issue の責務であり、#45 では検証を通る暫定値で足りる（camera・colors・sfx）。
@@ -79,10 +80,6 @@ export interface ManualProfileInputs {
    *  和音索引で指定する理由を先に述べる。songmap の時刻は浮動小数点で人が手で書いた時刻と厳密一致しないが、
    *  和音索引は整数で曖昧さが無いためである。 */
   ncTreatmentOverrides?: Record<number, NcTreatment>;
-  /** 見せ場の個数の曲別上書き。省略時は既定（TAKEOVER 用の6）。
-   *  上書きが必要な理由を先に述べる。見せ場生成はサビ区間数が見せ場の個数を超えると失敗するため、サビ区間が多い曲は
-   *  サビ区間数以上の個数を渡す必要がある。「こたえて」はサビ区間が9個のため9を渡す。 */
-  showcaseCount?: number;
   /** サビ反復で共有テンプレートを使うか。省略時は true（TAKEOVER）。サビ反復の拍数が揃わない曲は false にして、
    *  サビ区間も非サビと同じ個別スコアでノーツを選別する（「こたえて」のみ false。サビ間の多様性逓減は発火しないが、
    *  配分・一回性・ゲージ投下・ランクは従来どおり機能する）。 */
@@ -165,12 +162,6 @@ export function buildProfile(args: {
 }): { profile: SongProfile; validation: ValidationResult } {
   const { songmap, manual, source } = args;
 
-  // コーラス補正（Issue #90）はプロファイル生成には適用しない。理由を先に述べる。「こたえて」のコーラスは2段落目の
-  // 発声中に重なる重唱で、補正で本来の時刻へ戻すと歌詞が他フレーズと時間的に重複する。一方プロファイルの lyricChars は
-  // 時刻昇順・非重複の平坦配列であることを検証関数が要求し、重なる重唱とは両立しない。加えて lyricChars は実行時に
-  // 消費されず（実行時タイポは再生中の歌詞を直読みする）、補正をプロファイルへ入れる利点が無い。よって補正は実行時の
-  // キネティックタイポにのみ適用する（src/utils/chorusCorrection.ts の applyChorusCorrectionToLyricVideo を再生層が使う）。
-
   // 1. songmap → スキーマ配列・生成関数入力。
   const durationMs = songmap.song.duration;
   const beats = toBeats(songmap);
@@ -179,25 +170,19 @@ export function buildProfile(args: {
   // あり（TAKEOVER は19ミリ秒超過）、検証関数は和音の連続被覆には末尾の超過を許容する一方、無和音区間（ncRanges）には
   // 許容差1ミリ秒しか認めず、かつ無和音区間と和音の「N」区間が許容差1ミリ秒で一致することを要求する。両者を同じ値に
   // するため、和音・無和音区間・スロットの素になる和音の終了時刻を曲長で丸めて整合させる。曲長以内の和音は変わらない。
-  const chords = toChords(songmap).map((c) => {
+  const clampedChords = toChords(songmap).map((c) => {
     const endTimeMs = Math.min(c.endTimeMs, durationMs);
     return { ...c, endTimeMs, durationMs: endTimeMs - c.startTimeMs };
   });
-  // 末尾コードが曲長に僅かに届かない曲への対応。理由を先に述べる。検証関数はコード区間が曲長まで連続被覆することを
-  // 要求する（許容差1ミリ秒）。「こたえて」は末尾の無和音区間が曲長の31ミリ秒手前で終わり、隙間が許容差を超えて
-  // 検証に落ちる。最終コード区間の終了を曲長へ延ばして末尾の隙間を埋める。末尾が曲長以上の曲（TAKEOVERは19ミリ秒超過の
-  // ため上の丸めで曲長に一致）では延長は起きない。最終区間は無和音「N」の場合があるが、延長は ncRanges・スロットの
-  // 素になる同じコード配列へ反映されるため、無和音区間とコードの対応・被覆は整合したまま保たれる。
-  if (chords.length > 0) {
-    const last = chords[chords.length - 1];
-    if (last.endTimeMs < durationMs) {
-      chords[chords.length - 1] = {
-        ...last,
-        endTimeMs: durationMs,
-        durationMs: durationMs - last.startTimeMs,
-      };
-    }
-  }
+  // 末尾の和音区間が曲長に届かない場合、最後の区間を曲長まで延ばして連続被覆を保つ。理由を先に述べる。検証は和音が曲頭から
+  // 曲長まで切れ目なく覆うことを要求するが、音楽地図の最終和音は曲長より手前で終わることがある（本曲は259ミリ秒の隙間）。
+  // 最終区間を曲長へ延ばせば末尾の短い隙間をその区間で覆える（最終区間が無和音なら直前和音または音階へ解決される）。
+  // TAKEOVER は最終和音が曲長を超えており上で曲長へ丸められ既に曲長に一致するため、この延長は無処理になる。
+  const chords = clampedChords.map((c, i) =>
+    i === clampedChords.length - 1 && c.endTimeMs < durationMs
+      ? { ...c, endTimeMs: durationMs, durationMs: durationMs - c.startTimeMs }
+      : c,
+  );
   const repetitiveSegments = toRepetitiveSegments(songmap);
   const loudnessCurve = toLoudnessCurve(songmap);
   const emotionCurve = toEmotionCurve(songmap);
@@ -213,10 +198,14 @@ export function buildProfile(args: {
   const slots: ChordToneSlotRegion[] = generateChordToneSlots(resolvedRegions);
 
   // 4. 見せ場（climaxAnchorMs は手動入力。見せ場生成ではオプション引数で渡す）。
+  //    見せ場の個数は、既定値と曲のサビ区間数の大きい方にする。理由を先に述べる。見せ場生成は戦略Bでサビ区間を必ず
+  //    見せ場にするため、見せ場の個数がサビ区間数より少ないと失敗する。サビ区間数は曲ごとに異なるため、既定値を下限と
+  //    しつつサビ区間数まで個数を増やすことで、サビ数の多い曲でも全サビを見せ場にできる。サビ数が既定値以下の曲では
+  //    既定値のままで、非サビの高声量点が残りの見せ場を補う（従来の挙動を保つ）。
+  const showcaseCount = Math.max(DEFAULT_SHOWCASE_OPTIONS.count, chorusSegments.length);
   const showcases = generateShowcases(toShowcaseInput(songmap), {
     climaxAnchorMs: manual.climaxAnchorMs,
-    // 見せ場の個数。曲別の上書きがあれば渡す（サビ区間数が既定6を超える曲のため。「こたえて」は9）。
-    ...(manual.showcaseCount !== undefined ? { count: manual.showcaseCount } : {}),
+    count: showcaseCount,
   });
 
   // 5. 歌詞密度（密度プランから windowMs と windows だけをスキーマの LyricDensity へ写す）。
@@ -256,8 +245,11 @@ export function buildProfile(args: {
     })),
     selectionSignal: densityPlan.selectionSignal,
   });
-  // サビ共有テンプレートの可否を曲別入力から渡す（省略時は既定 true）。
-  const onsets = generateOnsetNotes(onsetInput, { chorusSharedTemplate: manual.chorusSharedTemplate ?? true });
+  // サビ共有テンプレートの可否を曲別入力から渡す（省略時は既定 true）。サビ反復の拍数が揃わない曲（「こたえて」）は
+  // false で、サビ区間も非サビと同じ個別スコアで選別する。
+  const onsets = generateOnsetNotes(onsetInput, {
+    chorusSharedTemplate: manual.chorusSharedTemplate ?? true,
+  });
   const patterned = applyNotePatterns({
     notes: onsets,
     slots,

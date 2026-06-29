@@ -27,6 +27,8 @@ import type { ReadingSpansByPhrase, ReadingSpan, ReadingPlacementResolved } from
 import { readingSpanAt } from "./readingLayout";
 import { EFFECT_ID } from "./effectAssignment";
 import { charSmashScaleAt } from "./effects/charSmash";
+import type { EffectElement, EffectContext } from "./effectElement";
+import { composeGlyphState } from "./effectCompositor";
 
 /** スマッシュの拡大から落ち着きへ至るまでの時間（ミリ秒、採用理由を先に述べる）。
  * 読ませる役の区間が現れた瞬間に拡大し、短い時間で落ち着き寸法へ戻る打撃感を出す。300ミリ秒は毎分175拍の
@@ -79,6 +81,14 @@ export interface ConductorDeps {
   readonly baseColor: number;
   /** 出現破棄のプレースホルダかを判定する（既定はエンジンの isPlaceholderHandle）。 */
   isPlaceholder(handle: GlyphHandle): boolean;
+  /**
+   * 演出識別名から登録済みの演出要素を引く（任意）。与えると、読ませる役へ active な演出を汎用経路
+   * （EffectElement.evaluate → composeGlyphState → 取っ手へ反映）で適用する。与えないと、従来どおり
+   * スマッシュの大きさだけを直接適用する（後方互換）。本編は登録済みレジストリの get を渡す。
+   */
+  resolveEffect?(effectId: string): EffectElement | null;
+  /** 発光（ブルーム）閾値。汎用経路の合成で使う。省略時は1（実質発光なし）。 */
+  readonly bloomThreshold?: number;
 }
 
 /** 駆動部。毎フレーム update を呼び、終了時に dispose で後始末する。 */
@@ -99,8 +109,10 @@ export function createConductor(deps: ConductorDeps): Conductor {
   let readingHandle: GlyphHandle | null = null;
   let readingKey: string | null = null;
   let readingSpan: ReadingSpan | null = null;
-  // 現在適用している大きさ倍率（同じ値の再設定を避けるため保持する）。
+  // 現在適用している大きさ倍率（同じ値の再設定を避けるため保持する。従来のスマッシュ経路で使う）。
   let appliedScale = 1;
+  // 現在の読ませる役の世界座標（汎用経路の基準位置に使う。生成時に確定する）。
+  let readingWorldPos: Vector3Like = { x: 0, y: 0, z: 0 };
 
   /** スマッシュが現時点で有効か（active な割付に smash があるか）。 */
   function smashActiveAt(gameTimeMs: number): boolean {
@@ -139,11 +151,12 @@ export function createConductor(deps: ConductorDeps): Conductor {
     if (desired !== null && phrase !== null) {
       const placementResolved = content.placementFor(phrase.phraseIndex);
       const fontSize = placement.worldFontSizeForPixelHeight(placementResolved.targetPixelHeight);
+      const worldPos = placement.readingWorldPosition(placementResolved);
       // 行全体を1つのテキストとして描く（troika が字形ごとの送り幅・空白・字形差を正しく組み、サイズと字間が整う）。
       const handle = engine.spawnGlyph({
         char: desired.text,
         fontName,
-        position: placement.readingWorldPosition(placementResolved),
+        position: worldPos,
         fontSize,
         color: baseColor,
         opacity: 1,
@@ -154,6 +167,7 @@ export function createConductor(deps: ConductorDeps): Conductor {
         readingHandle = handle;
         readingKey = desiredKey;
         readingSpan = desired;
+        readingWorldPos = worldPos;
         appliedScale = 1;
       } else {
         handle.release();
@@ -161,8 +175,8 @@ export function createConductor(deps: ConductorDeps): Conductor {
     }
   }
 
-  /** 読ませる役へスマッシュの大きさ（出現時の拡大から落ち着きへ）を適用する。 */
-  function applySmashScale(gameTimeMs: number): void {
+  /** 読ませる役へスマッシュの大きさ（出現時の拡大から落ち着きへ）を直接適用する（後方互換の従来経路）。 */
+  function applySmashScaleLegacy(gameTimeMs: number): void {
     if (readingHandle === null || readingSpan === null) {
       return;
     }
@@ -179,10 +193,70 @@ export function createConductor(deps: ConductorDeps): Conductor {
     }
   }
 
+  /** 読ませる役の単位の EffectContext を作る（汎用経路で各演出に渡す）。 */
+  function readingContext(gameTimeMs: number, span: ReadingSpan): EffectContext {
+    return {
+      gameTimeMs,
+      unit: "phrase",
+      unitStartMs: span.displayStartMs,
+      unitEndMs: span.displayEndMs,
+      text: span.text,
+      unitGlyphCount: [...span.text].length,
+      phraseIndex: span.phraseIndex,
+      basePosition: readingWorldPos,
+    };
+  }
+
+  /**
+   * 読ませる役へ active な演出を汎用経路（evaluate → composeGlyphState → 取っ手へ反映）で適用する。
+   * 読ませる役の可読性（色・縁取り・影）は生成時のまま保つため、合成結果のうち幾何（大きさ・位置・回転）と
+   * 不透明度だけを反映し、色は上書きしない。変形・複製は別の取っ手を要するため読ませる役へは適用しない
+   * （演出役・変形役の単位別生成は後続の結線で扱う）。
+   */
+  function applyReadingEffectsGeneric(gameTimeMs: number, resolveEffect: NonNullable<ConductorDeps["resolveEffect"]>): void {
+    if (readingHandle === null || readingSpan === null) {
+      return;
+    }
+    const active = activeResolvedAssignmentsAt(content.resolvedPlan, gameTimeMs);
+    const ctx = readingContext(gameTimeMs, readingSpan);
+    const contributions = [];
+    for (const assignment of active) {
+      const element = resolveEffect(assignment.effectId);
+      if (element === null) continue;
+      const contribution = element.evaluate(ctx);
+      if (contribution === null) continue;
+      contributions.push({
+        id: element.id,
+        priority: assignment.finalPriority,
+        operates: element.operates,
+        contribution,
+      });
+    }
+    const composed = composeGlyphState({
+      unit: "phrase",
+      contributions,
+      baseColor,
+      basePosition: readingWorldPos,
+      bloomThreshold: deps.bloomThreshold ?? 1,
+      readability: null,
+    });
+    // 幾何と不透明度を反映する（色・可読性は生成時のまま保つ）。
+    readingHandle.setScale3(composed.scale.x, composed.scale.y, composed.scale.z);
+    if (composed.rotation !== null) {
+      readingHandle.setRotation(composed.rotation.x, composed.rotation.y, composed.rotation.z);
+    }
+    readingHandle.setPosition(composed.position.x, composed.position.y, composed.position.z);
+    readingHandle.setOpacity(composed.opacity);
+  }
+
   return {
     update(gameTimeMs: number): void {
       reconcileReading(gameTimeMs);
-      applySmashScale(gameTimeMs);
+      if (deps.resolveEffect !== undefined) {
+        applyReadingEffectsGeneric(gameTimeMs, deps.resolveEffect);
+      } else {
+        applySmashScaleLegacy(gameTimeMs);
+      }
     },
     dispose(): void {
       if (readingHandle !== null) {

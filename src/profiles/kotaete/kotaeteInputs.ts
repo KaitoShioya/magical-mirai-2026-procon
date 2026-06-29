@@ -42,9 +42,8 @@ export const kotaeteInputs: ManualProfileInputs = {
   // 出典: docs/analysis/kotaete.songmap.json の声量カーブ。
   climaxAnchorMs: 223600,
 
-  // 見せ場の個数。「こたえて」はサビ区間が9個で、既定6では見せ場生成が失敗するため9を渡す（全サビ区間を見せ場にし、
-  // 非サビの追加見せ場は設けない。ユーザー決定）。
-  showcaseCount: 9,
+  // 見せ場の個数は曲別入力で指定しない。生成側（buildProfile）がサビ区間数と既定個数の大きい方を自動採用するため、
+  // サビ区間が9個の「こたえて」は自動で9個の見せ場（全サビ区間）になる。
 
   // 実カメラ軌跡（上の kotaeteCameraKeyframes）。
   camera: kotaeteCameraKeyframes,

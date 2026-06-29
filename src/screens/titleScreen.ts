@@ -24,16 +24,25 @@ export const createTitleScreen: ScreenFactory = (context: ScreenContext): Screen
 
   element.append(heading, guide, list);
 
+  // 一度開始したら以降の押下を無視する一回限りの旗。理由を先に述べる。素早い二度押しや別曲の押し直しで選択と遷移が
+  // 二重に走るのを防ぐためである。題名画面は遷移ごとに作り直されるため、題名へ戻るとこの旗は初期化される。
+  let started = false;
+
   // クリックは一覧へ1つだけ委譲する。無効ボタン（未実装曲）はクリック事象を発火しないため、
-  // 実装済み曲のボタンだけがこの委譲に届く。押された開始ボタンの曲キーを読み、曲選択を統括へ伝える。
-  // 統括は、選択キーが現在再生中の曲なら開始（ウォームアップへ遷移）し、別の曲なら ?song を差し替えて再読込する。
+  // 実装済み曲のボタンだけがこの委譲に届く。押された要素から最も近い開始ボタンを辿り、その曲キーを統括へ伝えてから遷移する。
   const onListClick = (event: MouseEvent): void => {
+    if (started) {
+      return;
+    }
     const target = event.target as HTMLElement | null;
     const startButton = target?.closest('[data-action="start"]');
     if (startButton instanceof HTMLElement) {
-      const songKey = startButton.dataset.songKey;
-      if (songKey !== undefined && songKey !== "") {
-        context.selectSong(songKey);
+      const key = startButton.dataset.songKey;
+      if (key !== undefined) {
+        started = true;
+        // 選んだ曲を統括へ伝えてから（曲依存の結線の差し替えと必要なら楽曲の読み込み直しが起きる）、ウォームアップへ進む。
+        context.selectSong(key);
+        context.requestTransition("warmup");
       }
     }
   };

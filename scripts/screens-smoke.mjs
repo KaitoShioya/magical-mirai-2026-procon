@@ -6,13 +6,6 @@
 import { chromium } from "playwright";
 
 const BASE = process.env.BASE || "http://127.0.0.1:4173";
-// 走破する対象曲のキー（横展開）。既定は takeover。環境変数 SONG で切り替え、実装済みの2曲（takeover・kotaete）を
-// それぞれ走破する。URL引数 song で再生対象を選び、診断口 __currentSongKey で解決結果を照合する。
-const SONG = process.env.SONG || "takeover";
-// 実装済み曲数（開始ボタンの個数の期待）。横展開で実装済みが増えたらこの値を更新する。準備中の個数は総数から実装済み数を引く。
-const IMPLEMENTED_COUNT = 2;
-const TOTAL_SONG_COUNT = 6;
-const COMING_SOON_COUNT = TOTAL_SONG_COUNT - IMPLEMENTED_COUNT;
 
 // 進入順の期待値。基本の一巡に加え、結果画面の「もう一度」によるウォームアップへの再挑戦経路（Issue #74）も走破する。
 // 経路: 題名→ウォームアップ→プレイ→結果→（もう一度）ウォームアップ→プレイ→結果→（タイトルに戻る）再挑戦→題名。
@@ -91,7 +84,7 @@ try {
   let connected = false;
   for (let attempt = 0; attempt < 30; attempt += 1) {
     try {
-      await page.goto(BASE + `/?smoke=1&song=${SONG}`, { waitUntil: "load", timeout: 2000 });
+      await page.goto(BASE + "/?smoke=1", { waitUntil: "load", timeout: 2000 });
       connected = true;
       break;
     } catch {
@@ -106,44 +99,35 @@ try {
   await waitForScreen(page, "title");
   await assertScreen(page, "title");
 
-  // 1.45 再生対象の曲が、URL引数 song の解決結果として構成されていることを確認する（横展開）。
-  //      診断口 __currentSongKey は実装済み曲への解決結果を返す。指定キー（実装済み）と一致するはずである。
-  const currentSongKey = await page.evaluate(() =>
-    typeof window.__currentSongKey === "function" ? window.__currentSongKey() : null
-  );
-  if (currentSongKey !== SONG) {
-    fail(`再生対象の曲が "${currentSongKey}" です（期待: "${SONG}"）`);
-  } else {
-    console.log(`確認: 再生対象の曲が "${SONG}" に解決されている`);
-  }
-
-  // 1.5 曲選択UIの確認（Issue #5・横展開）。実装済み曲だけが開始でき、未実装曲は無効化されている。
-  //     実装済みは IMPLEMENTED_COUNT 個のため、開始ボタンがその数だけあり、対象曲 SONG の開始ボタンが含まれ、
-  //     準備中の無効ボタンが COMING_SOON_COUNT 個あることを機械的に確認する。
+  // 1.5 曲選択UIの確認（Issue #5・横展開 Issue #90/#91）。実装済み曲だけが開始でき、未実装曲は無効化されている。
+  //     実装済みは TAKEOVER・アフター・ザ・カーテン・こたえての3曲のため、開始ボタンはちょうど3個（data-song-key が3曲）、
+  //     準備中の無効ボタンが3個あることを機械的に確認する。EXPECTED_STARTABLE_KEYS は比較のため昇順で並べる。
+  const EXPECTED_STARTABLE_KEYS = ["after-the-curtain", "kotaete", "takeover"];
   const songSelection = await page.evaluate(() => {
     const root = document.querySelector('[data-screen="title"]');
     const startButtons = Array.from(root.querySelectorAll('[data-action="start"]'));
     const comingSoon = Array.from(root.querySelectorAll('[data-coming-soon="true"]'));
     return {
       startCount: startButtons.length,
-      startSongKeys: startButtons.map((element) => element.getAttribute("data-song-key")),
+      startSongKeys: startButtons.map((button) => button.getAttribute("data-song-key")),
       comingSoonCount: comingSoon.length,
       comingSoonAllDisabled: comingSoon.every((element) => element.disabled === true),
     };
   });
-  if (songSelection.startCount !== IMPLEMENTED_COUNT) {
-    fail(`開始できる曲が ${songSelection.startCount} 個です（期待: ${IMPLEMENTED_COUNT}個）`);
-  } else if (!songSelection.startSongKeys.includes(SONG)) {
-    fail(`開始できる曲に "${SONG}" が含まれません（開始可能: ${songSelection.startSongKeys.join(", ")}）`);
+  const startKeysSorted = songSelection.startSongKeys.slice().sort();
+  if (songSelection.startCount !== EXPECTED_STARTABLE_KEYS.length) {
+    fail(`開始できる曲が ${songSelection.startCount} 個です（期待: ${EXPECTED_STARTABLE_KEYS.length}個）`);
+  } else if (JSON.stringify(startKeysSorted) !== JSON.stringify(EXPECTED_STARTABLE_KEYS)) {
+    fail(`開始できる曲のキーが ${JSON.stringify(startKeysSorted)} です（期待: ${JSON.stringify(EXPECTED_STARTABLE_KEYS)}）`);
   } else {
-    console.log(`確認: 開始できる曲は ${IMPLEMENTED_COUNT} 個で、対象曲 "${SONG}" を含む`);
+    console.log("確認: 開始できる曲は TAKEOVER・アフター・ザ・カーテン・こたえての3曲");
   }
-  if (songSelection.comingSoonCount !== COMING_SOON_COUNT) {
-    fail(`準備中の曲が ${songSelection.comingSoonCount} 個です（期待: ${COMING_SOON_COUNT}個）`);
+  if (songSelection.comingSoonCount !== 3) {
+    fail(`準備中の曲が ${songSelection.comingSoonCount} 個です（期待: 3個）`);
   } else if (!songSelection.comingSoonAllDisabled) {
     fail("準備中の曲に無効化されていないものがあります");
   } else {
-    console.log(`確認: 準備中の曲は ${COMING_SOON_COUNT} 個ですべて無効`);
+    console.log("確認: 準備中の曲は3個ですべて無効");
   }
 
   // 1.6 「これはなに？」常設トグル（使い方説明）の確認。読み込みが終わった題名画面でトグルが見え、
@@ -176,9 +160,8 @@ try {
     }
   }
 
-  // 2. 「はじめる」でウォームアップへ。対象曲 SONG は再生対象（アクティブ曲）のため、その開始ボタンを押すと
-  //    再読込を挟まずそのままウォームアップへ進む（別の曲を押した場合だけ ?song を差し替えて再読込する）。
-  await page.click(`[data-song-key="${SONG}"][data-action="start"]`);
+  // 2. 「はじめる」でウォームアップへ。
+  await page.click('[data-action="start"]');
   await waitForScreen(page, "warmup");
   await assertScreen(page, "warmup");
 

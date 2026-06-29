@@ -93,7 +93,7 @@ export const SONGS: readonly Song[] = [
       lyricId: 126594,
       lyricDiffId: 28629,
     },
-    implemented: false,
+    implemented: true,
   },
   {
     key: "toritsuku-logy",

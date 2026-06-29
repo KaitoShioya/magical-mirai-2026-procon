@@ -209,7 +209,27 @@ export function toEmotionCurve(songmap: RawSongmap): EmotionCurve {
   };
 }
 
-/** 歌詞文字をスキーマの LyricChar 型へ平坦化する。フレーズ→単語→文字の入れ子を畳み、時刻名を付け替える。 */
+/** 歌詞文字の時刻の重なり・逆順を前向き走査で直し、開始時刻が昇順かつ前の文字の終了時刻をまたがない列にする。
+ *  採用理由を先に述べる。検証関数 validateProfile は lyricChars に「開始時刻が昇順」かつ「前の文字の終了時刻を
+ *  またがない」ことを要求する（validateProfile.ts の checkAscendingNonOverlap）。一方 TextAlive の歌詞は、同時に
+ *  発声する2文字が同一開始時刻・終了時刻のまたぎで返ることがあり（世界最後の音楽隊の1箇所がこれにあたる）、その
+ *  ままでは検証に落ちる。ここで整える lyricChars は歌詞密度と歌詞オンセット近接の素データであり（実際の表示時刻は
+ *  実行時に TextAlive 自身の文字時刻を使う）、重なりを境界で詰めても密度・近接の意味は保たれる。
+ *  直し方の理由を先に述べる。直前までに確定した最大終了時刻 lastEnd を保ち、開始がそれより前なら開始を lastEnd へ、
+ *  終了が開始より前なら終了を開始へ繰り上げる。これにより順序と非重なりを最小の移動で満たし、重なりの無い入力には
+ *  一切手を加えない（出力が入力と一致するため、重なりを持たない他曲の生成物は不変）。決定的な純粋関数である。 */
+function repairAscendingNonOverlap(chars: readonly LyricChar[]): LyricChar[] {
+  let lastEnd = Number.NEGATIVE_INFINITY;
+  return chars.map((c) => {
+    const startTimeMs = Math.max(c.startTimeMs, lastEnd);
+    const endTimeMs = Math.max(c.endTimeMs, startTimeMs);
+    lastEnd = endTimeMs;
+    return { startTimeMs, endTimeMs, text: c.text };
+  });
+}
+
+/** 歌詞文字をスキーマの LyricChar 型へ平坦化する。フレーズ→単語→文字の入れ子を畳み、時刻名を付け替える。
+ *  畳んだ後、時刻の重なり・逆順を repairAscendingNonOverlap で直して検証の要求（昇順・非重なり）を満たす。 */
 export function toLyricChars(songmap: RawSongmap): LyricChar[] {
   const chars: LyricChar[] = [];
   for (const phrase of songmap.phrases) {
@@ -219,7 +239,7 @@ export function toLyricChars(songmap: RawSongmap): LyricChar[] {
       }
     }
   }
-  return chars;
+  return repairAscendingNonOverlap(chars);
 }
 
 /** 歌詞の各文字の開始時刻の平坦配列を返す。見せ場（#41）と密度（#43）の歌詞密度の素に使う。 */

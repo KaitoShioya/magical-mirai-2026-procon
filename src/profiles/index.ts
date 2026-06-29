@@ -32,6 +32,12 @@ import {
   SHUTTER_CHANCE_DEFAULT_READING_PIXEL_HEIGHT,
   SHUTTER_CHANCE_DEFAULT_READING_REGION,
 } from "./shutter-chance/typographyChart";
+import { sekaiSaigoProfile } from "./sekai-saigo/profile";
+import {
+  sekaiSaigoTypographyChart,
+  SEKAI_SAIGO_DEFAULT_READING_PIXEL_HEIGHT,
+  SEKAI_SAIGO_DEFAULT_READING_REGION,
+} from "./sekai-saigo/typographyChart";
 
 /** 1曲分の曲依存データの束。統括が本編プレイの結線で使う。 */
 export interface SongBundle {
@@ -76,6 +82,13 @@ const BUNDLES_BY_KEY: Record<string, SongBundle> = {
     defaultReadingUnit: "phrase",
     defaultReadingPixelHeight: SHUTTER_CHANCE_DEFAULT_READING_PIXEL_HEIGHT,
     defaultReadingRegion: SHUTTER_CHANCE_DEFAULT_READING_REGION,
+  },
+  "sekai-saigo": {
+    profile: sekaiSaigoProfile,
+    typographyChart: sekaiSaigoTypographyChart,
+    defaultReadingUnit: "phrase",
+    defaultReadingPixelHeight: SEKAI_SAIGO_DEFAULT_READING_PIXEL_HEIGHT,
+    defaultReadingRegion: SEKAI_SAIGO_DEFAULT_READING_REGION,
   },
 };
 

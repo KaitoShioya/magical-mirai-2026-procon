@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { SONGS, findSong, DEFAULT_SONG_KEY } from "./songs";
 
-// 実装済みとして遊べる課題曲の集合。横展開（Issue #90/#91）で TAKEOVER に加えアフター・ザ・カーテンとこたえてを実装した。
+// 実装済みとして遊べる課題曲の集合。横展開（Issue #91・Issue #90）で TAKEOVER に加えアフター・ザ・カーテンとトリツクロジーとこたえてを実装した。
 // 曲を増やすときはこの集合とともに、題名画面からの曲選択（selectSong）と曲依存結線の差し替えが揃っている必要がある。
-const IMPLEMENTED_SONG_KEYS = ["takeover", "after-the-curtain", "kotaete"];
+const IMPLEMENTED_SONG_KEYS = ["takeover", "after-the-curtain", "toritsuku-logy", "kotaete"];
 
 describe("SONGS の実装可否", () => {
-  it("実装済みは TAKEOVER・アフター・ザ・カーテン・こたえての3曲で、他3曲は未実装である", () => {
+  it("実装済みは TAKEOVER とアフター・ザ・カーテンとトリツクロジーとこたえての4曲で、他2曲は未実装である", () => {
     for (const song of SONGS) {
       expect(song.implemented).toBe(IMPLEMENTED_SONG_KEYS.includes(song.key));
     }

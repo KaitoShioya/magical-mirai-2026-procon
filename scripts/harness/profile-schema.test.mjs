@@ -9,6 +9,8 @@ import {
   TAKEOVER_PROFILE_CHECK_KEY,
   AFTER_THE_CURTAIN_PROFILE_PATH,
   AFTER_THE_CURTAIN_PROFILE_CHECK_KEY,
+  TORITSUKU_LOGY_PROFILE_PATH,
+  TORITSUKU_LOGY_PROFILE_CHECK_KEY,
   KOTAETE_PROFILE_PATH,
   KOTAETE_PROFILE_CHECK_KEY,
   registerProfileSchemas,
@@ -76,6 +78,7 @@ describe("registerProfileSchemas（曲プロファイル検査の登録・冪等
     const byKey = new Map(checks.map((c) => [c.key, c.file]));
     expect(byKey.get(TAKEOVER_PROFILE_CHECK_KEY)).toBe(TAKEOVER_PROFILE_PATH);
     expect(byKey.get(AFTER_THE_CURTAIN_PROFILE_CHECK_KEY)).toBe(AFTER_THE_CURTAIN_PROFILE_PATH);
+    expect(byKey.get(TORITSUKU_LOGY_PROFILE_CHECK_KEY)).toBe(TORITSUKU_LOGY_PROFILE_PATH);
     expect(byKey.get(KOTAETE_PROFILE_CHECK_KEY)).toBe(KOTAETE_PROFILE_PATH);
   });
 
@@ -91,5 +94,6 @@ describe("registerProfileSchemas（曲プロファイル検査の登録・冪等
 test("各曲のプロファイルパスが実在ファイルを指す", () => {
   expect(() => readFileSync(TAKEOVER_PROFILE_PATH, "utf8")).not.toThrow();
   expect(() => readFileSync(AFTER_THE_CURTAIN_PROFILE_PATH, "utf8")).not.toThrow();
+  expect(() => readFileSync(TORITSUKU_LOGY_PROFILE_PATH, "utf8")).not.toThrow();
   expect(() => readFileSync(KOTAETE_PROFILE_PATH, "utf8")).not.toThrow();
 });

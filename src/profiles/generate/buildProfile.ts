@@ -33,9 +33,23 @@ import { createCameraTrajectory } from "../../utils/cameraTrajectory";
 import { resolveNoChordRegions } from "./noChordResolution";
 import { generateChordToneSlots, type ResolvedChordRegion } from "./chordToneSlots";
 import { generateShowcases } from "./showcases";
-import { generateDensityPlan, countTargetNotes, type DensityInput } from "./density";
-import { generateTapBudget } from "./tapBudget";
-import { generateOnsetNotes } from "./onsetNotes";
+import {
+  generateDensityPlan,
+  countTargetNotes,
+  DEFAULT_DENSITY_OPTIONS,
+  type DensityInput,
+  type DensityOptions,
+} from "./density";
+import {
+  generateTapBudget,
+  DEFAULT_CHORUS_TAPS_PER_BEAT,
+  DEFAULT_NON_CHORUS_TAPS_PER_BEAT,
+} from "./tapBudget";
+import {
+  generateOnsetNotes,
+  DEFAULT_ONSET_OPTIONS,
+  type OnsetOptions,
+} from "./onsetNotes";
 import { applyNotePatterns } from "./notePatterns";
 import { placeNotesOnTrajectory } from "./noteTrajectory";
 import {
@@ -80,7 +94,17 @@ export interface ManualProfileInputs {
    *  和音索引で指定する理由を先に述べる。songmap の時刻は浮動小数点で人が手で書いた時刻と厳密一致しないが、
    *  和音索引は整数で曖昧さが無いためである。 */
   ncTreatmentOverrides?: Record<number, NcTreatment>;
-  /** サビ反復で共有テンプレートを使うか。省略時は true（TAKEOVER）。サビ反復の拍数が揃わない曲は false にして、
+  /** 譜面密度の曲別上書き（DensityOptions の一部）。指定したフィールドだけ既定値（DEFAULT_DENSITY_OPTIONS）へ上書きする。
+   *  曲ごとに上書きできる設計は density.ts の DensityOptions が元から想定している（横展開時の調整点）。
+   *  難易度は「1拍あたり密度×毎秒拍数」で決まるため、拍格子の粗い（毎分拍数の小さい）楽曲では1拍あたり密度を上げて
+   *  毎秒ノーツ数を保つ。1拍あたり密度の上限は1.0（拍索引が一意のため1拍に最大1ノーツ）である。 */
+  density?: Partial<DensityOptions>;
+  /** オンセット選択（強調による拍の偏り）の曲別上書き（OnsetOptions の一部）。指定したフィールドだけ既定値
+   *  （DEFAULT_ONSET_OPTIONS）へ上書きする。曲ごとに上書きできる設計は onsetNotes.ts の OnsetOptions が元から想定している。
+   *  声量・歌詞などの重みを上げると、ノーツの塊と空白が楽曲の声量・歌詞の起伏へ寄り、頻度の偏り（緩急）が楽曲内容に沿う。
+   *  注記: 1拍あたり密度が1.0のときは目標数が全拍数に達し全拍が無選択で採られるため、本上書きは密度が1.0未満のときに効く。 */
+  onset?: Partial<OnsetOptions>;
+  /** サビ反復で共有テンプレートを使うか。省略時は既定（true、TAKEOVER）。サビ反復の拍数が揃わない曲は false にして、
    *  サビ区間も非サビと同じ個別スコアでノーツを選別する（「こたえて」のみ false。サビ間の多様性逓減は発火しないが、
    *  配分・一回性・ゲージ投下・ランクは従来どおり機能する）。 */
   chorusSharedTemplate?: boolean;
@@ -217,14 +241,25 @@ export function buildProfile(args: {
     showcases,
     climaxAnchorMs: manual.climaxAnchorMs,
   };
-  const densityPlan = generateDensityPlan(densityInput);
+  // 譜面密度の曲別上書きを既定値へ重ねる（指定の無いフィールドは既定値のまま）。countTargetNotes は密度プランから
+  // 計数するため、上書きした密度はノーツ数まで一貫して反映される。
+  const densityOptions: DensityOptions = { ...DEFAULT_DENSITY_OPTIONS, ...manual.density };
+  const densityPlan = generateDensityPlan(densityInput, densityOptions);
   const lyricDensity: LyricDensity = {
     windowMs: densityPlan.lyricDensity.windowMs,
     windows: densityPlan.lyricDensity.windows,
   };
 
-  // 6. タップ上限。
-  const tapBudget = generateTapBudget(toTapBudgetInput(songmap));
+  // 6. タップ上限。母数（叩ける音の最大個数の見積もり）の1拍あたり密度は、譜面密度の上書きと連動させる。
+  //    連動させる理由を先に述べる。母数は「各拍に置きうるタップ数の上限」であり、実際のノーツ数は休符・溜め・量子化で
+  //    母数以下になるのが設計前提（tapBudget.ts の密度モデルの範囲）である。譜面密度だけを上げて母数を据え置くと、実ノーツ数が
+  //    母数を超えて一回性（上限＝母数の約6割）の意味が崩れる。母数の密度を「母数の既定値」と「譜面密度」の大きい方にすることで、
+  //    母数は常に譜面密度以上（ゆえに実ノーツ数以上）になり、譜面密度を上げても上限が約6割の比率を保つ。既定の譜面密度
+  //    （サビ0.5・基本0.5）は母数の既定値（サビ1.0・非サビ0.5）以下のため、上書きの無い楽曲では母数は変わらない。
+  const tapBudget = generateTapBudget(toTapBudgetInput(songmap), {
+    chorusTapsPerBeat: Math.max(DEFAULT_CHORUS_TAPS_PER_BEAT, densityOptions.chorusDensityPerBeat),
+    nonChorusTapsPerBeat: Math.max(DEFAULT_NON_CHORUS_TAPS_PER_BEAT, densityOptions.baseDensityPerBeat),
+  });
 
   // 7. ノーツ（オンセット選択→パターン付与→軌跡上配置を識別子で突き合わせて最終 Note へ合成）。
   //    手動カメラが無い場合は曲長から暫定カメラを自動生成する。
@@ -245,11 +280,16 @@ export function buildProfile(args: {
     })),
     selectionSignal: densityPlan.selectionSignal,
   });
-  // サビ共有テンプレートの可否を曲別入力から渡す（省略時は既定 true）。サビ反復の拍数が揃わない曲（「こたえて」）は
-  // false で、サビ区間も非サビと同じ個別スコアで選別する。
-  const onsets = generateOnsetNotes(onsetInput, {
-    chorusSharedTemplate: manual.chorusSharedTemplate ?? true,
-  });
+  // オンセット選択の曲別上書きを既定値へ重ねる（指定の無いフィールドは既定値のまま）。サビ共有テンプレートの可否は
+  // 専用の曲別入力 chorusSharedTemplate からも受け取り、指定があれば上書きする（「こたえて」は false）。
+  const onsetOptions: OnsetOptions = {
+    ...DEFAULT_ONSET_OPTIONS,
+    ...manual.onset,
+    ...(manual.chorusSharedTemplate !== undefined
+      ? { chorusSharedTemplate: manual.chorusSharedTemplate }
+      : {}),
+  };
+  const onsets = generateOnsetNotes(onsetInput, onsetOptions);
   const patterned = applyNotePatterns({
     notes: onsets,
     slots,

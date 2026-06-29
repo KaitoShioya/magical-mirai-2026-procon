@@ -152,32 +152,45 @@ describe("無和音の扱い", () => {
   });
 });
 
-describe("こたえてのサスペンド和音の基本品質への写像（横展開）", () => {
-  // 「こたえて」が用いる sus2・sus4・sus2(#7) は最も近い基本品質へ写る（音高値は実行時未使用のため近似する。
-  // 詳細は chordPitch.ts の QUALITY_TOKEN_TO_QUALITY のコメント）。各和音が解析でき期待の基本品質になることを固定する。
-  it("sus2・sus4 は長三和音、sus2(#7) は長七和音に写る", () => {
-    expect(parseChordSymbol("Csus2").quality).toBe("major");
-    expect(parseChordSymbol("Dsus4").quality).toBe("major");
-    expect(parseChordSymbol("Csus2(#7)").quality).toBe("majorSeventh");
+describe("トリツクロジーの拡張和音・サスペンド和音・減三和音の核への写像（Issue #91）", () => {
+  // 音高値は実行時未使用のため核（基本品質）へ写す（詳細は chordPitch.ts の QUALITY_TOKEN_TO_QUALITY のコメント）。
+  // 各和音が解析でき期待の核になることを固定する。
+  it("短和音の拡張（m(9)・m(11)・m(13)）は短三和音に写る", () => {
+    expect(parseChordSymbol("Gbm(9)").quality).toBe("minor");
+    expect(parseChordSymbol("Bbm(11)").quality).toBe("minor");
+    expect(parseChordSymbol("Gbm(13)").quality).toBe("minor");
   });
 
-  it("分数和音の和音部にサスペンド和音が来ても解析できる（Csus2(#7)/G）", () => {
+  it("add9 は長三和音、sus2・sus4 は長三和音、dim は短三和音に写る", () => {
+    expect(parseChordSymbol("Dbadd9").quality).toBe("major");
+    expect(parseChordSymbol("Ebsus2").quality).toBe("major");
+    expect(parseChordSymbol("Dbsus4").quality).toBe("major");
+    expect(parseChordSymbol("Adim").quality).toBe("minor");
+  });
+
+  it("写像後の和音はいずれも音高集合へ展開できる", () => {
+    for (const name of ["Gbm(13)", "Bbm(9)", "Dbadd9", "Ebsus2", "Dbsus4", "Adim"]) {
+      expect(() => chordSymbolToPitchSet(name)).not.toThrow();
+    }
+  });
+});
+
+describe("こたえてのサスペンド2＋長七度の核への写像（Issue #90）", () => {
+  // 「こたえて」が用いる sus2(#7) は長7度を伴うため核は長七和音へ写る（音高値は実行時未使用のため近似する。
+  // 詳細は chordPitch.ts の QUALITY_TOKEN_TO_QUALITY のコメント）。分数和音の和音部に来ても解析できることを固定する。
+  it("sus2(#7) は長七和音に写り、分数和音 Csus2(#7)/G も解析できる", () => {
+    expect(parseChordSymbol("Csus2(#7)").quality).toBe("majorSeventh");
     const parsed = parseChordSymbol("Csus2(#7)/G");
     expect(parsed.quality).toBe("majorSeventh");
     expect(parsed.bassPitchClass).toBe(7);
-  });
-
-  it("写像後のサスペンド和音はいずれも音高集合へ展開できる", () => {
-    for (const name of ["Csus2", "Dsus4", "Csus2(#7)", "Asus2/C#", "Dsus2/F#"]) {
-      expect(() => chordSymbolToPitchSet(name)).not.toThrow();
-    }
+    expect(() => chordSymbolToPitchSet("Csus2(#7)/G")).not.toThrow();
   });
 });
 
 describe("異常入力", () => {
   it("空文字・未対応の品質・不正な根音は例外になる", () => {
     expect(() => parseChordSymbol("")).toThrow();
-    // 未対応の品質の例として maj9 を使う（sus2・sus4 は「こたえて」横展開で対応済みのため未対応例から外した）。
+    // サスペンド和音 sus4 は対応済みのため、なお未対応の拡張（maj9）で例外を確かめる。
     expect(() => parseChordSymbol("Cmaj9")).toThrow();
     expect(() => parseChordSymbol("Hm")).toThrow();
   });

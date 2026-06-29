@@ -99,10 +99,10 @@ try {
   await waitForScreen(page, "title");
   await assertScreen(page, "title");
 
-  // 1.5 曲選択UIの確認（Issue #5・横展開 Issue #90/#91）。実装済み曲だけが開始でき、未実装曲は無効化されている。
-  //     実装済みは TAKEOVER・アフター・ザ・カーテン・こたえての3曲のため、開始ボタンはちょうど3個（data-song-key が3曲）、
-  //     準備中の無効ボタンが3個あることを機械的に確認する。EXPECTED_STARTABLE_KEYS は比較のため昇順で並べる。
-  const EXPECTED_STARTABLE_KEYS = ["after-the-curtain", "kotaete", "takeover"];
+  // 1.5 曲選択UIの確認（Issue #5・横展開 Issue #91・Issue #90）。実装済み曲だけが開始でき、未実装曲は無効化されている。
+  //     実装済みは TAKEOVER とアフター・ザ・カーテンとトリツクロジーとこたえての4曲のため、開始ボタンはちょうど4個（data-song-key が4曲）、
+  //     準備中の無効ボタンが2個あることを機械的に確認する。
+  const EXPECTED_STARTABLE_KEYS = ["after-the-curtain", "kotaete", "takeover", "toritsuku-logy"];
   const songSelection = await page.evaluate(() => {
     const root = document.querySelector('[data-screen="title"]');
     const startButtons = Array.from(root.querySelectorAll('[data-action="start"]'));
@@ -120,14 +120,14 @@ try {
   } else if (JSON.stringify(startKeysSorted) !== JSON.stringify(EXPECTED_STARTABLE_KEYS)) {
     fail(`開始できる曲のキーが ${JSON.stringify(startKeysSorted)} です（期待: ${JSON.stringify(EXPECTED_STARTABLE_KEYS)}）`);
   } else {
-    console.log("確認: 開始できる曲は TAKEOVER・アフター・ザ・カーテン・こたえての3曲");
+    console.log("確認: 開始できる曲は TAKEOVER とアフター・ザ・カーテンとトリツクロジーとこたえての4曲");
   }
-  if (songSelection.comingSoonCount !== 3) {
-    fail(`準備中の曲が ${songSelection.comingSoonCount} 個です（期待: 3個）`);
+  if (songSelection.comingSoonCount !== 2) {
+    fail(`準備中の曲が ${songSelection.comingSoonCount} 個です（期待: 2個）`);
   } else if (!songSelection.comingSoonAllDisabled) {
     fail("準備中の曲に無効化されていないものがあります");
   } else {
-    console.log("確認: 準備中の曲は3個ですべて無効");
+    console.log("確認: 準備中の曲は2個ですべて無効");
   }
 
   // 1.6 「これはなに？」常設トグル（使い方説明）の確認。読み込みが終わった題名画面でトグルが見え、

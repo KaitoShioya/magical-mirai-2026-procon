@@ -25,7 +25,7 @@ export interface Song {
   /**
    * 遊べる状態まで実装が済んでいれば true。題名画面はこの値で開始可否を分け、
    * false の曲を「準備中」として無効化する（Issue #5）。6曲すべてが自分の状態を明示するため必須にする。
-   * 現状は縦切りで最初に完成させる TAKEOVER のみ true。
+   * 現状は縦切りで完成させた TAKEOVER と、横展開した アフター・ザ・カーテン・トリツクロジー（Issue #91）が true。
    */
   implemented: boolean;
   /** コーラス補正のコメント付きJSONがある場合に true（「こたえて」のみ） */
@@ -107,7 +107,7 @@ export const SONGS: readonly Song[] = [
       lyricId: 126593,
       lyricDiffId: 28630,
     },
-    implemented: false,
+    implemented: true,
   },
   {
     key: "takeover",

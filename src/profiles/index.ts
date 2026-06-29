@@ -20,6 +20,12 @@ import {
   AFTER_THE_CURTAIN_DEFAULT_READING_PIXEL_HEIGHT,
   AFTER_THE_CURTAIN_DEFAULT_READING_REGION,
 } from "./after-the-curtain/typographyChart";
+import { toritsukuLogyProfile } from "./toritsuku-logy/profile";
+import {
+  toritsukuLogyTypographyChart,
+  TORITSUKU_LOGY_DEFAULT_READING_PIXEL_HEIGHT,
+  TORITSUKU_LOGY_DEFAULT_READING_REGION,
+} from "./toritsuku-logy/typographyChart";
 import { kotaeteProfile } from "./kotaete/profile";
 import {
   kotaeteTypographyChart,
@@ -56,6 +62,13 @@ const BUNDLES_BY_KEY: Record<string, SongBundle> = {
     defaultReadingUnit: "phrase",
     defaultReadingPixelHeight: AFTER_THE_CURTAIN_DEFAULT_READING_PIXEL_HEIGHT,
     defaultReadingRegion: AFTER_THE_CURTAIN_DEFAULT_READING_REGION,
+  },
+  "toritsuku-logy": {
+    profile: toritsukuLogyProfile,
+    typographyChart: toritsukuLogyTypographyChart,
+    defaultReadingUnit: "phrase",
+    defaultReadingPixelHeight: TORITSUKU_LOGY_DEFAULT_READING_PIXEL_HEIGHT,
+    defaultReadingRegion: TORITSUKU_LOGY_DEFAULT_READING_REGION,
   },
   kotaete: {
     profile: kotaeteProfile,

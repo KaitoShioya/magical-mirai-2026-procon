@@ -19,7 +19,7 @@
 | `kotaete` | こたえて | imie | 遊べる |
 | `after-the-curtain` | アフター・ザ・カーテン | Rulmry | 遊べる |
 | `shutter-chance` | シャッターチャンス | 夜未アガリ | 遊べる |
-| `sekai-saigo` | 世界最後の音楽隊 | 夏山よつぎ×ど～ぱみん | 準備中 |
+| `sekai-saigo` | 世界最後の音楽隊 | 夏山よつぎ×ど～ぱみん | 遊べる |
 | `toritsuku-logy` | トリツクロジー | 鶴三 | 遊べる |
 | `takeover` | TAKEOVER | Twinfield | 遊べる |
 

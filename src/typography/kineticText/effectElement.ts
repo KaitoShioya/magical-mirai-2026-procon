@@ -39,6 +39,8 @@ export interface OperatedAttributes {
   readonly glow?: boolean;
   readonly deform?: boolean;
   readonly duplication?: boolean;
+  /** 矩形の切り抜きを操作するか。 */
+  readonly clip?: boolean;
 }
 
 // ---- 費用の宣言 ----
@@ -139,9 +141,23 @@ export interface GlowContribution {
 export interface OpacityContribution {
   readonly factor: number;
 }
+/**
+ * 変形した塊全体（1枚の変形テキスト）の配置。変形は1文字ごとの幾何チャネルと排他のため、塊の移動・拡大は
+ * 1文字ごとの位置・大きさでは表せない。塊配置として変形寄与の内側に持たせ、合成器・適用層を通して変形取っ手の
+ * 位置・大きさへ反映する（渦状スキャッター転換で塊を巻き込み縮める等に使う。設計書§2.3.4）。
+ */
+export interface DeformMassPlacement {
+  /** 塊全体の位置（ワールド座標）。無指定は基準位置。 */
+  readonly position?: Vector3Like;
+  /** 塊全体の大きさ（縦横独立の絶対倍率）。無指定は等倍。各成分は有限かつ正。 */
+  readonly scale?: Vector3Like;
+}
+
 export interface DeformContribution {
   readonly kind: DeformKind;
   readonly params: DeformParams;
+  /** 変形した塊全体の配置。変形寄与だけが持てる（型の上で非変形寄与は持てない）。 */
+  readonly massPlacement?: DeformMassPlacement;
 }
 /** 1つの写しの変換。位置のずれ、任意の不透明度、任意の一律倍率。 */
 export interface DuplicateCopy {
@@ -169,6 +185,17 @@ export interface DuplicationContribution {
  *    （変形は単一の変形テキストへ回り、1文字ごとの取っ手や複製を持てないため）。
  * 2. 含む項目は、宣言した操作属性 operates の範囲内に収める。
  */
+/**
+ * 矩形の切り抜き（文字のローカル座標系。最小が最大以下）。部首分解・縦横ブラインド近似に使う（設計書§5.3/§5.5）。
+ * troika の clipRect と同じ並び [minX, minY, maxX, maxY] に対応する。
+ */
+export interface ClipContribution {
+  readonly minX: number;
+  readonly minY: number;
+  readonly maxX: number;
+  readonly maxY: number;
+}
+
 export interface AttributeContribution {
   readonly position?: TransformContribution;
   readonly rotation?: TransformContribution;
@@ -179,6 +206,8 @@ export interface AttributeContribution {
   readonly glow?: GlowContribution;
   readonly deform?: DeformContribution;
   readonly duplication?: DuplicationContribution;
+  /** 矩形の切り抜き（部首分解・縦横ブラインド近似）。 */
+  readonly clip?: ClipContribution;
 }
 
 // ---- 評価コンテキスト ----
@@ -209,6 +238,12 @@ export interface EffectContext {
   readonly emotion?: number;
   /** 区間境界の近傍か。 */
   readonly atSectionBoundary?: boolean;
+  /**
+   * その単位の自然な基準位置（世界座標）。位置の主変形を絶対値で出す演出（軸の直線移動・奥行き飛び込み）が、
+   * 文字の自然な配置へ着地するために使う。駆動側が各単位の世界座標で充填する。合成器が受け取る
+   * ComposeInput.basePosition と同値を供給する（位置の主変形が無いときの起点と、演出内部の静止位置を一致させる）。
+   */
+  readonly basePosition?: Vector3Like;
 }
 
 // ---- 演出要素のインターフェース ----
@@ -236,6 +271,16 @@ export interface EffectElementIssue {
 
 function isFiniteNonNegative(value: unknown): boolean {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+/** 3成分すべてが有限の数値か（符号は問わない）。塊の位置の検査に使う。 */
+function isFiniteVector(value: Vector3Like): boolean {
+  return Number.isFinite(value.x) && Number.isFinite(value.y) && Number.isFinite(value.z);
+}
+
+/** 3成分すべてが有限かつ正か。塊の大きさの検査に使う（0や負は描画が壊れるため）。 */
+function isFinitePositiveVector(value: Vector3Like): boolean {
+  return isFiniteVector(value) && value.x > 0 && value.y > 0 && value.z > 0;
 }
 
 function isPositiveInteger(value: unknown): boolean {
@@ -407,6 +452,15 @@ export function findContributionIssues(
         });
       }
     }
+    // 塊配置の数値検査。塊配置は変形寄与の内側にネストするため型の上で非変形寄与は持てず、ここでは数値だけを見る。
+    // 位置は有限（符号は問わない）、大きさは有限かつ正（0や負は描画が壊れるため）。
+    const mp = contribution.deform.massPlacement;
+    if (mp?.position !== undefined && !isFiniteVector(mp.position)) {
+      issues.push({ path: "contribution.deform.massPlacement.position", message: "塊の位置は有限の数値である必要があります。" });
+    }
+    if (mp?.scale !== undefined && !isFinitePositiveVector(mp.scale)) {
+      issues.push({ path: "contribution.deform.massPlacement.scale", message: "塊の大きさは有限かつ正である必要があります。" });
+    }
   }
 
   // 2. 操作属性の範囲内と層の一致。
@@ -444,7 +498,7 @@ export function findContributionIssues(
     }
   }
 
-  for (const key of ["opacity", "glow", "duplication"] as const) {
+  for (const key of ["opacity", "glow", "duplication", "clip"] as const) {
     if (contribution[key] !== undefined && operates[key] !== true) {
       issues.push({ path: `contribution.${key}`, message: `${key} は operates で宣言されていません。` });
     }
@@ -463,6 +517,33 @@ export function findContributionIssues(
       issues.push({ path: "contribution.duplication.minCount", message: "最小写し数は正の整数である必要があります。" });
     } else if (dup.minCount > dup.copies.length) {
       issues.push({ path: "contribution.duplication.minCount", message: "最小写し数は写しの数以下である必要があります。" });
+    }
+  }
+
+  // 数値の健全性（数式由来の演出を多数追加するため、非数や無限大を合成前に弾く）。
+  // 位置・回転・大きさ・字間・透明度・発光の値はいずれも有限であることを要する。透明度・発光の0以上1以下への
+  // 収束は合成器の責務（透明度は係数の積をクランプ、発光は閾値以上へ持ち上げ）であり、ここでは範囲ではなく
+  // 有限性だけを検査する（範囲を強制すると、合成器のクランプを検証する既存の契約と衝突するため）。
+  for (const key of ["position", "rotation", "scale"] as const) {
+    const value = contribution[key];
+    if (value !== undefined && !isFiniteVector(value.value)) {
+      issues.push({ path: `contribution.${key}.value`, message: `${key} の値は有限の数値である必要があります。` });
+    }
+  }
+  if (contribution.letterSpacing !== undefined && !Number.isFinite(contribution.letterSpacing.value)) {
+    issues.push({ path: "contribution.letterSpacing.value", message: "字間の値は有限の数値である必要があります。" });
+  }
+  if (contribution.opacity !== undefined && !Number.isFinite(contribution.opacity.factor)) {
+    issues.push({ path: "contribution.opacity.factor", message: "透明度の係数は有限の数値である必要があります。" });
+  }
+  if (contribution.glow !== undefined && !Number.isFinite(contribution.glow.intensity)) {
+    issues.push({ path: "contribution.glow.intensity", message: "発光の強さは有限の数値である必要があります。" });
+  }
+  if (contribution.clip !== undefined) {
+    const clip = contribution.clip;
+    const finite = Number.isFinite(clip.minX) && Number.isFinite(clip.minY) && Number.isFinite(clip.maxX) && Number.isFinite(clip.maxY);
+    if (!finite || clip.minX > clip.maxX || clip.minY > clip.maxY) {
+      issues.push({ path: "contribution.clip", message: "切り抜き矩形は有限の数値で、最小が最大以下である必要があります。" });
     }
   }
 

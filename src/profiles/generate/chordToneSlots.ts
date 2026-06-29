@@ -47,7 +47,11 @@ const SEMITONES_PER_OCTAVE = 12;
 export type ToneCategory = "majorType" | "minorType";
 
 /** 和音の品質ごとの安全付加音の区分。
- *  長調系（長三和音・増三和音・属七和音・長七和音・長六和音）は長調系の付加音、短調系（短三和音・短七和音）は短調系の付加音を使う。
+ *  長調系（長三和音・増三和音・属七和音・長七和音・長六和音・属七の懸垂四度・属九・属七の変十三度）は長調系の付加音、
+ *  短調系（短三和音・短七和音・短九）は短調系の付加音を使う。減七和音は短三度を含むため短調系とする。
+ *  区分の選び方の根拠を先に述べる。区分は根音の上に重ねる安全付加音（長調系=長九度と長六度、短調系=完全四度と短七度）を
+ *  決める。長三度を含む属系（属七の懸垂四度は三度を持たないが属七の機能を継ぐ）は長調系、短三度を含む短系と減七は短調系とする。
+ *  いずれの品質も付加後の協和音高クラスが相異なり、2オクターブ展開でスロット数（最大9）以上の候補が得られることを確認済みである。
  *  出典 docs/research/07-feasibility-and-parameters.md §1.3。 */
 export const QUALITY_TO_TONE_CATEGORY: Record<ChordQuality, ToneCategory> = {
   major: "majorType",
@@ -55,8 +59,13 @@ export const QUALITY_TO_TONE_CATEGORY: Record<ChordQuality, ToneCategory> = {
   dominantSeventh: "majorType",
   majorSeventh: "majorType",
   majorSixth: "majorType",
+  dominantSeventhSus4: "majorType",
+  dominantNinth: "majorType",
+  dominantSeventhFlatThirteenth: "majorType",
   minor: "minorType",
   minorSeventh: "minorType",
+  minorNinth: "minorType",
+  diminishedSeventh: "minorType",
   // 減三和音は短3度を持つため短調系の付加音（完全4度・♭7度）を使う。完全4度は減5度と半音隣接で除外され、♭7度が採られ、
   // 構成音[0,3,6]に♭7度を加えた[0,3,6,10]（半減七の和音の構成音）になる。減5度は構成音として保たれ床の整合を保つ。
   diminished: "minorType",
@@ -106,7 +115,7 @@ export function circularSemitoneDistance(a: number, b: number): number {
 export function buildSafeConsonanceIntervals(quality: ChordQuality): number[] {
   const chordIntervals = CHORD_QUALITY_INTERVALS[quality];
   const category = QUALITY_TO_TONE_CATEGORY[quality];
-  // 網羅性検査。parseChordSymbol が返す品質（現在9種）を各表も網羅するが、将来 ChordQuality に品質が追加され表の更新が漏れた場合に、
+  // 網羅性検査。parseChordSymbol が返す品質を各表も網羅するが、将来 ChordQuality に品質が追加され表の更新が漏れた場合に、
   // 誤った値を黙って使わず発生源で止めるための検査である。
   if (chordIntervals === undefined || category === undefined) {
     throw new Error(`和音の品質に対応する音程表がありません（内部不整合）: "${String(quality)}"`);

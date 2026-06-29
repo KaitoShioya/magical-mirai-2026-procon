@@ -2,7 +2,7 @@
 // TextAlive の再生（src/textalive）を時間源として engine へ供給し、楽曲ロード失敗の導線（src/app/overlay）と
 // 楽曲終了によるプレイ→結果遷移、タブ離脱時の楽曲停止・再開を結ぶ（Issue #4）。
 
-import { findSong, SONGS } from "../config/songs";
+import { DEFAULT_SONG_KEY, findSong, SONGS } from "../config/songs";
 import { createClock, createLoop, createScheduler, createWorld } from "../engine";
 import {
   createPlayScreen,
@@ -15,7 +15,7 @@ import {
 import type { ScreenContext, ScreenFactory, ScreenKey } from "../screens";
 import { createFakePlayback, createTextAlivePlayback, type Playback } from "../textalive";
 import { createOverlays } from "./overlay";
-import { createRenderRoot, createPerfBudget } from "../rendering";
+import { createRenderRoot, createPerfBudget, LANE_LEAD_MS } from "../rendering";
 import { createBeatScheduler } from "../utils/beatScheduler";
 import { createScreenShake, resolveBeatAmplitudes } from "../utils/screenShake";
 import { MIKU_CHARACTER } from "../config/character";
@@ -40,7 +40,7 @@ import {
 import { APP_WORK_TITLE } from "../config/work";
 import { shareArtifact, composeShareText, createBrowserShareEnvironment } from "./share";
 import { createPhotoCamera } from "./photoCamera";
-import { getSongBundle, resolveSongKey } from "../profiles/registry";
+import { songBundle, ALL_SONG_BUNDLES } from "../profiles";
 import { createCameraTrajectory } from "../utils/cameraTrajectory";
 import { createInput } from "../input";
 import { createPlaySession } from "./playSession";
@@ -62,14 +62,6 @@ export interface App {
 const PLAYBACK_START_TIMEOUT_MS = 400;
 
 /**
- * 別曲への切替を1クリックで開始するための、自動開始の意図を再読み込みをまたいで保持するセッションストレージの鍵。
- * 採用理由を先に述べる。別曲はページ再読み込みで起動し直すため、押下の文脈は再読み込みで失われる。再読み込み後に
- * 「この曲で自動的に開始する」意図を引き継ぐ必要があり、タブ単位で再読み込みをまたいで残り手動再読み込みで消えても
- * 支障のないセッションストレージを用いる。意図は起動時に1回で消費する。
- */
-const AUTOSTART_SONG_STORAGE_KEY = "lake-sonare:autostart-song";
-
-/**
  * アプリを生成し、初期状態 title で起動して毎フレーム駆動を開始する。
  * 呼び出し側は別途 start を呼ばない。返り値は後始末用の dispose のみを持つ。
  * options.diagnostics が真のとき、検証用の状態アクセサを取り付け、トークン非依存の擬似再生を用いる。
@@ -81,16 +73,16 @@ export function createApp(
     stageRoot: HTMLElement;
     reflectionResolution: number;
     bloomEnabled?: boolean;
-    /** 起動曲のキー。題名画面の曲選択は ?song で渡され、入口（src/main.ts）が解決して渡す。 */
-    songKey: string;
   }
 ): App {
-  // 起動曲を確定する。防御として resolveSongKey で実装済み（プロファイル束が存在する）キーへ丸める（未実装・未知は既定曲）。
-  // 束（bundle）と曲設定（song）を同じ確定キーから引くことで、プロファイルとロード元（songUrl・video）の食い違いを防ぐ。
-  const songKey = resolveSongKey(options.songKey);
-  const bundle = getSongBundle(songKey);
-  const profile = bundle.profile;
-  const song = findSong(songKey);
+  // 現在の曲と曲束。題名画面の曲選択（selectSong）で差し替える。初期値は既定曲（DEFAULT_SONG_KEY）で、
+  // 再生（playback）は起動時にこの曲を自動で読み込む。曲束は曲依存データ（プロファイル・タイポ譜面・読ませる役の既定）の束。
+  let currentSong = findSong(DEFAULT_SONG_KEY);
+  let currentBundle = songBundle(currentSong.key);
+  let currentProfile = currentBundle.profile;
+  // 再生が現在読み込んでいる曲のキー。起動時の自動読み込みは既定曲を読むため初期値は既定曲とする。曲選択時、
+  // このキーと異なる曲を選んだときだけ再生へ読み込み直しを依頼し、同じ曲の無駄な読み込み直しを避ける。
+  let loadedSongKey = currentSong.key;
 
   // 描画基盤を常在領域へ載せ、起動直後にクリアカラーを適用する（Issue #8）。
   // 画面UIの背面に深夜の湖を描く。毎フレームの描画は下のループ onFrame で駆動する。
@@ -104,12 +96,15 @@ export function createApp(
     // 散らばる素性のない光点として見えてしまうため外す（反射確認は spatial.html 診断が引き続き用いる）。
     placeholderGlowEnabled: false,
     // 持続配置の灯し（本タスク）の収容上限は、得点が出たタップ（各ノーツが最大1回バインド）の上限であるノーツ数を
-    // 渡す（データ駆動。描画層は profiles を import しないため、統括が数値で渡す）。
-    lanternCapacity: profile.notes.length,
+    // 渡す（データ駆動。描画層は profiles を import しないため、統括が数値で渡す）。描画基盤は一度だけ生成し収容上限を
+    // 後から変えないため、選べる全曲のノーツ数の最大値を渡す。プレイごとに resetLanterns で灯しを消すため、最大値に
+    // しておけば曲を切り替えても収容が不足しない。
+    lanternCapacity: Math.max(...ALL_SONG_BUNDLES.map((bundle) => bundle.profile.notes.length)),
   });
 
   // 演出カメラ軌跡（Issue #13・#59）。曲プロファイルのキーフレームから評価器を作り、プレイ中に毎フレーム駆動する。
-  const cameraTrajectory = createCameraTrajectory(profile.camera);
+  // 曲選択で作り直すため let とする。
+  let cameraTrajectory = createCameraTrajectory(currentProfile.camera);
 
   // 性能バジェットの自動劣化制御（Issue #18）。診断の有無に依らず常時生成する。理由を先に述べる。これは実機の
   // 性能に追従する本番機能であり、本番ビルドでも監視と劣化適用を動かす必要がある。FPSの読み出し口（window.__fps
@@ -149,7 +144,8 @@ export function createApp(
   // 素材全体の出典を、操作で常時到達できるクレジット表示として常設する（Issue #82）。
   // ミクの描画に依存しない規約上の表示のため、診断モードと通常モードの両方で生成する。
   // これにより、トークン不要の診断経路（?smoke=1）でも表示を検証できる。
-  const creditsView: CreditsView = createCreditsView(buildCreditRegistry(song));
+  // 出典の楽曲欄は現在曲を反映するため、曲選択で作り直す。よって let とする。
+  let creditsView: CreditsView = createCreditsView(buildCreditRegistry(currentSong));
 
   // 使い方説明の「これはなに？」常設トグル（世界観・操作方法・成果物）。クレジットと同じく両モードで生成し、
   // トークン不要の診断経路（?smoke=1）でも存在と開閉を検査できるようにする。楽曲の読み込み中はトグルを隠し、
@@ -159,7 +155,7 @@ export function createApp(
   // 診断モード（?smoke=1）はトークン非依存の擬似再生、通常はトークンで実プレイヤーを使う。
   const playback: Playback = options.diagnostics
     ? createFakePlayback()
-    : createTextAlivePlayback({ song, token: import.meta.env.VITE_TEXTALIVE_TOKEN });
+    : createTextAlivePlayback({ song: currentSong, token: import.meta.env.VITE_TEXTALIVE_TOKEN });
 
   const overlays = createOverlays();
   const renderOverlays = (state = playback.getState()): void => {
@@ -237,17 +233,18 @@ export function createApp(
   // 画面拡大・減衰揺れ（Issue #76）。ノーツの消滅（目標線到達）に同期して画面を一瞬拡大し減衰させる演出を結線する。
   // 拍時刻は曲プロファイル生成（#46）の beats から供給する（#59）。各拍の開始時刻と小節内位置を写す。拍走査器は全拍を
   // 走査し、強度は小節内位置で決める（小節頭を強く）が、発火はノーツのある拍だけに限る（下記 noteBeatIndices）。
-  const screenShakeBeats: { startTimeMs: number; position: number }[] = profile.beats.map(
+  // 画面振動の拍データは曲依存のため、曲選択で作り直せるよう let とする。screenShake 本体（評価器）は曲非依存で維持する。
+  let screenShakeBeats: { startTimeMs: number; position: number }[] = currentProfile.beats.map(
     (beat) => ({ startTimeMs: beat.startTimeMs, position: beat.position })
   );
-  const screenShakeAmplitudes = resolveBeatAmplitudes(screenShakeBeats);
-  const beatScheduler = createBeatScheduler(screenShakeBeats.map((b) => b.startTimeMs));
+  let screenShakeAmplitudes = resolveBeatAmplitudes(screenShakeBeats);
+  let beatScheduler = createBeatScheduler(screenShakeBeats.map((b) => b.startTimeMs));
   const screenShake = createScreenShake();
   // 画面振動をノーツの消滅に同期させるためのノーツ拍索引集合。各ノーツは拍上（beatIndex）に置かれ、自分の拍時刻で
   // 目標線へ達して消えるため、ノーツのある拍だけで振動を発火する。休符の拍では振動させないことで、振動が譜面の抑揚ある
   // リズムに同期して躍動感が出て、休符で静まる緩急が生まれる。beatIndex は beats 配列の添字で拍走査器の event.index と
-  // 同じ意味である。
-  const noteBeatIndices = new Set<number>(profile.notes.map((note) => note.beatIndex));
+  // 同じ意味である。曲依存のため let とする。
+  let noteBeatIndices = new Set<number>(currentProfile.notes.map((note) => note.beatIndex));
   const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   // エンジンの固定時間刻みの時計・走査器・世界状態。プレイ画面の本編表示（Issue #33）が同期の基準として
@@ -258,6 +255,14 @@ export function createApp(
 
   // プレイ進行中だけ、タブ離脱時の楽曲停止・再開と、楽曲終了・再生開始の観測を行う。
   let inPlayPhase = false;
+  // 本編入りのリードイン（簡易先回し）の状態。プレイ開始直後の一定時間、楽曲を止めたままノーツを上から落として助走を見せ、
+  // 終了時に楽曲再生を開始する。理由を先に述べる。落下レーンはノーツを「ノーツ時刻 − LANE_LEAD_MS」で上端に出して判定線へ
+  // 落とすが、本編開始の音楽時刻0では曲頭付近のノーツ（本曲は110ミリ秒など）が既に判定線近くに居て「いきなり到達」して見える。
+  // そこでプレイ開始直後に音楽時刻を −LANE_LEAD_MS から 0 へ進める助走を置き、ノーツが上から落ちてくる様子を見せてから
+  // 楽曲を開始する。助走の長さを LANE_LEAD_MS に一致させる理由は、曲頭（時刻0付近）のノーツが上端から判定線まで丁度落ち切る
+  // 時間がレーンのリードインに等しいためである。
+  let inLeadIn = false;
+  let leadInElapsedMs = 0;
   // 再生開始の成立を待つ累積時間と、「触れて再生」表示中かどうか。
   let playStartElapsedMs = 0;
   let tapToPlayShown = false;
@@ -282,22 +287,48 @@ export function createApp(
   // ため、結果画面の表示中に再計算せず終了の瞬間の値を保持する。
   let lastResult: ScoreResult | null = null;
 
-  // プレイ進行の判定・採点・音・光の統合（Issue #59）。曲プロファイルを渡し、副作用の出口（操作音・反応光点・
-  // フレーム時刻標本・較正値）を注入する。較正値はプレイ開始ごとに読み直すため関数で渡す。
-  const session = createPlaySession({
-    profile: profile,
-    cameraTrajectory,
-    operationSound,
-    // 得点が出たタップで、持続配置の灯し（蝶＝カメラ通過点・ひまわり＝その真下の水面、本タスク）を1組置く。
-    placeLantern: (lanternInput) => renderRoot.placeLantern(lanternInput),
-    // 得点が0でないタップ（ノーツに当たったタップ）のレーンから、画面全体の水面の波紋を立てる（Issue #202）。
-    // 受け口（tapRippleSink）はプレイ画面が落下式レーンの spawnTapRipple を登録する。未登録のあいだは何もしない。
-    spawnTapRipple: (slotIndex0) => tapRippleSink?.(slotIndex0),
-    getFrameSample: () => latestFrameSample,
-    getCalibrationOffsetMs: () => loadCalibrationOffsetMs(),
-  });
+  // プレイ進行の判定・採点・音・光の統合（Issue #59）。現在曲のプロファイルとカメラ軌跡を渡し、副作用の出口（操作音・
+  // 反応光点・フレーム時刻標本・較正値）を注入する。較正値はプレイ開始ごとに読み直すため関数で渡す。曲選択で作り直すため、
+  // 現在の曲依存値（現在プロファイル・現在カメラ軌跡）からセッションを作る生成関数に分け、let で保持する。副作用の出口は
+  // 曲非依存のため毎回同じ実体を渡す。
+  function createSessionForCurrentSong(): ReturnType<typeof createPlaySession> {
+    return createPlaySession({
+      profile: currentProfile,
+      cameraTrajectory,
+      operationSound,
+      // 得点が出たタップで、持続配置の灯し（蝶＝カメラ通過点・ひまわり＝その真下の水面、本タスク）を1組置く。
+      placeLantern: (lanternInput) => renderRoot.placeLantern(lanternInput),
+      // 得点が0でないタップ（ノーツに当たったタップ）のレーンから、画面全体の水面の波紋を立てる（Issue #202）。
+      // 受け口（tapRippleSink）はプレイ画面が落下式レーンの spawnTapRipple を登録する。未登録のあいだは何もしない。
+      spawnTapRipple: (slotIndex0) => tapRippleSink?.(slotIndex0),
+      getFrameSample: () => latestFrameSample,
+      getCalibrationOffsetMs: () => loadCalibrationOffsetMs(),
+    });
+  }
+  let session = createSessionForCurrentSong();
 
-  // 入力（Issue #47・#59）。全画面（root）を入力面とし、プレイ進行中だけ有効化する。タップごとにセッションへ渡す。
+  // 曲選択で、曲依存のオブジェクト（カメラ軌跡・セッション・画面振動の拍データ・クレジット表示）を現在曲で作り直す。
+  // 維持するもの（描画基盤・ループ・再生・購読・入力・撮影モード）は触らない。これらを参照する閉包は let 変数経由で
+  // 呼ぶため、作り直しに追従する。カメラ軌跡を先に作り、それを使うセッションを後に作る順序を守る。セッションは後始末を
+  // 持たないため新規生成で旧を捨てる。クレジット表示は旧を破棄してから現在曲で作り直す。
+  function applySong(key: string): void {
+    currentSong = findSong(key);
+    currentBundle = songBundle(currentSong.key);
+    currentProfile = currentBundle.profile;
+    cameraTrajectory = createCameraTrajectory(currentProfile.camera);
+    session = createSessionForCurrentSong();
+    screenShakeBeats = currentProfile.beats.map((beat) => ({
+      startTimeMs: beat.startTimeMs,
+      position: beat.position,
+    }));
+    screenShakeAmplitudes = resolveBeatAmplitudes(screenShakeBeats);
+    beatScheduler = createBeatScheduler(screenShakeBeats.map((b) => b.startTimeMs));
+    noteBeatIndices = new Set<number>(currentProfile.notes.map((note) => note.beatIndex));
+    creditsView.dispose();
+    creditsView = createCreditsView(buildCreditRegistry(currentSong));
+  }
+
+  // 入力（Issue #47・#59）。全画面（root）を入力面とし、プレイ進行中だけ有効化する。タップごとに現在のセッションへ渡す。
   const input = createInput({
     target: root,
     onReaction: (reaction) => session.onReaction(reaction),
@@ -347,10 +378,13 @@ export function createApp(
     screenShake.reset();
     // プレイ開始ごとに持続配置の灯し（本タスク）を全消去し、前回の蝶・ひまわりを持ち越さない。
     renderRoot.resetLanterns();
-    // プレイ進行の判定・採点・音・光のセッションを初期化し、入力を有効化する（Issue #59）。
+    // プレイ進行の判定・採点・音・光のセッションを初期化する（Issue #59）。
     session.reset();
-    input.setActive(true);
-    playback.beginFromStart();
+    // 本編入りのリードイン（簡易先回し）を開始する。理由を先に述べる。先回し中はノーツを上から落として助走を見せるため、
+    // 楽曲再生と入力（採点）は先回し終了まで止め、終了時に楽曲を先頭から開始し入力を有効化する。これにより助走中のタップが
+    // 楽曲開始前に採点へ入ることを防ぐ。先回しの進行と終了は毎フレームのループが行う。
+    inLeadIn = true;
+    leadInElapsedMs = 0;
     // プレイ突入時に、開いている説明・クレジット・較正のパネルを閉じる（Issue #112）。順序の理由を先に述べる。
     // パネルを閉じる close は閉じる際にトグルへ焦点を戻すため、トグルを隠す body[data-phase="play"] を先に立てると
     // 焦点が見えないトグルへ移る。これを避けるため、(1) 先にパネルを閉じ、(2) 次にプレイ局面の印を立て、(3) 最後に
@@ -371,6 +405,15 @@ export function createApp(
       artist: entry.artist,
       implemented: entry.implemented,
     })),
+    // 題名画面で曲を選んだときに呼ぶ。曲依存オブジェクトを現在曲で作り直し、読み込み済みの曲と異なる曲を選んだときだけ
+    // 再生へ読み込み直しを依頼する（同じ曲の無駄な読み込み直しを避ける）。題名画面はこの後 requestTransition("warmup") を呼ぶ。
+    selectSong: (key: string): void => {
+      applySong(key);
+      if (currentSong.key !== loadedSongKey) {
+        playback.loadSong(currentSong);
+        loadedSongKey = currentSong.key;
+      }
+    },
     requestTransition: (to: ScreenKey): void => {
       // 「はじめる」の操作の最中（題名→ウォームアップ）に音声再生の許可を最善努力で確立する。
       // 同じ確実な利用者操作の文脈で、操作音のオシレーター用AudioContextも起動する（戻り値は待たない）。
@@ -384,50 +427,42 @@ export function createApp(
         enterPlay();
       }
     },
-    requestSong: (key: string): void => {
-      // 題名画面で曲を選んだときに呼ばれる。起動曲と同じならそのままウォームアップへ進む。別曲なら起動曲を切り替えるため、
-      // ?song を更新してページを再読み込みする。理由を先に述べる。本アプリは起動時に1曲ぶんの描画基盤・カメラ・セッションを
-      // 構築する単一曲構成で、同一プレイヤーへの別曲再投入の安全性は資料で確認できないため、別曲は再読み込みで起動し直す
-      //（旧試作 docs/poc/src/main.js の作法）。既存のクエリ（smoke・refl・bloom）を保持して song だけ差し替える。
-      if (key === songKey) {
-        context.requestTransition("warmup");
-        return;
-      }
-      // 別曲は1クリックで開始する。再読み込みをまたいで「この曲で自動的に開始する」意図をセッションストレージへ残し、
-      // 再読み込み後の起動時にウォームアップへ自動進行させる（下の machine.start 直後の消費処理）。これで利用者は1回の
-      // 押下で切替先の曲を開始できる。再読み込みで利用者操作の文脈が切れ自動再生がブラウザに阻まれた場合は、既存の
-      // 「触れて再生」フォールバック（再生開始の不成立を検知して表示）が利用者の1タップで開始させる。
-      try {
-        window.sessionStorage.setItem(AUTOSTART_SONG_STORAGE_KEY, key);
-      } catch {
-        // セッションストレージが使えない環境では自動進行を諦め、再読み込み後に再度ボタンを押す従来の挙動になる。
-      }
-      const url = new URL(window.location.href);
-      url.searchParams.set("song", key);
-      window.location.href = url.toString();
-    },
-    // プレイ画面の本編表示の結線（Issue #33）。描画基盤の3D場面・カメラ、音楽地図、ゲーム時刻、TAKEOVERの
+    // プレイ画面の本編表示の結線（Issue #33）。描画基盤の3D場面・カメラ、音楽地図、ゲーム時刻、現在曲の
     // タイポ譜面と読ませる役の既定を渡す。診断・本番の双方で渡し、診断は擬似再生の音楽地図で動く。
+    // 曲依存の値（タイポ譜面・読ませる役の既定・ノーツ列）はゲッターで現在の曲束・プロファイルを読む。プレイ画面は
+    // 遷移ごとに生成され、これらを画面生成時に読むため、選んだ曲の値が反映される。
     play: {
       getWorldScene: () => renderRoot.getWorldScene(),
       getWorldCamera: () => renderRoot.getWorldCamera(),
       webglAvailable: () => renderRoot.state().webglAvailable,
       musicMapSource: () => playback.musicMap(),
-      currentGameTimeMs: () => world.gameTimeMs,
-      typographyChart: bundle.typographyChart,
-      defaultReadingUnit: bundle.defaultReadingUnit,
-      defaultReadingPixelHeight: bundle.defaultReadingPixelHeight,
-      defaultReadingRegion: bundle.defaultReadingRegion,
+      // 本編入りのリードイン（簡易先回し）中は、音楽時刻を −LANE_LEAD_MS から 0 へ進めた値を返し、落下レーンと文字が
+      // ノーツを上から落としながら助走する。先回し終了後は楽曲再生位置（world.gameTimeMs）へ切り替わり連続する。
+      currentGameTimeMs: () => (inLeadIn ? leadInElapsedMs - LANE_LEAD_MS : world.gameTimeMs),
+      get typographyChart() {
+        return currentBundle.typographyChart;
+      },
+      get defaultReadingUnit() {
+        return currentBundle.defaultReadingUnit;
+      },
+      get defaultReadingPixelHeight() {
+        return currentBundle.defaultReadingPixelHeight;
+      },
+      get defaultReadingRegion() {
+        return currentBundle.defaultReadingRegion;
+      },
       // 読ませる役の収まり判定と最小表示寸法はデバイス画素で扱うため、表示寸法に画素密度倍率を掛ける。
       viewportPixelWidth: () =>
         Math.round(options.stageRoot.clientWidth * (window.devicePixelRatio || 1)),
       viewportPixelHeight: () =>
         Math.round(options.stageRoot.clientHeight * (window.devicePixelRatio || 1)),
-      // 落下式レーン（判定UI #57）を2次元層へ載せる口と、レーンが描画するノーツ列（TAKEOVER曲プロファイルの
-      // notes）。2次元層への追加・削除は描画基盤へ委譲する。
+      // 落下式レーン（判定UI #57）を2次元層へ載せる口と、レーンが描画するノーツ列（現在曲プロファイルの
+      // notes）。2次元層への追加・削除は描画基盤へ委譲する。ノーツ列は曲依存のためゲッターで現在プロファイルを読む。
       addOverlayObject: (object) => renderRoot.addOverlayObject(object),
       removeOverlayObject: (object) => renderRoot.removeOverlayObject(object),
-      laneNotes: profile.notes,
+      get laneNotes() {
+        return currentProfile.notes;
+      },
       // レーンガイド（Issue #58・Issue #202。レーンの仕切り線と単一判定線）。音程スロット数（レーン数）は楽曲非依存の既定値を統括が注入する。
       // WebGL が無い端末では描画基盤側が何もしない。将来の曲別スロット数対応はこの注入箇所だけで変わる。
       showPitchAxisGuide: () => renderRoot.showPitchAxisGuide(PITCH_SLOT_COUNT_DEFAULT),
@@ -453,8 +488,13 @@ export function createApp(
       // 自己ベスト・成長履歴（Issue #67・#74）。プレイ終了時に記録した後、読み直した端末内の保存内容を渡す。
       getScoreHistory: () => lastHistory,
       appTitle: APP_WORK_TITLE,
-      songTitle: song.title,
-      songArtist: song.artist,
+      // 曲名・作者は現在曲を反映する。結果画面は遷移ごとに生成され、生成時にこれらを読むため選んだ曲の値になる。
+      get songTitle() {
+        return currentSong.title;
+      },
+      get songArtist() {
+        return currentSong.artist;
+      },
       beginPhotoMode: () => {
         // 結果画面に入ったら、軌跡の終端の構図を初期姿勢にして撮影モードを始める（Issue #68）。
         photoCamera.activate(cameraTrajectory.poseAt(cameraTrajectory.endTimeMs));
@@ -472,7 +512,7 @@ export function createApp(
         return renderRoot.captureArtifact({
           lines: {
             workTitle: APP_WORK_TITLE,
-            songLine: `${song.title} / ${song.artist}`,
+            songLine: `${currentSong.title} / ${currentSong.artist}`,
             scoreText: `スコア ${text.scoreText}`,
             rankText: `ランク ${text.rankText}`,
             percentileText: text.percentileText,
@@ -488,8 +528,8 @@ export function createApp(
         );
         const shareText = composeShareText({
           appTitle: APP_WORK_TITLE,
-          songTitle: song.title,
-          songArtist: song.artist,
+          songTitle: currentSong.title,
+          songArtist: currentSong.artist,
           scoreText: text.scoreText,
           rankText: text.rankText,
         });
@@ -503,22 +543,6 @@ export function createApp(
 
   machine.start("title", context);
 
-  // 1クリックでの曲切替の仕上げ。requestSong が別曲への切替で残した「自動開始の意図」を、再読み込み後の起動時に消費する。
-  // 起動曲が意図した曲と一致するときだけ、題名画面からウォームアップへ自動進行する（warmup→プレイで先頭から再生する）。
-  // 意図は1回で消費し、利用者が後で手動で再読み込みしても再発火しないようにする。診断（擬似再生）では requestSong を通らず
-  // 意図が残らないため自動進行せず、スモークの題名画面検査に影響しない。
-  try {
-    const pendingAutostartSong = window.sessionStorage.getItem(AUTOSTART_SONG_STORAGE_KEY);
-    if (pendingAutostartSong !== null) {
-      window.sessionStorage.removeItem(AUTOSTART_SONG_STORAGE_KEY);
-      if (pendingAutostartSong === songKey) {
-        context.requestTransition("warmup");
-      }
-    }
-  } catch {
-    // セッションストレージが使えない環境では自動進行しない（題名画面で待つ）。
-  }
-
   // 毎フレームのプレイ進行の観測（再生開始の成立確認・楽曲終了）。
   function tickPlay(realDeltaMs: number): void {
     if (!inPlayPhase) {
@@ -527,6 +551,11 @@ export function createApp(
     // 一時停止中・カウントイン中は、再生開始待ち・「触れて再生」表示・楽曲終了の検知をいずれも行わない（Issue #112）。
     // 楽曲は止まっており終了しないため、これらを動かす意味が無く、一時停止覆いと「触れて再生」が競合するのも防ぐ。
     if (pauseController.isHalted()) {
+      return;
+    }
+    // 本編入りのリードイン（簡易先回し）中も同様に行わない。楽曲再生は先回し終了時に開始するため、ここで再生開始待ちを
+    // 進めると未開始のまま「触れて再生」が出てしまう。先回しの進行・終了はループ本体が担う。
+    if (inLeadIn) {
       return;
     }
     // 再生開始の成立確認。一定時間内に始まらなければ「触れて再生」表示を一度だけ出す。
@@ -565,9 +594,9 @@ export function createApp(
       // 凍結値は結果画面の表示と成果物画像・共有が同じ値を使う。自己ベスト・成長履歴は記録の後に読み直して端末内に
       // 実際に保存された内容を反映する（保存に失敗した回が履歴へ混ざらないようにする）。
       const finalResult = session.finalResult();
-      recordPlay(song.key, finalResult);
+      recordPlay(currentSong.key, finalResult);
       lastResult = finalResult;
-      lastHistory = loadScoreHistory(song.key);
+      lastHistory = loadScoreHistory(currentSong.key);
       // 楽曲終了後の灯し立ち上げ演出（Issue #63）を始める。既に灯っている灯しに点灯の盛り上がりを重ねて情景を完成させる。
       // 動きを減らす設定では演出せず基準輝度のまま保つ。
       renderRoot.beginLanternFinale(reduceMotionQuery.matches);
@@ -636,15 +665,30 @@ export function createApp(
       // 一時停止のカウントインを実時間で進める（Issue #112）。カウントイン中以外は何もしない。完了で楽曲再生を戻し
       // 入力を有効化するため、この後のプレイ進行更新の抑止判定（isHalted）より前に呼ぶ。
       pauseController.tick(realDeltaMs);
+      // 本編入りのリードイン（簡易先回し）を実時間で進める。一時停止・カウントイン中（isHalted）は進めない。
+      // 先回しが終わったら楽曲を先頭から開始し入力を有効化する（このとき音楽時刻0＝曲頭付近のノーツが判定線へ到達する）。
+      if (inPlayPhase && inLeadIn && !pauseController.isHalted()) {
+        leadInElapsedMs += realDeltaMs;
+        if (leadInElapsedMs >= LANE_LEAD_MS) {
+          leadInElapsedMs = LANE_LEAD_MS;
+          inLeadIn = false;
+          input.setActive(true);
+          playback.beginFromStart();
+        }
+      }
       // カメラ軌跡駆動（Issue #13・#59）。プレイ進行中だけ、平滑化した音楽時刻でカメラ姿勢を更新する。
       // 文字配置（createCameraPlacement）がカメラ姿勢を毎フレーム読むため、文字駆動 machine.update より前に置く。
       // 投下区間判定・スロット音高の更新も同じ音楽時刻でセッションへ進める。
       // 一時停止中・カウントイン中（isHalted）は止める（Issue #112）。楽曲が止まり時計が進まないため二重の保証になる。
+      // リードイン（先回し）中は、カメラを軌跡の始点（音楽時刻0）に置いて楽曲開始時の視点の飛びを防ぎ、採点・投下の進行は
+      // 楽曲が始まる先回し終了後にだけ行う（先回し中の落下レーンと文字は machine.update が currentGameTimeMs の先回し値で動かす）。
       if (inPlayPhase && !pauseController.isHalted()) {
-        const musicTimeMs = engineState.gameTimeMs;
+        const musicTimeMs = inLeadIn ? 0 : engineState.gameTimeMs;
         const pose = cameraTrajectory.poseAt(musicTimeMs);
         renderRoot.setCameraPose(pose.position, pose.target);
-        session.updateFrame(musicTimeMs);
+        if (!inLeadIn) {
+          session.updateFrame(musicTimeMs);
+        }
       }
       // 一時停止中・カウントイン中（isHalted）は、プレイ画面の文字エンジンの実時間進行も止める（Issue #112）。
       // 理由を先に述べる。machine.update は現在の画面の onUpdate を呼び、プレイ画面は経過時間で文字の寿命・変形を
@@ -658,7 +702,8 @@ export function createApp(
       // 一時停止中・カウントイン中（isHalted）も恒等へ戻す（Issue #112。停止中は揺らさない）。
       // 拍の時刻源はゲームの時計 world.gameTimeMs（再生位置の平滑化値）で、advanceFrame が onFrame より
       // 先にこれを更新するため当該フレームの最新値になる。画面寸法は canvas を載せた常在領域から毎フレーム読む。
-      if (inPlayPhase && !pauseController.isHalted()) {
+      // リードイン（先回し）中は振動させない。楽曲未開始で拍が進まないうえ、先回しは静かな助走にするためである。
+      if (inPlayPhase && !inLeadIn && !pauseController.isHalted()) {
         const gameTimeMs = world.gameTimeMs;
         // 再生位置の飛び（スタート直後の同期確立・タブ復帰・シーク）では、飛び区間の拍を一括発火させず基準を貼り直す。
         // 理由を先に述べる。一括発火は screenShake.trigger が最新拍だけを残すため飛び区間の手前のノーツの振動が失われ、

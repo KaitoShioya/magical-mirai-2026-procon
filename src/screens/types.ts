@@ -147,11 +147,11 @@ export interface ResultWiring {
 export interface ScreenContext {
   /** 題名画面が一覧表示する課題曲カタログ。統括（src/app）が解決して渡す。 */
   readonly songs: readonly SongChoice[];
+  /** 題名画面で課題曲を選んだときに呼ぶ。統括（src/app）が曲依存の結線を選んだ曲へ差し替え、必要なら楽曲の読み込み直しを始める。
+   *  この後に requestTransition("warmup") を呼ぶ。 */
+  selectSong(key: string): void;
   /** 遷移を要求する。許可遷移表に無い遷移は機械が例外で拒否する。 */
   requestTransition(to: ScreenKey): void;
-  /** 曲を選んで開始を要求する（題名画面の曲選択）。起動曲と同じならウォームアップへ進み、別曲なら統括が起動曲を
-   *  切り替えて始め直す（Issue #88）。曲キーは題名画面のボタンの data-song-key から渡す。 */
-  requestSong(key: string): void;
   /** プレイ画面の本編表示の結線（Issue #33）。診断・本番の双方で統括が渡す。 */
   readonly play?: PlayWiring;
   /** 結果画面の結線（Issue #74・成果物タスク #71/#69/#70/#68）。統括がプレイ終了時に渡す。 */

@@ -14,7 +14,9 @@
 // 無和音 "N" は本モジュールでは音高化せず例外とする。無和音区間を直前和音または調の音階へ解決する処理は
 // Issue #37 の責務であり、解決後の実在和音名を本モジュールへ渡す（profileSchema.ts の ChordToneSlotRegion 注釈）。
 
-/** 和音の品質。TAKEOVER の実在和音に加え、シャッターチャンス（Issue #88）に出現する減三和音と二度保留和音へ対応する。将来の曲のために拡張可能な列挙とする。 */
+/** 和音の品質。実在和音に対応し、将来の曲のために拡張可能な列挙とする。
+ *  TAKEOVER の和音に加え、アフター・ザ・カーテン（Issue #91）の属七の懸垂四度・減七・属九・短九・属七の変十三度と、
+ *  シャッターチャンス（Issue #88）の減三和音・二度保留和音を加える。 */
 export type ChordQuality =
   | "major"
   | "minor"
@@ -23,6 +25,11 @@ export type ChordQuality =
   | "majorSeventh"
   | "minorSeventh"
   | "majorSixth"
+  | "dominantSeventhSus4"
+  | "diminishedSeventh"
+  | "dominantNinth"
+  | "minorNinth"
+  | "dominantSeventhFlatThirteenth"
   | "diminished"
   | "suspendedSecond";
 
@@ -60,7 +67,9 @@ export const NOTE_LETTER_TO_PITCH_CLASS: Record<string, number> = {
   B: 11,
 };
 
-/** 和音の品質ごとの、根音からの半音間隔。出典は標準的な和声。 */
+/** 和音の品質ごとの、根音からの半音間隔。出典は標準的な和声。
+ *  属七の懸垂四度（7sus4）は第三音を完全四度（5半音）へ吊り上げ第七音（10半音）を加える。減七（dim7）は短三度を積む（0,3,6,9）。
+ *  属九（9）は属七に長九度（14半音）を、短九（m9）は短七に長九度を加える。属七の変十三度（7(b13)）は属七に短十三度＝増五度（8半音）を加える。 */
 export const CHORD_QUALITY_INTERVALS: Record<ChordQuality, readonly number[]> = {
   major: [0, 4, 7],
   minor: [0, 3, 7],
@@ -69,9 +78,13 @@ export const CHORD_QUALITY_INTERVALS: Record<ChordQuality, readonly number[]> = 
   majorSeventh: [0, 4, 7, 11],
   minorSeventh: [0, 3, 7, 10],
   majorSixth: [0, 4, 7, 9],
-  // 減三和音は根音・短3度・減5度。出典は標準的な和声。
+  dominantSeventhSus4: [0, 5, 7, 10],
+  diminishedSeventh: [0, 3, 6, 9],
+  dominantNinth: [0, 4, 7, 10, 14],
+  minorNinth: [0, 3, 7, 10, 14],
+  dominantSeventhFlatThirteenth: [0, 4, 7, 10, 8],
+  // 減三和音は根音・短3度・減5度。二度保留和音は根音・長2度・完全5度（第3音を持たない）。出典は標準的な和声。
   diminished: [0, 3, 6],
-  // 二度保留和音は根音・長2度・完全5度（第3音を持たない）。出典は標準的な和声。
   suspendedSecond: [0, 2, 7],
 };
 
@@ -85,12 +98,20 @@ export const QUALITY_TOKEN_TO_QUALITY: Record<string, ChordQuality> = {
   M7: "majorSeventh",
   m7: "minorSeventh",
   "6": "majorSixth",
-  // 短九和音は短七和音にテンションの9度を足したもの。テンションはスロットに使わない設計（chordToneSlots.ts）に従い、
-  // 基本品質の短七和音へ写す。テンションの括弧表記は parseChordSymbol が品質判定前に取り除くため、ここには括弧なしのトークンを置く。
-  m9: "minorSeventh",
-  // 二度保留和音と減三和音はシャッターチャンス（Issue #88）で出現する。実際の構成音を床に用いるため正式な品質として対応する。
-  sus2: "suspendedSecond",
+  "7sus4": "dominantSeventhSus4",
+  dim7: "diminishedSeventh",
+  "9": "dominantNinth",
+  m9: "minorNinth",
+  "7(b13)": "dominantSeventhFlatThirteenth",
+  // シャッターチャンス（Issue #88）の和音。減三和音 dim と二度保留和音 sus2 は実際の構成音を床に用いるため正式な品質として対応する。
+  // テンション付きの短七和音（m7(#9)・m7(b9)）と二度保留和音（sus2(b9)）は、スロットがテンションを使わない設計（chordToneSlots.ts）に
+  // 従い、テンションを無視して基本品質（短七和音・二度保留和音）へ写す完全一致トークンを置く（括弧付きトークンを完全一致で引く
+  // 既存方針に揃え、他曲の括弧付き和音 "7(b13)" の解釈を壊さない）。
   dim: "diminished",
+  sus2: "suspendedSecond",
+  "sus2(b9)": "suspendedSecond",
+  "m7(#9)": "minorSeventh",
+  "m7(b9)": "minorSeventh",
 };
 
 /** 2オクターブ展開の下のオクターブにおける、ハ音（音高クラス0）のMIDIノート番号。★暫定。
@@ -139,13 +160,11 @@ export function parseChordSymbol(name: string): ParsedChord {
   const bassPart = slashIndex >= 0 ? trimmed.slice(slashIndex + 1) : null;
 
   const root = readNote(chordPart);
-  // テンションの括弧表記（"(#9)"・"(b9)" など）を品質判定の前に取り除く。理由を先に述べる。本作のスロットは根音と
-  // 基本品質だけを使い和音名のテンションを音高へ反映しない設計（chordToneSlots.ts）であり、括弧内のテンションは品質の
-  // 区別に用いないためである。これにより "m7(#9)"・"m7(b9)" は短七和音、"sus2(b9)" は二度保留和音へ正規化される。
-  const qualityToken = root.rest.replace(/\([^)]*\)/g, "");
-  const quality = QUALITY_TOKEN_TO_QUALITY[qualityToken];
+  // 根音と分数和音の低音を除いた残り文字列を完全一致で品質へ引く。括弧付きのテンション表記（"m7(#9)"・"sus2(b9)"・"7(b13)" など）も
+  // 完全一致のトークンとして QUALITY_TOKEN_TO_QUALITY に登録してあるため、ここでは加工せずそのまま引く。
+  const quality = QUALITY_TOKEN_TO_QUALITY[root.rest];
   if (quality === undefined) {
-    throw new Error(`和音記号の品質が未対応です: "${name}"（品質部分 "${qualityToken}"）`);
+    throw new Error(`和音記号の品質が未対応です: "${name}"（品質部分 "${root.rest}"）`);
   }
 
   let bassPitchClass: number | null = null;

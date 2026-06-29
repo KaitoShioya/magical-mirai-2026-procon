@@ -4,6 +4,7 @@
 // 依存規則の出典: docs/decisions/architecture.md §5、src/textalive/README.md。
 
 import type { TimeSource } from "../engine";
+import type { Song } from "../config/songs";
 import type { MusicMapSource } from "./musicMap";
 
 /**
@@ -45,6 +46,12 @@ export interface Playback {
   hasEnded(): boolean;
   /** 読み込み失敗からの再試行（同一プレイヤーで再ロード）。 */
   retry(): void;
+  /**
+   * 別の課題曲を同一プレイヤーで読み込み直す（題名画面の曲選択で呼ぶ）。
+   * 同一プレイヤーで読み込み直すため時間源は有効なまま保たれる。読み込み状態は読み込み中へ戻り、
+   * 準備が整うと確定へ移る。曲選択の瞬間にだけ呼び、プレイ進行中には呼ばない。
+   */
+  loadSong(song: Song): void;
   /** 音声再生の許可を確立する最善努力（題名の操作の最中に呼ぶ）。 */
   primeAudioPermission(): void;
   /**

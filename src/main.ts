@@ -6,7 +6,6 @@
 import "./style.css";
 import { createApp } from "./app";
 import { resolveReflectionResolution } from "./rendering";
-import { resolveSongKey } from "./profiles/registry";
 
 const app = document.getElementById("app");
 if (!app) {
@@ -39,8 +38,4 @@ const reflectionResolution = resolveReflectionResolution(query.get("refl"));
 // 受け入れ基準が bloom=0 を無効条件と明示するため、値が文字列 "0" のときに限り無効と判定する。
 const bloomEnabled = query.get("bloom") !== "0";
 
-// 起動曲（song）を解釈する。?song の値を、実装済み（プロファイル束が存在する）曲キーへ丸める。未指定・未実装・未知の
-// キーは既定曲へ退避する（resolveSongKey）。題名画面で別曲を選ぶと統括が ?song を更新して再読み込みする。
-const songKey = resolveSongKey(query.get("song"));
-
-createApp(screenRoot, { diagnostics, stageRoot, reflectionResolution, bloomEnabled, songKey });
+createApp(screenRoot, { diagnostics, stageRoot, reflectionResolution, bloomEnabled });

@@ -65,7 +65,7 @@ export const SONGS: readonly Song[] = [
       lyricId: 126591,
       lyricDiffId: 28627,
     },
-    implemented: false,
+    implemented: true,
   },
   {
     key: "shutter-chance",

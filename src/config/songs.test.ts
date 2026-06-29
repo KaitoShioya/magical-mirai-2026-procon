@@ -1,22 +1,24 @@
 import { describe, it, expect } from "vitest";
 import { SONGS, findSong, DEFAULT_SONG_KEY } from "./songs";
 
-// 実装済み曲の集合。M8 横展開でシャッターチャンス（Issue #88）を実装可能化し、TAKEOVER と2曲が遊べる。
-const IMPLEMENTED_SONG_KEYS = ["takeover", "shutter-chance"];
+// 実装済みとして遊べる課題曲の集合。横展開で TAKEOVER に加えアフター・ザ・カーテン（Issue #91）と
+// シャッターチャンス（Issue #88）を実装した。曲を増やすときはこの集合とともに、題名画面からの曲選択（selectSong）と
+// 曲依存結線の差し替えが揃っている必要がある。
+const IMPLEMENTED_SONG_KEYS = ["takeover", "after-the-curtain", "shutter-chance"];
 
 describe("SONGS の実装可否", () => {
-  it("TAKEOVER とシャッターチャンスが実装済みで、他4曲は未実装である", () => {
+  it("実装済みは TAKEOVER とアフター・ザ・カーテンとシャッターチャンスの3曲で、他3曲は未実装である", () => {
     for (const song of SONGS) {
       expect(song.implemented).toBe(IMPLEMENTED_SONG_KEYS.includes(song.key));
     }
   });
 
-  // 不変条件。題名画面で開始できる起動既定曲が実装済みであることを固定する（曲選択は再読み込み方式で起動曲を切り替える）。
-  it("実装済み曲は2曲で、既定曲 DEFAULT_SONG_KEY を含む", () => {
-    const implemented = SONGS.filter((song) => song.implemented).map((song) => song.key);
-    expect(implemented).toHaveLength(2);
-    expect(implemented).toContain(DEFAULT_SONG_KEY);
-    expect([...implemented].sort()).toEqual([...IMPLEMENTED_SONG_KEYS].sort());
+  // 既定曲（統括が起動時に先読みする曲）が実装済み集合に含まれることを固定する。題名画面で曲を選ぶと統括が結線を
+  // 差し替えるため、実装済みは複数になり得る。既定曲は起動直後に遊べる必要があるため実装済みであることを要求する。
+  it("実装済み曲が DEFAULT_SONG_KEY を含む", () => {
+    const implementedKeys = SONGS.filter((song) => song.implemented).map((song) => song.key);
+    expect(implementedKeys).toContain(DEFAULT_SONG_KEY);
+    expect(implementedKeys.slice().sort()).toEqual(IMPLEMENTED_SONG_KEYS.slice().sort());
   });
 });
 

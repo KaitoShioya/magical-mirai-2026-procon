@@ -223,6 +223,13 @@ export interface GlyphHandle {
   applyReadability(style: ResolvedReadabilityStyle): void;
   /** 向き方針を後から変える。拍・区間に合わせた切替（#132/#33）で使う。 */
   setOrientation(policy: OrientationPolicy): void;
+  /**
+   * 矩形の切り抜きを設定する（部首分解・縦横ブラインド近似。troika の clipRect と同じローカル座標の
+   * [minX, minY, maxX, maxY]）。切り抜きに対応しない取っ手は持たない（任意メソッド）。
+   */
+  setClipRect?(minX: number, minY: number, maxX: number, maxY: number): void;
+  /** 切り抜きを解除する（任意メソッド）。 */
+  clearClip?(): void;
   /** 表示を終え、資源をプールへ返す。冪等。 */
   release(): void;
 }

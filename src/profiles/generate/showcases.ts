@@ -132,10 +132,11 @@ const CHORUS_MERGE_GAP_TOLERANCE_MS = 1;
 
 /**
  * 連続するサビ区間を1つのブロックへ統合する。
- * 役割を先に述べる。戦略Bは各サビ区間を必ず見せ場にするが、1つのサビ群が複数の反復区間に分かれて記録される曲では
- * サビ区間数が見せ場の個数を超える。隣り合う反復区間（隙間が CHORUS_MERGE_GAP_TOLERANCE_MS 以下）は1つのサビ群
- * （1つの見せ場の節）であるため、開始順に並べて統合し、サビ群の数を見せ場の個数に収める。離れたサビ群は統合しない。
- * 入力は妥当性検査済みのサビ区間（開始<終了）とし、結果は開始時刻の昇順で重なりのないブロックになる。
+ * 役割を先に述べる。戦略Bは各サビ区間を不変の見せ場窓にするが、1つのサビ群が複数の反復区間に分かれて隣接して記録される曲では、
+ * 接する区間を別々の不変窓にすると、クライマックス窓の延長が隣接窓へ食い込んで窓どうしが重なる。隣り合う反復区間
+ *（隙間が CHORUS_MERGE_GAP_TOLERANCE_MS 以下）は1つのサビ群（1つの見せ場の節）であるため、開始順に並べて統合し、
+ * 1つの不変窓にする。離れたサビ群は統合しない。入力は妥当性検査済みのサビ区間（開始<終了）とし、結果は開始時刻の昇順で
+ * 重なりのないブロックになる。多様性逓減区間（diversityZones）とオンセット選別のサビ単位は個別反復のままで、本統合は見せ場生成に限る。
  */
 export function mergeContiguousChorusSegments(chorusSegments: ChorusSegment[]): ChorusSegment[] {
   if (chorusSegments.length === 0) {
@@ -202,8 +203,8 @@ function runPipeline(input: ShowcaseInput, partial: Partial<ShowcaseOptions>): P
   const options: ShowcaseOptions = { ...DEFAULT_SHOWCASE_OPTIONS, ...partial };
   validateOptions(options);
   validateChorusSegments(input.chorusSegments);
-  // 連続するサビ区間（1つのサビ群が複数の反復区間に分かれて記録されたもの）を1ブロックへ統合してから見せ場にする。
-  // 統合により、サビ群の数が見せ場の個数を超える曲でも各サビ群を1つの見せ場に対応づけられる。離れたサビ群は統合されない。
+  // 連続するサビ区間（1つのサビ群が複数の反復区間に分かれて隣接して記録されたもの）を1ブロックへ統合してから見せ場にする。
+  // 統合により、接する反復区間がクライマックス窓の延長で重なる事故を防ぎ、1つのサビ群を1つの見せ場に対応づける。離れたサビ群は統合されない。
   const chorus = mergeContiguousChorusSegments(input.chorusSegments);
   if (chorus.length > options.count) {
     throw new TooManyChorusError(chorus.length, options.count);

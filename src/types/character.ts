@@ -30,7 +30,7 @@ export interface CharacterCredit {
 
 /**
  * ツインテールへ与える常時の風なびきの設定（コードによる動的表現）。
- * 各値の意味と計算は src/utils/twinTailWind.ts を参照する。
+ * 風は一定方向で、ツインテールを一方向へ流す（方向に直交する揺らぎは与えない。垂直方向の振動を避けるため）。
  */
 export interface CharacterTwinTailWindConfig {
   /** 対象ジョイントを選ぶボーン名の正規表現（文字列）。2本のツインテールの全ジョイントに一致させる。 */
@@ -39,12 +39,6 @@ export interface CharacterTwinTailWindConfig {
   readonly baseDirectionLocal: CharacterPosition;
   /** 流れの強さ（スプリングボーンの gravityPower に与える値）。 */
   readonly power: number;
-  /** 方向の揺らぎ量（0以上1未満）。 */
-  readonly oscillationAmplitude: number;
-  /** 揺らぎの周波数（ヘルツ）。 */
-  readonly oscillationFrequencyHz: number;
-  /** 2本目のツインテールへ与える位相差（ラジアン）。左右が同じ動きで固まらないようにする。 */
-  readonly chainPhaseOffset: number;
   /** 任意。揺れの戻し力（stiffness）。流れが不足する場合に下げる補助調整。 */
   readonly stiffness?: number;
   /** 任意。揺らぎの収まり（dragForce）。 */

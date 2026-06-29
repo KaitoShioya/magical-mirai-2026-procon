@@ -376,19 +376,30 @@ export const TAKEOVER_PROFILE_PATH = fileURLToPath(
   new URL("../../src/profiles/takeover/takeover.profile.json", import.meta.url)
 );
 
+// アフター・ザ・カーテンのコミット済み成果物への絶対パス（横展開、Issue #91）。
+export const AFTER_THE_CURTAIN_PROFILE_PATH = fileURLToPath(
+  new URL("../../src/profiles/after-the-curtain/after-the-curtain.profile.json", import.meta.url)
+);
+
 // 曲プロファイルの検査キー。横展開（M8）で各曲が自分の検査を登録できるよう曲キーを含める。
 export const TAKEOVER_PROFILE_CHECK_KEY = "song-profile-takeover";
+export const AFTER_THE_CURTAIN_PROFILE_CHECK_KEY = "song-profile-after-the-curtain";
+
+// 各曲の検査の登録定義。共通スキーマ SONG_PROFILE_SCHEMA を全曲で使う（構造検査は曲非依存のため）。横展開で曲を増やすときはここへ追加する。
+const PROFILE_CHECKS = [
+  { key: TAKEOVER_PROFILE_CHECK_KEY, file: TAKEOVER_PROFILE_PATH },
+  { key: AFTER_THE_CURTAIN_PROFILE_CHECK_KEY, file: AFTER_THE_CURTAIN_PROFILE_PATH },
+];
 
 // 曲プロファイルの検査を登録簿へ登録する（冪等）。
 // 採用理由を先に述べる。registerSchema は無条件に登録簿へ追加するため（schema-check.mjs 22〜24行）、複数回呼ぶと
-// 重複する。同一プロセス内での重複登録を避けるため、キーの存在で前置きする。
+// 重複する。同一プロセス内での重複登録を避けるため、各曲についてキーの存在で前置きする。
 export function registerProfileSchemas() {
-  const already = listRegisteredChecks().some((c) => c.key === TAKEOVER_PROFILE_CHECK_KEY);
-  if (already) {
-    return;
+  for (const check of PROFILE_CHECKS) {
+    const already = listRegisteredChecks().some((c) => c.key === check.key);
+    if (already) {
+      continue;
+    }
+    registerSchema(check.key, { file: check.file, schema: SONG_PROFILE_SCHEMA });
   }
-  registerSchema(TAKEOVER_PROFILE_CHECK_KEY, {
-    file: TAKEOVER_PROFILE_PATH,
-    schema: SONG_PROFILE_SCHEMA,
-  });
 }

@@ -15,8 +15,9 @@ describe("mergeContiguousChorusSegments（連続サビのブロック統合）",
   });
 
   it("単一区間はそのまま返す", () => {
-    const one: ChorusSegment[] = [{ startMs: 1000, endMs: 2000 }];
-    expect(mergeContiguousChorusSegments(one)).toEqual([{ startMs: 1000, endMs: 2000 }]);
+    expect(mergeContiguousChorusSegments([{ startMs: 1000, endMs: 2000 }])).toEqual([
+      { startMs: 1000, endMs: 2000 },
+    ]);
   });
 
   it("隙間0ミリ秒（境界共有）の連続区間は1ブロックへ統合する", () => {
@@ -55,7 +56,6 @@ describe("mergeContiguousChorusSegments（連続サビのブロック統合）",
   });
 
   it("離れたサビ群（隙間が許容超）は別ブロックのまま保つ", () => {
-    // シャッターチャンスの3ブロック相当（ブロック内は隙間0、ブロック間は数万ミリ秒）。
     const segments: ChorusSegment[] = [
       { startMs: 2605, endMs: 10925 },
       { startMs: 10925, endMs: 19245 },

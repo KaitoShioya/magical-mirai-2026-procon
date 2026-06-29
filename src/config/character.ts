@@ -55,12 +55,6 @@ export const MIKU_CHARACTER: CharacterModelConfig = {
       // 出るよう2.5を採る。戻し力（stiffness）を0.15へ下げて尾を風に追従しやすくする。最終値は目視で確定する。
       power: 2.5,
       stiffness: 0.15,
-      // 揺らぎ量（0以上1未満）。垂れと明確に区別できる定常バイアスを残すため1未満に保つ。
-      oscillationAmplitude: 0.35,
-      // 揺らぎの周波数（ヘルツ）。採用理由を先に述べる。約2.5秒で1往復（0.4ヘルツ）の緩やかな揺らぎとし、慌ただしくない深夜の気配に合わせる。
-      oscillationFrequencyHz: 0.4,
-      // 2本目への位相差。逆位相（π）で左右の揺らぎを反対向きにし、同じ動きで固まらないようにする。
-      chainPhaseOffset: Math.PI,
     },
   },
 };

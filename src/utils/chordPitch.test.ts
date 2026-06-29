@@ -156,17 +156,19 @@ describe("拡張和音への対応（シャッターチャンス Issue #88）", 
     expectValidPitchSet(chordSymbolToPitchSet("Dsus2"), 3);
   });
 
-  it("短九和音 m9 は基本品質の短七和音へ写る（テンションは音高に反映しない）", () => {
-    expect(parseChordSymbol("Cm9").quality).toBe("minorSeventh");
-    expect(chordSymbolToPitchSet("Cm9")).toEqual(chordSymbolToPitchSet("Cm7"));
+  it("短九和音 m9 は短九和音（minorNinth）として解釈される", () => {
+    // m9 トークンは専用の品質 minorNinth に対応する（基本品質の短七和音とは別の音高集合になる）。
+    expect(parseChordSymbol("Cm9").quality).toBe("minorNinth");
   });
 
-  it("テンションの括弧表記は品質判定の前に取り除かれ基本品質へ写る", () => {
+  it("テンション付きの和音名は専用の完全一致トークンで基本品質へ写る", () => {
+    // 括弧付きのテンション表記は完全一致トークンとして登録し、テンションを無視して基本品質へ写す
+    //（括弧除去ではなく完全一致。他曲の括弧付き和音 "7(b13)" の解釈を壊さないため）。
     expect(parseChordSymbol("Dm7(#9)").quality).toBe("minorSeventh");
     expect(parseChordSymbol("Dm7(b9)").quality).toBe("minorSeventh");
     expect(parseChordSymbol("Bm7(#9)").quality).toBe("minorSeventh");
     expect(parseChordSymbol("Dsus2(b9)").quality).toBe("suspendedSecond");
-    // 括弧付きと括弧なしで同一の音高集合になる（テンションは集合に入らない）。
+    // テンション付きと基本形で同一の音高集合になる（テンションは集合に入らない）。
     expect(chordSymbolToPitchSet("Dm7(#9)")).toEqual(chordSymbolToPitchSet("Dm7"));
     expect(chordSymbolToPitchSet("Dsus2(b9)")).toEqual(chordSymbolToPitchSet("Dsus2"));
   });

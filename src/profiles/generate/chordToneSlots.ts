@@ -57,6 +57,12 @@ export const QUALITY_TO_TONE_CATEGORY: Record<ChordQuality, ToneCategory> = {
   majorSixth: "majorType",
   minor: "minorType",
   minorSeventh: "minorType",
+  // 減三和音は短3度を持つため短調系の付加音（完全4度・♭7度）を使う。完全4度は減5度と半音隣接で除外され、♭7度が採られ、
+  // 構成音[0,3,6]に♭7度を加えた[0,3,6,10]（半減七の和音の構成音）になる。減5度は構成音として保たれ床の整合を保つ。
+  diminished: "minorType",
+  // 二度保留和音は第3音を持たないため、長短いずれにも倒さない付加音として短調系（完全4度・♭7度）を使う。
+  // 結果は[0,2,5,7,10]の保留五音音階となり、第3音を含まないまま協和する。
+  suspendedSecond: "minorType",
 };
 
 /** 安全付加音の根音からの半音数（度数の小さい順）。
@@ -100,7 +106,7 @@ export function circularSemitoneDistance(a: number, b: number): number {
 export function buildSafeConsonanceIntervals(quality: ChordQuality): number[] {
   const chordIntervals = CHORD_QUALITY_INTERVALS[quality];
   const category = QUALITY_TO_TONE_CATEGORY[quality];
-  // 網羅性検査。parseChordSymbol が返す品質は7種で各表もこれを網羅するが、将来 ChordQuality に品質が追加され表の更新が漏れた場合に、
+  // 網羅性検査。parseChordSymbol が返す品質（現在9種）を各表も網羅するが、将来 ChordQuality に品質が追加され表の更新が漏れた場合に、
   // 誤った値を黙って使わず発生源で止めるための検査である。
   if (chordIntervals === undefined || category === undefined) {
     throw new Error(`和音の品質に対応する音程表がありません（内部不整合）: "${String(quality)}"`);

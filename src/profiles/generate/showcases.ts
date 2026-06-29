@@ -121,6 +121,41 @@ function validateChorusSegments(chorusSegments: ChorusSegment[]): void {
   });
 }
 
+/**
+ * 連続するサビ区間を同一ブロックとみなす隙間の上限（ミリ秒）。
+ * 採用理由を先に述べる。連続するサビ区間は境界を共有し、後の区間の開始が前の区間の終了に一致するため隙間はほぼ0
+ * （実データで−0.0005〜0ミリ秒）である。一方、別のサビ群の間には数万ミリ秒の隙間がある（実データで最小33400ミリ秒）。
+ * よって隙間が1ミリ秒以下なら浮動小数点の誤差を含めて「境界を共有する連続サビ」とみなし、別のサビ群（隙間33400ミリ秒以上）
+ * とは明確に区別できる。
+ */
+const CHORUS_MERGE_GAP_TOLERANCE_MS = 1;
+
+/**
+ * 連続するサビ区間を1つのブロックへ統合する。
+ * 役割を先に述べる。戦略Bは各サビ区間を必ず見せ場にするが、1つのサビ群が複数の反復区間に分かれて記録される曲では
+ * サビ区間数が見せ場の個数を超える。隣り合う反復区間（隙間が CHORUS_MERGE_GAP_TOLERANCE_MS 以下）は1つのサビ群
+ * （1つの見せ場の節）であるため、開始順に並べて統合し、サビ群の数を見せ場の個数に収める。離れたサビ群は統合しない。
+ * 入力は妥当性検査済みのサビ区間（開始<終了）とし、結果は開始時刻の昇順で重なりのないブロックになる。
+ */
+export function mergeContiguousChorusSegments(chorusSegments: ChorusSegment[]): ChorusSegment[] {
+  if (chorusSegments.length === 0) {
+    return [];
+  }
+  const sorted = [...chorusSegments].sort((a, b) => a.startMs - b.startMs);
+  const merged: ChorusSegment[] = [{ startMs: sorted[0].startMs, endMs: sorted[0].endMs }];
+  for (let i = 1; i < sorted.length; i++) {
+    const last = merged[merged.length - 1];
+    const seg = sorted[i];
+    if (seg.startMs - last.endMs <= CHORUS_MERGE_GAP_TOLERANCE_MS) {
+      // 隙間が許容内なら同一ブロックとして終了時刻を後ろへ伸ばす。重なりや微小な負の隙間も終了の大きい方を採る。
+      last.endMs = Math.max(last.endMs, seg.endMs);
+    } else {
+      merged.push({ startMs: seg.startMs, endMs: seg.endMs });
+    }
+  }
+  return merged;
+}
+
 interface PipelineResult {
   options: ShowcaseOptions;
   curve: CompositeCurve;
@@ -166,8 +201,10 @@ function toNonChorusWindow(
 function runPipeline(input: ShowcaseInput, partial: Partial<ShowcaseOptions>): PipelineResult {
   const options: ShowcaseOptions = { ...DEFAULT_SHOWCASE_OPTIONS, ...partial };
   validateOptions(options);
-  const chorus = input.chorusSegments;
-  validateChorusSegments(chorus);
+  validateChorusSegments(input.chorusSegments);
+  // 連続するサビ区間（1つのサビ群が複数の反復区間に分かれて記録されたもの）を1ブロックへ統合してから見せ場にする。
+  // 統合により、サビ群の数が見せ場の個数を超える曲でも各サビ群を1つの見せ場に対応づけられる。離れたサビ群は統合されない。
+  const chorus = mergeContiguousChorusSegments(input.chorusSegments);
   if (chorus.length > options.count) {
     throw new TooManyChorusError(chorus.length, options.count);
   }

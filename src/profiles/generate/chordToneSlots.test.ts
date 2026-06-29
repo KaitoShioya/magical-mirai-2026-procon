@@ -29,6 +29,8 @@ const ALL_QUALITIES: ChordQuality[] = [
   "majorSeventh",
   "minorSeventh",
   "majorSixth",
+  "diminished",
+  "suspendedSecond",
 ];
 
 describe("circularSemitoneDistance（12を法とする循環距離）", () => {
@@ -75,7 +77,17 @@ describe("buildSafeConsonanceIntervals（安全協和音高クラス集合＝根
     expect(buildSafeConsonanceIntervals("augmented")).toEqual([0, 2, 4, 8]);
   });
 
-  it("品質区分表と付加音表は7品質すべてを網羅する", () => {
+  it("減三和音は短調系で、完全4度が減5度と半音隣接で不採用、♭7度だけを加えた4音になる", () => {
+    // 減三和音[0,3,6]に短調系付加音[5,10]を試す。完全4度(5)は減5度(6)と半音隣接で不採用、♭7度(10)が採用され[0,3,6,10]。
+    expect(buildSafeConsonanceIntervals("diminished")).toEqual([0, 3, 6, 10]);
+  });
+
+  it("二度保留和音は短調系で、完全4度と♭7度の両方を加えた5音になる", () => {
+    // 二度保留和音[0,2,7]に短調系付加音[5,10]を試す。いずれも既存音と半音隣接せず採用され[0,2,5,7,10]。
+    expect(buildSafeConsonanceIntervals("suspendedSecond")).toEqual([0, 2, 5, 7, 10]);
+  });
+
+  it("品質区分表と付加音表は全品質を網羅する", () => {
     for (const quality of ALL_QUALITIES) {
       const category = QUALITY_TO_TONE_CATEGORY[quality];
       expect(category === "majorType" || category === "minorType").toBe(true);
@@ -172,7 +184,7 @@ describe("generateSlotPitches（スロット数の指定と境界）", () => {
   });
 });
 
-describe("generateSlotPitches（性質テスト: 12根音 × 7品質 × スロット数5/7/9）", () => {
+describe("generateSlotPitches（性質テスト: 12根音 × 全品質 × スロット数5/7/9）", () => {
   it("スロット数5と7は全品質・全根音で例外なく生成でき、指定数ちょうどを返す", () => {
     for (const slotCount of [5, 7]) {
       for (const quality of ALL_QUALITIES) {
@@ -184,11 +196,15 @@ describe("generateSlotPitches（性質テスト: 12根音 × 7品質 × スロ�
     }
   });
 
-  it("スロット数9は増三和音だけが候補不足の例外になり、他の品質は例外なく生成できる", () => {
+  it("スロット数9は安全協和音高が4音高クラスの品質（増三和音・減三和音）だけが候補不足の例外になり、他の品質は例外なく生成できる", () => {
+    // 採用理由を先に述べる。2オクターブ展開の候補数は安全協和音高クラス数の2倍である。スロット数9を作るには候補が9個以上、
+    // すなわち安全協和音高クラスが5個以上必要である。増三和音[0,2,4,8]と減三和音[0,3,6,10]はいずれも4音高クラス（候補8個）で
+    // 9に満たず例外になる。他の品質は5音高クラス以上（候補10個以上）で9を作れる。
+    const insufficientForNine = new Set(["augmented", "diminished"]);
     for (const quality of ALL_QUALITIES) {
       for (let rootPitchClass = 0; rootPitchClass < SEMITONES_PER_OCTAVE; rootPitchClass++) {
         const parsed = { rootPitchClass, quality, bassPitchClass: null };
-        if (quality === "augmented") {
+        if (insufficientForNine.has(quality)) {
           expect(() => generateSlotPitches(parsed, { slotCount: 9 })).toThrow();
         } else {
           expect(generateSlotPitches(parsed, { slotCount: 9 })).toHaveLength(9);

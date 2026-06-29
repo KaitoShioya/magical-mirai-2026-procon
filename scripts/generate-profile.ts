@@ -19,10 +19,12 @@ import { buildProfile, type ManualProfileInputs } from "../src/profiles/generate
 import { type RawSongmap } from "../src/profiles/generate/songmapAdapters";
 import type { ProfileSource } from "../src/profiles/schema/profileSchema";
 import { takeoverInputs } from "../src/profiles/takeover/takeoverInputs";
+import { shutterChanceInputs } from "../src/profiles/shutter-chance/shutterChanceInputs";
 
 // 曲別手動入力の登録表。曲を横展開するときはここへ追加する。
 const MANUAL_INPUTS_BY_KEY: Record<string, ManualProfileInputs> = {
   takeover: takeoverInputs,
+  "shutter-chance": shutterChanceInputs,
 };
 
 function fail(message: string): never {

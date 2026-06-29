@@ -14,7 +14,7 @@
 // 無和音 "N" は本モジュールでは音高化せず例外とする。無和音区間を直前和音または調の音階へ解決する処理は
 // Issue #37 の責務であり、解決後の実在和音名を本モジュールへ渡す（profileSchema.ts の ChordToneSlotRegion 注釈）。
 
-/** 和音の品質。TAKEOVER に出現する16種の実在和音に対応し、将来の曲のために拡張可能な列挙とする。 */
+/** 和音の品質。TAKEOVER の実在和音に加え、シャッターチャンス（Issue #88）に出現する減三和音と二度保留和音へ対応する。将来の曲のために拡張可能な列挙とする。 */
 export type ChordQuality =
   | "major"
   | "minor"
@@ -22,7 +22,9 @@ export type ChordQuality =
   | "dominantSeventh"
   | "majorSeventh"
   | "minorSeventh"
-  | "majorSixth";
+  | "majorSixth"
+  | "diminished"
+  | "suspendedSecond";
 
 /** 構造化された和音の解析結果。下流 #36・#37 が根音と品質と低音を文字列の再解析なしに再利用するために返す。 */
 export interface ParsedChord {
@@ -67,6 +69,10 @@ export const CHORD_QUALITY_INTERVALS: Record<ChordQuality, readonly number[]> = 
   majorSeventh: [0, 4, 7, 11],
   minorSeventh: [0, 3, 7, 10],
   majorSixth: [0, 4, 7, 9],
+  // 減三和音は根音・短3度・減5度。出典は標準的な和声。
+  diminished: [0, 3, 6],
+  // 二度保留和音は根音・長2度・完全5度（第3音を持たない）。出典は標準的な和声。
+  suspendedSecond: [0, 2, 7],
 };
 
 /** 品質を表す文字列から品質への対応。根音と分数和音の低音を除いた残り文字列を完全一致で引く。
@@ -79,6 +85,12 @@ export const QUALITY_TOKEN_TO_QUALITY: Record<string, ChordQuality> = {
   M7: "majorSeventh",
   m7: "minorSeventh",
   "6": "majorSixth",
+  // 短九和音は短七和音にテンションの9度を足したもの。テンションはスロットに使わない設計（chordToneSlots.ts）に従い、
+  // 基本品質の短七和音へ写す。テンションの括弧表記は parseChordSymbol が品質判定前に取り除くため、ここには括弧なしのトークンを置く。
+  m9: "minorSeventh",
+  // 二度保留和音と減三和音はシャッターチャンス（Issue #88）で出現する。実際の構成音を床に用いるため正式な品質として対応する。
+  sus2: "suspendedSecond",
+  dim: "diminished",
 };
 
 /** 2オクターブ展開の下のオクターブにおける、ハ音（音高クラス0）のMIDIノート番号。★暫定。
@@ -127,9 +139,13 @@ export function parseChordSymbol(name: string): ParsedChord {
   const bassPart = slashIndex >= 0 ? trimmed.slice(slashIndex + 1) : null;
 
   const root = readNote(chordPart);
-  const quality = QUALITY_TOKEN_TO_QUALITY[root.rest];
+  // テンションの括弧表記（"(#9)"・"(b9)" など）を品質判定の前に取り除く。理由を先に述べる。本作のスロットは根音と
+  // 基本品質だけを使い和音名のテンションを音高へ反映しない設計（chordToneSlots.ts）であり、括弧内のテンションは品質の
+  // 区別に用いないためである。これにより "m7(#9)"・"m7(b9)" は短七和音、"sus2(b9)" は二度保留和音へ正規化される。
+  const qualityToken = root.rest.replace(/\([^)]*\)/g, "");
+  const quality = QUALITY_TOKEN_TO_QUALITY[qualityToken];
   if (quality === undefined) {
-    throw new Error(`和音記号の品質が未対応です: "${name}"（品質部分 "${root.rest}"）`);
+    throw new Error(`和音記号の品質が未対応です: "${name}"（品質部分 "${qualityToken}"）`);
   }
 
   let bassPitchClass: number | null = null;

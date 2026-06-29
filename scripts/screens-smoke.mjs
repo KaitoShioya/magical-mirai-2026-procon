@@ -99,33 +99,36 @@ try {
   await waitForScreen(page, "title");
   await assertScreen(page, "title");
 
-  // 1.5 曲選択UIの確認（Issue #5）。実装済み曲だけが開始でき、未実装曲は無効化されている。
-  //     実装済みは TAKEOVER の1曲のみのため、開始ボタンはちょうど1個（data-song-key="takeover"）、
-  //     準備中の無効ボタンが5個あることを機械的に確認する。
+  // 1.5 曲選択UIの確認（Issue #5・横展開 Issue #88）。実装済み曲だけが開始でき、未実装曲は無効化されている。
+  //     実装済みは TAKEOVER とシャッターチャンスの2曲のため、開始ボタンはちょうど2個（data-song-key に両キー）、
+  //     準備中の無効ボタンが4個あることを機械的に確認する。
   const songSelection = await page.evaluate(() => {
     const root = document.querySelector('[data-screen="title"]');
     const startButtons = Array.from(root.querySelectorAll('[data-action="start"]'));
     const comingSoon = Array.from(root.querySelectorAll('[data-coming-soon="true"]'));
     return {
       startCount: startButtons.length,
-      startSongKey: startButtons.length === 1 ? startButtons[0].getAttribute("data-song-key") : null,
+      startSongKeys: startButtons.map((b) => b.getAttribute("data-song-key")),
       comingSoonCount: comingSoon.length,
       comingSoonAllDisabled: comingSoon.every((element) => element.disabled === true),
     };
   });
-  if (songSelection.startCount !== 1) {
-    fail(`開始できる曲が ${songSelection.startCount} 個です（期待: 1個）`);
-  } else if (songSelection.startSongKey !== "takeover") {
-    fail(`開始できる曲が "${songSelection.startSongKey}" です（期待: "takeover"）`);
+  const expectedStartKeys = ["takeover", "shutter-chance"];
+  if (songSelection.startCount !== 2) {
+    fail(`開始できる曲が ${songSelection.startCount} 個です（期待: 2個）`);
+  } else if (!expectedStartKeys.every((k) => songSelection.startSongKeys.includes(k))) {
+    fail(
+      `開始できる曲のキーが期待と異なります（取得: ${JSON.stringify(songSelection.startSongKeys)}、期待に含む: ${JSON.stringify(expectedStartKeys)}）`,
+    );
   } else {
-    console.log("確認: 開始できる曲は TAKEOVER の1曲だけ");
+    console.log("確認: 開始できる曲は TAKEOVER とシャッターチャンスの2曲");
   }
-  if (songSelection.comingSoonCount !== 5) {
-    fail(`準備中の曲が ${songSelection.comingSoonCount} 個です（期待: 5個）`);
+  if (songSelection.comingSoonCount !== 4) {
+    fail(`準備中の曲が ${songSelection.comingSoonCount} 個です（期待: 4個）`);
   } else if (!songSelection.comingSoonAllDisabled) {
     fail("準備中の曲に無効化されていないものがあります");
   } else {
-    console.log("確認: 準備中の曲は5個ですべて無効");
+    console.log("確認: 準備中の曲は4個ですべて無効");
   }
 
   // 1.6 「これはなに？」常設トグル（使い方説明）の確認。読み込みが終わった題名画面でトグルが見え、
@@ -158,8 +161,10 @@ try {
     }
   }
 
-  // 2. 「はじめる」でウォームアップへ。
-  await page.click('[data-action="start"]');
+  // 2. 「はじめる」でウォームアップへ。起動既定曲 TAKEOVER のボタンを明示して押す。理由を先に述べる。実装済みが2曲に
+  //    なり開始ボタンが複数あるため、起動曲（DEFAULT_SONG_KEY=takeover）のボタンを指定する。起動曲のボタンは再読み込み
+  //    せずウォームアップへ進む（別曲のボタンは ?song を変えて再読み込みする）。
+  await page.click('[data-song-key="takeover"][data-action="start"]');
   await waitForScreen(page, "warmup");
   await assertScreen(page, "warmup");
 

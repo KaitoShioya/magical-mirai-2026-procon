@@ -299,6 +299,12 @@ export function generateDensityPlan(
     rest: options.restDensityPerBeat,
     buildup: options.buildupDensityPerBeat,
   };
+  // サビ区間の開始時刻の集合。連続するサビ区間（1つのサビ群が複数の反復区間に分かれて隣接して記録されたもの）を
+  // 1つの大区間へ統合せず、各反復区間を独立した区間として保つために使う。理由を先に述べる。下流のオンセット選別
+  // （onsetNotes.ts）はサビの反復が同一拍数であることを前提に共有テンプレートを各反復へ写して多様性逓減を成立させる。
+  // 連続するサビ反復を統合すると拍数の異なる大区間になり前提が崩れるため、サビ区間の開始では統合を止める。
+  // 境界集合（boundarySet）がサビ区間の縁を含みタイルがそこで分割されるため、サビ区間開始の時刻はタイル開始と厳密に一致する。
+  const chorusStarts = new Set<number>(chorusSegments.map((c) => c.startMs));
   const merged: Tile[] = [];
   for (const tile of tiles) {
     const last = merged[merged.length - 1];
@@ -306,7 +312,8 @@ export function generateDensityPlan(
       last &&
       last.className === tile.className &&
       last.minIntervalMs === tile.minIntervalMs &&
-      last.endMs === tile.startMs
+      last.endMs === tile.startMs &&
+      !(tile.className === "chorus" && chorusStarts.has(tile.startMs))
     ) {
       last.endMs = tile.endMs;
     } else {

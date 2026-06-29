@@ -79,7 +79,7 @@ export const SONGS: readonly Song[] = [
       lyricId: 126542,
       lyricDiffId: 28628,
     },
-    implemented: false,
+    implemented: true,
   },
   {
     key: "sekai-saigo",

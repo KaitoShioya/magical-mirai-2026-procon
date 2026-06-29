@@ -1,19 +1,22 @@
 import { describe, it, expect } from "vitest";
 import { SONGS, findSong, DEFAULT_SONG_KEY } from "./songs";
 
+// 実装済み曲の集合。M8 横展開でシャッターチャンス（Issue #88）を実装可能化し、TAKEOVER と2曲が遊べる。
+const IMPLEMENTED_SONG_KEYS = ["takeover", "shutter-chance"];
+
 describe("SONGS の実装可否", () => {
-  it("TAKEOVER だけが実装済みで、他5曲は未実装である", () => {
+  it("TAKEOVER とシャッターチャンスが実装済みで、他4曲は未実装である", () => {
     for (const song of SONGS) {
-      expect(song.implemented).toBe(song.key === "takeover");
+      expect(song.implemented).toBe(IMPLEMENTED_SONG_KEYS.includes(song.key));
     }
   });
 
-  // 最小ゲート方式の不変条件。実装済み曲が既定曲（統括が先読みする曲）と一致することを固定する。
-  // 将来 M8 で2曲目を実装可能にするときは、切替ロードの導入と本テストの更新が同時に必要になる。
-  it("実装済み曲はちょうど1曲で、そのキーが DEFAULT_SONG_KEY と一致する", () => {
-    const implemented = SONGS.filter((song) => song.implemented);
-    expect(implemented).toHaveLength(1);
-    expect(implemented[0].key).toBe(DEFAULT_SONG_KEY);
+  // 不変条件。題名画面で開始できる起動既定曲が実装済みであることを固定する（曲選択は再読み込み方式で起動曲を切り替える）。
+  it("実装済み曲は2曲で、既定曲 DEFAULT_SONG_KEY を含む", () => {
+    const implemented = SONGS.filter((song) => song.implemented).map((song) => song.key);
+    expect(implemented).toHaveLength(2);
+    expect(implemented).toContain(DEFAULT_SONG_KEY);
+    expect([...implemented].sort()).toEqual([...IMPLEMENTED_SONG_KEYS].sort());
   });
 });
 

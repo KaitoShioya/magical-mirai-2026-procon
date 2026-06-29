@@ -11,9 +11,10 @@ const BASE = process.env.BASE || "http://127.0.0.1:4173";
 
 // ウォームアップ完了待ちの上限（ミリ秒）。screens-smoke と同じ根拠（公称5000ミリ秒・最悪フレーム率の余裕）。
 const SCREEN_WAIT_TIMEOUT_MS = 15000;
-// プレイ進行中に注入するタップ数と間隔（ミリ秒）。擬似再生のプレイ窓は再生開始からおよそ680ミリ秒
-// （FAKE_DURATION_MS 800 − 終了余白 120）。蝶の寿命約1.2秒より十分短い間隔で詰めず、容量上限64に達しない
-// 範囲で単調に増えることを確かめるため、5回・各90ミリ秒間隔（合計約450ミリ秒）とし、プレイ窓に収める。
+// プレイ進行中に注入を試みるタップ数の上限と間隔（ミリ秒）。擬似再生のプレイ窓は再生開始からおよそ680ミリ秒
+// （FAKE_DURATION_MS 800 − 終了余白 120）。蝶の寿命約1.2秒より十分短い間隔で詰めず、容量上限64に達しない範囲で
+// 単調に増えることを確かめるため、最大5回・各90ミリ秒間隔とする。実際に算入されるタップ数はプレイ窓に収まる分だけで、
+// 注入ループが各タップの算入を確認し算入された分だけを数える（プレイ窓の長さに依存せず境界の取りこぼしを排除するため）。
 const TAP_COUNT = 5;
 const TAP_INTERVAL_MS = 90;
 
@@ -117,7 +118,9 @@ try {
   await waitForScreen(page, "title");
   // プレイ開始前のカメラ位置（暫定固定視点）を控える。プレイ中の軌跡駆動で変わることを確かめる基準にする。
   const prePlayCamera = (await readRenderState(page))?.cameraPosition ?? null;
-  await page.click('[data-action="start"]');
+  // 起動既定曲 TAKEOVER のボタンを明示して押す。実装済みが2曲（横展開 Issue #88）になり開始ボタンが複数あるため、
+  // 起動曲のボタンを指定する。起動曲のボタンは再読み込みせずウォームアップへ進む。
+  await page.click('[data-song-key="takeover"][data-action="start"]');
   await waitForScreen(page, "warmup");
   await waitForScreen(page, "play");
 
@@ -126,8 +129,14 @@ try {
   const webglAvailable = renderAtPlay?.webglAvailable === true;
 
   // プレイ進行中に合成タップを注入する。各タップで音程帯（Y位置）を変えて多様性を持たせる。
-  // プレイ→結果へ自動遷移するため、各タップ前にプレイ状態を確認し、抜けたら注入を止める。
+  // 算入確認方式を採る理由を先に述べる。プレイ→結果へ自動遷移する際、プレイ離脱の手続きが入力を無効化（input.setActive(false)）
+  // するのは画面DOMが result へ変わる直前である。よって「画面がplay」を確認してからタップを送出するまでの間（別々の評価呼び出しの
+  // 往復）にプレイが終了すると、送出したタップは入力無効で算入されないのに注入回数だけが増え、発音回数と1ずれる。これを避けるため、
+  // タップ送出の直後にセッションの算入数（tapCount）が1増えたことを確認し、算入されたタップだけを injected に数える。算入されなければ
+  // プレイ窓の終端に達したとみなして注入を止める。これにより injected は「実際にプレイ中へ届いて算入されたタップ数」を表し、
+  // 擬似再生のプレイ窓の長さに依存せず決定論的になる。TAP_COUNT は注入を試みる上限である。
   let injected = 0;
+  let lastTapCount = (await readPlaySession(page))?.tapCount ?? 0;
   for (let i = 0; i < TAP_COUNT; i += 1) {
     if ((await currentScreen(page)) !== "play") {
       break;
@@ -135,7 +144,13 @@ try {
     const normalizedX = 0.2 + 0.15 * i;
     const normalizedY = 0.15 + 0.13 * i;
     await dispatchTap(page, normalizedX, normalizedY);
+    const session = await readPlaySession(page);
+    if (session === null || session.tapCount !== lastTapCount + 1) {
+      // 送出したタップが算入されなかった（プレイ窓の終端で入力が無効化された）。境界の取りこぼしを数えないため注入を止める。
+      break;
+    }
     injected += 1;
+    lastTapCount = session.tapCount;
     await page.waitForTimeout(TAP_INTERVAL_MS);
   }
 

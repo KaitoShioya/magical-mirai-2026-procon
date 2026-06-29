@@ -178,6 +178,32 @@ describe("譜面密度設計（合成入力の単体テスト）", () => {
     ]);
   });
 
+  it("連続する（境界を共有する）サビ区間は統合せず個別の区間として保つ", () => {
+    // 理由を先に述べる。オンセット選別の共有テンプレートは全サビ反復が同一拍数である前提に立つ（onsetNotes.ts）。
+    // 1つのサビ群が複数の反復区間に分かれて隣接して記録される曲では、統合すると拍数の異なる大区間になり前提が崩れる。
+    // よって density は連続するサビ反復を統合せず個別に保つ。ここでは境界を共有する2区間が2つの個別区間になることを固定する。
+    const input: DensityInput = {
+      durationMs: 16000,
+      beats: makeBeats(16),
+      // [4000,8000) と [8000,12000) は終了と開始が一致する連続サビ。見せ場は置かずクライマックス窓の分割を排除する。
+      chorusSegments: [
+        { startMs: 4000, endMs: 8000 },
+        { startMs: 8000, endMs: 12000 },
+      ],
+      lyricCharOnsetsMs: uniformLyrics(16000),
+      showcases: [],
+      climaxAnchorMs: 6000,
+    };
+    const plan = generateDensityPlan(input);
+    const chorusRegions = plan.regions
+      .filter((r) => r.className === "chorus")
+      .sort((a, b) => a.startMs - b.startMs);
+    expect(chorusRegions.map((r) => [r.startMs, r.endMs])).toEqual([
+      [4000, 8000],
+      [8000, 12000],
+    ]);
+  });
+
   it("全見せ場の核中心がサンプル時刻に含まれる", () => {
     const showcases = [
       showcase(0, 4000, 8000, 1.0, true),

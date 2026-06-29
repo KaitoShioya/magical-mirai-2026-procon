@@ -149,6 +149,9 @@ export interface ScreenContext {
   readonly songs: readonly SongChoice[];
   /** 遷移を要求する。許可遷移表に無い遷移は機械が例外で拒否する。 */
   requestTransition(to: ScreenKey): void;
+  /** 曲を選んで開始を要求する（題名画面の曲選択）。起動曲と同じならウォームアップへ進み、別曲なら統括が起動曲を
+   *  切り替えて始め直す（Issue #88）。曲キーは題名画面のボタンの data-song-key から渡す。 */
+  requestSong(key: string): void;
   /** プレイ画面の本編表示の結線（Issue #33）。診断・本番の双方で統括が渡す。 */
   readonly play?: PlayWiring;
   /** 結果画面の結線（Issue #74・成果物タスク #71/#69/#70/#68）。統括がプレイ終了時に渡す。 */

@@ -139,6 +139,39 @@ describe("品質の大文字小文字区別", () => {
   });
 });
 
+describe("拡張和音への対応（シャッターチャンス Issue #88）", () => {
+  it("減三和音 dim を正式な品質として解釈し音高化する", () => {
+    expect(parseChordSymbol("Edim").quality).toBe("diminished");
+    expect(parseChordSymbol("Edim").rootPitchClass).toBe(4);
+    // 減三和音=[0,3,6]、根音 E の MIDI=76 の2オクターブ展開（E・G・B♭の3音）。
+    expect(chordSymbolToPitchSet("Edim")).toEqual([76, 79, 82, 88, 91, 94]);
+    expectValidPitchSet(chordSymbolToPitchSet("Edim"), 3);
+  });
+
+  it("二度保留和音 sus2 を正式な品質として解釈し音高化する", () => {
+    expect(parseChordSymbol("Dsus2").quality).toBe("suspendedSecond");
+    expect(parseChordSymbol("Dsus2").rootPitchClass).toBe(2);
+    // 二度保留和音=[0,2,7]、根音 D の MIDI=74 の2オクターブ展開（D・E・Aの3音）。
+    expect(chordSymbolToPitchSet("Dsus2")).toEqual([74, 76, 81, 86, 88, 93]);
+    expectValidPitchSet(chordSymbolToPitchSet("Dsus2"), 3);
+  });
+
+  it("短九和音 m9 は基本品質の短七和音へ写る（テンションは音高に反映しない）", () => {
+    expect(parseChordSymbol("Cm9").quality).toBe("minorSeventh");
+    expect(chordSymbolToPitchSet("Cm9")).toEqual(chordSymbolToPitchSet("Cm7"));
+  });
+
+  it("テンションの括弧表記は品質判定の前に取り除かれ基本品質へ写る", () => {
+    expect(parseChordSymbol("Dm7(#9)").quality).toBe("minorSeventh");
+    expect(parseChordSymbol("Dm7(b9)").quality).toBe("minorSeventh");
+    expect(parseChordSymbol("Bm7(#9)").quality).toBe("minorSeventh");
+    expect(parseChordSymbol("Dsus2(b9)").quality).toBe("suspendedSecond");
+    // 括弧付きと括弧なしで同一の音高集合になる（テンションは集合に入らない）。
+    expect(chordSymbolToPitchSet("Dm7(#9)")).toEqual(chordSymbolToPitchSet("Dm7"));
+    expect(chordSymbolToPitchSet("Dsus2(b9)")).toEqual(chordSymbolToPitchSet("Dsus2"));
+  });
+});
+
 describe("無和音の扱い", () => {
   it("isNoChordSymbol が N を真、和音を偽とする", () => {
     expect(isNoChordSymbol("N")).toBe(true);

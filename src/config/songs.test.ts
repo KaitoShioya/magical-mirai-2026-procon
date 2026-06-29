@@ -1,19 +1,23 @@
 import { describe, it, expect } from "vitest";
 import { SONGS, findSong, DEFAULT_SONG_KEY } from "./songs";
 
+// 実装済みとして遊べる課題曲の集合。横展開（Issue #91）で TAKEOVER に加えアフター・ザ・カーテンを実装した。
+// 曲を増やすときはこの集合とともに、題名画面からの曲選択（selectSong）と曲依存結線の差し替えが揃っている必要がある。
+const IMPLEMENTED_SONG_KEYS = ["takeover", "after-the-curtain"];
+
 describe("SONGS の実装可否", () => {
-  it("TAKEOVER だけが実装済みで、他5曲は未実装である", () => {
+  it("実装済みは TAKEOVER とアフター・ザ・カーテンの2曲で、他4曲は未実装である", () => {
     for (const song of SONGS) {
-      expect(song.implemented).toBe(song.key === "takeover");
+      expect(song.implemented).toBe(IMPLEMENTED_SONG_KEYS.includes(song.key));
     }
   });
 
-  // 最小ゲート方式の不変条件。実装済み曲が既定曲（統括が先読みする曲）と一致することを固定する。
-  // 将来 M8 で2曲目を実装可能にするときは、切替ロードの導入と本テストの更新が同時に必要になる。
-  it("実装済み曲はちょうど1曲で、そのキーが DEFAULT_SONG_KEY と一致する", () => {
-    const implemented = SONGS.filter((song) => song.implemented);
-    expect(implemented).toHaveLength(1);
-    expect(implemented[0].key).toBe(DEFAULT_SONG_KEY);
+  // 既定曲（統括が起動時に先読みする曲）が実装済み集合に含まれることを固定する。題名画面で曲を選ぶと統括が結線を
+  // 差し替えるため、実装済みは複数になり得る。既定曲は起動直後に遊べる必要があるため実装済みであることを要求する。
+  it("実装済み曲が DEFAULT_SONG_KEY を含む", () => {
+    const implementedKeys = SONGS.filter((song) => song.implemented).map((song) => song.key);
+    expect(implementedKeys).toContain(DEFAULT_SONG_KEY);
+    expect(implementedKeys.slice().sort()).toEqual(IMPLEMENTED_SONG_KEYS.slice().sort());
   });
 });
 

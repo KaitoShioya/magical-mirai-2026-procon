@@ -23,6 +23,6 @@ export { createSunflowerGeometry } from "./entities/sunflowerGeometry";
 export type { SunflowerFigures, SunflowerSetInput, SunflowerMetrics } from "./entities/sunflowerFigures";
 export { createSunflowerFigures } from "./entities/sunflowerFigures";
 export type { FallingLane, FallingLaneProbeNote } from "./fallingLane";
-export { createFallingLane } from "./fallingLane";
+export { createFallingLane, LANE_LEAD_MS } from "./fallingLane";
 export type { RankGauge, RankGaugeState, RankGaugeProbe } from "./rankGauge";
 export { createRankGauge } from "./rankGauge";

@@ -47,7 +47,11 @@ const SEMITONES_PER_OCTAVE = 12;
 export type ToneCategory = "majorType" | "minorType";
 
 /** 和音の品質ごとの安全付加音の区分。
- *  長調系（長三和音・増三和音・属七和音・長七和音・長六和音）は長調系の付加音、短調系（短三和音・短七和音）は短調系の付加音を使う。
+ *  長調系（長三和音・増三和音・属七和音・長七和音・長六和音・属七の懸垂四度・属九・属七の変十三度）は長調系の付加音、
+ *  短調系（短三和音・短七和音・短九）は短調系の付加音を使う。減七和音は短三度を含むため短調系とする。
+ *  区分の選び方の根拠を先に述べる。区分は根音の上に重ねる安全付加音（長調系=長九度と長六度、短調系=完全四度と短七度）を
+ *  決める。長三度を含む属系（属七の懸垂四度は三度を持たないが属七の機能を継ぐ）は長調系、短三度を含む短系と減七は短調系とする。
+ *  いずれの品質も付加後の協和音高クラスが相異なり、2オクターブ展開でスロット数（最大9）以上の候補が得られることを確認済みである。
  *  出典 docs/research/07-feasibility-and-parameters.md §1.3。 */
 export const QUALITY_TO_TONE_CATEGORY: Record<ChordQuality, ToneCategory> = {
   major: "majorType",
@@ -55,8 +59,13 @@ export const QUALITY_TO_TONE_CATEGORY: Record<ChordQuality, ToneCategory> = {
   dominantSeventh: "majorType",
   majorSeventh: "majorType",
   majorSixth: "majorType",
+  dominantSeventhSus4: "majorType",
+  dominantNinth: "majorType",
+  dominantSeventhFlatThirteenth: "majorType",
   minor: "minorType",
   minorSeventh: "minorType",
+  minorNinth: "minorType",
+  diminishedSeventh: "minorType",
 };
 
 /** 安全付加音の根音からの半音数（度数の小さい順）。

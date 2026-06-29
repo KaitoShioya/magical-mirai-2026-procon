@@ -14,7 +14,8 @@
 // 無和音 "N" は本モジュールでは音高化せず例外とする。無和音区間を直前和音または調の音階へ解決する処理は
 // Issue #37 の責務であり、解決後の実在和音名を本モジュールへ渡す（profileSchema.ts の ChordToneSlotRegion 注釈）。
 
-/** 和音の品質。TAKEOVER に出現する16種の実在和音に対応し、将来の曲のために拡張可能な列挙とする。 */
+/** 和音の品質。実在和音に対応し、将来の曲のために拡張可能な列挙とする。
+ *  TAKEOVER の16種に加え、アフター・ザ・カーテンに出現する属七の懸垂四度・減七・属九・短九・属七の変十三度を加える。 */
 export type ChordQuality =
   | "major"
   | "minor"
@@ -22,7 +23,12 @@ export type ChordQuality =
   | "dominantSeventh"
   | "majorSeventh"
   | "minorSeventh"
-  | "majorSixth";
+  | "majorSixth"
+  | "dominantSeventhSus4"
+  | "diminishedSeventh"
+  | "dominantNinth"
+  | "minorNinth"
+  | "dominantSeventhFlatThirteenth";
 
 /** 構造化された和音の解析結果。下流 #36・#37 が根音と品質と低音を文字列の再解析なしに再利用するために返す。 */
 export interface ParsedChord {
@@ -58,7 +64,9 @@ export const NOTE_LETTER_TO_PITCH_CLASS: Record<string, number> = {
   B: 11,
 };
 
-/** 和音の品質ごとの、根音からの半音間隔。出典は標準的な和声。 */
+/** 和音の品質ごとの、根音からの半音間隔。出典は標準的な和声。
+ *  属七の懸垂四度（7sus4）は第三音を完全四度（5半音）へ吊り上げ第七音（10半音）を加える。減七（dim7）は短三度を積む（0,3,6,9）。
+ *  属九（9）は属七に長九度（14半音）を、短九（m9）は短七に長九度を加える。属七の変十三度（7(b13)）は属七に短十三度＝増五度（8半音）を加える。 */
 export const CHORD_QUALITY_INTERVALS: Record<ChordQuality, readonly number[]> = {
   major: [0, 4, 7],
   minor: [0, 3, 7],
@@ -67,6 +75,11 @@ export const CHORD_QUALITY_INTERVALS: Record<ChordQuality, readonly number[]> = 
   majorSeventh: [0, 4, 7, 11],
   minorSeventh: [0, 3, 7, 10],
   majorSixth: [0, 4, 7, 9],
+  dominantSeventhSus4: [0, 5, 7, 10],
+  diminishedSeventh: [0, 3, 6, 9],
+  dominantNinth: [0, 4, 7, 10, 14],
+  minorNinth: [0, 3, 7, 10, 14],
+  dominantSeventhFlatThirteenth: [0, 4, 7, 10, 8],
 };
 
 /** 品質を表す文字列から品質への対応。根音と分数和音の低音を除いた残り文字列を完全一致で引く。
@@ -79,6 +92,11 @@ export const QUALITY_TOKEN_TO_QUALITY: Record<string, ChordQuality> = {
   M7: "majorSeventh",
   m7: "minorSeventh",
   "6": "majorSixth",
+  "7sus4": "dominantSeventhSus4",
+  dim7: "diminishedSeventh",
+  "9": "dominantNinth",
+  m9: "minorNinth",
+  "7(b13)": "dominantSeventhFlatThirteenth",
 };
 
 /** 2オクターブ展開の下のオクターブにおける、ハ音（音高クラス0）のMIDIノート番号。★暫定。

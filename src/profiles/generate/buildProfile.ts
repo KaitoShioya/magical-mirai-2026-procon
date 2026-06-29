@@ -55,6 +55,7 @@ import {
   toShowcaseInput,
 } from "./songmapAdapters";
 import { deriveDiversityZones } from "./diversityZones";
+import { DEFAULT_SHOWCASE_OPTIONS } from "./types";
 
 /** 曲別の手動入力。songmap から導出できないフィールドを受け取る。
  *  実内容の確定は後続 Issue の責務であり、#45 では検証を通る暫定値で足りる（camera・colors・sfx）。
@@ -165,10 +166,19 @@ export function buildProfile(args: {
   // あり（TAKEOVER は19ミリ秒超過）、検証関数は和音の連続被覆には末尾の超過を許容する一方、無和音区間（ncRanges）には
   // 許容差1ミリ秒しか認めず、かつ無和音区間と和音の「N」区間が許容差1ミリ秒で一致することを要求する。両者を同じ値に
   // するため、和音・無和音区間・スロットの素になる和音の終了時刻を曲長で丸めて整合させる。曲長以内の和音は変わらない。
-  const chords = toChords(songmap).map((c) => {
+  const clampedChords = toChords(songmap).map((c) => {
     const endTimeMs = Math.min(c.endTimeMs, durationMs);
     return { ...c, endTimeMs, durationMs: endTimeMs - c.startTimeMs };
   });
+  // 末尾の和音区間が曲長に届かない場合、最後の区間を曲長まで延ばして連続被覆を保つ。理由を先に述べる。検証は和音が曲頭から
+  // 曲長まで切れ目なく覆うことを要求するが、音楽地図の最終和音は曲長より手前で終わることがある（本曲は259ミリ秒の隙間）。
+  // 最終区間を曲長へ延ばせば末尾の短い隙間をその区間で覆える（最終区間が無和音なら直前和音または音階へ解決される）。
+  // TAKEOVER は最終和音が曲長を超えており上で曲長へ丸められ既に曲長に一致するため、この延長は無処理になる。
+  const chords = clampedChords.map((c, i) =>
+    i === clampedChords.length - 1 && c.endTimeMs < durationMs
+      ? { ...c, endTimeMs: durationMs, durationMs: durationMs - c.startTimeMs }
+      : c,
+  );
   const repetitiveSegments = toRepetitiveSegments(songmap);
   const loudnessCurve = toLoudnessCurve(songmap);
   const emotionCurve = toEmotionCurve(songmap);
@@ -184,7 +194,15 @@ export function buildProfile(args: {
   const slots: ChordToneSlotRegion[] = generateChordToneSlots(resolvedRegions);
 
   // 4. 見せ場（climaxAnchorMs は手動入力。見せ場生成ではオプション引数で渡す）。
-  const showcases = generateShowcases(toShowcaseInput(songmap), { climaxAnchorMs: manual.climaxAnchorMs });
+  //    見せ場の個数は、既定値と曲のサビ区間数の大きい方にする。理由を先に述べる。見せ場生成は戦略Bでサビ区間を必ず
+  //    見せ場にするため、見せ場の個数がサビ区間数より少ないと失敗する。サビ区間数は曲ごとに異なるため、既定値を下限と
+  //    しつつサビ区間数まで個数を増やすことで、サビ数の多い曲でも全サビを見せ場にできる。サビ数が既定値以下の曲では
+  //    既定値のままで、非サビの高声量点が残りの見せ場を補う（従来の挙動を保つ）。
+  const showcaseCount = Math.max(DEFAULT_SHOWCASE_OPTIONS.count, chorusSegments.length);
+  const showcases = generateShowcases(toShowcaseInput(songmap), {
+    climaxAnchorMs: manual.climaxAnchorMs,
+    count: showcaseCount,
+  });
 
   // 5. 歌詞密度（密度プランから windowMs と windows だけをスキーマの LyricDensity へ写す）。
   const densityInput: DensityInput = {

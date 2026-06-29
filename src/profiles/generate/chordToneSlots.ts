@@ -66,12 +66,6 @@ export const QUALITY_TO_TONE_CATEGORY: Record<ChordQuality, ToneCategory> = {
   minorSeventh: "minorType",
   minorNinth: "minorType",
   diminishedSeventh: "minorType",
-  // 減三和音は短3度を持つため短調系の付加音（完全4度・♭7度）を使う。完全4度は減5度と半音隣接で除外され、♭7度が採られ、
-  // 構成音[0,3,6]に♭7度を加えた[0,3,6,10]（半減七の和音の構成音）になる。減5度は構成音として保たれ床の整合を保つ。
-  diminished: "minorType",
-  // 二度保留和音は第3音を持たないため、長短いずれにも倒さない付加音として短調系（完全4度・♭7度）を使う。
-  // 結果は[0,2,5,7,10]の保留五音音階となり、第3音を含まないまま協和する。
-  suspendedSecond: "minorType",
 };
 
 /** 安全付加音の根音からの半音数（度数の小さい順）。

@@ -139,38 +139,31 @@ describe("品質の大文字小文字区別", () => {
   });
 });
 
-describe("拡張和音への対応（シャッターチャンス Issue #88）", () => {
-  it("減三和音 dim を正式な品質として解釈し音高化する", () => {
-    expect(parseChordSymbol("Edim").quality).toBe("diminished");
-    expect(parseChordSymbol("Edim").rootPitchClass).toBe(4);
-    // 減三和音=[0,3,6]、根音 E の MIDI=76 の2オクターブ展開（E・G・B♭の3音）。
-    expect(chordSymbolToPitchSet("Edim")).toEqual([76, 79, 82, 88, 91, 94]);
-    expectValidPitchSet(chordSymbolToPitchSet("Edim"), 3);
-  });
-
-  it("二度保留和音 sus2 を正式な品質として解釈し音高化する", () => {
-    expect(parseChordSymbol("Dsus2").quality).toBe("suspendedSecond");
-    expect(parseChordSymbol("Dsus2").rootPitchClass).toBe(2);
-    // 二度保留和音=[0,2,7]、根音 D の MIDI=74 の2オクターブ展開（D・E・Aの3音）。
-    expect(chordSymbolToPitchSet("Dsus2")).toEqual([74, 76, 81, 86, 88, 93]);
-    expectValidPitchSet(chordSymbolToPitchSet("Dsus2"), 3);
-  });
-
+describe("シャッターチャンスの拡張和音の核への写像（Issue #88）", () => {
+  // シャッターチャンスのテンション付き和音・二度保留和音・減三和音は、トリツクロジー（Issue #91）と同じく最も近い核（基本品質）へ写す。
+  // スロットの音高値は実行時のどの処理にも読まれないため核への写しで足りる（chordPitch.ts の QUALITY_TOKEN_TO_QUALITY のコメント参照）。
   it("短九和音 m9 は短九和音（minorNinth）として解釈される", () => {
-    // m9 トークンは専用の品質 minorNinth に対応する（基本品質の短七和音とは別の音高集合になる）。
     expect(parseChordSymbol("Cm9").quality).toBe("minorNinth");
+    expect(parseChordSymbol("Gm9").quality).toBe("minorNinth");
+    expect(parseChordSymbol("Am9").quality).toBe("minorNinth");
   });
 
-  it("テンション付きの和音名は専用の完全一致トークンで基本品質へ写る", () => {
-    // 括弧付きのテンション表記は完全一致トークンとして登録し、テンションを無視して基本品質へ写す
-    //（括弧除去ではなく完全一致。他曲の括弧付き和音 "7(b13)" の解釈を壊さないため）。
+  it("テンション付きの短七和音は短七和音の核へ写る", () => {
     expect(parseChordSymbol("Dm7(#9)").quality).toBe("minorSeventh");
     expect(parseChordSymbol("Dm7(b9)").quality).toBe("minorSeventh");
     expect(parseChordSymbol("Bm7(#9)").quality).toBe("minorSeventh");
-    expect(parseChordSymbol("Dsus2(b9)").quality).toBe("suspendedSecond");
-    // テンション付きと基本形で同一の音高集合になる（テンションは集合に入らない）。
+    expect(parseChordSymbol("Bm7(b9)").quality).toBe("minorSeventh");
+    // テンション付きと基本形（Dm7）で同一の音高集合になる（テンションは集合に入らない）。
     expect(chordSymbolToPitchSet("Dm7(#9)")).toEqual(chordSymbolToPitchSet("Dm7"));
+  });
+
+  it("二度保留和音は長三和音の核へ、減三和音は短三和音の核へ写る", () => {
+    expect(parseChordSymbol("Dsus2(b9)").quality).toBe("major");
+    expect(parseChordSymbol("Bsus2(b9)").quality).toBe("major");
+    expect(parseChordSymbol("Edim").quality).toBe("minor");
+    // 二度保留和音(b9)は sus2（長三和音）と、減三和音は短三和音と同一の音高集合になる。
     expect(chordSymbolToPitchSet("Dsus2(b9)")).toEqual(chordSymbolToPitchSet("Dsus2"));
+    expect(chordSymbolToPitchSet("Edim")).toEqual(chordSymbolToPitchSet("Em"));
   });
 });
 
@@ -187,10 +180,34 @@ describe("無和音の扱い", () => {
   });
 });
 
+describe("トリツクロジーの拡張和音・サスペンド和音・減三和音の核への写像（Issue #91）", () => {
+  // 音高値は実行時未使用のため核（基本品質）へ写す（詳細は chordPitch.ts の QUALITY_TOKEN_TO_QUALITY のコメント）。
+  // 各和音が解析でき期待の核になることを固定する。
+  it("短和音の拡張（m(9)・m(11)・m(13)）は短三和音に写る", () => {
+    expect(parseChordSymbol("Gbm(9)").quality).toBe("minor");
+    expect(parseChordSymbol("Bbm(11)").quality).toBe("minor");
+    expect(parseChordSymbol("Gbm(13)").quality).toBe("minor");
+  });
+
+  it("add9 は長三和音、sus2・sus4 は長三和音、dim は短三和音に写る", () => {
+    expect(parseChordSymbol("Dbadd9").quality).toBe("major");
+    expect(parseChordSymbol("Ebsus2").quality).toBe("major");
+    expect(parseChordSymbol("Dbsus4").quality).toBe("major");
+    expect(parseChordSymbol("Adim").quality).toBe("minor");
+  });
+
+  it("写像後の和音はいずれも音高集合へ展開できる", () => {
+    for (const name of ["Gbm(13)", "Bbm(9)", "Dbadd9", "Ebsus2", "Dbsus4", "Adim"]) {
+      expect(() => chordSymbolToPitchSet(name)).not.toThrow();
+    }
+  });
+});
+
 describe("異常入力", () => {
   it("空文字・未対応の品質・不正な根音は例外になる", () => {
     expect(() => parseChordSymbol("")).toThrow();
-    expect(() => parseChordSymbol("Csus4")).toThrow();
+    // サスペンド和音 sus4 は対応済みのため、なお未対応の拡張（maj9）で例外を確かめる。
+    expect(() => parseChordSymbol("Cmaj9")).toThrow();
     expect(() => parseChordSymbol("Hm")).toThrow();
   });
 

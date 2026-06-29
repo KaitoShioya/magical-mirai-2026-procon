@@ -15,8 +15,9 @@
 // Issue #37 の責務であり、解決後の実在和音名を本モジュールへ渡す（profileSchema.ts の ChordToneSlotRegion 注釈）。
 
 /** 和音の品質。実在和音に対応し、将来の曲のために拡張可能な列挙とする。
- *  TAKEOVER の和音に加え、アフター・ザ・カーテン（Issue #91）の属七の懸垂四度・減七・属九・短九・属七の変十三度と、
- *  シャッターチャンス（Issue #88）の減三和音・二度保留和音を加える。 */
+ *  TAKEOVER の和音に加え、アフター・ザ・カーテン（Issue #91）の属七の懸垂四度・減七・属九・短九・属七の変十三度を加える。
+ *  トリツクロジー（Issue #91）とシャッターチャンス（Issue #88）の拡張和音・サスペンド和音・減三和音は、新しい品質を増やさず
+ *  最も近い核（基本品質）へ写すため、本列挙は増やさない（QUALITY_TOKEN_TO_QUALITY を参照）。 */
 export type ChordQuality =
   | "major"
   | "minor"
@@ -29,9 +30,7 @@ export type ChordQuality =
   | "diminishedSeventh"
   | "dominantNinth"
   | "minorNinth"
-  | "dominantSeventhFlatThirteenth"
-  | "diminished"
-  | "suspendedSecond";
+  | "dominantSeventhFlatThirteenth";
 
 /** 構造化された和音の解析結果。下流 #36・#37 が根音と品質と低音を文字列の再解析なしに再利用するために返す。 */
 export interface ParsedChord {
@@ -83,9 +82,6 @@ export const CHORD_QUALITY_INTERVALS: Record<ChordQuality, readonly number[]> = 
   dominantNinth: [0, 4, 7, 10, 14],
   minorNinth: [0, 3, 7, 10, 14],
   dominantSeventhFlatThirteenth: [0, 4, 7, 10, 8],
-  // 減三和音は根音・短3度・減5度。二度保留和音は根音・長2度・完全5度（第3音を持たない）。出典は標準的な和声。
-  diminished: [0, 3, 6],
-  suspendedSecond: [0, 2, 7],
 };
 
 /** 品質を表す文字列から品質への対応。根音と分数和音の低音を除いた残り文字列を完全一致で引く。
@@ -103,15 +99,27 @@ export const QUALITY_TOKEN_TO_QUALITY: Record<string, ChordQuality> = {
   "9": "dominantNinth",
   m9: "minorNinth",
   "7(b13)": "dominantSeventhFlatThirteenth",
-  // シャッターチャンス（Issue #88）の和音。減三和音 dim と二度保留和音 sus2 は実際の構成音を床に用いるため正式な品質として対応する。
-  // テンション付きの短七和音（m7(#9)・m7(b9)）と二度保留和音（sus2(b9)）は、スロットがテンションを使わない設計（chordToneSlots.ts）に
-  // 従い、テンションを無視して基本品質（短七和音・二度保留和音）へ写す完全一致トークンを置く（括弧付きトークンを完全一致で引く
-  // 既存方針に揃え、他曲の括弧付き和音 "7(b13)" の解釈を壊さない）。
-  dim: "diminished",
-  sus2: "suspendedSecond",
-  "sus2(b9)": "suspendedSecond",
+  // トリツクロジー（Issue #91）に出現する拡張和音・サスペンド和音・減三和音を、最も近い核（基本品質）へ写す。
+  // 核へ写して足る理由を先に述べる。本作の操作音はどのレーンでも同一の水滴音に統一され、判定はレーン番号と時間で行い、
+  // 譜面のレーン割り当て（notePatterns.ts）は和音の音高値を読まずスロット数だけを使うため、スロットの音高値
+  //（slots[].pitches）は実行時のどの処理にも読まれない（validateProfile.ts が値域だけを検査する）。したがって核への写しは
+  // レーン数・割り当て・音・判定・描画を変えず、変わるのは実行時に未使用のスロット音高値だけである。
+  // 短和音にテンション（9度・11度・13度）を付した和音の核は短三和音、長和音に9度を付した和音の核は長三和音、
+  // サスペンド和音（第三音を2度・4度で置換）は三和音1つで近似するため核は長三和音、減三和音の核は短三和音とする。
+  "m(9)": "minor",
+  "m(11)": "minor",
+  "m(13)": "minor",
+  add9: "major",
+  sus2: "major",
+  sus4: "major",
+  dim: "minor",
+  // シャッターチャンス（Issue #88）に出現するテンション付きの短七和音と二度保留和音。上と同じ理由でテンションを無視して
+  // 最も近い核へ写す（短七和音は第七音を保つため核は短七和音、二度保留和音はトリツクロジーの sus2 と同じく長三和音）。
+  // 括弧付きトークンは完全一致で引く既存方針に揃え、他曲の括弧付き和音 "7(b13)" の解釈を壊さない。
   "m7(#9)": "minorSeventh",
   "m7(b9)": "minorSeventh",
+  "sus2(b9)": "major",
+
 };
 
 /** 2オクターブ展開の下のオクターブにおける、ハ音（音高クラス0）のMIDIノート番号。★暫定。

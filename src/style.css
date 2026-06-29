@@ -543,13 +543,20 @@ body[data-phase="play"] .settings-toggle {
   max-width: 720px;
 }
 
-/* 課題曲1曲ぶんのボタン。曲名と作者名を縦に並べ、片手の親指でも押しやすい高さを保つ。 */
+/* 課題曲1曲ぶんのボタン。曲名と作者名を縦に並べ、片手の親指でも押しやすい高さを保つ。
+   全ボタンの高さを揃える理由を先に述べる。実装済み曲は曲名＋作者名の2行、未実装曲は「準備中」の札が
+   加わって3行になり、放っておくと高さが食い違う。最も背の高い未実装曲の中身が収まる min-height を全ボタンへ
+   与え、中身は justify-content: center で縦中央に置く。これでグリッドの各行が同じ高さに揃い、内容の行数に
+   かかわらず外形が一致する（border-box のため min-height は枠線・余白を含む。@media で余白を詰めても収まる）。
+   幅は .song-list のグリッド（auto-fit の等幅トラック）が既に揃えており、6曲は1〜3列のいずれでも各行が満ちる。 */
 .song-choice {
   width: 100%;
   min-width: 0;
+  min-height: 92px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   padding: 12px 20px;
 }

@@ -26,10 +26,10 @@ afterEach(() => {
 });
 
 describe("soundPreference", () => {
-  it("記録が無いときは既定（最大100）", () => {
+  it("記録が無いときは既定（半分の50）", () => {
     vi.stubGlobal("localStorage", createMockStorage());
     expect(loadSoundVolume()).toBe(SOUND_VOLUME_DEFAULT);
-    expect(SOUND_VOLUME_DEFAULT).toBe(100);
+    expect(SOUND_VOLUME_DEFAULT).toBe(50);
   });
 
   it("音量を保存すると読み出しで同じ値になる", () => {
@@ -61,14 +61,14 @@ describe("soundPreference", () => {
     expect(mock.map.get(SOUND_VOLUME_KEY)).toBe("64");
   });
 
-  it("壊れた値・非有限の保存値は既定（100）として読み出す", () => {
+  it("壊れた値・非有限の保存値は既定（50）として読み出す", () => {
     const mock = createMockStorage();
     vi.stubGlobal("localStorage", mock);
     mock.map.set(SOUND_VOLUME_KEY, "こわれた値");
     expect(loadSoundVolume()).toBe(SOUND_VOLUME_DEFAULT);
   });
 
-  it("localStorage が無い環境では既定（100）", () => {
+  it("localStorage が無い環境では既定（50）", () => {
     vi.stubGlobal("localStorage", undefined);
     expect(loadSoundVolume()).toBe(SOUND_VOLUME_DEFAULT);
   });

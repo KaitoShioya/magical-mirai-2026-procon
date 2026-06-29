@@ -12,12 +12,12 @@ import type { CharacterCredit, CharacterModelConfig } from "../types/character";
  * 4要素（描いた旨・ライセンス名・ライセンスのアドレス・権利者の社名・ガイドライン遵守の旨）を満たす。
  */
 export const PCL_CREDIT: CharacterCredit = {
-  subject: "この作品はピアプロ・キャラクター・ライセンスに基づいて初音ミクを描いています。",
+  subject: "本作はピアプロ・キャラクター・ライセンスに基づいて初音ミクモデルを制作しています。",
   licenseName: "ピアプロ・キャラクター・ライセンス",
   licenseUrl: "https://piapro.jp/license/pcl/summary",
   rightsHolder: "© Crypton Future Media, INC. www.piapro.net",
   guidelineNote:
-    "本作品はクリプトン・フューチャー・メディア株式会社のキャラクター利用のガイドラインに従います。",
+    "本作はクリプトン・フューチャー・メディア株式会社のキャラクター利用ガイドラインに従います。",
 };
 
 /**

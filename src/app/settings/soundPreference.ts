@@ -8,8 +8,9 @@
 // 接頭辞 "mm2026." で他のデータとの衝突を防ぐ。
 export const SOUND_VOLUME_KEY = "mm2026.soundVolume";
 
-// 既定の音量。最大（100）にする理由を先に述べる。初回は作品の手応え（水滴音）をはっきり味わえるよう最大で始める。
-export const SOUND_VOLUME_DEFAULT = 100;
+// 既定の音量。半分（50）にする理由を先に述べる。初回は楽曲と操作音の双方を心地よく聴ける中間の音量で始め、
+// 大きすぎる音で驚かせないようにする。利用者は設定でいつでも上げ下げできる。
+export const SOUND_VOLUME_DEFAULT = 50;
 
 // 音量を0以上100以下へ収める。保存・読出の両方で通し、範囲外の値を安全側へ丸める。
 function clampVolume(volume: number): number {
@@ -32,7 +33,7 @@ function getStorage(): Storage | null {
 }
 
 /**
- * 操作音の音量（0以上100以下の整数）を読み出す。記録が無い・読めない・値が数値でない・非有限のいずれでも既定（最大100）。
+ * 操作音の音量（0以上100以下の整数）を読み出す。記録が無い・読めない・値が数値でない・非有限のいずれでも既定（半分の50）。
  * 読み出した値は0以上100以下へ丸める。
  */
 export function loadSoundVolume(): number {

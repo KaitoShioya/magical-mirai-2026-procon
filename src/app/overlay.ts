@@ -45,7 +45,7 @@ export function createOverlays(host: HTMLElement = document.body): Overlays {
   loadingText.className = "overlay__text";
   loadingText.textContent = "読み込み中…";
   loadingPanel.append(loadingText);
-  // ロード中の待機時間に使い方説明（世界観・操作方法・成果物）を見せる。読み込み文言は固定で見せ、
+  // ロード中の待機時間に使い方説明（遊び方・操作方法）を見せる。読み込み文言は固定で見せ、
   // 説明だけをスクロール領域に入れて、縦長の小さな画面でも文言が埋もれないようにする（体裁は src/style.css）。
   const loadingHowTo = document.createElement("div");
   loadingHowTo.className = "overlay__howto";

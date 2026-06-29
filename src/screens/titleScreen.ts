@@ -10,11 +10,11 @@ export const createTitleScreen: ScreenFactory = (context: ScreenContext): Screen
 
   const heading = document.createElement("h1");
   heading.className = "screen__title";
-  heading.textContent = "マジカルミライ2026 リリックアプリ";
+  heading.textContent = "マジミラ2026 プロジェクター";
 
   const guide = document.createElement("p");
   guide.className = "screen__text";
-  guide.textContent = "課題曲を選んではじめる";
+  guide.textContent = "曲を選んではじめる";
 
   const list = document.createElement("ul");
   list.className = "song-list";

@@ -2,13 +2,15 @@
 // 音楽地図ソース → 内容組み立て → 駆動部、までを擬似で通し、被覆に隙間が無いこと・通しで例外が出ないことを固定する。
 
 import { describe, it, expect } from "vitest";
-import { prepareConductorContent } from "./conductorContent";
+import { prepareConductorContent, chorusSmashOverrides } from "./conductorContent";
 import { createConductor } from "./conductor";
 import type { ConductorEngineLike, ConductorPlacement } from "./conductor";
 import { createFakeMusicMapSource } from "../../textalive/musicMap";
-import type { LyricSourceVideo } from "../../textalive/lyricsTimeline";
+import type { LyricSourceVideo, LyricsTimeline } from "../../textalive/lyricsTimeline";
 import { createEffectRegistry } from "./effectElement";
 import { charSmash } from "./effects/charSmash";
+import { EFFECT_ID } from "./effectAssignment";
+import { activeResolvedAssignmentsAt } from "./typographyChartResolve";
 import { findReadingCoverageGaps, findReadingCoverageDefects, READING_COVERAGE_SAMPLE_STEP_MS } from "./readingLayout";
 import type { GlyphHandle, ReadabilityOptions } from "./types";
 
@@ -121,6 +123,46 @@ const readability: ReadabilityOptions = {
   minPixelHeight: 18,
 };
 
+describe("chorusSmashOverrides（サビでスマッシュを必ず効かせる追加上書き）", () => {
+  function timelineOf(
+    phrases: { phraseIndex: number; startTimeMs: number; endTimeMs: number }[]
+  ): LyricsTimeline {
+    return {
+      phrases: phrases.map((p) => ({ ...p, text: "あ", words: [] })),
+      phraseCount: phrases.length,
+      wordCount: 0,
+      charCount: 0,
+    } as unknown as LyricsTimeline;
+  }
+
+  it("コーラス区間に重なるフレーズだけへ smash の addSongSpecific 上書きを作る", () => {
+    const timeline = timelineOf([
+      { phraseIndex: 0, startTimeMs: 0, endTimeMs: 500 }, // サビ内
+      { phraseIndex: 1, startTimeMs: 1000, endTimeMs: 1500 }, // サビ外
+      { phraseIndex: 2, startTimeMs: 1900, endTimeMs: 2100 }, // サビ境界に一部重なる
+    ]);
+    const result = chorusSmashOverrides(timeline, [
+      { startTimeMs: 0, endTimeMs: 600 },
+      { startTimeMs: 2000, endTimeMs: 2500 },
+    ]);
+    expect(result.map((o) => o.phraseIndex)).toEqual([0, 2]);
+    expect(result.every((o) => o.decision === "addSongSpecific" && o.effectId === EFFECT_ID.smash)).toBe(true);
+  });
+
+  it("コーラス区間が無ければ空（既定の割付のまま）", () => {
+    const timeline = timelineOf([{ phraseIndex: 0, startTimeMs: 0, endTimeMs: 500 }]);
+    expect(chorusSmashOverrides(timeline, [])).toEqual([]);
+  });
+
+  it("曲固有の譜面が既に smash 上書きを持つフレーズは二重に作らない", () => {
+    const timeline = timelineOf([{ phraseIndex: 0, startTimeMs: 0, endTimeMs: 500 }]);
+    const result = chorusSmashOverrides(timeline, [{ startTimeMs: 0, endTimeMs: 600 }], [
+      { phraseIndex: 0, decision: "addSongSpecific", effectId: EFFECT_ID.smash },
+    ]);
+    expect(result).toEqual([]);
+  });
+});
+
 describe("prepareConductorContent 統合", () => {
   it("読ませる役の区間が発声中のフレーズを隙間なく被覆する（広い画面）", () => {
     const content = buildContent(1000);
@@ -141,6 +183,14 @@ describe("prepareConductorContent 統合", () => {
   it("確定割付プランは表示粒度プランと同数のセグメントを持つ", () => {
     const content = buildContent(1000);
     expect(content.resolvedPlan.segments.length).toBeGreaterThan(0);
+  });
+
+  it("サビ（コーラス区間）に重なるフレーズでスマッシュが有効になる", () => {
+    // フレーズ0（0〜500）はコーラス区間 [0,500) に重なる。既定では shortDense でなくとも、
+    // サビ用の追加上書きにより smash が active になる。フレーズ1（2000〜3000）はサビ外。
+    const content = buildContent(1000);
+    const inChorus = activeResolvedAssignmentsAt(content.resolvedPlan, 200);
+    expect(inChorus.some((a) => a.effectId === EFFECT_ID.smash)).toBe(true);
   });
 
   it("駆動部で曲を通し再生しても例外が出ず、読ませる役が生成される", () => {

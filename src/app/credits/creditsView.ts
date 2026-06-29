@@ -75,7 +75,7 @@ function fontSection(fonts: readonly FontCredit[]): HTMLElement {
 function songSection(songs: readonly SongCredit[]): HTMLElement {
   const rows: HTMLElement[] = [];
   for (const song of songs) {
-    rows.push(textRow(`${song.title}（作者 ${song.artist}）`));
+    rows.push(textRow(`${song.title}（作者 ${song.artist} さん）`));
     rows.push(linkRow(song.sourceUrl, song.sourceUrl));
   }
   return section("楽曲・歌詞", rows);

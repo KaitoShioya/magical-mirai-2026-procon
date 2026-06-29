@@ -12,16 +12,16 @@
 
 ## 対応楽曲
 
-課題曲6曲を登録しています。アプリ本体（`index.html`）では題名画面で曲を選びます。ただし現在遊べるのは TAKEOVER のみで、他の5曲は題名画面に「準備中」と表示され、まだ選べません。縦切りで TAKEOVER を最初に完成させる方針のためです。
+課題曲6曲を登録しています。アプリ本体（`index.html`）では題名画面で曲を選びます。現在は6曲中5曲を遊べます。未実装の「世界最後の音楽隊」だけは題名画面に「準備中」と表示され、まだ選べません。
 
-| key | 曲名 | アーティスト |
-|-----|------|-------------|
-| `kotaete` | こたえて | imie |
-| `after-the-curtain` | アフター・ザ・カーテン | Rulmry |
-| `shutter-chance` | シャッターチャンス | 夜未アガリ |
-| `sekai-saigo` | 世界最後の音楽隊 | 夏山よつぎ×ど～ぱみん |
-| `toritsuku-logy` | トリツクロジー | 鶴三 |
-| `takeover` | TAKEOVER | Twinfield |
+| key | 曲名 | アーティスト | 状態 |
+|-----|------|-------------|------|
+| `kotaete` | こたえて | imie | 遊べる |
+| `after-the-curtain` | アフター・ザ・カーテン | Rulmry | 遊べる |
+| `shutter-chance` | シャッターチャンス | 夜未アガリ | 遊べる |
+| `sekai-saigo` | 世界最後の音楽隊 | 夏山よつぎ×ど～ぱみん | 準備中 |
+| `toritsuku-logy` | トリツクロジー | 鶴三 | 遊べる |
+| `takeover` | TAKEOVER | Twinfield | 遊べる |
 
 ## セットアップ
 
@@ -219,10 +219,10 @@ Variables（非秘匿の設定値）:
 
 ### 初音ミク（ピアプロ・キャラクター・ライセンス）
 
-- この作品はピアプロ・キャラクター・ライセンスに基づいて初音ミクを描いています。
+- 本作はピアプロ・キャラクター・ライセンスに基づいて初音ミクモデルを制作しています。
 - ライセンス: ピアプロ・キャラクター・ライセンス（https://piapro.jp/license/pcl/summary ）
 - © Crypton Future Media, INC. www.piapro.net
-- 本作品はクリプトン・フューチャー・メディア株式会社のキャラクター利用のガイドラインに従います。
+- 本作はクリプトン・フューチャー・メディア株式会社のキャラクター利用ガイドラインに従います。
 - モデルは VRoid Studio で人間が自作した二次創作モデルであり、AI が生成したものではありません。
 
 ### フォント
@@ -230,7 +230,7 @@ Variables（非秘匿の設定値）:
 - Zen Kaku Gothic New（作者 Yoshimichi Ohira / Zenfonts）
 - 配布元 Google Fonts（https://fonts.google.com/specimen/Zen+Kaku+Gothic+New ）
 - SIL Open Font License 1.1（同梱したライセンス本文 `/fonts/zen-kaku-gothic-new-OFL.txt`）
-- 課題曲 TAKEOVER の歌詞に現れる文字へサブセット化して同梱している。歌詞表示に用いる。
+- 遊べる全曲（5曲）の歌詞に現れる文字へサブセット化して同梱している。歌詞表示に用いる。
 - M PLUS 1（作者 Coji Morishita / M+ FONTS Project）
 - 配布元 Google Fonts（https://fonts.google.com/specimen/M+PLUS+1 ）
 - SIL Open Font License 1.1（同梱したライセンス本文 `/fonts/m-plus-1-OFL.txt`）
@@ -238,7 +238,11 @@ Variables（非秘匿の設定値）:
 
 ### 楽曲・歌詞
 
-- TAKEOVER（作者 Twinfield） https://piapro.jp/t/E2i3/20251215092113
+- こたえて（作者 imie さん） https://piapro.jp/t/6W2N/20251215164617
+- アフター・ザ・カーテン（作者 Rulmry さん） https://piapro.jp/t/zoqO/20251214200738
+- シャッターチャンス（作者 夜未アガリ さん） https://piapro.jp/t/PNpQ/20251209170719
+- トリツクロジー（作者 鶴三 さん） https://piapro.jp/t/QBdL/20251215094303
+- TAKEOVER（作者 Twinfield さん） https://piapro.jp/t/E2i3/20251215092113
 - 課題曲は piapro.jp で公開されたマジカルミライ2026楽曲コンテストの楽曲であり、TextAlive App API を通じてロードする。
 
 ### 舞台土台の地形

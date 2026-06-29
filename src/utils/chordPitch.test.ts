@@ -203,6 +203,18 @@ describe("トリツクロジーの拡張和音・サスペンド和音・減三�
   });
 });
 
+describe("こたえてのサスペンド2＋長七度の核への写像（Issue #90）", () => {
+  // 「こたえて」が用いる sus2(#7) は長7度を伴うため核は長七和音へ写る（音高値は実行時未使用のため近似する。
+  // 詳細は chordPitch.ts の QUALITY_TOKEN_TO_QUALITY のコメント）。分数和音の和音部に来ても解析できることを固定する。
+  it("sus2(#7) は長七和音に写り、分数和音 Csus2(#7)/G も解析できる", () => {
+    expect(parseChordSymbol("Csus2(#7)").quality).toBe("majorSeventh");
+    const parsed = parseChordSymbol("Csus2(#7)/G");
+    expect(parsed.quality).toBe("majorSeventh");
+    expect(parsed.bassPitchClass).toBe(7);
+    expect(() => chordSymbolToPitchSet("Csus2(#7)/G")).not.toThrow();
+  });
+});
+
 describe("異常入力", () => {
   it("空文字・未対応の品質・不正な根音は例外になる", () => {
     expect(() => parseChordSymbol("")).toThrow();

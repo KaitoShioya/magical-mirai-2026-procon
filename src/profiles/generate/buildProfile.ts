@@ -104,6 +104,14 @@ export interface ManualProfileInputs {
    *  声量・歌詞などの重みを上げると、ノーツの塊と空白が楽曲の声量・歌詞の起伏へ寄り、頻度の偏り（緩急）が楽曲内容に沿う。
    *  注記: 1拍あたり密度が1.0のときは目標数が全拍数に達し全拍が無選択で採られるため、本上書きは密度が1.0未満のときに効く。 */
   onset?: Partial<OnsetOptions>;
+  /** サビ反復で共有テンプレートを使うか。省略時は既定（true、TAKEOVER）。サビ反復の拍数が揃わない曲は false にして、
+   *  サビ区間も非サビと同じ個別スコアでノーツを選別する（「こたえて」のみ false。サビ間の多様性逓減は発火しないが、
+   *  配分・一回性・ゲージ投下・ランクは従来どおり機能する）。 */
+  chorusSharedTemplate?: boolean;
+  /** 連続するサビ区間を1つのサビ群へ統合してから見せ場にするか。省略時は既定（true）。隣接するサビ区間も別個の見せ場として
+   *  扱いたい曲（各反復区間を独立の見せ場にしたい曲）は false にする（「こたえて」のみ false。9個のサビ区間をそれぞれ見せ場にする）。
+   *  false にする曲は、各サビ区間を独立の不変窓にしてもクライマックス窓の延長が隣接窓へ食い込まない（重ならない）ことを確認した上で指定する。 */
+  mergeContiguousChorus?: boolean;
 }
 
 /** 手動カメラ軌跡が与えられないときの暫定カメラを作る。曲頭と曲尾の2点だけの直線的な軌跡で、検証関数（カメラは曲頭0ミリ秒から
@@ -223,13 +231,17 @@ export function buildProfile(args: {
   //    1つのサビ群へ統合してから不変窓にする（接する区間を別々の窓にすると窓どうしが重なるため）ので、個数の下限も統合後のサビ群の数で
   //    数える。サビ群の数は曲ごとに異なるため、既定値を下限としつつサビ群の数まで個数を増やすことで、サビの多い曲でも全サビ群を見せ場に
   //    できる。サビ群が既定値以下の曲では既定値のままで、非サビの高声量点が残りの見せ場を補う（従来の挙動を保つ）。
-  const showcaseCount = Math.max(
-    DEFAULT_SHOWCASE_OPTIONS.count,
-    mergeContiguousChorusSegments(chorusSegments).length,
-  );
+  //    サビ群の統合は曲別入力 mergeContiguousChorus で切り替えられる（省略時は統合する）。統合しない曲は各サビ区間が
+  //    そのまま見せ場になるため、個数の下限も統合せず数えたサビ区間の数で数える。
+  const mergeContiguousChorus = manual.mergeContiguousChorus ?? DEFAULT_SHOWCASE_OPTIONS.mergeContiguousChorus;
+  const chorusGroupCount = mergeContiguousChorus
+    ? mergeContiguousChorusSegments(chorusSegments).length
+    : chorusSegments.length;
+  const showcaseCount = Math.max(DEFAULT_SHOWCASE_OPTIONS.count, chorusGroupCount);
   const showcases = generateShowcases(toShowcaseInput(songmap), {
     climaxAnchorMs: manual.climaxAnchorMs,
     count: showcaseCount,
+    mergeContiguousChorus,
   });
 
   // 5. 歌詞密度（密度プランから windowMs と windows だけをスキーマの LyricDensity へ写す）。
@@ -241,9 +253,17 @@ export function buildProfile(args: {
     showcases,
     climaxAnchorMs: manual.climaxAnchorMs,
   };
+  // サビ共有テンプレートの可否（省略時は既定）。密度プランのサビ反復区切りとオンセット選別の両方がこの可否に従うため、
+  // 一度だけ解決して共有する。共有テンプレートを使う曲はサビ反復を独立区間に保ち（区切る）、使わない曲は区切らない。
+  const chorusSharedTemplate = manual.chorusSharedTemplate ?? DEFAULT_ONSET_OPTIONS.chorusSharedTemplate;
   // 譜面密度の曲別上書きを既定値へ重ねる（指定の無いフィールドは既定値のまま）。countTargetNotes は密度プランから
-  // 計数するため、上書きした密度はノーツ数まで一貫して反映される。
-  const densityOptions: DensityOptions = { ...DEFAULT_DENSITY_OPTIONS, ...manual.density };
+  // 計数するため、上書きした密度はノーツ数まで一貫して反映される。サビ反復の区切りは既定で共有テンプレートの可否に連動させ、
+  // 曲別入力 density で明示指定があればそれを優先する。
+  const densityOptions: DensityOptions = {
+    ...DEFAULT_DENSITY_OPTIONS,
+    splitChorusRepetitions: chorusSharedTemplate,
+    ...manual.density,
+  };
   const densityPlan = generateDensityPlan(densityInput, densityOptions);
   const lyricDensity: LyricDensity = {
     windowMs: densityPlan.lyricDensity.windowMs,
@@ -280,8 +300,13 @@ export function buildProfile(args: {
     })),
     selectionSignal: densityPlan.selectionSignal,
   });
-  // オンセット選択の曲別上書きを既定値へ重ねる（指定の無いフィールドは既定値のまま）。
-  const onsetOptions: OnsetOptions = { ...DEFAULT_ONSET_OPTIONS, ...manual.onset };
+  // オンセット選択の曲別上書きを既定値へ重ねる（指定の無いフィールドは既定値のまま）。サビ共有テンプレートの可否は
+  // 上で解決した chorusSharedTemplate を使う（密度プランのサビ反復区切りと同じ可否。「こたえて」は false）。
+  const onsetOptions: OnsetOptions = {
+    ...DEFAULT_ONSET_OPTIONS,
+    ...manual.onset,
+    chorusSharedTemplate,
+  };
   const onsets = generateOnsetNotes(onsetInput, onsetOptions);
   const patterned = applyNotePatterns({
     notes: onsets,

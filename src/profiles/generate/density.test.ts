@@ -204,6 +204,31 @@ describe("譜面密度設計（合成入力の単体テスト）", () => {
     ]);
   });
 
+  it("splitChorusRepetitions: false では連続するサビ区間を1区間へ統合する（共有テンプレート非使用曲・Issue #90）", () => {
+    // 理由を先に述べる。共有テンプレートを使わない曲（buildProfile の chorusSharedTemplate が偽）はサビ反復を独立区間に
+    // 保つ必要がなく、保つとサビの密度区間が反復ごとに分かれて目標数の配分が変わる。そうした曲はサビ反復を非サビと同じ規則で
+    // 統合する。境界を共有する2区間が1区間へ統合されることを固定する。
+    const input: DensityInput = {
+      durationMs: 16000,
+      beats: makeBeats(16),
+      chorusSegments: [
+        { startMs: 4000, endMs: 8000 },
+        { startMs: 8000, endMs: 12000 },
+      ],
+      lyricCharOnsetsMs: uniformLyrics(16000),
+      showcases: [],
+      climaxAnchorMs: 6000,
+    };
+    const plan = generateDensityPlan(input, {
+      ...DEFAULT_DENSITY_OPTIONS,
+      splitChorusRepetitions: false,
+    });
+    const chorusRegions = plan.regions
+      .filter((r) => r.className === "chorus")
+      .sort((a, b) => a.startMs - b.startMs);
+    expect(chorusRegions.map((r) => [r.startMs, r.endMs])).toEqual([[4000, 12000]]);
+  });
+
   it("全見せ場の核中心がサンプル時刻に含まれる", () => {
     const showcases = [
       showcase(0, 4000, 8000, 1.0, true),

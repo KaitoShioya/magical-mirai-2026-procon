@@ -99,11 +99,12 @@ try {
   await waitForScreen(page, "title");
   await assertScreen(page, "title");
 
-  // 1.5 曲選択UIの確認（Issue #5・横展開 Issue #91・#88・#89）。実装済み曲だけが開始でき、未実装曲は無効化されている。
-  //     実装済みは TAKEOVER・アフター・ザ・カーテン・トリツクロジー・シャッターチャンス・世界最後の音楽隊の5曲のため、開始ボタンは
-  //     ちょうど5個（data-song-key が5曲）、準備中の無効ボタンが1個あることを機械的に確認する。
+  // 1.5 曲選択UIの確認（Issue #5・横展開 Issue #91・#88・#90・#89）。実装済み曲だけが開始でき、未実装曲は無効化されている。
+  //     横展開で課題曲6曲すべてが実装済みになったため、開始ボタンはちょうど6個（data-song-key が6曲）、準備中の無効ボタンが
+  //     0個であることを機械的に確認する。
   const EXPECTED_STARTABLE_KEYS = [
     "after-the-curtain",
+    "kotaete",
     "sekai-saigo",
     "shutter-chance",
     "takeover",
@@ -126,14 +127,12 @@ try {
   } else if (JSON.stringify(startKeysSorted) !== JSON.stringify(EXPECTED_STARTABLE_KEYS)) {
     fail(`開始できる曲のキーが ${JSON.stringify(startKeysSorted)} です（期待: ${JSON.stringify(EXPECTED_STARTABLE_KEYS)}）`);
   } else {
-    console.log("確認: 開始できる曲は TAKEOVER・アフター・ザ・カーテン・トリツクロジー・シャッターチャンス・世界最後の音楽隊の5曲");
+    console.log("確認: 開始できる曲は課題曲6曲すべて（TAKEOVER・アフター・ザ・カーテン・トリツクロジー・シャッターチャンス・こたえて・世界最後の音楽隊）");
   }
-  if (songSelection.comingSoonCount !== 1) {
-    fail(`準備中の曲が ${songSelection.comingSoonCount} 個です（期待: 1個）`);
-  } else if (!songSelection.comingSoonAllDisabled) {
-    fail("準備中の曲に無効化されていないものがあります");
+  if (songSelection.comingSoonCount !== 0) {
+    fail(`準備中の曲が ${songSelection.comingSoonCount} 個です（期待: 0個）`);
   } else {
-    console.log("確認: 準備中の曲は1個ですべて無効");
+    console.log("確認: 準備中の曲は無い（課題曲6曲すべて実装済み）");
   }
 
   // 1.6 「これはなに？」常設トグル（使い方説明）の確認。読み込みが終わった題名画面でトグルが見え、

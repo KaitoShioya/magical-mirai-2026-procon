@@ -49,7 +49,7 @@ export const SONGS: readonly Song[] = [
       lyricId: 126519,
       lyricDiffId: 28645,
     },
-    implemented: false,
+    implemented: true,
     // コーラス補正: https://developer.textalive.jp/events/magicalmirai2026/6W2N_chorus_timings.jsonc
     hasChorusCorrectionJsonc: true,
   },

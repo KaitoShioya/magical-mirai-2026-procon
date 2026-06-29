@@ -66,6 +66,14 @@ export interface DensityOptions {
   defaultMinIntervalMs: number;
   /** 片手1点の連打の最小間隔（ミリ秒）。☆確定。8分音符＝171。 */
   sameSlotMinIntervalMs: number;
+  /**
+   * 連続するサビ反復をサビ区間の開始で区切り、各反復を独立した密度区間に保つか。既定は真。
+   * 役割と既定理由を先に述べる。下流のオンセット選別（onsetNotes.ts）が共有テンプレートを各サビ反復へ写して多様性逓減を
+   * 成立させるには、サビの反復が同一拍数の独立区間である必要がある。連続するサビ反復を1区間へ統合すると拍数の異なる大区間に
+   * なり前提が崩れるため、既定では区切る。一方、共有テンプレートを使わない曲（サビも非サビと同じ個別スコアで選別する曲、
+   * buildProfile の chorusSharedTemplate が偽）はこの区切りが不要で、区切るとサビの密度区間が反復ごとに分かれて目標数の
+   * 配分が変わる。そうした曲は偽にして、隣接サビ反復を非サビと同じ規則で1区間へ統合する。 */
+  splitChorusRepetitions: boolean;
 }
 
 export const DEFAULT_DENSITY_OPTIONS: DensityOptions = {
@@ -86,6 +94,7 @@ export const DEFAULT_DENSITY_OPTIONS: DensityOptions = {
   climaxMinIntervalMs: 86,
   defaultMinIntervalMs: 171,
   sameSlotMinIntervalMs: 171,
+  splitChorusRepetitions: true,
 };
 
 /** 密度区間。曲全体を切れ目なく覆う。 */
@@ -304,6 +313,7 @@ export function generateDensityPlan(
   // （onsetNotes.ts）はサビの反復が同一拍数であることを前提に共有テンプレートを各反復へ写して多様性逓減を成立させる。
   // 連続するサビ反復を統合すると拍数の異なる大区間になり前提が崩れるため、サビ区間の開始では統合を止める。
   // 境界集合（boundarySet）がサビ区間の縁を含みタイルがそこで分割されるため、サビ区間開始の時刻はタイル開始と厳密に一致する。
+  // 共有テンプレートを使わない曲（splitChorusRepetitions が偽）はこの区切りを行わず、隣接サビ反復を非サビと同じ規則で統合する。
   const chorusStarts = new Set<number>(chorusSegments.map((c) => c.startMs));
   const merged: Tile[] = [];
   for (const tile of tiles) {
@@ -313,7 +323,7 @@ export function generateDensityPlan(
       last.className === tile.className &&
       last.minIntervalMs === tile.minIntervalMs &&
       last.endMs === tile.startMs &&
-      !(tile.className === "chorus" && chorusStarts.has(tile.startMs))
+      !(options.splitChorusRepetitions && tile.className === "chorus" && chorusStarts.has(tile.startMs))
     ) {
       last.endMs = tile.endMs;
     } else {

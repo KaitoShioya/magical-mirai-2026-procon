@@ -119,7 +119,8 @@ export const QUALITY_TOKEN_TO_QUALITY: Record<string, ChordQuality> = {
   "m7(#9)": "minorSeventh",
   "m7(b9)": "minorSeventh",
   "sus2(b9)": "major",
-
+  // 「こたえて」（Issue #90）のサスペンド2に長7度を付した和音。長7度を伴うため核は長七和音とする。
+  "sus2(#7)": "majorSeventh",
 };
 
 /** 2オクターブ展開の下のオクターブにおける、ハ音（音高クラス0）のMIDIノート番号。★暫定。

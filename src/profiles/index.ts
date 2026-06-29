@@ -32,6 +32,12 @@ import {
   SHUTTER_CHANCE_DEFAULT_READING_PIXEL_HEIGHT,
   SHUTTER_CHANCE_DEFAULT_READING_REGION,
 } from "./shutter-chance/typographyChart";
+import { kotaeteProfile } from "./kotaete/profile";
+import {
+  kotaeteTypographyChart,
+  KOTAETE_DEFAULT_READING_PIXEL_HEIGHT,
+  KOTAETE_DEFAULT_READING_REGION,
+} from "./kotaete/typographyChart";
 import { sekaiSaigoProfile } from "./sekai-saigo/profile";
 import {
   sekaiSaigoTypographyChart,
@@ -82,6 +88,13 @@ const BUNDLES_BY_KEY: Record<string, SongBundle> = {
     defaultReadingUnit: "phrase",
     defaultReadingPixelHeight: SHUTTER_CHANCE_DEFAULT_READING_PIXEL_HEIGHT,
     defaultReadingRegion: SHUTTER_CHANCE_DEFAULT_READING_REGION,
+  },
+  kotaete: {
+    profile: kotaeteProfile,
+    typographyChart: kotaeteTypographyChart,
+    defaultReadingUnit: "phrase",
+    defaultReadingPixelHeight: KOTAETE_DEFAULT_READING_PIXEL_HEIGHT,
+    defaultReadingRegion: KOTAETE_DEFAULT_READING_REGION,
   },
   "sekai-saigo": {
     profile: sekaiSaigoProfile,

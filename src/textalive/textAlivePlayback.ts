@@ -14,7 +14,12 @@ import {
   SONG_END_STOP_TOLERANCE_MS,
   type Playback,
 } from "./playback";
-import { createPlayerMusicMapSource, type MusicMapSource, type TextAlivePlayerLike } from "./musicMap";
+import {
+  createPlayerMusicMapSource,
+  type MusicMapSource,
+  type TextAlivePlayerLike,
+  type LyricsTransform,
+} from "./musicMap";
 import type { LyricSourceVideo } from "./lyricsTimeline";
 
 /** 音声配置先要素の識別子。index.html で #app の外（body 直下）に置く。 */
@@ -47,6 +52,10 @@ export interface TextAlivePlaybackOptions {
    * 環境変数が無いときは undefined が注入されるため、実行時に undefined となり得る。
    */
   token: string | undefined;
+  /** 歌詞構造への変換（横展開）。「こたえて」のコーラス補正（Issue #90）を実行時の歌詞へ適用するために渡す。
+   *  曲ごとに適用可否を切り替えるため、呼び出し側（統括）が現在の曲を見て分岐する関数を渡す。渡さない場合は無変換。
+   *  音楽地図ソースの lyricsVideo にだけ作用し、拍・コーラス区間・声量には影響しない。 */
+  lyricsTransform?: LyricsTransform;
 }
 
 /**
@@ -55,7 +64,7 @@ export interface TextAlivePlaybackOptions {
  * 実行時の再試行では復旧せず、また API を呼ばないことでライフサイクル由来のエラーを出さないため。
  */
 export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Playback {
-  const { token } = options;
+  const { token, lyricsTransform } = options;
   // 現在読み込む課題曲。題名画面の曲選択で loadSong により別の曲へ差し替える（同一プレイヤーで読み込み直す）。
   let currentSong = options.song;
 
@@ -318,7 +327,7 @@ export function createTextAlivePlayback(options: TextAlivePlaybackOptions): Play
     // 音楽地図ソースは TextAlive の Player を裏側に持つ。準備完了（onTimerReady 後）は isReady で判定する。
     // Player の構造は TextAlivePlayerLike を満たすが、外部ライブラリの型との照合を避けるため明示的に写す。
     musicMap: (): MusicMapSource =>
-      createPlayerMusicMapSource(player as unknown as TextAlivePlayerLike, isReady),
+      createPlayerMusicMapSource(player as unknown as TextAlivePlayerLike, isReady, lyricsTransform),
     dispose() {
       player.removeListener(listener);
       player.dispose();

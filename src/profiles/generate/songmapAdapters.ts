@@ -212,18 +212,27 @@ export function toEmotionCurve(songmap: RawSongmap): EmotionCurve {
 /** 歌詞文字の時刻の重なり・逆順を前向き走査で直し、開始時刻が昇順かつ前の文字の終了時刻をまたがない列にする。
  *  採用理由を先に述べる。検証関数 validateProfile は lyricChars に「開始時刻が昇順」かつ「前の文字の終了時刻を
  *  またがない」ことを要求する（validateProfile.ts の checkAscendingNonOverlap）。一方 TextAlive の歌詞は、同時に
- *  発声する2文字が同一開始時刻・終了時刻のまたぎで返ることがあり（世界最後の音楽隊の1箇所がこれにあたる）、その
- *  ままでは検証に落ちる。ここで整える lyricChars は歌詞密度と歌詞オンセット近接の素データであり（実際の表示時刻は
- *  実行時に TextAlive 自身の文字時刻を使う）、重なりを境界で詰めても密度・近接の意味は保たれる。
- *  直し方の理由を先に述べる。直前までに確定した最大終了時刻 lastEnd を保ち、開始がそれより前なら開始を lastEnd へ、
- *  終了が開始より前なら終了を開始へ繰り上げる。これにより順序と非重なりを最小の移動で満たし、重なりの無い入力には
- *  一切手を加えない（出力が入力と一致するため、重なりを持たない他曲の生成物は不変）。決定的な純粋関数である。 */
+ *  発声する2文字が同一開始時刻・終了時刻のまたぎで返ることがあり（世界最後の音楽隊で前の文字を約235ミリ秒またぐ
+ *  箇所が1つある）、そのままでは検証に落ちる。ここで整える lyricChars は歌詞密度と歌詞オンセット近接の素データで
+ *  あり（実際の表示時刻は実行時に TextAlive 自身の文字時刻を使う）、重なりを境界で詰めても密度・近接の意味は保たれる。
+ *
+ *  許容（TIME_TOLERANCE_MS と同じ1ミリ秒）を採用する理由を先に述べる。検証は前の文字の終了を許容ぶんだけまたぐ
+ *  重なりは認める（checkAscendingNonOverlap は r.start < prev.end - 許容 のときだけ不合格にする）。修復もこの許容に
+ *  合わせ、許容を超える重なり・逆順だけを直す。こうすると、許容内のわずかなまたぎ（TextAlive が返す1ミリ秒未満の差で、
+ *  検証は認める）には手を加えず、既に検証を通っている曲の生成物を1ビットも変えない。
+ *
+ *  直し方の理由を先に述べる。直前の文字の確定後の終了時刻 previousEndMs を保ち、開始がそれを許容を超えて下回るなら
+ *  開始を previousEndMs へ繰り上げ、終了が開始を許容を超えて下回るなら終了を開始へ繰り上げる。これにより順序と
+ *  非重なりを最小の移動で満たす。決定的な純粋関数である。 */
 function repairAscendingNonOverlap(chars: readonly LyricChar[]): LyricChar[] {
-  let lastEnd = Number.NEGATIVE_INFINITY;
+  // 検証関数 checkAscendingNonOverlap と同じ許容（1ミリ秒）。修復の発火条件を検証の不合格条件に一致させるため、
+  // 同じ値を用いる。
+  const TIME_TOLERANCE_MS = 1;
+  let previousEndMs = Number.NEGATIVE_INFINITY;
   return chars.map((c) => {
-    const startTimeMs = Math.max(c.startTimeMs, lastEnd);
-    const endTimeMs = Math.max(c.endTimeMs, startTimeMs);
-    lastEnd = endTimeMs;
+    const startTimeMs = c.startTimeMs < previousEndMs - TIME_TOLERANCE_MS ? previousEndMs : c.startTimeMs;
+    const endTimeMs = c.endTimeMs < startTimeMs - TIME_TOLERANCE_MS ? startTimeMs : c.endTimeMs;
+    previousEndMs = endTimeMs;
     return { startTimeMs, endTimeMs, text: c.text };
   });
 }

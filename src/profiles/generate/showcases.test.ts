@@ -151,6 +151,49 @@ describe("generateShowcases（chorusあり）", () => {
   });
 });
 
+describe("generateShowcases（mergeContiguousChorus による連続サビ統合の切替・Issue #90）", () => {
+  // 隣接する2つのサビ区間（境界 60000 を共有）を持つ入力。統合の可否で見せ場の数と境界が変わることを固定する。
+  const durationMs = 120000;
+  const input: ShowcaseInput = {
+    durationMs,
+    amplitudeStepMs: 1000,
+    amplitudeCurve: ampCurve(120, [
+      { from: 8, to: 12, value: 100 },
+      { from: 40, to: 79, value: 50 }, // 2つのサビ区間にまたがる山
+    ]),
+    lyricCharOnsetsMs: [],
+    chorusSegments: [
+      { startMs: 40000, endMs: 60000 },
+      { startMs: 60000, endMs: 80000 },
+    ],
+    beatsMs: beatsEvery500(durationMs),
+  };
+
+  it("既定（統合する）では隣接サビが1つの見せ場へ統合される", () => {
+    // 統合後サビ群は1個。個数をその数（1）に合わせて非サビ補充を0にし、サビ由来の見せ場が40000〜80000の1つだけになることを見る。
+    const showcases = generateShowcases(input, { count: 1, climaxAnchorMs: 50000 });
+    expect(showcases).toHaveLength(1);
+    expect(showcases[0].startTimeMs).toBe(40000);
+    expect(showcases[0].endTimeMs).toBe(80000);
+  });
+
+  it("統合しない（mergeContiguousChorus: false）では各サビ区間が独立の見せ場になる", () => {
+    // 統合しないとサビ群は2個。個数をその数（2）に合わせて非サビ補充を0にし、各サビ区間が別々の不変窓になることを見る。
+    const showcases = generateShowcases(input, {
+      count: 2,
+      climaxAnchorMs: 50000,
+      mergeContiguousChorus: false,
+    });
+    expect(showcases).toHaveLength(2);
+    const first = showcases.find((s) => s.startTimeMs === 40000 && s.endTimeMs === 60000);
+    const second = showcases.find((s) => s.startTimeMs === 60000 && s.endTimeMs === 80000);
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    // 統合された40000〜80000の窓は存在しない（各サビ区間が別々の不変窓のまま）。
+    expect(showcases.find((s) => s.startTimeMs === 40000 && s.endTimeMs === 80000)).toBeUndefined();
+  });
+});
+
 describe("generateShowcases（chorusなし）", () => {
   const durationMs = 120000;
   const input: ShowcaseInput = {

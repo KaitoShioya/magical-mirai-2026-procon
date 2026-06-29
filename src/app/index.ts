@@ -41,6 +41,9 @@ import { APP_WORK_TITLE } from "../config/work";
 import { shareArtifact, composeShareText, createBrowserShareEnvironment } from "./share";
 import { createPhotoCamera } from "./photoCamera";
 import { songBundle, ALL_SONG_BUNDLES } from "../profiles";
+import { applyChorusCorrectionToLyricVideo } from "../utils/chorusCorrection";
+import { KOTAETE_CHORUS_CORRECTIONS } from "../profiles/kotaete/chorusTimings";
+import type { LyricsTransform } from "../textalive/musicMap";
 import { createCameraTrajectory } from "../utils/cameraTrajectory";
 import { createInput } from "../input";
 import { createPlaySession } from "./playSession";
@@ -152,10 +155,35 @@ export function createApp(
   // 読み込みが終わってから renderOverlays が見せる（ロード中は同じ説明をロード覆いに出すため）。
   const howToView: HowToView = createHowToView();
 
+  // 曲固有の歌詞変換（横展開）。「こたえて」はコーラス補正（Issue #90）を実行時の歌詞へ適用する。3段落目のコーラスが
+  // 2段落目の発声中に重なり TextAlive では文字タイミングが潰れるため、対象フレーズの文字・単語・フレーズの時刻を補正データで
+  // 戻す。曲は loadSong で読み込み直すため、現在の曲（currentSong）を見て曲ごとに適用可否を切り替える（こたえて以外は無変換）。
+  // 防御的に適用する理由を先に述べる。補正の対象フレーズ特定は歌詞構造に依存し、実ロードの構造が将来相違すると例外を投げうる。
+  // その場合でもプレイ画面全体を止めず、補正なしの歌詞へ退避する（失敗のない床）。
+  const lyricsTransform: LyricsTransform = (video) => {
+    if (currentSong.key !== "kotaete") {
+      return video;
+    }
+    try {
+      return applyChorusCorrectionToLyricVideo(video, KOTAETE_CHORUS_CORRECTIONS);
+    } catch (error) {
+      console.warn(
+        `コーラス補正を適用できませんでした。補正なしの歌詞で続行します: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return video;
+    }
+  };
+
   // 診断モード（?smoke=1）はトークン非依存の擬似再生、通常はトークンで実プレイヤーを使う。
   const playback: Playback = options.diagnostics
     ? createFakePlayback()
-    : createTextAlivePlayback({ song: currentSong, token: import.meta.env.VITE_TEXTALIVE_TOKEN });
+    : createTextAlivePlayback({
+        song: currentSong,
+        token: import.meta.env.VITE_TEXTALIVE_TOKEN,
+        lyricsTransform,
+      });
 
   const overlays = createOverlays();
   const renderOverlays = (state = playback.getState()): void => {

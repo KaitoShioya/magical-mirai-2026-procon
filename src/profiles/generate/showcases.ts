@@ -205,7 +205,10 @@ function runPipeline(input: ShowcaseInput, partial: Partial<ShowcaseOptions>): P
   validateChorusSegments(input.chorusSegments);
   // 連続するサビ区間（1つのサビ群が複数の反復区間に分かれて隣接して記録されたもの）を1ブロックへ統合してから見せ場にする。
   // 統合により、接する反復区間がクライマックス窓の延長で重なる事故を防ぎ、1つのサビ群を1つの見せ場に対応づける。離れたサビ群は統合されない。
-  const chorus = mergeContiguousChorusSegments(input.chorusSegments);
+  // mergeContiguousChorus が偽の曲は統合せず、各サビ区間をそのまま（開始時刻の昇順で）独立の見せ場窓にする。
+  const chorus = options.mergeContiguousChorus
+    ? mergeContiguousChorusSegments(input.chorusSegments)
+    : [...input.chorusSegments].sort((a, b) => a.startMs - b.startMs);
   if (chorus.length > options.count) {
     throw new TooManyChorusError(chorus.length, options.count);
   }

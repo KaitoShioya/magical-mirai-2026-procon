@@ -67,6 +67,12 @@ declare global {
      */
     __screenHistory?: () => readonly string[];
     /**
+     * 再生対象の曲キー（横展開）。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
+     * URL引数 song の実装済み曲への解決結果を返す。scripts/screens-smoke.mjs と scripts/play-smoke.mjs が、
+     * 指定した曲が再生対象として構成されたことを機械的に検証するために取得する。
+     */
+    __currentSongKey?: () => string;
+    /**
      * プレイ進行セッション（Issue #59）の読み取り専用診断。診断モード（URLに ?smoke=1）のときだけ統括が取り付ける。
      * 採点・投下・発音の進行を通しスモーク（scripts/play-smoke.mjs）が確かめる。
      * 共有型が app・scoring に依存しないよう素の構造で宣言する。

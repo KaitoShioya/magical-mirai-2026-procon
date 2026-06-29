@@ -386,16 +386,23 @@ export const TORITSUKU_LOGY_PROFILE_PATH = fileURLToPath(
   new URL("../../src/profiles/toritsuku-logy/toritsuku-logy.profile.json", import.meta.url)
 );
 
+// こたえてのコミット済み成果物への絶対パス（横展開、Issue #90）。
+export const KOTAETE_PROFILE_PATH = fileURLToPath(
+  new URL("../../src/profiles/kotaete/kotaete.profile.json", import.meta.url)
+);
+
 // 曲プロファイルの検査キー。横展開（M8）で各曲が自分の検査を登録できるよう曲キーを含める。
 export const TAKEOVER_PROFILE_CHECK_KEY = "song-profile-takeover";
 export const AFTER_THE_CURTAIN_PROFILE_CHECK_KEY = "song-profile-after-the-curtain";
 export const TORITSUKU_LOGY_PROFILE_CHECK_KEY = "song-profile-toritsuku-logy";
+export const KOTAETE_PROFILE_CHECK_KEY = "song-profile-kotaete";
 
 // 各曲の検査の登録定義。共通スキーマ SONG_PROFILE_SCHEMA を全曲で使う（構造検査は曲非依存のため）。横展開で曲を増やすときはここへ追加する。
 const PROFILE_CHECKS = [
   { key: TAKEOVER_PROFILE_CHECK_KEY, file: TAKEOVER_PROFILE_PATH },
   { key: AFTER_THE_CURTAIN_PROFILE_CHECK_KEY, file: AFTER_THE_CURTAIN_PROFILE_PATH },
   { key: TORITSUKU_LOGY_PROFILE_CHECK_KEY, file: TORITSUKU_LOGY_PROFILE_PATH },
+  { key: KOTAETE_PROFILE_CHECK_KEY, file: KOTAETE_PROFILE_PATH },
 ];
 
 // 曲プロファイルの検査を登録簿へ登録する（冪等）。

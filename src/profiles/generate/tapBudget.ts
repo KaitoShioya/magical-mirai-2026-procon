@@ -49,9 +49,9 @@ export interface TapBudgetOptions {
 }
 
 /** 母数算出の密度の既定値。サビは1拍に1回（§2.6）。 */
-const DEFAULT_CHORUS_TAPS_PER_BEAT = 1.0;
+export const DEFAULT_CHORUS_TAPS_PER_BEAT = 1.0;
 /** 母数算出の密度の既定値。非サビは2拍に1回（§2.6）。 */
-const DEFAULT_NON_CHORUS_TAPS_PER_BEAT = 0.5;
+export const DEFAULT_NON_CHORUS_TAPS_PER_BEAT = 0.5;
 
 /** タップ総数上限算出の入力が契約に反したことを表す例外。黙って契約を崩さず、文脈付きで失敗させる。 */
 export class InvalidTapBudgetInputError extends Error {
